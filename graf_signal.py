@@ -40,7 +40,7 @@ class MPLCanvas(FigureCanvas):
     
     def brisi_graf(self):
         self.axes.clear()
-###############################################################################    
+###############################################################################
 class GrafSatniSrednjaci(MPLCanvas):
     """
     subklasa MPLCanvas, ona definira detalje crtanja isl.
@@ -65,6 +65,26 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         Pick average, plavi dijamanti - emitira signal sa izborom
         """
+        #start annotation part
+        self.tooltipTekst='data point: %s'
+        self.annX=0
+        self.annY=0
+        #offset na lijevo i iznad
+        self.annXoffset=-5
+        self.annYoffset=5
+        self.annotation=self.axes.annotate(
+            self.tooltipTekst,
+            xy=(self.annX,self.annY),
+            xytext=(self.annXoffset,self.annYoffset),
+            textcoords='offset points',
+            ha='right',
+            va='bottom',
+            fontsize=5,
+            bbox=dict(boxstyle='round,pad=0.5',fc='cyan',alpha=0.3),
+            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0')
+            )
+        self.annotation.set_visible(False)
+        #kraj annotation part
         linija=event.artist
         xTocke=linija.get_xdata()
         tocka=event.ind
@@ -78,6 +98,17 @@ class GrafSatniSrednjaci(MPLCanvas):
             #left click
             arg=[xtocka]
             self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
+            
+        if event.mouseevent.button==2:
+            #annotations sa missle mouse gumbom            
+            self.annX=event.mouseevent.xdata
+            self.annY=event.mouseevent.ydata
+            #pozicija annotationa na grafu
+            self.annotation.xy=self.annX,self.annY
+            #tekst annotationa
+            self.annotation.set_text(self.tooltipTekst % ('Hello World!'))
+            self.annotation.set_visible(True)
+            self.draw()
         
         if event.mouseevent.button==3:
             #right click

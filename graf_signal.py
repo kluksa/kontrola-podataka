@@ -51,7 +51,7 @@ class GrafSatniSrednjaci(MPLCanvas):
     flagSatni(PyQt_PyObject)
         -promjena flaga jednog satnog agregata, desni klik
         -emitira listu. [vrijeme(timestamp), novi flag]
-    """      
+    """
     def __init__(self,*args,**kwargs):
         MPLCanvas.__init__(self,*args,**kwargs)
         self.donjaGranica=None
@@ -66,6 +66,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         Pick average, plavi dijamanti - emitira signal sa izborom
         """
         #start annotation part
+        #pokusaj izbacit u klasu, smisli kako brisati annotatione
         self.tooltipTekst='data point: %s'
         self.annX=0
         self.annY=0
@@ -80,7 +81,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             ha='right',
             va='bottom',
             fontsize=5,
-            bbox=dict(boxstyle='round,pad=0.5',fc='cyan',alpha=0.3),
+            bbox=dict(boxstyle='round,pad=0.5',fc='cyan',alpha=0.92),
             arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0')
             )
         self.annotation.set_visible(False)
@@ -100,7 +101,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
             
         if event.mouseevent.button==2:
-            #annotations sa missle mouse gumbom            
+            #annotations sa missle mouse gumbom
             self.annX=event.mouseevent.xdata
             self.annY=event.mouseevent.ydata
             #pozicija annotationa na grafu
@@ -170,27 +171,23 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.axes.set_xlim(vrijeme.min(),vrijeme.max())
         self.fig.tight_layout()
         self.draw()
-###############################################################################        
+###############################################################################
 class GrafMinutniPodaci(MPLCanvas):
     """
     Graf za crtanje minutnih podataka.
     Ulaz:
-    data je lista pandas datafrejmova, satni slice koncetracije
-       [0] cijeli -> cijeli dataframe (sluzi za plot linije)
-       [1] pozitivanFlag ->dio dataframe gdje je flag >=0 (za scatter plot)
-       [2] negativanFlag ->dio dataframe gdje je flag <0 (za scatter plot)
-       
+        data je lista pandas datafrejmova, satni slice koncetracije
+        [0] cijeli -> cijeli dataframe (sluzi za plot linije)
+        [1] pozitivanFlag ->dio dataframe gdje je flag >=0 (za scatter plot)
+        [2] negativanFlag ->dio dataframe gdje je flag <0 (za scatter plot)
     SIGNALI:
     flagTockaMinutni(PyQt_PyObject)
         -izbor jedne tocke kojoj treba promjeniti flag - desni klik
         -emitira listu - [vrijeme(timestamp),novi flag]
     flagSpanMinutni(PyQt_PyObject)
-        -izbor spana, lijevi klik & drag. na klik granice su identicne
-        -emitira listu - [vrijeme min, vrijeme max, novi flag]
-        -min i max granice su isti broj na jedan ljevi klik...problem?
-        
-    arg=[minOznaka,maxOznaka,flag]
-            self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+    -izbor spana, lijevi klik & drag. na klik granice su identicne
+    -emitira listu - [vrijeme min, vrijeme max, novi flag]
+    -min i max granice su isti broj na jedan ljevi klik...problem?
     """
     def __init__(self,*args,**kwargs):
         MPLCanvas.__init__(self,*args,**kwargs)
@@ -268,7 +265,7 @@ class GrafMinutniPodaci(MPLCanvas):
         if puniSat:
             timeOznaka=timeOznaka+timedelta(hours=1)
         
-        #desni klik -  promjena flaga jedne tocke
+        #desni klik - promjena flaga jedne tocke
         if event.mouseevent.button==3:
             opis='Odabrano vrijeme: '+str(timeOznaka)
             tekst='Odaberi novu vrijednost flaga:'
@@ -337,12 +334,12 @@ class GrafMinutniPodaci(MPLCanvas):
             
         yLabels=self.axes.get_yticklabels()
         for label in yLabels:
-            label.set_fontsize(4)                      
+            label.set_fontsize(4)
         #pokusaj automatskog proavnavanja
         self.axes.set_xlim(1,60)
         self.fig.tight_layout()
         self.draw()
-###############################################################################        
+###############################################################################
 class ApplicationMain(QtGui.QMainWindow):
     """
     Testna aplikacija za provjeru ispravnosti MPL klasa za Qt
@@ -355,7 +352,7 @@ class ApplicationMain(QtGui.QMainWindow):
         self.widget2=QtGui.QWidget()
         
         canvasSatni=GrafSatniSrednjaci(self.widget1,width=6,height=5,dpi=150)
-        canvasMinutni=GrafMinutniPodaci(self.widget2,width=6,height=5,dpi=150)        
+        canvasMinutni=GrafMinutniPodaci(self.widget2,width=6,height=5,dpi=150)
         
         mainLayout=QtGui.QVBoxLayout(self.mainWidget)
         mainLayout.addWidget(canvasSatni)

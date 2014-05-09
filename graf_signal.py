@@ -67,7 +67,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         #start annotation part
         #pokusaj izbacit u klasu, smisli kako brisati annotatione
-        self.tooltipTekst='data point: %s'
+        self.tooltipTekst='time: %s\navg: %0.2f\nstatus: %d'
         self.annX=0
         self.annY=0
         #offset na lijevo i iznad
@@ -81,8 +81,8 @@ class GrafSatniSrednjaci(MPLCanvas):
             ha='right',
             va='bottom',
             fontsize=5,
-            bbox=dict(boxstyle='round,pad=0.5',fc='cyan',alpha=0.92),
-            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0')
+            bbox=dict(boxstyle='round4',fc='cyan',alpha=0.92),
+            arrowprops=dict(arrowstyle='fancy',connectionstyle='arc3,rad=0')
             )
         self.annotation.set_visible(False)
         #kraj annotation part
@@ -107,9 +107,10 @@ class GrafSatniSrednjaci(MPLCanvas):
             #pozicija annotationa na grafu
             self.annotation.xy=self.annX,self.annY
             #tekst annotationa
-            self.annotation.set_text(self.tooltipTekst % ('Hello World!'))
+            self.annotation.set_text(self.tooltipTekst % (str(xtocka),12.5,1024))
             self.annotation.set_visible(True)
             self.draw()
+            self.annotation.remove()
         
         if event.mouseevent.button==3:
             #right click
@@ -185,9 +186,9 @@ class GrafMinutniPodaci(MPLCanvas):
         -izbor jedne tocke kojoj treba promjeniti flag - desni klik
         -emitira listu - [vrijeme(timestamp),novi flag]
     flagSpanMinutni(PyQt_PyObject)
-    -izbor spana, lijevi klik & drag. na klik granice su identicne
-    -emitira listu - [vrijeme min, vrijeme max, novi flag]
-    -min i max granice su isti broj na jedan ljevi klik...problem?
+        -izbor spana, lijevi klik & drag. na klik granice su identicne
+        -emitira listu - [vrijeme min, vrijeme max, novi flag]
+        -min i max granice su isti broj na jedan ljevi klik...problem?
     """
     def __init__(self,*args,**kwargs):
         MPLCanvas.__init__(self,*args,**kwargs)

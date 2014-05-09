@@ -66,23 +66,19 @@ class GrafSatniSrednjaci(MPLCanvas):
         Pick average, plavi dijamanti - emitira signal sa izborom
         """
         #start annotation part
-        #pokusaj izbacit u klasu, smisli kako brisati annotatione
-        self.tooltipTekst='time: %s\navg: %0.2f\nstatus: %d'
+        self.tooltipTekst='time: %s\naverage: %0.2f\nmedian: %0.2f\nq05: %0.2f\nq95: %0.2f'
         self.annX=0
         self.annY=0
-        #offset na lijevo i iznad
-        self.annXoffset=-5
-        self.annYoffset=5
         self.annotation=self.axes.annotate(
             self.tooltipTekst,
             xy=(self.annX,self.annY),
-            xytext=(self.annXoffset,self.annYoffset),
-            textcoords='offset points',
-            ha='right',
+            xytext=(0.1,0.7),
+            textcoords='axes fraction',
+            ha='left',
             va='bottom',
             fontsize=5,
-            bbox=dict(boxstyle='round4',fc='cyan',alpha=0.92),
-            arrowprops=dict(arrowstyle='fancy',connectionstyle='arc3,rad=0')
+            bbox=dict(boxstyle='square',fc='cyan',alpha=0.6,zorder=10),
+            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
             )
         self.annotation.set_visible(False)
         #kraj annotation part
@@ -101,16 +97,26 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
             
         if event.mouseevent.button==2:
-            #annotations sa missle mouse gumbom
-            self.annX=event.mouseevent.xdata
-            self.annY=event.mouseevent.ydata
-            #pozicija annotationa na grafu
-            self.annotation.xy=self.annX,self.annY
-            #tekst annotationa
-            self.annotation.set_text(self.tooltipTekst % (str(xtocka),12.5,1024))
-            self.annotation.set_visible(True)
-            self.draw()
-            self.annotation.remove()
+            #annotations sa middle mouse gumbom
+            #set pozicije na koju pointa strelica
+            if self.zadnjiAnnotation==xtocka:
+                self.annotation.remove()
+                self.zadnjiAnnotation=None
+                self.draw()
+            else:
+                self.annX=event.mouseevent.xdata
+                self.annY=event.mouseevent.ydata
+                self.annotation.xy=self.annX,self.annY
+                #tekst annotationa
+                avg=self.data['avg'].loc[xtocka]
+                med=self.data['med'].loc[xtocka]
+                q95=self.data['q95'].loc[xtocka]
+                q05=self.data['q05'].loc[xtocka]
+                self.annotation.set_text(self.tooltipTekst % (xtocka,avg,med,q05,q95))
+                self.annotation.set_visible(True)
+                self.zadnjiAnnotation=xtocka
+                self.draw()
+                self.annotation.remove()
         
         if event.mouseevent.button==3:
             #right click
@@ -126,6 +132,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         data je dictionary pandas datafrejmova koji izbacuje agregator
         """
+        self.data=data
+        self.zadnjiAnnotation=None
         #x granice podataka - timestamp
         self.donjaGranica=data['avg'].index.min()
         self.gornjaGranica=data['avg'].index.max()
@@ -141,23 +149,31 @@ class GrafSatniSrednjaci(MPLCanvas):
                        marker='d',
                        color='blue',
                        lw=1.5,
-                       alpha=0.5,
-                       picker=2)
+                       alpha=0.7,
+                       picker=2,
+                       zorder=3)
         self.axes.scatter(vrijeme,data['min'].values,
                           marker='+',
                           color='black',
-                          lw=0.3)
+                          lw=0.3,
+                          alpha=0.6,
+                          zorder=2)
         self.axes.scatter(vrijeme,data['max'].values,
                           marker='+',
                           color='black',
-                          lw=0.3)
+                          lw=0.3,
+                          alpha=0.6,
+                          zorder=2)
         self.axes.scatter(vrijeme,data['med'].values,
                        marker='_',
                        color='black',
-                       lw=1)
+                       lw=1.5,
+                       alpha=0.6,
+                       zorder=2)
         self.axes.fill_between(vrijeme,data['q05'].values,data['q95'].values,
                                facecolor='green',
-                               alpha=0.4)
+                               alpha=0.4,
+                               zorder=1)
         
         xLabels=self.axes.get_xticklabels()
         for label in xLabels:

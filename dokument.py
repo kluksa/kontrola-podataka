@@ -80,8 +80,11 @@ class Dokument(object):
                 #neka generalna metoda???
                 pass
 
-    def set_agregirani_sve(self,frejmovi):
-        #agregiranje i autovalidacija cijelog dicta frejmova
+    def agregiraj_sve(self,frejmovi):
+        """
+        Agregiranje svih komponenata sa autovalidacijom.
+        Ovu metodu je bitno pozvati nakon ucitavanja novih podataka barem jednom
+        """
         for kljuc in list(frejmovi):
             ag=agregator.Agregator(self.dictUredjaja[kljuc])
                         
@@ -92,7 +95,7 @@ class Dokument(object):
             ag.setDataFrame(self.frejmovi[kljuc])
             self.agregirani[kljuc]=ag.agregirajNiz()
     
-    def set_agregirani_odabir(self,frejmovi,kljuc):
+    def agregiraj_odabir(self,frejmovi,kljuc):
         """
         Agregiranje jedne komponente bez autovalidacije.
         Autovalidacija bi pregazila custom flagove.
@@ -101,7 +104,7 @@ class Dokument(object):
         ag=agregator.Agregator(self.dictUredjaja[kljuc])
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
-
+        
 
 """      
     def set_podaci(self,frejmovi):

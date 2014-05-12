@@ -6,14 +6,17 @@ Created on Apr 21, 2014
 import pandas as pd
 import numpy as np
 
+from PyQt4 import QtGui,QtCore
+
 import citac
 import uredjaj
 import agregator
 import auto_validacija
 
-class Dokument(object):
+class Dokument(QtGui.QWidget):
     '''
     classdocs
+    -sublkasa QWidgeta zbog emit metode
     '''
 
 
@@ -55,15 +58,19 @@ class Dokument(object):
         Ucitava podatke iz csv filea
         sprema sve kljuceve u member listu
         popunjava dict s uredjajima
+        inicijalna agregacija sa autovalidacijom
         """
         self.frejmovi=citac.WlReader.citaj(path)
         self.kljucSviFrejmovi=list(self.frejmovi)
         self.set_uredjaji(self.kljucSviFrejmovi)
+        self.agregiraj_sve(self.kljucSviFrejmovi)
         
+        #emitiraj nove podatke o kljucu
+        self.emit(QtCore.SIGNAL('update_kljuc(PyQt_PyObject)'),self.kljucSviFrejmovi)
         
     def set_uredjaji(self,kljucevi):
         """
-        Popunjavanje dicta s komponenta:uredjaj.
+        Popunjavanje dicta s komponenta:uredjaj. Za sada su svi uredjaji M100C
         
         Manji problem je, nemam blage veze koji je uredjaj za koju komponentu
         i mislim da fali hrpa uredjaja u modulu uredjaj.py
@@ -75,10 +82,11 @@ class Dokument(object):
                 #nesto u ovom stilu...
                 self.dictUredjaja[kljuc]=uredjaj.M100C()
             elif kljuc=='neki drugi':
-                pass
+                #drugi kljuc
+                self.dictUredjaja[kljuc]=uredjaj.M100C()
             else:
                 #neka generalna metoda???
-                pass
+                self.dictUredjaja[kljuc]=uredjaj.M100C()
 
     def agregiraj_sve(self,frejmovi):
         """

@@ -6,22 +6,19 @@ Created on Fri May  9 13:19:45 2014
 """
 
 from PyQt4 import QtGui,QtCore
-from dokument import Dokument
 
-
-class KontrolerSignala(QtGui.QWidget):
+class KontrolerSignala(QtGui.QWidget,view=None,model=None):
     """
     Kontrolni dio aplikacije. Subklasa je QWidgeta zbog metode connect
     """
     def __init__(self,parent=None):
         QtGui.QWidget.__init__(self,parent)
         
-        """
-        ideja je pospajati sve signale i metode sa npr.
-        
-        self.connect(Dokument.QObject,
-                     QtCore.SIGNAL('određeni signal'),
-                     GUI.QObject,
-                     određena metoda tj. slot Qobjekta)
-        """
-        pass
+        #connect:qt akcija ucitavanja - read csv u dokumentu
+        self.connect(view,
+                    QtCore.SIGNAL('request_read_csv(PyQt_PyObject)'),
+                    model.citaj_csv)
+        #connect: trenutni kljucevi - update QComboBox liste u view
+        self.connect(model,
+                    QtCore.SIGNAL('update_kljuc(PyQt_PyObject)'),
+                    view.update_kljuc)

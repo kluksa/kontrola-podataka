@@ -20,10 +20,11 @@ class Dokument(QtGui.QWidget):
     '''
 
 
-    def __init__(self, params):
+    def __init__(self,parent=None):
         '''
         Constructor
         '''
+        QtGui.QWidget.__init__(self,parent)
         #bitni memberi - varijable
         #svi dict bi trebali korisiti isti kljuc - komponentu (npr. SO2-ppb)
         #1. dict datafrejmova koji sadrze sve podatke

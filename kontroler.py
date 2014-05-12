@@ -7,11 +7,11 @@ Created on Fri May  9 13:19:45 2014
 
 from PyQt4 import QtGui,QtCore
 
-class KontrolerSignala(QtGui.QWidget,view=None,model=None):
+class KontrolerSignala(QtGui.QWidget):
     """
     Kontrolni dio aplikacije. Subklasa je QWidgeta zbog metode connect
     """
-    def __init__(self,parent=None):
+    def __init__(self,parent=None,view=None,model=None):
         QtGui.QWidget.__init__(self,parent)
         
         #connect:qt akcija ucitavanja - read csv u dokumentu

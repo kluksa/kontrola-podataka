@@ -82,7 +82,7 @@ class Dokument(QtGui.QWidget):
         for kljuc in kljucevi:
             if kljuc=='S02':
                 #nesto u ovom stilu...
-                self.dictUredjaja[kljuc]=uredjaj.M100C()
+                self.dictUredjaja[kljuc]=uredjaj.M100E()
             elif kljuc=='neki drugi':
                 #drugi kljuc
                 self.dictUredjaja[kljuc]=uredjaj.M100C()
@@ -97,7 +97,7 @@ class Dokument(QtGui.QWidget):
         """
         for kljuc in list(frejmovi):
             ag=agregator.Agregator(self.dictUredjaja[kljuc])
-                        
+            
             validator=auto_validacija.AutoValidacija()
             validator.dodaj_uredjaj(self.dictUredjaja[kljuc])
             validator.validiraj(self.frejmovi[kljuc])
@@ -120,8 +120,11 @@ class Dokument(QtGui.QWidget):
         Set aktivni frame, emitiraj signal za crtanje satnih podataka
         """
         self.aktivniFrame=kanal
-        print(self.agregirani[self.aktivniFrame])
-        #ne emitira dictionary datafrejmova... vec jedan- grafovi ne rade kao spada
+        #test, print datafrejma... graf izgleda cudno
+        x=self.agregirani[self.aktivniFrame]
+        print('average:')
+        print(x['avg'])
+        #dataframe satnih agregata ima hrpu nan vrijednosti...problem s autovalidacijom???
         self.emit(
             QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'),
             self.agregirani[self.aktivniFrame])

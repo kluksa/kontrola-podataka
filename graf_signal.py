@@ -131,7 +131,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             
     def crtaj(self,data):
         """
-        data je dictionary pandas datafrejmova koji izbacuje agregator
+        data je pandas dataframe koji izbacuje agregator
         """
         self.data=data
         self.zadnjiAnnotation=None
@@ -394,13 +394,21 @@ class ApplicationMain(QtGui.QMainWindow):
         median=10+np.random.rand(len(vrijeme))
         q05=12+np.random.rand(len(vrijeme))
         q95=8+np.random.rand(len(vrijeme))
-        ts1=pd.Series(avg,vrijeme)
-        ts2=pd.Series(min,vrijeme)
-        ts3=pd.Series(max,vrijeme)
-        ts4=pd.Series(median,vrijeme)
-        ts5=pd.Series(q05,vrijeme)
-        ts6=pd.Series(q95,vrijeme)
-        data={'avg':ts1,'min':ts2,'max':ts3,'med':ts4,'q05':ts5,'q95':ts6}
+        status=np.random.rand(len(vrijeme))
+        std=np.random.rand(len(vrijeme))
+        count=np.random.rand(len(vrijeme))
+        #testni data frame za satni graf
+        data=pd.DataFrame(
+            {'avg':avg,
+            'min':min,
+            'max':max,
+            'med':median,
+            'q05':q05,
+            'q95':q95,
+            'status':status,
+            'std':std,
+            'count':count},
+            index=vrijeme)
         
         #test podatci za minutni graf
         time=pd.date_range('2014-05-15 12:01:00',periods=60,freq='Min')

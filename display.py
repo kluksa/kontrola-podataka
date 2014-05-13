@@ -47,29 +47,31 @@ class GlavniProzor(QtGui.QMainWindow):
         #layout grafova
         self.graf1=QtGui.QWidget()
         self.graf2=QtGui.QWidget()
-        canvasSatni=graf_signal.GrafSatniSrednjaci(self.graf1,
+        self.canvasSatni=graf_signal.GrafSatniSrednjaci(self.graf1,
                                                    width=4,
                                                    height=3,
                                                    dpi=150)
-        canvasMinutni=graf_signal.GrafMinutniPodaci(self.graf2,
+        self.canvasMinutni=graf_signal.GrafMinutniPodaci(self.graf2,
                                                     width=4,
                                                     height=3,
                                                     dpi=150)
         grafLayout=QtGui.QVBoxLayout()
-        grafLayout.addWidget(canvasSatni)
-        grafLayout.addWidget(canvasMinutni)
+        grafLayout.addWidget(self.canvasSatni)
+        grafLayout.addWidget(self.canvasMinutni)
 
         #layout kontrolnih elemenata (QComboBox, QPushButton, QLabel ... )
         selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
         self.selektorKanala=QtGui.QComboBox()
         selektorSataLabel=QtGui.QLabel('Izbor sata')
         self.selektorSata=QtGui.QComboBox()
+        self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ')
         
         IOLayout=QtGui.QVBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
         IOLayout.addWidget(self.selektorKanala)
         IOLayout.addWidget(selektorSataLabel)
         IOLayout.addWidget(self.selektorSata)
+        IOLayout.addWidget(self.gumbCrtajSatni)
 
         #zavrsni layout
         final=QtGui.QHBoxLayout(self.mainWidget)
@@ -86,12 +88,18 @@ class GlavniProzor(QtGui.QMainWindow):
         
         
 ###############################################################################
+    def get_kanal(self):
+        """
+        Emitiraj signal sa trenutno odabranim kanalom
+        """
+        kanal=self.selektorKanala.currentText()
+        self.emit(QtCore.SIGNAL('kanal_odabran(PyQt_PyObject)'),kanal)
+###############################################################################
     def signal_request_read_csv(self):
         """
         Shows file dialog, forwards the choice by emitting QtCore custom signal
         """
         filename=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
-        filename=str(filename)
         self.emit(QtCore.SIGNAL('request_read_csv(PyQt_PyObject)'),filename)
 ###############################################################################
     def update_kljuc(self,listaKljuceva):

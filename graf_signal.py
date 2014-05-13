@@ -44,6 +44,7 @@ class MPLCanvas(FigureCanvas):
 class GrafSatniSrednjaci(MPLCanvas):
     """
     subklasa MPLCanvas, ona definira detalje crtanja isl.
+    ulaz je jedan pandas dataframe a ne dictiorary...treba prepraviti klasu!!!
     SIGNALI:
     odabirSatni(PyQt_PyObject)
         -odabir jednog satnog agregata, lijevi klik

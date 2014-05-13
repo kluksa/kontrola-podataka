@@ -53,7 +53,7 @@ class Dokument(QtGui.QWidget):
         -satni graf -> self.agregirani['self.aktivniFrame']
         -minutni graf -> self.frejmovi['self.aktivniFrame'].loc[min:max,u'koncentracija']
         '''
-        
+###############################################################################        
     def citaj_csv(self,path):
         """
         Ucitava podatke iz csv filea
@@ -61,14 +61,15 @@ class Dokument(QtGui.QWidget):
         popunjava dict s uredjajima
         inicijalna agregacija sa autovalidacijom
         """
-        self.frejmovi=citac.WlReader.citaj(path)
+        reader=citac.WlReader()
+        self.frejmovi=reader.citaj(path)
         self.kljucSviFrejmovi=list(self.frejmovi)
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
         #emitiraj nove podatke o kljucu
         self.emit(QtCore.SIGNAL('update_kljuc(PyQt_PyObject)'),self.kljucSviFrejmovi)
-        
+###############################################################################
     def set_uredjaji(self,kljucevi):
         """
         Popunjavanje dicta s komponenta:uredjaj. Za sada su svi uredjaji M100C
@@ -88,7 +89,7 @@ class Dokument(QtGui.QWidget):
             else:
                 #neka generalna metoda???
                 self.dictUredjaja[kljuc]=uredjaj.M100C()
-
+###############################################################################
     def agregiraj_sve(self,frejmovi):
         """
         Agregiranje svih komponenata sa autovalidacijom.
@@ -103,7 +104,7 @@ class Dokument(QtGui.QWidget):
             
             ag.setDataFrame(self.frejmovi[kljuc])
             self.agregirani[kljuc]=ag.agregirajNiz()
-    
+###############################################################################    
     def agregiraj_odabir(self,frejmovi,kljuc):
         """
         Agregiranje jedne komponente bez autovalidacije.
@@ -113,21 +114,20 @@ class Dokument(QtGui.QWidget):
         ag=agregator.Agregator(self.dictUredjaja[kljuc])
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
+###############################################################################        
+    def set_kanal(self,kanal):
+        """
+        Set aktivni frame, emitiraj signal za crtanje satnih podataka
+        """
+        self.aktivniFrame=kanal
+        print(self.agregirani[self.aktivniFrame])
+        #ne emitira dictionary datafrejmova... vec jedan- grafovi ne rade kao spada
+        self.emit(
+            QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'),
+            self.agregirani[self.aktivniFrame])
+###############################################################################
         
-
-"""      
-    def set_podaci(self,frejmovi):
-        # autovalidacija i agregiranje
-        for i in list(frejmovi):
-            # agregator mora biti unutar petlje ili ga treba inicijalizirati za 
-            # svaku komponentu unutar petlje jer nacelno nije isti validator za 
-            # svaku komponentu.
-            # Ako je unutar petlje onda ne treba biti member varijable, a ako postoji
-            # dobar razlog da bude member (a postoji zbog ragregacije) onda mora biti 
-            # mapa (komponenta, agregator)
-            ag = agregator.Agregator(listaUredjaja)  # izbaciti izvan petlje?
-            autoValidator.validiraj(self.data[i])                
-            ag.setDataFrame(self.data[i])
-            self.agregirani[i] = ag.agregirajNiz()
-            self.nizNizova[i] = ag.nizNiz()         
-"""            
+        
+        
+        
+        

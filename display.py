@@ -64,7 +64,7 @@ class GlavniProzor(QtGui.QMainWindow):
         self.selektorKanala=QtGui.QComboBox()
         selektorSataLabel=QtGui.QLabel('Izbor sata')
         self.selektorSata=QtGui.QComboBox()
-        self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ')
+        self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ SATNI')
         
         IOLayout=QtGui.QVBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
@@ -85,8 +85,14 @@ class GlavniProzor(QtGui.QMainWindow):
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.KontrolerSignala(view=self,model=self.doc)
         
-        
-        
+###############################################################################
+    def set_selektorSata(self,lista):
+        """
+        Punjenje comboboxasa satnim indeksima. Drugi nacin za crtanje minutnog
+        grafa.
+        """
+        self.selektorSata.clear()
+        self.selektorSata.addItems(lista)
 ###############################################################################
     def get_kanal(self):
         """

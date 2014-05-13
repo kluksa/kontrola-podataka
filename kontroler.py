@@ -45,7 +45,21 @@ class KontrolerSignala(QtGui.QWidget):
         self.connect(model,
                      QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'),
                      view.canvasSatni.crtaj)
+                     
+        #connect6: model - popis satno agregiranih podataka -> view update combobox
+        self.connect(model,
+                     QtCore.SIGNAL('popis_satnih(PyQt_PyObject)'),
+                     view.set_selektorSata)
 
+        #connect7: view satni graf ljevi klik -> model priprema_crtanja_minutni
+        self.connect(view.canvasSatni,
+                     QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),
+                     model.priprema_crtanja_minutni)
+                     
+        #connect8: priprema crtanja minutnih -> crtanje na minutnom canvasu
+        self.connect(model,
+                     QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'),
+                     view.canvasMinutni.crtaj)
+                     
         
-        
-
+    

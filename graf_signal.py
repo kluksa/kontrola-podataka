@@ -310,36 +310,39 @@ class GrafMinutniPodaci(MPLCanvas):
         xFlagOk=[]
         xFlagNo=[]
         
-        for i in linija.index:
-            if i.minute!=0:
-                xMinute.append(i.minute)
-            else:
-                xMinute.append(60)
+        if len(linija)!=0:
+            for i in linija.index:
+                if i.minute!=0:
+                    xMinute.append(i.minute)
+                else:
+                    xMinute.append(60)
         
-        for i in tockeOk.index:
-            if i.minute!=0:
-                xFlagOk.append(i.minute)
-            else:
-                xFlagOk.append(60)
+        if len(tockeOk)!=0:
+            for i in tockeOk.index:
+                if i.minute!=0:
+                    xFlagOk.append(i.minute)
+                else:
+                    xFlagOk.append(60)
         
-        for i in tockeNo.index:
-            if i.minute!=0:
-                xFlagNo.append(i.minute)
-            else:
-                xFlagNo.append(60)
+        if len(tockeNo)!=0:
+            for i in tockeNo.index:
+                if i.minute!=0:
+                    xFlagNo.append(i.minute)
+                else:
+                    xFlagNo.append(60)
         
-        if len(xMinute)!=0:
+        if len(xMinute)==len(linija.values):
             self.axes.plot(xMinute,linija.values,
                            color='black')
-                       
-        if len(xFlagOk)!=0:
+        
+        if len(xFlagOk)==len(tockeOk.values):
             self.axes.scatter(xFlagOk,tockeOk.values,
                               color='green',
                               marker='o',
                               picker=2,
                               alpha=0.4)
         
-        if len(xFlagNo)!=0:
+        if len(xFlagNo)==len(tockeNo.values):
             self.axes.scatter(xFlagNo,tockeNo.values,
                               color='red',
                               marker='o',

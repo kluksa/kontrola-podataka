@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 
 from PyQt4 import QtGui,QtCore
+from datetime import timedelta
 
 import citac
 import uredjaj
@@ -120,15 +121,48 @@ class Dokument(QtGui.QWidget):
         Set aktivni frame, emitiraj signal za crtanje satnih podataka
         """
         self.aktivniFrame=kanal
+        listaSatnih=[]
+        for i in list(range(len(self.agregirani[self.aktivniFrame].index))):
+            listaSatnih.append(str(self.agregirani[self.aktivniFrame].index[i]))
+        
+        self.emit(QtCore.SIGNAL('popis_satnih(PyQt_PyObject)'),listaSatnih)
+        
+        """
         #test, print datafrejma... graf izgleda cudno
         x=self.agregirani[self.aktivniFrame]
         print('average:')
         print(x['avg'])
+        print('minutni podatci:')
+        print(self.frejmovi[self.aktivniFrame].iloc[0:20,:])
         #dataframe satnih agregata ima hrpu nan vrijednosti...problem s autovalidacijom???
+        """
+        
         self.emit(
             QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'),
             self.agregirani[self.aktivniFrame])
 ###############################################################################
+    def priprema_crtanja_minutni(self,vrijeme):
+        """
+        Nađi vremenske granice podataka,
+        prosljedi listu datafrejmova za crtanje emitom
+        """        
+        maxTime=vrijeme[0]
+        minTime=maxTime-timedelta(minutes=59)
+        maxTime=str(maxTime)
+        minTime=str(minTime)
+        
+        svi=self.frejmovi[self.aktivniFrame].loc[minTime:maxTime,:]
+        sviOk=svi[svi.loc[:,u'flag']>=0]
+        sviNotOk=svi[svi.loc[:,u'flag']<0]
+        
+        #treba nam samo podatak o koncentraciji
+        svi=svi.loc[:,u'koncentracija']
+        sviOk=sviOk.loc[:,u'koncentracija']
+        sviNotOk=sviNotOk.loc[:,u'koncentracija']
+        
+        lista=[svi,sviOk,sviNotOk]
+        self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'),lista)
+
         
         
         

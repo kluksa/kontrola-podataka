@@ -62,16 +62,20 @@ class GlavniProzor(QtGui.QMainWindow):
         #layout kontrolnih elemenata (QComboBox, QPushButton, QLabel ... )
         selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
         self.selektorKanala=QtGui.QComboBox()
+        self.selektorKanala.setMinimumContentsLength(20)
         selektorSataLabel=QtGui.QLabel('Izbor sata')
         self.selektorSata=QtGui.QComboBox()
+        self.selektorSata.setMinimumContentsLength(20)
         self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ SATNI')
+        self.gumbCrtajMinutni=QtGui.QPushButton('CRTAJ MINUTNI')
         
         IOLayout=QtGui.QVBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
         IOLayout.addWidget(self.selektorKanala)
+        IOLayout.addWidget(self.gumbCrtajSatni)
         IOLayout.addWidget(selektorSataLabel)
         IOLayout.addWidget(self.selektorSata)
-        IOLayout.addWidget(self.gumbCrtajSatni)
+        IOLayout.addWidget(self.gumbCrtajMinutni)
 
         #zavrsni layout
         final=QtGui.QHBoxLayout(self.mainWidget)
@@ -84,6 +88,24 @@ class GlavniProzor(QtGui.QMainWindow):
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.KontrolerSignala(view=self,model=self.doc)
+
+
+###############################################################################
+    def set_odabrani_sat(self,sat):
+        """
+        Postavi izbor comboboxa sa satnim podatcima na određenu vrijednost
+        """
+        sat=str(sat)
+        indeks=self.selektorSata.findText(sat)
+        self.selektorSata.setCurrentIndex(indeks)
+
+###############################################################################
+    def get_odabrani_sat(self):
+        """
+        Emitiraj signal sa treutno odabranim satom
+        """
+        sat=self.selektorSata.currentText()
+        self.emit(QtCore.SIGNAL('set_odabrani_sat(PyQt_PyObject)'),sat)
         
 ###############################################################################
     def set_selektorSata(self,lista):

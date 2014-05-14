@@ -145,8 +145,19 @@ class Dokument(QtGui.QWidget):
         """
         Nađi vremenske granice podataka,
         prosljedi listu datafrejmova za crtanje emitom
-        """        
-        maxTime=vrijeme[0]
+        """
+        #klik s grafa vraca listu timestampova, value comboboxa je string
+        if type(vrijeme)==list:
+            vrijeme=vrijeme[0]
+        if type(vrijeme)==str:
+            vrijeme=pd.to_datetime(vrijeme)
+        
+        self.odabraniSatniPodatak=vrijeme
+        #emit update comboboxa
+        self.emit(QtCore.SIGNAL('set_satni_combobox(PyQt_PyObject)'),
+                  str(vrijeme))
+                  
+        maxTime=vrijeme
         minTime=maxTime-timedelta(minutes=59)
         maxTime=str(maxTime)
         minTime=str(minTime)
@@ -163,8 +174,11 @@ class Dokument(QtGui.QWidget):
         lista=[svi,sviOk,sviNotOk]
         self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'),lista)
 
+###############################################################################
+    def set_odabrani_sat(self,vrijeme):
+        self.odabraniSatniPodatak=vrijeme
+        self.emit(QtCore.SIGNAL('set_satni_combobox(PyQt_PyObject)'),
+                  str(vrijeme))
         
-        
-        
-        
-        
+        #kreni crtati graf
+        self.priprema_crtanja_minutni(self.odabraniSatniPodatak)

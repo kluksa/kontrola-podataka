@@ -61,5 +61,21 @@ class KontrolerSignala(QtGui.QWidget):
                      QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'),
                      view.canvasMinutni.crtaj)
                      
-        
+        #connect9: view crtaj minutni gumb -> view get sat
+        self.connect(view.gumbCrtajMinutni,
+                     QtCore.SIGNAL('clicked()'),
+                     view.get_odabrani_sat)
+                     
+        #connect10: view get sat -> model set sat i crtaj graf
+        self.connect(view,
+                     QtCore.SIGNAL('set_odabrani_sat(PyQt_PyObject)'),
+                     model.set_odabrani_sat)
+                     
+        #connect11: model -> set satni combobox preko set_odabrani_sat +crtanje
+        #preko model.priprema_crtanja_minutni
+        self.connect(model,
+                     QtCore.SIGNAL('set_satni_combobox(PyQt_PyObject)'),
+                     view.set_odabrani_sat)
+                                      
+                     
     

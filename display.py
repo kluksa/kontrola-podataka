@@ -91,51 +91,79 @@ class GlavniProzor(QtGui.QMainWindow):
 
 
 ###############################################################################
-    def set_odabrani_sat(self,sat):
+    """
+    Dio osnovnih funkcija za mediator (get/set...)
+    """
+    def get_kanali(self):
         """
-        Postavi izbor comboboxa sa satnim podatcima na određenu vrijednost
+        Emitira listu stringova (sve elemente comboboxa sa kanalima)
         """
-        sat=str(sat)
-        indeks=self.selektorSata.findText(sat)
-        self.selektorSata.setCurrentIndex(indeks)
-
-###############################################################################
-    def get_odabrani_sat(self):
-        """
-        Emitiraj signal sa treutno odabranim satom
-        """
-        sat=self.selektorSata.currentText()
-        self.emit(QtCore.SIGNAL('set_odabrani_sat(PyQt_PyObject)'),sat)
+        rezultat=[]
+        for index in list(range(self.selektorKanala.count())):
+            rezultat.append(self.selektorKanala.itemText(index))
+        self.emit(QtCore.SIGNAL('gui_get_kanali(PyQt_PyObject)'),rezultat)
         
-###############################################################################
-    def set_selektorSata(self,lista):
+    def set_kanali(self,kanali):
         """
-        Punjenje comboboxasa satnim indeksima. Drugi nacin za crtanje minutnog
-        grafa.
-        """
-        self.selektorSata.clear()
-        self.selektorSata.addItems(lista)
-###############################################################################
-    def get_kanal(self):
-        """
-        Emitiraj signal sa trenutno odabranim kanalom
-        """
-        kanal=self.selektorKanala.currentText()
-        self.emit(QtCore.SIGNAL('kanal_odabran(PyQt_PyObject)'),kanal)
-###############################################################################
-    def signal_request_read_csv(self):
-        """
-        Shows file dialog, forwards the choice by emitting QtCore custom signal
-        """
-        filename=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
-        self.emit(QtCore.SIGNAL('request_read_csv(PyQt_PyObject)'),filename)
-###############################################################################
-    def update_kljuc(self,listaKljuceva):
-        """
-        Update kljuceva, tj. update elemenata QComboBox-a (selektorKanala)
+        Cleara combobox sa kanalima te postavlja nove kanale
         """
         self.selektorKanala.clear()
-        self.selektorKanala.addItems(listaKljuceva)
+        self.selektorKanala.addItems(kanali)
+        
+    def get_sati(self):
+        """
+        Emitira listu stringova (sve elemente comboboxa sa vremenima satnih
+        agregata)
+        """
+        rezultat=[]
+        for index in list(range(self.selektorSata.count())):
+            rezultat.append(self.selektorSata.itemText(index))
+        self.emit(QtCore.SIGNAL('gui_get_sati(PyQt_PyObject)'),rezultat)
+    
+    def set_sati(self,sati):
+        """
+        Cleara combobox sa vremenima satnih agregata te postavlja nove
+        """
+        self.selektorSata.clear()
+        self.selektorSata.addItems(sati)
+        
+    def get_kanal(self):
+        """
+        Emitira trenutno aktivni kanal u comboboxu s kanalima (string)
+        """
+        self.emit(QtCore.SIGNAL('gui_get_kanal(PyQt_PyObject)'),
+                  self.selektorKanala.currentText())
+    
+    def set_kanal(self,kanal):
+        """
+        Postavlja kanal kao trenutno aktivni u comboboxu s kanalima
+        """
+        index=self.selektorSata.findText(kanal)
+        self.selektorSata.setCurrentIndex(index)
+    
+    def get_sat(self):
+        """
+        Emitira trenutno aktivni sat u comboboxu sa vremenima agregata
+        """
+        self.emit(QtCore.SIGNAL('gui_get_sat(PyQt_PyObject)'),
+                  self.selektorSata.currentText())
+    
+    def set_sat(self,vrijeme):
+        """
+        Postavlja sat kao trenutno aktivni u comboboxu sa vremenima agregata
+        """
+        index=self.selektorSata.findText(vrijeme)
+        self.selektorSata.setCurrentIndex(index)
+        
+    def request_read_csv(self):
+        """
+        Akcija za read novi csv file, otvara file dialog i emitira path do
+        csv filea
+        """
+        filepath=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
+        self.emit(QtCore.SIGNAL('gui_request_read_csv(PyQt_PyObject)'),
+                  filepath)
+
 ###############################################################################
     def create_menu(self):
         """

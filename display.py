@@ -89,6 +89,9 @@ class GlavniProzor(QtGui.QMainWindow):
         self.connect(self.gumbCrtajSatni,
                      QtCore.SIGNAL('clicked()'),
                      self.gui_crtaj_satni)
+        self.connect(self.gumbCrtajMinutni,
+                     QtCore.SIGNAL('clicked()'),
+                     self.gui_crtaj_minutni)
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
@@ -176,13 +179,28 @@ class GlavniProzor(QtGui.QMainWindow):
         
     def gui_crtaj_satni(self):
         """
-        request za crtanje satnih podataka.
+        Zahtjev za crtanje satnih podataka (gumb)
         """
         kanal=self.selektorKanala.currentText()
         self.emit(QtCore.SIGNAL('gui_request_crtaj_satni(PyQt_PyObject)'),
                   kanal)
         
-        
+    def gui_crtaj_minutni(self):
+        """
+        Zahtjev za crtanje minutnih podataka (gumb)
+        """
+        sat=self.selektorSata.currentText()
+        self.emit(QtCore.SIGNAL('gui_request_crtaj_minutni(PyQt_PyObject)'),
+                  sat)
+
+
+
+
+
+
+
+
+
 ###############################################################################
     def create_menu(self):
         """

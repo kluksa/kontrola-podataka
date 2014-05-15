@@ -38,10 +38,6 @@ class Dokument(QtGui.QWidget):
         self.odabraniSatniPodatak=None
         #5. odabrani minutni podatak (sa minutnog grafa)
         self.odabraniMinutniPodatak=None
-        #6. status satnog grafa? - da li je nacrtan
-        self.grafStatusSatni=False
-        #7. status minutnog grafa - da li je nacrtan
-        self.grafStatusMinutni=False
         #8. popis svih ključeva mape frejmovi
         self.kljucSviFrejmovi=[]
         #9. dict uredjaja za agregator?
@@ -118,14 +114,40 @@ class Dokument(QtGui.QWidget):
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
 ###############################################################################
-###############################################################################
-###############################################################################
     def doc_pripremi_satne_podatke(self,kanal):
         """
-        Set aktivni frame, emitiraj signal sa satno agregiranim podatcima
+        -set aktivni frame
+        -emitiraj signal sa satno agregiranim podatcima
+        -emitiraj listu satnih vrijednosti (stringova)
         """
         self.aktivniFrame=kanal
         data=self.agregirani[self.aktivniFrame]
         self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),
                   data)
+        sati=[]
+        for vrijeme in self.agregirani[self.aktivniFrame].index:
+            vrijeme=str(vrijeme)
+            sati.append(vrijeme)
+        self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
 ###############################################################################
+    def doc_pripremi_minutne_podatke(self,sat):
+        #sat je string
+        self.odabraniSatniPodatak=sat
+        #racunanje gornje i donje granice, castanje u string nakon racunice
+        up=pd.to_datetime(sat)
+        down=up-timedelta(minutes=59)
+        up=str(up)
+        down=str(down)
+        
+        #napravi listu data[all,flag>=0,flag<0]
+        df=self.frejmovi[self.aktivniFrame]
+        df=df.loc[down:up,:]
+        dfOk=df[df.loc[:,u'flag']>=0]
+        dfNo=df[df.loc[:,u'flag']<0]
+        data=[df,dfOk,dfNo]
+        
+        #emit data prema kontroleru
+        self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
+        #emit self.odabraniSatniPodatak prema kontroleru
+        self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
+        

@@ -29,7 +29,6 @@ class Mediator(QtGui.QWidget):
         self.trenutnaListaSati=None
         self.lastKanal=None
         self.lastSat=None
-        
         """
         Connections
         """
@@ -81,7 +80,47 @@ class Mediator(QtGui.QWidget):
                      QtCore.SIGNAL('med_draw_satni(PyQt_PyObject)'),
                      gui.canvasSatni.crtaj)
                      
-
+        self.connect(model,
+                     QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),
+                     self.set_trenutnaListaSati)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_update_sati(PyQt_PyObject)'),
+                     gui.set_sati)
+        
+        #crtaj minutni procedure
+        #gumb
+        self.connect(gui,
+                     QtCore.SIGNAL('gui_request_crtaj_minutni(PyQt_PyObject)'),
+                     self.med_request_crtaj_minutni)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_ewquest_draw_minutni(PyQt_PyObject)'),
+                     model.doc_pripremi_minutne_podatke)
+        
+        self.connect(model,
+                     QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),
+                     self.med_naredi_crtaj_minutni)
+        
+        self.connect(self,
+                     QtCore.SIGNAL('med_draw_minutni(PyQt_PyObject)'),
+                     gui.canvasMinutni.crtaj)
+                     
+        self.connect(model,
+                     QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),
+                     self.set_lastSat)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_update_sat(PyQt_PyObject)'),
+                     gui.set_sat)
+        
+        #crtaj minutni procedure
+        #event na satnom canvasu ljevi klik
+        self.connect(gui.canvasSatni,
+                     QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),
+                     self.med_request_crtaj_minutni)
+        
+        
 ###############################################################################
 
     def med_read_csv(self,filepath):
@@ -100,6 +139,24 @@ class Mediator(QtGui.QWidget):
         
     def med_naredi_crtaj_satni(self,dataframe):
         self.emit(QtCore.SIGNAL('med_draw_satni(PyQt_PyObject)'),dataframe)
+        
+    def med_request_crtaj_minutni(self,sat):
+        """
+        Na ovu metodu se spaja i gumb (sat je string) i event lijevi klik misa
+        na grafu (sat je lista timestampova). U slucaju da je klik misem,
+        prilagodimo podatke da vraća string prvog indeksa (adapter).
+        """
+        if type(sat)==list:
+            sat=str(sat[0])
+        
+        self.lastSat=sat
+        self.emit(QtCore.SIGNAL('med_ewquest_draw_minutni(PyQt_PyObject)'),
+                  sat)
+                  
+    def med_naredi_crtaj_minutni(self,data):
+        self.emit(QtCore.SIGNAL('med_draw_minutni(PyQt_PyObject)'),data)
+        
+        
         
 ###############################################################################
     def set_lastLoadedFile(self,filepath):

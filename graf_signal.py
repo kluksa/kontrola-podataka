@@ -303,9 +303,9 @@ class GrafMinutniPodaci(MPLCanvas):
         self.axes.clear()
         title='Minutni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
         self.axes.set_title(title,fontsize=4)
-        linija=data[0]
-        tockeOk=data[1]
-        tockeNo=data[2]
+        linija=data[0].loc[:,u'koncentracija']
+        tockeOk=data[1].loc[:,u'koncentracija']
+        tockeNo=data[2].loc[:,u'koncentracija']
         xMinute=[]
         xFlagOk=[]
         xFlagNo=[]
@@ -423,11 +423,9 @@ class ApplicationMain(QtGui.QMainWindow):
         
         #slapanje datafrejmova za graf
         df=pd.DataFrame(dic,index=time)
-        dfKonc=df.loc[:,u'koncentracija']
+        dfKonc=df
         dfOk=df[df.loc[:,u'flag']>=0]
-        dfOk=dfOk.loc[:,u'koncentracija']
         dfNo=df[df.loc[:,u'flag']<0]
-        dfNo=dfNo.loc[:,u'koncentracija']
         mData=[dfKonc,dfOk,dfNo]
         
         #naredba za plot

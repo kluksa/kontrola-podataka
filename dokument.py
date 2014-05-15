@@ -176,5 +176,30 @@ class Dokument(QtGui.QWidget):
         message='Reaggregating done, displaying data'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
                   
+###############################################################################
+    def promjeni_flag_minutni_span(self,dic):
+        """
+        Promjenia minutnog flaga u rasponu
+        """
+        timeMin=str(dic['min'])
+        timeMax=str(dic['max'])
+        flag=dic['flag']
+        kanal=dic['kanal']
+        sat=str(dic['sat'])
+        self.aktivniFrame=kanal
+        self.odabraniSatniPodatak=sat
+        
+        #promjeni flag
+        self.frejmovi[self.aktivniFrame].loc[timeMin:timeMax,u'flag']=flag
+        
+        #reagregiraj aktivni frame
+        self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)        
+        
+        #emitiraj zahtjev za ponovnim crtanjem satnog i minutnog grafa
+        data=[kanal,sat]
+        self.emit(QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
+                  data)
+        message='Reaggregating done, displaying data'
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 
-    
+###############################################################################

@@ -11,6 +11,8 @@ status:
 """
 
 from PyQt4 import QtGui,QtCore
+import pandas as pd
+from datetime import timedelta
 
 class Mediator(QtGui.QWidget):
     """
@@ -133,6 +135,20 @@ class Mediator(QtGui.QWidget):
         self.connect(model,
                      QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
                      self.crtaj_grafove)
+                     
+        self.connect(gui.canvasMinutni,
+                     QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),
+                     self.med_request_flag_minutni_span)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_request_flag_minutni_span(PyQt_PyObject)'),
+                     model.promjeni_flag_minutni_span)
+                     
+        self.connect(gui.canvasSatni,
+                     QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),
+                     self.med_request_flag_satni)
+                     
+        
         
 ###############################################################################
 
@@ -175,9 +191,20 @@ class Mediator(QtGui.QWidget):
         -desni klik misa na satnom grafu
         
         Ovaj zahtjev je povezan s promjenom minutnog flaga, tj. promjena je
-        na minutnom intervalu [sat-59min:sat]
+        na minutnom intervalu [sat-59min:sat] - adapter
         """
-        pass
+        sat=lista[0]
+        flag=lista[1]
+        #ovo je u biti slucaj sa spanom, samo moramo zadati donju granicu
+        sat=pd.to_datetime(sat)
+        satMin=sat-timedelta(minutes=59)
+        #castanje nazad u string
+        satMax=str(sat)
+        satMin=str(satMin)
+        data=[satMin,satMax,flag]
+        
+        #poziv na mjenjanje flaga spanu
+        self.med_request_flag_minutni_span(data)
     
     def med_request_flag_minutni(self,lista):
         """
@@ -194,6 +221,30 @@ class Mediator(QtGui.QWidget):
                   dic)
         message='Reaggregating'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+        
+    def med_request_flag_minutni_span(self,lista):
+        """
+        Zahtjev od gui za promjenu flaga, lista=[min,max,flag]
+        -lijevi klik misa (moze i click and drag)
+        
+        Promjena flaga na vise minutnih podataka u rasponu
+        """
+        down=lista[0]
+        up=lista[1]
+        flag=lista[2]
+        if down==up:
+            #slucaj kada su granice raspona iste, reducira se na desni klik
+            self.med_request_flag_minutni(self,[down,flag])
+        
+        dic={'min':down,
+             'max':up,
+             'flag':flag,
+             'kanal':self.lastKanal,
+             'sat':self.lastSat}
+        
+        self.emit(QtCore.SIGNAL('med_request_flag_minutni_span(PyQt_PyObject)'),
+                  dic)
+            
     
     def crtaj_grafove(self,lista):
         """

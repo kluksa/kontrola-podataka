@@ -151,3 +151,30 @@ class Dokument(QtGui.QWidget):
         #emit self.odabraniSatniPodatak prema kontroleru
         self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
         
+###############################################################################
+    def promjeni_flag_minutni(self,dic):
+        """
+        Promjena minutnog flaga
+        """
+        time=str(dic['time'])
+        flag=dic['flag']
+        kanal=dic['kanal']
+        sat=str(dic['sat'])
+        self.aktivniFrame=kanal
+        self.odabraniSatniPodatak=sat
+
+        #promjeni flag
+        self.frejmovi[self.aktivniFrame].loc[time,u'flag']=flag
+        
+        #reagregiraj aktivni frame
+        self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)
+        
+        #emitiraj zahtjev za ponovnim crtanjem satnog i minutnog grafa
+        data=[kanal,sat]
+        self.emit(QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
+                  data)
+        message='Reaggregating done, displaying data'
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+                  
+
+    

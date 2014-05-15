@@ -115,11 +115,24 @@ class Mediator(QtGui.QWidget):
                      gui.set_sat)
         
         #crtaj minutni procedure
-        #event na satnom canvasu ljevi klik
+        #event na satnom canvasu ljevi klik - dalje se veze na connecte gumba
         self.connect(gui.canvasSatni,
                      QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),
                      self.med_request_crtaj_minutni)
         
+        
+        #change flag minutni procedure
+        self.connect(gui.canvasMinutni,
+                     QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),
+                     self.med_request_flag_minutni)
+        
+        self.connect(self,
+                     QtCore.SIGNAL('med_request_flag_minutni(PyQt_PyObject)'),
+                     model.promjeni_flag_minutni)
+                     
+        self.connect(model,
+                     QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
+                     self.crtaj_grafove)
         
 ###############################################################################
 
@@ -156,8 +169,42 @@ class Mediator(QtGui.QWidget):
     def med_naredi_crtaj_minutni(self,data):
         self.emit(QtCore.SIGNAL('med_draw_minutni(PyQt_PyObject)'),data)
         
+    def med_request_flag_satni(self,lista):
+        """
+        Zahtjev od gui za promjenu flaga, lista=[sat,novi flag]
+        -desni klik misa na satnom grafu
         
+        Ovaj zahtjev je povezan s promjenom minutnog flaga, tj. promjena je
+        na minutnom intervalu [sat-59min:sat]
+        """
+        pass
+    
+    def med_request_flag_minutni(self,lista):
+        """
+        Zahtjev od gui za promjenu flaga, lista=[sat,flag]
+        -desni klik misa na minutnom grafu
         
+        Promjena flaga za jedan minutni podatak
+        """
+        dic={'time':lista[0],
+             'flag':lista[1],
+             'kanal':self.lastKanal,
+             'sat':self.lastSat}
+        self.emit(QtCore.SIGNAL('med_request_flag_minutni(PyQt_PyObject)'),
+                  dic)
+        message='Reaggregating'
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+    
+    def crtaj_grafove(self,lista):
+        """
+        Ova fuckija služi za ponovo crtanje oba grafa nakon reagregiranja
+        """
+        self.lastKanal=lista[0]
+        self.lastSat=lista[1]
+        #naredbe za crtanje
+        self.med_request_crtaj_satni(self.lastKanal)
+        self.med_request_crtaj_minutni(self.lastSat)
+    
 ###############################################################################
     def set_lastLoadedFile(self,filepath):
         self.lastLoadedFile=filepath

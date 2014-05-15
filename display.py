@@ -30,7 +30,7 @@ class GlavniProzor(QtGui.QMainWindow):
         Inicijalizacija kontrolnog sucelja (menu,toolbar,status bar)
         """
         #napravi status bar
-        self.statusBar().showMessage('Poruka na status baru.')
+        self.statusBar().showMessage('Ready')
         #napravi menu bar, napuni ga sa naredbama
         self.create_menu()
         #napravi toolbar, napuni ga sa naredbama
@@ -85,9 +85,13 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         Kontrolni dio
         """
+        #lokalni connect dijelova gui
+        self.connect(self.gumbCrtajSatni,
+                     QtCore.SIGNAL('clicked()'),
+                     self.gui_crtaj_satni)
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
-        self.kontrola=kontroler.KontrolerSignala(view=self,model=self.doc)
+        self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
 
 
 ###############################################################################
@@ -155,7 +159,7 @@ class GlavniProzor(QtGui.QMainWindow):
         index=self.selektorSata.findText(vrijeme)
         self.selektorSata.setCurrentIndex(index)
         
-    def request_read_csv(self):
+    def gui_request_read_csv(self):
         """
         Akcija za read novi csv file, otvara file dialog i emitira path do
         csv filea
@@ -163,7 +167,22 @@ class GlavniProzor(QtGui.QMainWindow):
         filepath=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
         self.emit(QtCore.SIGNAL('gui_request_read_csv(PyQt_PyObject)'),
                   filepath)
-
+                  
+    def set_status_bar(self,tekst):
+        """
+        Update statusbara
+        """
+        self.statusBar().showMessage(tekst)
+        
+    def gui_crtaj_satni(self):
+        """
+        request za crtanje satnih podataka.
+        """
+        kanal=self.selektorKanala.currentText()
+        self.emit(QtCore.SIGNAL('gui_request_crtaj_satni(PyQt_PyObject)'),
+                  kanal)
+        
+        
 ###############################################################################
     def create_menu(self):
         """
@@ -177,7 +196,7 @@ class GlavniProzor(QtGui.QMainWindow):
                                             tooltip='Exit the application')
                                             
         self.action_read_csv=self.create_action('&Read CSV file',
-                                                slot=self.signal_request_read_csv,
+                                                slot=self.gui_request_read_csv,
                                                 shortcut='Alt+R',
                                                 tooltip='Read file')
                                             

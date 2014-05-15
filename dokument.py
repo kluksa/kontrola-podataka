@@ -68,8 +68,10 @@ class Dokument(QtGui.QWidget):
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
-        #emitiraj nove podatke o kljucu
-        self.emit(QtCore.SIGNAL('update_kljuc(PyQt_PyObject)'),self.kljucSviFrejmovi)
+        message='File load complete'
+        #emitiraj nove podatke o kljucu i status
+        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
     def set_uredjaji(self,kljucevi):
         """
@@ -115,70 +117,15 @@ class Dokument(QtGui.QWidget):
         ag=agregator.Agregator(self.dictUredjaja[kljuc])
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
-###############################################################################        
-    def set_kanal(self,kanal):
+###############################################################################
+###############################################################################
+###############################################################################
+    def doc_pripremi_satne_podatke(self,kanal):
         """
-        Set aktivni frame, emitiraj signal za crtanje satnih podataka
+        Set aktivni frame, emitiraj signal sa satno agregiranim podatcima
         """
         self.aktivniFrame=kanal
-        listaSatnih=[]
-        for i in list(range(len(self.agregirani[self.aktivniFrame].index))):
-            listaSatnih.append(str(self.agregirani[self.aktivniFrame].index[i]))
-        
-        self.emit(QtCore.SIGNAL('popis_satnih(PyQt_PyObject)'),listaSatnih)
-        
-        """
-        #test, print datafrejma... graf izgleda cudno
-        x=self.agregirani[self.aktivniFrame]
-        print('average:')
-        print(x['avg'])
-        print('minutni podatci:')
-        print(self.frejmovi[self.aktivniFrame].iloc[0:20,:])
-        #dataframe satnih agregata ima hrpu nan vrijednosti...problem s autovalidacijom???
-        """
-        
-        self.emit(
-            QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'),
-            self.agregirani[self.aktivniFrame])
+        data=self.agregirani[self.aktivniFrame]
+        self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),
+                  data)
 ###############################################################################
-    def priprema_crtanja_minutni(self,vrijeme):
-        """
-        Nađi vremenske granice podataka,
-        prosljedi listu datafrejmova za crtanje emitom
-        """
-        #klik s grafa vraca listu timestampova, value comboboxa je string
-        if type(vrijeme)==list:
-            vrijeme=vrijeme[0]
-        if type(vrijeme)==str:
-            vrijeme=pd.to_datetime(vrijeme)
-        
-        self.odabraniSatniPodatak=vrijeme
-        #emit update comboboxa
-        self.emit(QtCore.SIGNAL('set_satni_combobox(PyQt_PyObject)'),
-                  str(vrijeme))
-                  
-        maxTime=vrijeme
-        minTime=maxTime-timedelta(minutes=59)
-        maxTime=str(maxTime)
-        minTime=str(minTime)
-        
-        svi=self.frejmovi[self.aktivniFrame].loc[minTime:maxTime,:]
-        sviOk=svi[svi.loc[:,u'flag']>=0]
-        sviNotOk=svi[svi.loc[:,u'flag']<0]
-        
-        #treba nam samo podatak o koncentraciji
-        svi=svi.loc[:,u'koncentracija']
-        sviOk=sviOk.loc[:,u'koncentracija']
-        sviNotOk=sviNotOk.loc[:,u'koncentracija']
-        
-        lista=[svi,sviOk,sviNotOk]
-        self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'),lista)
-
-###############################################################################
-    def set_odabrani_sat(self,vrijeme):
-        self.odabraniSatniPodatak=vrijeme
-        self.emit(QtCore.SIGNAL('set_satni_combobox(PyQt_PyObject)'),
-                  str(vrijeme))
-        
-        #kreni crtati graf
-        self.priprema_crtanja_minutni(self.odabraniSatniPodatak)

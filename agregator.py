@@ -84,6 +84,13 @@ class Agregator(object):
             q95=dds.quantile(0.05).iloc[0]
             q05=dds.quantile(0.95).iloc[0]
             count=dds.count().iloc[0]
+            
+            status=0
+            for i in dds[u'status']:
+                try:
+                    status|=int(i)
+                except ValueError:
+                    status|=int(0)
 
         data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,'q95':q95,
                 'q05':q05,'count':count,'status':status,'flagstat':allFlagStatus}

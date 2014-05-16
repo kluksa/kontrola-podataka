@@ -154,37 +154,82 @@ class GrafSatniSrednjaci(MPLCanvas):
         #ukupni raspon podataka
         vrijeme=data['avg'].index
         
-        self.axes.plot(vrijeme,data['avg'].values,
+        """
+        Svi koji imaju flagstat stupac False
+        tj. normalni slucaj, kada svi minutni podatci u sliceu nemaju negativan flag
+        """
+        self.data1=data[data['flagstat']==False]
+        vrijeme1=self.data1['avg'].index
+        self.axes.plot(vrijeme1,self.data1['avg'].values,
                        marker='d',
                        color='blue',
                        lw=1.5,
                        alpha=0.7,
                        picker=2,
                        zorder=3)
-        self.axes.scatter(vrijeme,data['min'].values,
+        self.axes.scatter(vrijeme1,self.data1['min'].values,
                           marker='+',
                           color='black',
                           lw=0.3,
                           alpha=0.6,
                           zorder=2)
-        self.axes.scatter(vrijeme,data['max'].values,
+        self.axes.scatter(vrijeme1,self.data1['max'].values,
                           marker='+',
                           color='black',
                           lw=0.3,
                           alpha=0.6,
                           zorder=2)
-        self.axes.scatter(vrijeme,data['med'].values,
+        self.axes.scatter(vrijeme1,self.data1['med'].values,
                        marker='_',
                        color='black',
                        lw=1.5,
                        alpha=0.6,
                        zorder=2)
-        self.axes.fill_between(vrijeme,
-                               data['q05'].values,
-                               data['q95'].values,
+        self.axes.fill_between(vrijeme1,
+                               self.data1['q05'].values,
+                               self.data1['q95'].values,
                                facecolor='green',
                                alpha=0.4,
                                zorder=1)
+        
+        """
+        Svi koji imaju flagstat stupac True
+        tj - svi minutni podatci u sliceu imaju flag manji od 0
+        """
+        self.data2=data[data['flagstat']==True]
+        vrijeme2=self.data2['avg'].index
+        self.axes.plot(vrijeme2,self.data2['avg'].values,
+                       marker='d',
+                       color='red',
+                       lw=1.5,
+                       alpha=0.7,
+                       picker=2,
+                       zorder=3)
+        self.axes.scatter(vrijeme2,self.data2['min'].values,
+                          marker='+',
+                          color='black',
+                          lw=0.3,
+                          alpha=0.6,
+                          zorder=2)
+        self.axes.scatter(vrijeme2,self.data2['max'].values,
+                          marker='+',
+                          color='black',
+                          lw=0.3,
+                          alpha=0.6,
+                          zorder=2)
+        self.axes.scatter(vrijeme2,self.data2['med'].values,
+                       marker='_',
+                       color='black',
+                       lw=1.5,
+                       alpha=0.6,
+                       zorder=2)
+        self.axes.fill_between(vrijeme2,
+                               self.data2['q05'].values,
+                               self.data2['q95'].values,
+                               facecolor='tomato',
+                               alpha=0.4,
+                               zorder=1)
+        
         
         
         xLabels=self.axes.get_xticklabels()

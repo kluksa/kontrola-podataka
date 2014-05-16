@@ -45,13 +45,18 @@ class Agregator(object):
     
     def agreg(self, kraj):
         #modifikacija get slice kopira direktno, bez flag testa
-        ddd = self.getSlajs(kraj)
-        #izbroji koliko ima nan vrijednosti koncentracije u slajsu
-        ddNan=ddd[pd.isnull(ddd[u'koncentracija'])]
-        countNaN=ddNan.count().iloc[0]
-        #selekcija prema flagu za agreg
-        #uzmi u obzir i nultu vrijednost flaga
-        ddd=ddd[ddd[u'flag']>=0]
+        dds=self.getSlajs(kraj)
+        
+        #test da li su svi not nan flagovi negativni
+        ddNan=dds[pd.isnull(dds[u'koncentracija'])==False]
+        ddFlag=ddNan[ddNan[u'flag']<0]
+        if len(ddNan)==len(ddFlag):
+            #svi not nan flagovi su negativni
+            allFlagStatus=True
+        else:
+            allFlagStatus=False
+        
+        ddd=dds[dds[u'flag']>=0]
         avg=ddd.mean().iloc[0]
         std=ddd.std().iloc[0]
         max=ddd.max().iloc[0]
@@ -60,24 +65,28 @@ class Agregator(object):
         q95=ddd.quantile(0.05).iloc[0]
         q05=ddd.quantile(0.95).iloc[0]
         count=ddd.count().iloc[0]
-        
-        
-#        status=self.uredjaj.statusAgregator(ddd[u'status'])
+            
         status=0
         for i in ddd[u'status']:
-            """
-            Definitivni problem s flagom. Funkcija getSlajs 100% nece uzeti
-            u obzir lose (<=0) flagove. Nastaju problemi s plotanjem.
-            """
             try:
                 status|=int(i)
             except ValueError:
-                #ValueError iskace kada int() pokusa convertati np.nan
-                #binary or radi samo na int tipu
                 status|=int(0)
+        
+        #prikazi druge podatke ako su svi flagovi manji od nule jer ddd je prazan
+        if allFlagStatus:
+            #prikazi agregat cijelog slajsa?
+            avg=dds.mean().iloc[0]
+            std=dds.std().iloc[0]
+            max=dds.max().iloc[0]
+            min=dds.min().iloc[0]
+            med=dds.quantile(0.5).iloc[0]
+            q95=dds.quantile(0.05).iloc[0]
+            q05=dds.quantile(0.95).iloc[0]
+            count=dds.count().iloc[0]
 
         data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,'q95':q95,
-                'q05':q05,'count':count,'status':status,'countNan':countNaN}
+                'q05':q05,'count':count,'status':status,'flagstat':allFlagStatus}
         return kraj, data
     
     def getSlajs(self, kraj):
@@ -124,9 +133,6 @@ if __name__ == "__main__":
     plt.plot(agregirani['q05'])
     plt.plot(agregirani['q95'])
     plt.show()
-    
-    for i in nizNizova:
-        print('broj podataka ',len(i))
         
         
         

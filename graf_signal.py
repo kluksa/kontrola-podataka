@@ -135,7 +135,10 @@ class GrafSatniSrednjaci(MPLCanvas):
             
     def crtaj(self,data):
         """
-        data je pandas dataframe koji izbacuje agregator
+        data je pandas dataframe koji izbacuje agregator-ima posebni stupac
+        'flagstat'. Taj stupac je True ako su svi flagovi tocaka
+        s podatcima negativni (False ako ima pozitivnih flagova).
+        -kako smisleno prikazati podatke???
         """
         self.data=data
         self.zadnjiAnnotation=None
@@ -148,6 +151,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         title='Agregirani satni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
         self.axes.set_title(title,fontsize=4)
         
+        #ukupni raspon podataka
         vrijeme=data['avg'].index
         
         self.axes.plot(vrijeme,data['avg'].values,
@@ -175,10 +179,13 @@ class GrafSatniSrednjaci(MPLCanvas):
                        lw=1.5,
                        alpha=0.6,
                        zorder=2)
-        self.axes.fill_between(vrijeme,data['q05'].values,data['q95'].values,
+        self.axes.fill_between(vrijeme,
+                               data['q05'].values,
+                               data['q95'].values,
                                facecolor='green',
                                alpha=0.4,
                                zorder=1)
+        
         
         xLabels=self.axes.get_xticklabels()
         for label in xLabels:

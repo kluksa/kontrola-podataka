@@ -97,7 +97,7 @@ class Mediator(QtGui.QWidget):
                      self.med_request_crtaj_minutni)
                      
         self.connect(self,
-                     QtCore.SIGNAL('med_ewquest_draw_minutni(PyQt_PyObject)'),
+                     QtCore.SIGNAL('med_request_draw_minutni(PyQt_PyObject)'),
                      model.doc_pripremi_minutne_podatke)
         
         self.connect(model,
@@ -177,9 +177,10 @@ class Mediator(QtGui.QWidget):
         """
         if type(sat)==list:
             sat=str(sat[0])
-        
+            
+        sat=str(sat)
         self.lastSat=sat
-        self.emit(QtCore.SIGNAL('med_ewquest_draw_minutni(PyQt_PyObject)'),
+        self.emit(QtCore.SIGNAL('med_request_draw_minutni(PyQt_PyObject)'),
                   sat)
                   
     def med_naredi_crtaj_minutni(self,data):
@@ -187,28 +188,28 @@ class Mediator(QtGui.QWidget):
         
     def med_request_flag_satni(self,lista):
         """
-        Zahtjev od gui za promjenu flaga, lista=[sat,novi flag]
+        Zahtjev od gui za promjenu flaga, lista=[timestamp,novi flag]
         -desni klik misa na satnom grafu
         
         Ovaj zahtjev je povezan s promjenom minutnog flaga, tj. promjena je
         na minutnom intervalu [sat-59min:sat] - adapter
         """
-        sat=lista[0]
+        satMax=lista[0]
+        #type(sat)=='pandas.tslib.Timestamp'
         flag=lista[1]
         #ovo je u biti slucaj sa spanom, samo moramo zadati donju granicu
-        sat=pd.to_datetime(sat)
-        satMin=sat-timedelta(minutes=59)
-        #castanje nazad u string
-        satMax=str(sat)
-        satMin=str(satMin)
+        #sat=pd.to_datetime(sat)
+        satMin=satMax-timedelta(minutes=59)
+        
         data=[satMin,satMax,flag]
+        self.lastSat=str(satMax)
         
         #poziv na mjenjanje flaga spanu
         self.med_request_flag_minutni_span(data)
     
     def med_request_flag_minutni(self,lista):
         """
-        Zahtjev od gui za promjenu flaga, lista=[sat,flag]
+        Zahtjev od gui za promjenu flaga, lista=[timestamp,flag]
         -desni klik misa na minutnom grafu
         
         Promjena flaga za jedan minutni podatak

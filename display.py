@@ -92,6 +92,9 @@ class GlavniProzor(QtGui.QMainWindow):
         self.connect(self.gumbCrtajMinutni,
                      QtCore.SIGNAL('clicked()'),
                      self.gui_crtaj_minutni)
+        self.connect(self.canvasMinutni,
+                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+                     self.set_status_bar)
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
@@ -161,7 +164,11 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         index=self.selektorSata.findText(vrijeme)
         self.selektorSata.setCurrentIndex(index)
-        
+    
+    """
+    Gumbi i akcije
+    """
+    
     def gui_request_read_csv(self):
         """
         Akcija za read novi csv file, otvara file dialog i emitira path do

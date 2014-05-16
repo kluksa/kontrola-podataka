@@ -3,6 +3,7 @@ Created on Apr 21, 2014
 
 @author: kraljevic
 '''
+import sys
 import pandas as pd
 import numpy as np
 
@@ -121,14 +122,18 @@ class Dokument(QtGui.QWidget):
         -emitiraj listu satnih vrijednosti (stringova)
         """
         self.aktivniFrame=kanal
-        data=self.agregirani[self.aktivniFrame]
-        self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),
-                  data)
-        sati=[]
-        for vrijeme in self.agregirani[self.aktivniFrame].index:
-            vrijeme=str(vrijeme)
-            sati.append(vrijeme)
-        self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
+        #za slucaj da netko stisne gumb prije nego ucita podatke
+        try:
+            data=self.agregirani[self.aktivniFrame]
+            self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),data)
+            sati=[]
+            for vrijeme in self.agregirani[self.aktivniFrame].index:
+                vrijeme=str(vrijeme)
+                sati.append(vrijeme)
+            self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
+        except KeyError:
+            message='Unable to draw data, load some first'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
     def doc_pripremi_minutne_podatke(self,sat):
         #sat je string
@@ -140,17 +145,21 @@ class Dokument(QtGui.QWidget):
         down=str(down)
         
         #napravi listu data[all,flag>=0,flag<0]
-        df=self.frejmovi[self.aktivniFrame]
-        df=df.loc[down:up,:]
-        dfOk=df[df.loc[:,u'flag']>=0]
-        dfNo=df[df.loc[:,u'flag']<0]
-        data=[df,dfOk,dfNo]
+        try:
+            df=self.frejmovi[self.aktivniFrame]
+            df=df.loc[down:up,:]
+            dfOk=df[df.loc[:,u'flag']>=0]
+            dfNo=df[df.loc[:,u'flag']<0]
+            data=[df,dfOk,dfNo]
         
-        #emit data prema kontroleru
-        self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
-        #emit self.odabraniSatniPodatak prema kontroleru
-        self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
-        
+            #emit data prema kontroleru
+            self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
+            #emit self.odabraniSatniPodatak prema kontroleru
+            self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
+        except KeyError:
+            message='Unable to draw data, load some first'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+
 ###############################################################################
     def promjeni_flag_minutni(self,dic):
         """

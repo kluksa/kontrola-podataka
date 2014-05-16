@@ -46,8 +46,12 @@ class Agregator(object):
     def agreg(self, kraj):
         #modifikacija get slice kopira direktno, bez flag testa
         ddd = self.getSlajs(kraj)
+        #izbroji koliko ima nan vrijednosti koncentracije u slajsu
+        ddNan=ddd[pd.isnull(ddd[u'koncentracija'])]
+        countNaN=ddNan.count().iloc[0]
         #selekcija prema flagu za agreg
-        ddd=ddd[ddd[u'flag']>0]
+        #uzmi u obzir i nultu vrijednost flaga
+        ddd=ddd[ddd[u'flag']>=0]
         avg=ddd.mean().iloc[0]
         std=ddd.std().iloc[0]
         max=ddd.max().iloc[0]
@@ -56,6 +60,7 @@ class Agregator(object):
         q95=ddd.quantile(0.05).iloc[0]
         q05=ddd.quantile(0.95).iloc[0]
         count=ddd.count().iloc[0]
+        
         
 #        status=self.uredjaj.statusAgregator(ddd[u'status'])
         status=0
@@ -72,7 +77,7 @@ class Agregator(object):
                 status|=int(0)
 
         data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,'q95':q95,
-                'q05':q05,'count':count,'status':status}
+                'q05':q05,'count':count,'status':status,'countNan':countNaN}
         return kraj, data
     
     def getSlajs(self, kraj):

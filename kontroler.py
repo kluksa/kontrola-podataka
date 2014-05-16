@@ -229,20 +229,25 @@ class Mediator(QtGui.QWidget):
         
         Promjena flaga na vise minutnih podataka u rasponu
         """
-        down=lista[0]
-        up=lista[1]
-        flag=lista[2]
-        if down==up:
+        if len(lista)==2:
             #slucaj kada su granice raspona iste, reducira se na desni klik
-            self.med_request_flag_minutni(self,[down,flag])
+            down=lista[0]            
+            flag=lista[1]
+            data=[down,flag]
+            self.med_request_flag_minutni(data)
+        else:
+            #slucaj kada su granice raspona razlicite
+            down=lista[0]
+            up=lista[1]
+            flag=lista[2]
         
-        dic={'min':down,
-             'max':up,
-             'flag':flag,
-             'kanal':self.lastKanal,
-             'sat':self.lastSat}
+            dic={'min':down,
+                 'max':up,
+                 'flag':flag,
+                 'kanal':self.lastKanal,
+                 'sat':self.lastSat}
         
-        self.emit(QtCore.SIGNAL('med_request_flag_minutni_span(PyQt_PyObject)'),
+            self.emit(QtCore.SIGNAL('med_request_flag_minutni_span(PyQt_PyObject)'),
                   dic)
             
     

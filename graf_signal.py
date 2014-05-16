@@ -67,18 +67,18 @@ class GrafSatniSrednjaci(MPLCanvas):
         Pick average, plavi dijamanti - emitira signal sa izborom
         """
         #start annotation part
-        self.tooltipTekst='time: %s\naverage: %0.2f\nmedian: %0.2f\nq05: %0.2f\nq95: %0.2f'
+        self.tooltipTekst='time: %s\naverage: %0.2f\nmedian: %0.2f\nq05: %0.2f\nq95: %0.2f\nmin: %0.2f\nmax: %0.2f\ncount: %0.2f\nstatus: %0.2f'
         self.annX=0
         self.annY=0
         self.annotation=self.axes.annotate(
             self.tooltipTekst,
             xy=(self.annX,self.annY),
-            xytext=(0.1,0.7),
+            xytext=(0.1,0.6),
             textcoords='axes fraction',
             ha='left',
             va='bottom',
             fontsize=5,
-            bbox=dict(boxstyle='square',fc='cyan',alpha=0.6,zorder=10),
+            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
             arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
             )
         self.annotation.set_visible(False)
@@ -113,7 +113,11 @@ class GrafSatniSrednjaci(MPLCanvas):
                 med=self.data['med'].loc[xtocka]
                 q95=self.data['q95'].loc[xtocka]
                 q05=self.data['q05'].loc[xtocka]
-                self.annotation.set_text(self.tooltipTekst % (xtocka,avg,med,q05,q95))
+                min=self.data['min'].loc[xtocka]
+                max=self.data['max'].loc[xtocka]
+                count=self.data['count'].loc[xtocka]
+                status=self.data['status'].loc[xtocka]
+                self.annotation.set_text(self.tooltipTekst % (xtocka,avg,med,q05,q95,min,max,count,status))
                 self.annotation.set_visible(True)
                 self.zadnjiAnnotation=xtocka
                 self.draw()
@@ -225,49 +229,85 @@ class GrafMinutniPodaci(MPLCanvas):
                                )
     
     def minutni_span_flag(self,xmin,xmax):
-        xmin=round(xmin)
-        xmax=round(xmax)
-        puniSatMin=False
-        puniSatMax=False
+        #test da li je graf nacrtan
+        if ((self.donjaGranica!=None) and (self.gornjaGranica!=None)):
+            xmin=round(xmin)
+            xmax=round(xmax)
+            puniSatMin=False
+            puniSatMax=False
         
-        if xmin==60:
-            puniSatMin=True
-            xmin='00'
-        else:
-            xmin=str(xmin)
+            if xmin==60:
+                puniSatMin=True
+                xmin='00'
+            else:
+                xmin=str(xmin)
             
-        if xmax==60:
-            puniSatMax=True
-            xmax='00'
-        else:
-            xmax=str(xmax)
-            
-        #sastavi timestamp
-        godina=str(self.donjaGranica.year)
-        mjesec=str(self.donjaGranica.month)
-        dan=str(self.donjaGranica.day)
-        sat=str(self.donjaGranica.hour)
-        timeMin=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmin+':'+'00'
-        timeMax=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmax+':'+'00'
-        minOznaka=pd.to_datetime(timeMin)
-        maxOznaka=pd.to_datetime(timeMax)
+            if xmax==60:
+                puniSatMax=True
+                xmax='00'
+            else:
+                xmax=str(xmax)
         
-        if puniSatMin:
-            minOznaka=minOznaka+timedelta(hours=1)
+            #sastavi timestamp
+            godina=str(self.donjaGranica.year)
+            mjesec=str(self.donjaGranica.month)
+            dan=str(self.donjaGranica.day)
+            sat=str(self.donjaGranica.hour)
+            timeMin=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmin+':'+'00'
+            timeMax=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmax+':'+'00'
+            minOznaka=pd.to_datetime(timeMin)
+            maxOznaka=pd.to_datetime(timeMax)
+        
+            if puniSatMin:
+                minOznaka=minOznaka+timedelta(hours=1)
             
-        if puniSatMax:
-            maxOznaka=maxOznaka+timedelta(hours=1)
+            if puniSatMax:
+                maxOznaka=maxOznaka+timedelta(hours=1)
             
-        opis='Odabrani interval od '+str(minOznaka)+' do '+str(maxOznaka)
-        tekst='Odaberi novu vrijednost flaga:'
-        flag,ok=QtGui.QInputDialog.getDouble(self,opis,tekst)
-        if ok:
-            arg=[minOznaka,maxOznaka,flag]
-            self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+            opis='Odabrani interval od '+str(minOznaka)+' do '+str(maxOznaka)
+            tekst='Odaberi novu vrijednost flaga:'
+            flag,ok=QtGui.QInputDialog.getDouble(self,opis,tekst)
+            if ok:
+                #provjeri da li je min i max ista tocka..
+                if minOznaka==maxOznaka:
+                    arg=[minOznaka,flag]
+                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+                else:
+                    arg=[minOznaka,maxOznaka,flag]
+                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+        else:
+            message='Unable to select data, draw some first'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
         
     def onpick(self,event):
+        """
+        Picker na minutnom grafu
+        """
+        #start annotation part
+        self.tooltipTekst='time: %s\nkoncentracija: %0.2f\nflag: %0.2f\nstatus: %0.2f'
+        self.annX=0
+        self.annY=0
+        self.annotation=self.axes.annotate(
+            self.tooltipTekst,
+            xy=(self.annX,self.annY),
+            xytext=(0.1,0.6),
+            textcoords='axes fraction',
+            ha='left',
+            va='bottom',
+            fontsize=5,
+            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
+            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
+            )
+        self.annotation.set_visible(False)
+        #kraj annotation part
+        
         puniSat=False
-        izbor=round(event.mouseevent.xdata)
+        #overlap pickera?
+        izbor=event.mouseevent.xdata
+        if type(izbor)==list:
+            izbor=izbor[0]
+            
+        izbor=round(izbor)
         if izbor==60:
             puniSat=True
             izbor='00'
@@ -291,11 +331,34 @@ class GrafMinutniPodaci(MPLCanvas):
             if ok:
                 arg=[timeOznaka,flag]
                 self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
+                
+        #middle klik misem, annotation tocke
+        if event.mouseevent.button==2:
+            if self.zadnjiAnnotation==timeOznaka:
+                self.annotation.remove()
+                self.zadnjiAnnotation=None
+                self.draw()
+            else:
+                self.annX=event.mouseevent.xdata
+                self.annY=event.mouseevent.ydata
+                self.annotation.xy=self.annX,self.annY
+                #tekst annotationa
+                izbor=str(timeOznaka)
+                koncentracija=self.dataframe.loc[izbor,u'koncentracija']
+                status=self.dataframe.loc[izbor,u'status']
+                flag=self.dataframe.loc[izbor,u'flag']
+                self.annotation.set_text(self.tooltipTekst % (izbor,koncentracija,flag,status))
+                self.annotation.set_visible(True)
+                self.zadnjiAnnotation=timeOznaka
+                self.draw()
+                self.annotation.remove()
 
     def crtaj(self,data):
         """
         x os plota će biti minute timestampa od 1 do 60
         """
+        self.zadnjiAnnotation=None
+        self.dataframe=data[0]
         #zapamti podatke o timestampu za datum i sat
         self.donjaGranica=data[0].index.min()
         self.gornjaGranica=data[0].index.max()

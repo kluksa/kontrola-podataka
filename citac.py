@@ -87,6 +87,72 @@ class WlReader:
                     frejmovi[key].columns=tmp
         return frejmovi
         
+        
+    #writer metoda
+    def save_work(self,frejmovi,filename):
+        """writes to csv file - recimo da radi"""
+        keyList=list(frejmovi.keys())
+        indeks=frejmovi[keyList[0]].index
+        dfAll=pd.DataFrame(index=indeks)
+        dfCurrent=None
+        i=1
+        for key in frejmovi.keys():
+            dfCurrent=frejmovi[key]
+            colNames=dfCurrent.columns.values
+            colNames[0]=key
+            colNames[1]=colNames[1]+str(i)
+            colNames[2]=colNames[2]+str(i)
+            dfCurrent.columns=colNames
+            i=i+1
+            
+            #join/merge/concat to dfAll dataframe
+            dfAll=pd.merge(dfAll,dfCurrent,
+                           how='inner',
+                           left_index=True,
+                           right_index=True)
+
+        #write out csv file
+        dfAll.to_csv(filename)
+    
+    def load_work(self,filename):
+        """reads csv file, different from raw csv input"""
+        df=pd.read_csv(
+                    filename,
+                    na_values='-999.00',
+                    index_col=0,
+                    header=0,
+                    sep=',',
+                    encoding='latin-1'
+                    )
+        
+        #sastavljanje frejmova
+        reFlag='status'
+        reStatus='flag'
+        cols=list(df.columns)
+        frejmovi={}
+        keyList=[]
+        for col in cols:
+            match1=re.search(reFlag,col,re.IGNORECASE)
+            match2=re.search(reStatus,col,re.IGNORECASE)
+            #col ne smije matchati niti 'flag' niti 'status'            
+            if (not(match1 or match2)):
+                #col je key
+                keyList.append(col)
+                i=df.columns.get_loc(col)
+                frejmovi[col] = df.iloc[:,i:i+3]
+                tmp=frejmovi[col].columns.values
+                tmp[0]=u'koncentracija'
+                tmp[1]=u'status'
+                tmp[2]=u'flag'
+                frejmovi[col].columns=tmp
+        return frejmovi,keyList
+
+
+     
             
 if __name__ == "__main__":
     data = WlReader().citaj('pj.csv')
+    #save to file
+    #WlReader().save_work(dataframe,filename as string)
+    #load from csv
+    #frejmovi,kljucevi=WlReader().load_work(filename as string)

@@ -212,3 +212,30 @@ class Dokument(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 
 ###############################################################################
+    def save_trenutni_frejmovi(self,filepath):
+        """
+        Save self.frejmovi u csv file, report kada si gotov
+        """
+        if self.frejmovi!={}:
+            citac.WlReader().save_work(self.frejmovi,filepath)
+            message='Data saved as '+filepath
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+        else:
+            message='Unable to save'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+###############################################################################
+    def load_frejmovi_iz_csv(self,filepath):
+        okviri,kljucevi=citac.WlReader().load_work(filepath)
+        self.frejmovi=okviri
+        self.kljucSviFrejmovi=list(self.frejmovi)
+        
+        self.set_uredjaji(self.kljucSviFrejmovi)
+        #agregiranje bez autovalidacije?
+        for kljuc in self.kljucSviFrejmovi:
+            self.agregiraj_odabir(self.frejmovi,kljuc)
+        
+        message='File load complete'
+        #emitiraj nove podatke o kljucu i status
+        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+###############################################################################

@@ -200,9 +200,17 @@ class GlavniProzor(QtGui.QMainWindow):
         self.emit(QtCore.SIGNAL('gui_request_crtaj_minutni(PyQt_PyObject)'),
                   sat)
 
+    def gui_request_save(self):
+        """
+        Zahtjev za save (akcija)
+        """
+        filepath=QtGui.QFileDialog.getSaveFileName(self,'Save CSV file','')
+        self.emit(QtCore.SIGNAL('gui_request_save_csv(PyQt_PyObject)'),filepath)
 
 
-
+    def gui_request_load(self):
+        filepath=QtGui.QFileDialog.getOpenFileName(self,'Open CSV file','')
+        self.emit(QtCore.SIGNAL('gui_request_load_csv(PyQt_PyObject)'),filepath)
 
 
 
@@ -214,6 +222,16 @@ class GlavniProzor(QtGui.QMainWindow):
         By using create_action i add_actions_to methods, create a menu
         """
         self.fileMenu=self.menuBar().addMenu("&File")
+        
+        self.action_save_csv=self.create_action('&Save',
+                                                slot=self.gui_request_save,
+                                                shortcut='Alt+S',
+                                                tooltip='Save file')
+                                                
+        self.action_load_csv=self.create_action('&Open',
+                                                slot=self.gui_request_load,
+                                                shortcut='Alt+O',
+                                                tooltip='Open file')
                 
         self.action_exit=self.create_action('&Exit',
                                             slot=self.close,
@@ -226,7 +244,12 @@ class GlavniProzor(QtGui.QMainWindow):
                                                 tooltip='Read file')
                                             
                                             
-        fileMenuList=[self.action_read_csv,None,self.action_exit]
+        fileMenuList=[self.action_save_csv,
+                      self.action_load_csv,
+                      None,
+                      self.action_read_csv,
+                      None,
+                      self.action_exit]
                 
         self.add_actions_to(self.fileMenu, fileMenuList)
 ###############################################################################
@@ -236,7 +259,10 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         toolBar=self.addToolBar('Main toolbar')
         
-        toolBarList=[self.action_read_csv,
+        toolBarList=[self.action_save_csv,
+                     self.action_load_csv,
+                     None,
+                     self.action_read_csv,
                      None,
                      self.action_exit]
         

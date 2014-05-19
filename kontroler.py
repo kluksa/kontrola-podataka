@@ -147,8 +147,24 @@ class Mediator(QtGui.QWidget):
         self.connect(gui.canvasSatni,
                      QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),
                      self.med_request_flag_satni)
-                     
+                  
+        #save csv procedura
+        self.connect(gui,
+                     QtCore.SIGNAL('gui_request_save_csv(PyQt_PyObject)'),
+                     self.med_request_save_csv)
         
+        self.connect(self,
+                     QtCore.SIGNAL('med_request_save_csv(PyQt_PyObject)'),
+                     model.save_trenutni_frejmovi)
+                     
+        #load csv procedura
+        self.connect(gui,
+                     QtCore.SIGNAL('gui_request_load_csv(PyQt_PyObject)'),
+                     self.med_request_load_csv)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_request_load_csv(PyQt_PyObject)'),
+                     model.load_frejmovi_iz_csv)             
         
 ###############################################################################
 
@@ -261,7 +277,20 @@ class Mediator(QtGui.QWidget):
         #naredbe za crtanje
         self.med_request_crtaj_satni(self.lastKanal)
         self.med_request_crtaj_minutni(self.lastSat)
+        
+    def med_request_save_csv(self,filepath):
+        """
+        Prosljedi filename csv filea do dokumenta za save
+        """
+        self.emit(QtCore.SIGNAL('med_request_save_csv(PyQt_PyObject)'),filepath)
     
+    def med_request_load_csv(self,filepath):
+        """
+        Prosljedi filename csv filea do dokumenta za load
+        """
+        self.emit(QtCore.SIGNAL('med_request_load_csv(PyQt_PyObject)'),filepath)
+        
+        
 ###############################################################################
     def set_lastLoadedFile(self,filepath):
         self.lastLoadedFile=filepath

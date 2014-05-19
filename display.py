@@ -68,6 +68,7 @@ class GlavniProzor(QtGui.QMainWindow):
         self.selektorSata.setMinimumContentsLength(20)
         self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ SATNI')
         self.gumbCrtajMinutni=QtGui.QPushButton('CRTAJ MINUTNI')
+        self.gumbClear=QtGui.QPushButton('BRISI GRAFOVE')
         
         IOLayout=QtGui.QVBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
@@ -76,6 +77,7 @@ class GlavniProzor(QtGui.QMainWindow):
         IOLayout.addWidget(selektorSataLabel)
         IOLayout.addWidget(self.selektorSata)
         IOLayout.addWidget(self.gumbCrtajMinutni)
+        IOLayout.addWidget(self.gumbClear)
 
         #zavrsni layout
         final=QtGui.QHBoxLayout(self.mainWidget)
@@ -95,6 +97,9 @@ class GlavniProzor(QtGui.QMainWindow):
         self.connect(self.canvasMinutni,
                      QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
                      self.set_status_bar)
+        self.connect(self.gumbClear,
+                     QtCore.SIGNAL('clicked()'),
+                     self.gui_request_clear)
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
@@ -213,7 +218,8 @@ class GlavniProzor(QtGui.QMainWindow):
         self.emit(QtCore.SIGNAL('gui_request_load_csv(PyQt_PyObject)'),filepath)
 
 
-
+    def gui_request_clear(self):
+        self.emit(QtCore.SIGNAL('gui_request_clear()'))
 
 
 ###############################################################################

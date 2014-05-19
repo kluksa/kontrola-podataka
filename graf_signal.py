@@ -40,6 +40,8 @@ class MPLCanvas(FigureCanvas):
     
     def brisi_graf(self):
         self.axes.clear()
+        self.draw()
+        
 ###############################################################################
 class GrafSatniSrednjaci(MPLCanvas):
     """

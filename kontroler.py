@@ -166,6 +166,22 @@ class Mediator(QtGui.QWidget):
                      QtCore.SIGNAL('med_request_load_csv(PyQt_PyObject)'),
                      model.load_frejmovi_iz_csv)             
         
+        #clear grafova
+        self.connect(model,
+                     QtCore.SIGNAL('grafovi_clear()'),
+                     self.clear_graphics)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('graphics_clear()'),
+                     gui.canvasSatni.brisi_graf)
+        
+        self.connect(self,
+                     QtCore.SIGNAL('graphics_clear()'),
+                     gui.canvasMinutni.brisi_graf)
+        
+        self.connect(gui,
+                     QtCore.SIGNAL('gui_request_clear()'),
+                     self.clear_graphics)
 ###############################################################################
 
     def med_read_csv(self,filepath):
@@ -288,9 +304,14 @@ class Mediator(QtGui.QWidget):
         """
         Prosljedi filename csv filea do dokumenta za load
         """
+        self.lastLoadedFile=filepath
         self.emit(QtCore.SIGNAL('med_request_load_csv(PyQt_PyObject)'),filepath)
-        
-        
+    
+    def clear_graphics(self):
+        """
+        Naredba za clear oba grafa
+        """
+        self.emit(QtCore.SIGNAL('graphics_clear()'))
 ###############################################################################
     def set_lastLoadedFile(self,filepath):
         self.lastLoadedFile=filepath

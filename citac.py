@@ -145,7 +145,7 @@ class WlReader:
                 tmp[1]=u'status'
                 tmp[2]=u'flag'
                 frejmovi[col].columns=tmp
-        return frejmovi,keyList
+        return frejmovi
 
 
      

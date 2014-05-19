@@ -225,7 +225,10 @@ class Dokument(QtGui.QWidget):
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
     def load_frejmovi_iz_csv(self,filepath):
-        okviri,kljucevi=citac.WlReader().load_work(filepath)
+        #clear grafova
+        self.emit(QtCore.SIGNAL('grafovi_clear()'))
+        
+        okviri=citac.WlReader().load_work(filepath)
         self.frejmovi=okviri
         self.kljucSviFrejmovi=list(self.frejmovi)
         

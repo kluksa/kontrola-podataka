@@ -227,13 +227,15 @@ class Dokument(QtGui.QWidget):
     def load_frejmovi_iz_csv(self,filepath):
         #clear grafova
         self.emit(QtCore.SIGNAL('grafovi_clear()'))
+        #clear starih podataka
+        self.frejmovi=None
+        self.kljucSviFrejmovi=None
         
         okviri=citac.WlReader().load_work(filepath)
         self.frejmovi=okviri
         self.kljucSviFrejmovi=list(self.frejmovi)
-        
         self.set_uredjaji(self.kljucSviFrejmovi)
-        #agregiranje bez autovalidacije?
+        #agregiranje bez autovalidacije? problem
         for kljuc in self.kljucSviFrejmovi:
             self.agregiraj_odabir(self.frejmovi,kljuc)
         

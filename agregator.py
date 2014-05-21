@@ -125,6 +125,7 @@ if __name__ == "__main__":
     u2.pocetak=datetime(2014,2,24,0,10)
     u1.kraj=datetime(2014,2,24,0,10)
     u2.kraj=datetime(2015,1,1)
+    
     a = auto_validacija.AutoValidacija()
     a.dodaj_uredjaj(u2)
     a.dodaj_uredjaj(u1)
@@ -140,6 +141,3 @@ if __name__ == "__main__":
     plt.plot(agregirani['q05'])
     plt.plot(agregirani['q95'])
     plt.show()
-        
-        
-        

@@ -120,6 +120,7 @@ class WlReader:
                     filename,
                     na_values='-999.00',
                     index_col=0,
+                    parse_dates=True,
                     header=0,
                     sep=',',
                     encoding='latin-1'

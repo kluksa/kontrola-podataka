@@ -58,25 +58,25 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         Layout i definicija canvas za grafove ->graphLayout
         """
-#         self.satniSrednjaci = QtGui.QWidget()
-#         self.satniSrednjaci.setSizePolicy(QtGui.QSizePolicy.Expanding,
-#                                    QtGui.QSizePolicy.Expanding)                
-#         self.satniSrednjaci.setWindowTitle('Satno agregirani podaci')
-#         self.fig1 = Figure()
-#         self.canvas1 = FigureCanvas(self.fig1)
-#         self.canvas1.setParent(self.satniSrednjaci)
-#         self.axes1 = self.fig1.add_subplot(111)
-#         self.mplToolbar1 = NavigationToolbar(self.canvas1, self.satniSrednjaci)
-#         
-#         self.satniPodaci = QtGui.QWidget()
-#         self.satniPodaci.setSizePolicy(QtGui.QSizePolicy.Expanding,
-#                                    QtGui.QSizePolicy.Expanding)       
-#         self.satniPodaci.setWindowTitle('Podaci u odabranom intervalu')
-#         self.fig2 = Figure()
-#         self.canvas2 = FigureCanvas(self.fig2)
-#         self.canvas2.setParent(self.satniPodaci)
-#         self.axes2 = self.fig2.add_subplot(111)
-#         self.mplToolbar2 = NavigationToolbar(self.canvas2, self.satniPodaci)
+        self.satniSrednjaci = QtGui.QWidget()
+        self.satniSrednjaci.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                                    QtGui.QSizePolicy.Expanding)                
+        self.satniSrednjaci.setWindowTitle('Satno agregirani podaci')
+        self.fig1 = Figure()
+        self.canvas1 = FigureCanvas(self.fig1)
+        self.canvas1.setParent(self.satniSrednjaci)
+        self.axes1 = self.fig1.add_subplot(111)
+        self.mplToolbar1 = NavigationToolbar(self.canvas1, self.satniSrednjaci)
+         
+        self.satniPodaci = QtGui.QWidget()
+        self.satniPodaci.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                                    QtGui.QSizePolicy.Expanding)       
+        self.satniPodaci.setWindowTitle('Podaci u odabranom intervalu')
+        self.fig2 = Figure()
+        self.canvas2 = FigureCanvas(self.fig2)
+        self.canvas2.setParent(self.satniPodaci)
+        self.axes2 = self.fig2.add_subplot(111)
+        self.mplToolbar2 = NavigationToolbar(self.canvas2, self.satniPodaci)
         
         # span selector toggle
         if self.spanToggleStatus == True:

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Created on Apr 21, 2014
 
@@ -60,7 +61,7 @@ class Dokument(QtGui.QWidget):
         inicijalna agregacija sa autovalidacijom
         """
         reader=citac.WlReader()
-        self.frejmovi=reader.citaj(path)
+        self.frejmovi=reader.citaj(str(path))
         self.kljucSviFrejmovi=list(self.frejmovi)
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)

@@ -122,7 +122,7 @@ class Dokument(QtGui.QWidget):
         -emitiraj signal sa satno agregiranim podatcima
         -emitiraj listu satnih vrijednosti (stringova)
         """
-        self.aktivniFrame=kanal
+        self.aktivniFrame=str(kanal)
         #za slucaj da netko stisne gumb prije nego ucita podatke
         try:
             data=self.agregirani[self.aktivniFrame]
@@ -133,7 +133,7 @@ class Dokument(QtGui.QWidget):
                 sati.append(vrijeme)
             self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
         except KeyError:
-            message='Unable to draw data, load some first'
+            message='Unable to draw data, load some first0'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
     def doc_pripremi_minutne_podatke(self,sat):
@@ -158,7 +158,7 @@ class Dokument(QtGui.QWidget):
             #emit self.odabraniSatniPodatak prema kontroleru
             self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
         except KeyError:
-            message='Unable to draw data, load some first'
+            message='Unable to draw data, load some first1'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 
 ###############################################################################

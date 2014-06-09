@@ -19,6 +19,34 @@ import numpy as np
 from datetime import timedelta
 
 ###############################################################################
+class FlagDijalog(QtGui.QDialog):
+    """
+    Custom dijalog za promjenu flaga
+    """
+    def __init__(self, parent=None, message=None):
+        QtGui.QDialog.__init__(self)
+
+        self.odgovor=None        
+        msgBox = QtGui.QMessageBox()
+        msgBox.setWindowTitle('Dijalog za promjenu valjanosti podataka')
+        msgBox.setText(message)
+        msgBox.addButton(QtGui.QPushButton('Valjan'), QtGui.QMessageBox.YesRole)
+        msgBox.addButton(QtGui.QPushButton('Nevaljan'), QtGui.QMessageBox.NoRole)
+        msgBox.addButton(QtGui.QPushButton('Odustani'), QtGui.QMessageBox.RejectRole)
+        ret = msgBox.exec_()
+        
+        #odgovor se dohvati preko member varijable
+        #0==YesRole
+        if ret == 0:
+            self.odgovor='valja'
+        #1==NoRole
+        elif ret == 1:
+            self.odgovor='nevalja'
+        else:
+        #2==RejectRole
+            self.odgovor='bez promjene'
+
+###############################################################################
 class MPLCanvas(FigureCanvas):
     """
     matplotlib canvas class, generalni
@@ -128,11 +156,15 @@ class GrafSatniSrednjaci(MPLCanvas):
         if event.mouseevent.button==3:
             #right click
             opis='Odabrano vrijeme: '+str(xtocka)
-            tekst='Odaberi novu vrijednost flaga:'
-            flag,ok=QtGui.QInputDialog.getDouble(self,opis,tekst)
-            if ok:
-                arg=[xtocka,flag]
+            flag=FlagDijalog(message=opis)
+            if flag.odgovor=='valja':
+                arg=[xtocka,1]
                 self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+            elif flag.odgovor=='nevalja':
+                arg=[xtocka,-1]
+                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+            else:
+                pass
             
             
     def crtaj(self,data):
@@ -224,14 +256,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                        color='black',
                        lw=1.5,
                        alpha=0.6,
-                       zorder=2)
-        self.axes.fill_between(vrijeme2,
-                               self.data2['q05'].values,
-                               self.data2['q95'].values,
-                               facecolor='tomato',
-                               alpha=0.4,
-                               zorder=1)
-        
+                       zorder=2)        
         
         
         xLabels=self.axes.get_xticklabels()
@@ -319,16 +344,27 @@ class GrafMinutniPodaci(MPLCanvas):
                 maxOznaka=maxOznaka+timedelta(hours=1)
             
             opis='Odabrani interval od '+str(minOznaka)+' do '+str(maxOznaka)
-            tekst='Odaberi novu vrijednost flaga:'
-            flag,ok=QtGui.QInputDialog.getDouble(self,opis,tekst)
-            if ok:
-                #provjeri da li je min i max ista tocka..
+            flag=FlagDijalog(message=opis)
+            if flag.odgovor=='valja':
+                #provjeri da li je min i max ista tocka
                 if minOznaka==maxOznaka:
-                    arg=[minOznaka,flag]
+                    arg=[minOznaka,1]
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
                 else:
-                    arg=[minOznaka,maxOznaka,flag]
+                    arg=[minOznaka,maxOznaka,1]
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+            elif flag.odgovor=='nevalja':
+                #provjeri da li je min i max ista tocka
+                if minOznaka==maxOznaka:
+                    arg=[minOznaka,-1]
+                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+                else:
+                    arg=[minOznaka,maxOznaka,-1]
+                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+            else:
+                pass
+            
+            
         else:
             message='Unable to select data, draw some first'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
@@ -380,11 +416,15 @@ class GrafMinutniPodaci(MPLCanvas):
         #desni klik - promjena flaga jedne tocke
         if event.mouseevent.button==3:
             opis='Odabrano vrijeme: '+str(timeOznaka)
-            tekst='Odaberi novu vrijednost flaga:'
-            flag,ok=QtGui.QInputDialog.getDouble(self,opis,tekst)
-            if ok:
-                arg=[timeOznaka,flag]
+            flag=FlagDijalog(message=opis)
+            if flag.odgovor=='valja':
+                arg=[timeOznaka,1]
                 self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
+            elif flag.odgovor=='nevalja':
+                arg=[timeOznaka,-1]
+                self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
+            else:
+                pass
                 
         #middle klik misem, annotation tocke
         if event.mouseevent.button==2:

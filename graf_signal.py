@@ -194,6 +194,35 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         self.data1=data[data['flagstat']==False]
         vrijeme1=self.data1['avg'].index
+        
+        #sortiranje prema broju valjanih podataka u agregatu iznad 45 ok (25%)
+        indeksPlavi=[]
+        avgPlavi=[]
+        indeksCrveni=[]
+        avgCrveni=[]
+        for i in self.data1.index:
+            if self.data1.loc[i,'count']>45:
+                indeksPlavi.append(i)
+                avgPlavi.append(self.data1.loc[i,'avg'])
+            else:
+                indeksCrveni.append(i)
+                avgCrveni.append(self.data1.loc[i,'avg'])
+                
+        self.axes.plot(indeksPlavi,avgPlavi,
+                       marker='d',
+                       color='blue',
+                       alpha=0.7,
+                       picker=2,
+                       zorder=3)
+        
+        self.axes.plot(indeksCrveni,avgCrveni,
+                       marker='d',
+                       color='red',
+                       alpha=0.7,
+                       picker=2,
+                       zorder=3)
+        """
+        #old
         self.axes.plot(vrijeme1,self.data1['avg'].values,
                        marker='d',
                        color='blue',
@@ -201,6 +230,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                        alpha=0.7,
                        picker=2,
                        zorder=3)
+        """
         self.axes.scatter(vrijeme1,self.data1['min'].values,
                           marker='+',
                           color='black',
@@ -232,7 +262,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         self.data2=data[data['flagstat']==True]
         vrijeme2=self.data2['avg'].index
-        self.axes.plot(vrijeme2,self.data2['avg'].values,
+        self.axes.scatter(vrijeme2,self.data2['avg'].values,
                        marker='d',
                        color='red',
                        lw=1.5,

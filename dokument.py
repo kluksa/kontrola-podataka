@@ -196,7 +196,7 @@ class Dokument(QtGui.QWidget):
         flag=dic['flag']
         kanal=dic['kanal']
         sat=str(dic['sat'])
-        self.aktivniFrame=kanal
+        self.aktivniFrame=str(kanal)
         self.odabraniSatniPodatak=sat
         
         #promjeni flag

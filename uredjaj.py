@@ -39,8 +39,8 @@ class WlApi(Uredjaj):
 
         
 class M100E(WlApi):
-    pocetak=datetime(2014,2,1)
-    kraj=datetime(2014,2,24,16,0)
+    pocetak=datetime(1014,2,1)
+    kraj=datetime(3014,2,24,16,0)
 
     def validan(self, status):
         if status == 0:
@@ -55,8 +55,8 @@ class M100E(WlApi):
             
 
 class M100C(WlApi):
-    pocetak=datetime(2014,2,24,16,1)
-    kraj=datetime(2014,2,26,16,0)
+    pocetak=datetime(1014,2,24,16,1)
+    kraj=datetime(3014,2,26,16,0)
 
     def validan(self, status):
         if status == 0:

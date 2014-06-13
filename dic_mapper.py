@@ -93,6 +93,6 @@ def parsiraj(item):
         
     
 if __name__=='__main__':
-    #mapa,mapa_C=mapiraj('D:\\kontrolapodataka\\')
+    mapa,mapa_C=mapiraj('D:\\kontrolapodataka\\')
     
     

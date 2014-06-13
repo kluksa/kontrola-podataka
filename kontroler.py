@@ -81,21 +81,14 @@ class Mediator(QtGui.QWidget):
         self.connect(self,
                      QtCore.SIGNAL('med_draw_satni(PyQt_PyObject)'),
                      gui.canvasSatni.crtaj)
-                     
+        """
+        ovi connecti kontorliraju update nepostojeceg comboboxa
+        """
         self.connect(model,
                      QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),
                      self.set_trenutnaListaSati)
                      
-        self.connect(self,
-                     QtCore.SIGNAL('med_update_sati(PyQt_PyObject)'),
-                     gui.set_sati)
-        
         #crtaj minutni procedure
-        #gumb
-        self.connect(gui,
-                     QtCore.SIGNAL('gui_request_crtaj_minutni(PyQt_PyObject)'),
-                     self.med_request_crtaj_minutni)
-                     
         self.connect(self,
                      QtCore.SIGNAL('med_request_draw_minutni(PyQt_PyObject)'),
                      model.doc_pripremi_minutne_podatke)
@@ -108,14 +101,7 @@ class Mediator(QtGui.QWidget):
                      QtCore.SIGNAL('med_draw_minutni(PyQt_PyObject)'),
                      gui.canvasMinutni.crtaj)
                      
-        self.connect(model,
-                     QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),
-                     self.set_lastSat)
                      
-        self.connect(self,
-                     QtCore.SIGNAL('med_update_sat(PyQt_PyObject)'),
-                     gui.set_sat)
-        
         #crtaj minutni procedure
         #event na satnom canvasu ljevi klik - dalje se veze na connecte gumba
         self.connect(gui.canvasSatni,
@@ -179,9 +165,6 @@ class Mediator(QtGui.QWidget):
                      QtCore.SIGNAL('graphics_clear()'),
                      gui.canvasMinutni.brisi_graf)
         
-        self.connect(gui,
-                     QtCore.SIGNAL('gui_request_clear()'),
-                     self.clear_graphics)
 ###############################################################################
 
     def med_read_csv(self,filepath):
@@ -328,9 +311,7 @@ class Mediator(QtGui.QWidget):
         self.lastKanal=kanal
         self.emit(QtCore.SIGNAL('med_update_kanal(PyQt_PyObject)'),kanal)
         
-    def set_lastSat(self,sat):
-        self.lastSat=sat
-        self.emit(QtCore.SIGNAL('med_update_sat(PyQt_PyObject)'),sat)
+
         
         
 

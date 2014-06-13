@@ -133,7 +133,7 @@ class Dokument(QtGui.QWidget):
                 sati.append(vrijeme)
             self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
         except KeyError:
-            message='Unable to draw data, load some first0'
+            message='Unable to draw data, load some first'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
     def doc_pripremi_minutne_podatke(self,sat):
@@ -155,8 +155,6 @@ class Dokument(QtGui.QWidget):
         
             #emit data prema kontroleru
             self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
-            #emit self.odabraniSatniPodatak prema kontroleru
-            self.emit(QtCore.SIGNAL('doc_trenutni_sat(PyQt_PyObject)'),up)
         except KeyError:
             message='Unable to draw data, load some first1'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)

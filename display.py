@@ -64,22 +64,11 @@ class GlavniProzor(QtGui.QMainWindow):
         selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
         self.selektorKanala=QtGui.QComboBox()
         self.selektorKanala.setMinimumContentsLength(20)
-        selektorSataLabel=QtGui.QLabel('Izbor sata')
-        self.selektorSata=QtGui.QComboBox()
-        self.selektorSata.setMinimumContentsLength(20)
-        self.gumbCrtajSatni=QtGui.QPushButton('CRTAJ SATNI')
-        self.gumbCrtajMinutni=QtGui.QPushButton('CRTAJ MINUTNI')
-        self.gumbClear=QtGui.QPushButton('BRISI GRAFOVE')
-        
+                
         IOLayout=QtGui.QVBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
         IOLayout.addWidget(self.selektorKanala)
-        IOLayout.addWidget(self.gumbCrtajSatni)
-        IOLayout.addWidget(selektorSataLabel)
-        IOLayout.addWidget(self.selektorSata)
-        IOLayout.addWidget(self.gumbCrtajMinutni)
-        IOLayout.addWidget(self.gumbClear)
-
+        
         #zavrsni layout
         final=QtGui.QHBoxLayout(self.mainWidget)
         final.addLayout(grafLayout)
@@ -89,18 +78,16 @@ class GlavniProzor(QtGui.QMainWindow):
         Kontrolni dio
         """
         #lokalni connect dijelova gui
-        self.connect(self.gumbCrtajSatni,
-                     QtCore.SIGNAL('clicked()'),
-                     self.gui_crtaj_satni)
-        self.connect(self.gumbCrtajMinutni,
-                     QtCore.SIGNAL('clicked()'),
-                     self.gui_crtaj_minutni)
         self.connect(self.canvasMinutni,
                      QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
                      self.set_status_bar)
-        self.connect(self.gumbClear,
-                     QtCore.SIGNAL('clicked()'),
-                     self.gui_request_clear)
+        
+        #connect, promjena vrijednosti selektora kanala crta satni graf
+        self.connect(self.selektorKanala,
+                     QtCore.SIGNAL('currentIndexChanged(int)'),
+                     self.gui_crtaj_satni)
+                
+                     
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
@@ -126,22 +113,6 @@ class GlavniProzor(QtGui.QMainWindow):
         self.selektorKanala.clear()
         self.selektorKanala.addItems(kanali)
         
-    def get_sati(self):
-        """
-        Emitira listu stringova (sve elemente comboboxa sa vremenima satnih
-        agregata)
-        """
-        rezultat=[]
-        for index in list(range(self.selektorSata.count())):
-            rezultat.append(self.selektorSata.itemText(index))
-        self.emit(QtCore.SIGNAL('gui_get_sati(PyQt_PyObject)'),rezultat)
-    
-    def set_sati(self,sati):
-        """
-        Cleara combobox sa vremenima satnih agregata te postavlja nove
-        """
-        self.selektorSata.clear()
-        self.selektorSata.addItems(sati)
         
     def get_kanal(self):
         """
@@ -157,19 +128,6 @@ class GlavniProzor(QtGui.QMainWindow):
         index=self.selektorSata.findText(kanal)
         self.selektorSata.setCurrentIndex(index)
     
-    def get_sat(self):
-        """
-        Emitira trenutno aktivni sat u comboboxu sa vremenima agregata
-        """
-        self.emit(QtCore.SIGNAL('gui_get_sat(PyQt_PyObject)'),
-                  self.selektorSata.currentText())
-    
-    def set_sat(self,vrijeme):
-        """
-        Postavlja sat kao trenutno aktivni u comboboxu sa vremenima agregata
-        """
-        index=self.selektorSata.findText(vrijeme)
-        self.selektorSata.setCurrentIndex(index)
     
     """
     Gumbi i akcije
@@ -192,19 +150,13 @@ class GlavniProzor(QtGui.QMainWindow):
         
     def gui_crtaj_satni(self):
         """
-        Zahtjev za crtanje satnih podataka (gumb)
+        Zahtjev za crtanje satnih podataka (gumb), i clear minutnog grafa
         """
         kanal=self.selektorKanala.currentText()
+        self.canvasMinutni.brisi_graf()
         self.emit(QtCore.SIGNAL('gui_request_crtaj_satni(PyQt_PyObject)'),
                   kanal)
         
-    def gui_crtaj_minutni(self):
-        """
-        Zahtjev za crtanje minutnih podataka (gumb)
-        """
-        sat=self.selektorSata.currentText()
-        self.emit(QtCore.SIGNAL('gui_request_crtaj_minutni(PyQt_PyObject)'),
-                  sat)
 
     def gui_request_save(self):
         """
@@ -218,9 +170,6 @@ class GlavniProzor(QtGui.QMainWindow):
         filepath=QtGui.QFileDialog.getOpenFileName(self,'Open CSV file','')
         self.emit(QtCore.SIGNAL('gui_request_load_csv(PyQt_PyObject)'),filepath)
 
-
-    def gui_request_clear(self):
-        self.emit(QtCore.SIGNAL('gui_request_clear()'))
 
 
 ###############################################################################
@@ -314,10 +263,10 @@ class GlavniProzor(QtGui.QMainWindow):
             else:
                 target.addAction(action)
 ###############################################################################
+    """
     def closeEvent(self, event):
-        """
-        Exit dialog for application. Additional confirmation
-        """
+        #Exit dialog for application. Additional confirmation
+        
         reply=QtGui.QMessageBox.question(
                 self,
                 'Confirm exit',
@@ -329,6 +278,7 @@ class GlavniProzor(QtGui.QMainWindow):
             event.accept()
         else:
             event.ignore()
+    """
 ###############################################################################
 
 

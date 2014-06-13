@@ -262,7 +262,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         self.data2=data[data['flagstat']==True]
         vrijeme2=self.data2['avg'].index
-        self.axes.scatter(vrijeme2,self.data2['avg'].values,
+        self.axes.plot(vrijeme2,self.data2['avg'].values,
                        marker='d',
                        color='red',
                        lw=1.5,

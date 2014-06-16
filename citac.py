@@ -148,7 +148,31 @@ class WlReader:
                 frejmovi[col].columns=tmp
         return frejmovi
 
+    def citaj_listu(self,lista):
+        """
+        Cita cijelu listu element po element, dodajuci ucitane podatke na jedan
+        dataframe.
+        -koristi funkciju citaj za citanje jednog elementa
+        -spaja datafrejmove po indeksu i svim stupcima
+        -FULL OUTER JOIN
+        """
+        izlaz={}
+        for element in lista:
+            frejmovi=self.citaj(element)
+            for kljuc in list(frejmovi.keys()):
+                if kljuc not in izlaz:
+                    izlaz[kljuc]=frejmovi[kljuc]
+                else:
+                    izlaz[kljuc]=pd.merge(
+                        izlaz[kljuc],
+                        frejmovi[kljuc],
+                        left_index=True,
+                        right_index=True,
+                        how='outer',
+                        on=[u'koncentracija',u'status',u'flag'],
+                        sort=True)
 
+        return izlaz
      
             
 if __name__ == "__main__":

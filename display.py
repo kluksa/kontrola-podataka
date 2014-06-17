@@ -110,7 +110,6 @@ class GlavniProzor(QtGui.QMainWindow):
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
 
-
 ###############################################################################
     """
     Dio osnovnih funkcija za mediator (get/set...)

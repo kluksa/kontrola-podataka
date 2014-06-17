@@ -63,7 +63,16 @@ class Mediator(QtGui.QWidget):
         self.connect(self,
                      QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),
                      gui.set_kanali)
-
+                     
+        #read csv (lista)
+        self.connect(gui.izborMapeSadrzaj,
+                     QtCore.SIGNAL('read_lista(PyQt_PyObject)'),
+                     self.med_read_lista_csv)
+                     
+        self.connect(self,
+                     QtCore.SIGNAL('med_request_read_list_csv(PyQt_PyObject)'),
+                     model.citaj_lista_csv)
+                     
         
         #crtaj satni procedure
         self.connect(gui,
@@ -81,12 +90,7 @@ class Mediator(QtGui.QWidget):
         self.connect(self,
                      QtCore.SIGNAL('med_draw_satni(PyQt_PyObject)'),
                      gui.canvasSatni.crtaj)
-        """
-        ovi connecti kontorliraju update nepostojeceg comboboxa
-        """
-        self.connect(model,
-                     QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),
-                     self.set_trenutnaListaSati)
+        
                      
         #crtaj minutni procedure
         self.connect(self,
@@ -172,8 +176,13 @@ class Mediator(QtGui.QWidget):
         message='Loading and preparing file '+filepath
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
         self.emit(QtCore.SIGNAL('med_request_read_csv(PyQt_PyObject)'),filepath)
-    
-    
+        
+    def med_read_lista_csv(self,lista):
+        self.lastLoadedFile=lista[-1]
+        message='Ucitavanje vise datoteka, molim pricekajte'
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+        self.emit(QtCore.SIGNAL('med_request_read_list_csv(PyQt_PyObject)'),lista)
+        
     def med_request_crtaj_satni(self,kanal):
         self.lastKanal=kanal
         message='Drawing aggregated data for '+kanal
@@ -302,10 +311,6 @@ class Mediator(QtGui.QWidget):
     def set_trenutnaListaKanala(self,kanali):
         self.trenutnaListaKanala=kanali
         self.emit(QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),kanali)
-        
-    def set_trenutnaListaSati(self,sati):
-        self.trenutnaListaSati=sati
-        self.emit(QtCore.SIGNAL('med_update_sati(PyQt_PyObject)'),sati)
         
     def set_lastKanal(self,kanal):
         self.lastKanal=kanal

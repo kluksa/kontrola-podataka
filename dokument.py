@@ -71,6 +71,26 @@ class Dokument(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
+    def citaj_lista_csv(self,lista):
+        """
+        Ucitava podatke iz csv filea
+        sprema sve kljuceve u member listu
+        popunjava dict s uredjajima
+        inicijalna agregacija sa autovalidacijom
+        
+        P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
+        """
+        reader=citac.WlReader()
+        self.frejmovi=reader.citaj_listu(lista)
+        self.kljucSviFrejmovi=list(self.frejmovi)
+        self.set_uredjaji(self.kljucSviFrejmovi)
+        self.agregiraj_sve(self.kljucSviFrejmovi)
+        
+        message='Multiple file load complete'
+        #emitiraj nove podatke o kljucu i status
+        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)        
+###############################################################################
     def set_uredjaji(self,kljucevi):
         """
         Popunjavanje dicta s komponenta:uredjaj. Za sada su svi uredjaji M100C

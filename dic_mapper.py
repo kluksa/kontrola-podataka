@@ -73,11 +73,9 @@ class FileSelektor(QtGui.QWidget):
             if x in self.stanice[stanica]:
                 lista=self.stanice[stanica][x]
                 self.label.setText(str(lista))
-                print(lista)
                 self.emit(QtCore.SIGNAL('read_lista(PyQt_PyObject)'),lista)
             else:
                 self.label.setText('nema podataka za zadani dan')
-                print('nema podataka za zadani dan')
 ###############################################################################
     def load_folder(self):
         self.comboStanica.clear()

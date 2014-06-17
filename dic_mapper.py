@@ -34,7 +34,7 @@ class FileSelektor(QtGui.QWidget):
     def __init__(self,parent=None):
         QtGui.QWidget.__init__(self,parent)
         
-        self.setWindowTitle('Prozor za odabir csv fileova')
+        self.setWindowTitle('Odabir datoteka')
         
         #neki memberi
         self.loaded=False
@@ -42,15 +42,15 @@ class FileSelektor(QtGui.QWidget):
         self.stanice={}
         self.stanice_C={}
         
-        self.gumb=QtGui.QPushButton('upisi ispod path do foldera i klikni')
+        self.gumb=QtGui.QPushButton('Potrvrdi izbor mape')
         self.path=QtGui.QLineEdit()
         self.comboStanica=QtGui.QComboBox()
         self.kalendar=QtGui.QCalendarWidget()        
-        self.label=QtGui.QLabel('info label')
+        self.label=QtGui.QLabel('Zadaj mapu')
         
         basicLayout=QtGui.QVBoxLayout(self)
-        basicLayout.addWidget(self.gumb)
         basicLayout.addWidget(self.path)
+        basicLayout.addWidget(self.gumb)
         basicLayout.addWidget(self.comboStanica)
         basicLayout.addWidget(self.kalendar)
         basicLayout.addWidget(self.label)
@@ -71,8 +71,10 @@ class FileSelektor(QtGui.QWidget):
         if self.loaded:
             #tu bi trebao biti emit sa podatcima ako je sve u redu.
             if x in self.stanice[stanica]:
-                self.label.setText(str(self.stanice[stanica][x]))
-                print(str(self.stanice[stanica][x]))
+                lista=self.stanice[stanica][x]
+                self.label.setText(str(lista))
+                print(lista)
+                self.emit(QtCore.SIGNAL('read_lista(PyQt_PyObject)'),lista)
             else:
                 self.label.setText('nema podataka za zadani dan')
                 print('nema podataka za zadani dan')

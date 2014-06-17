@@ -16,6 +16,7 @@ from PyQt4 import QtGui,QtCore
 import dokument
 import kontroler
 import graf_signal
+import dic_mapper
 
 class GlavniProzor(QtGui.QMainWindow):
     def __init__(self,parent=None):
@@ -45,6 +46,23 @@ class GlavniProzor(QtGui.QMainWindow):
         self.mainWidget=QtGui.QWidget()
         self.setCentralWidget(self.mainWidget)
         
+        """
+        dock widget za izbor mape,stanice,datuma (file selektor)
+        """
+        self.izborMape=QtGui.QDockWidget(self)
+        self.izborMape.setWindowTitle('Odabir podataka')
+
+        #postavljanje featurea
+        self.izborMape.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
+        self.izborMape.setFeatures(
+            QtGui.QDockWidget.DockWidgetFloatable|QtGui.QDockWidget.DockWidgetMovable)
+        
+        self.izborMape.setMinimumSize(QtCore.QSize(150,240))
+        self.izborMape.setMaximumSize(QtCore.QSize(240,360))
+        self.izborMapeSadrzaj=dic_mapper.FileSelektor()
+        self.izborMape.setWidget(self.izborMapeSadrzaj)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
+        
         #layout grafova
         self.graf1=QtGui.QWidget()
         self.graf2=QtGui.QWidget()
@@ -65,14 +83,14 @@ class GlavniProzor(QtGui.QMainWindow):
         self.selektorKanala=QtGui.QComboBox()
         self.selektorKanala.setMinimumContentsLength(20)
                 
-        IOLayout=QtGui.QVBoxLayout()
+        IOLayout=QtGui.QHBoxLayout()
         IOLayout.addWidget(selektorKanalaLabel)
         IOLayout.addWidget(self.selektorKanala)
         
         #zavrsni layout
-        final=QtGui.QHBoxLayout(self.mainWidget)
-        final.addLayout(grafLayout)
+        final=QtGui.QVBoxLayout(self.mainWidget)
         final.addLayout(IOLayout)
+        final.addLayout(grafLayout)
         
         """
         Kontrolni dio

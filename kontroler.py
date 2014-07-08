@@ -65,8 +65,13 @@ class Mediator(QtGui.QWidget):
                      gui.set_kanali)
                      
         #read csv (lista)
-        self.connect(gui.izborMapeSadrzaj,
-                     QtCore.SIGNAL('read_lista(PyQt_PyObject)'),
+        
+        #self.connect(gui.izborMapeSadrzaj,
+        #             QtCore.SIGNAL('read_lista(PyQt_PyObject)'),
+        #             self.med_read_lista_csv)
+        
+        self.connect(gui,
+                     QtCore.SIGNAL('read-lista(PyQt_PyObject)'),
                      self.med_read_lista_csv)
                      
         self.connect(self,
@@ -316,7 +321,3 @@ class Mediator(QtGui.QWidget):
         self.lastKanal=kanal
         self.emit(QtCore.SIGNAL('med_update_kanal(PyQt_PyObject)'),kanal)
         
-
-        
-        
-

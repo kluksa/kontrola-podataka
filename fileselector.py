@@ -31,10 +31,10 @@ class FileSelector(QtCore.QAbstractListModel):
             return "Doubleclick to open file or expand folder"
         if role == QtCore.Qt.DisplayRole:
             row = index.row()
-            return self.__files[row]
+            return str(self.__files[row])
         if role == QtCore.Qt.DecorationRole:
             row = index.row()
-            fullName = os.path.join(self.__folder, self.__files[row])
+            fullName = os.path.join(str(self.__folder), str(self.__files[row]))
             if os.path.isdir(fullName):
                 #directory decoration
                 icon = QtGui.QIcon("folder.png")
@@ -48,7 +48,7 @@ class FileSelector(QtCore.QAbstractListModel):
                     else:
                         icon = QtGui.QIcon("basic_file.png")
                         return icon
-            if self._files[row] == "...":
+            if str(self._files[row]) == "...":
                 #move to previous folder
                 icon = QtGui.QIcon("document-icon.png")
                 return icon
@@ -69,6 +69,9 @@ class SelectorWindow(base, form):
         super(base, self).__init__(parent)
         self.setupUi(self)
         
+        #generic object for emiting signals
+        self._sig = QtGui.QWidget()
+        
         #make proxy model for sorting and filtering
         self._proxyModel = QtGui.QSortFilterProxyModel()
         self._proxyModel.setDynamicSortFilter(True)
@@ -82,17 +85,21 @@ class SelectorWindow(base, form):
         self.uiListView.doubleClicked.connect(self.dbl_click_item)
         self.uiFolder.editingFinished.connect(self.get_files)
         
+        #set the current directory to the same directory from wich application is running
+        self.uiFolder.setText(str(os.path.dirname(sys.argv[0])))
+        self.uiFolder.editingFinished.emit()
+        
     def get_files(self):
-        folder = self.uiFolder.text()
+        folder = str(self.uiFolder.text())
         
         if os.path.isdir(folder):
             self._files = []
             self._folder = folder
             for file in os.listdir(folder):
-                self._files.append(file)
-            self._files.sort()
+                self._files.append(str(file))
+            sorted(self._files)
             #back one level
-            self._upFolder = os.path.dirname(self._folder)
+            self._upFolder = str(os.path.dirname(self._folder))
             #do not insert up folder if there is no parent folder            
             if self._folder != self._upFolder:
                 self._files.insert(0,"...")
@@ -117,8 +124,8 @@ class SelectorWindow(base, form):
             self.get_files()
         else:
             #case 2, clicked on folder
-            directory = os.path.abspath(self._folder)
-            clicked = os.path.join(directory, listViewItem.data())
+            directory = str(os.path.abspath(self._folder))
+            clicked = os.path.join(directory, str(listViewItem.data()))
             if os.path.isdir(clicked):
                 self._folder = clicked
                 self.uiFolder.clear()
@@ -126,9 +133,10 @@ class SelectorWindow(base, form):
                 self.get_files()
             #case 3, clicked on csv file
             if os.path.isfile(clicked) and clicked[-3:] == "csv":
-                print(clicked)
                 #implement a signal to transmit selection
-        
+                lista=[clicked]
+                self._sig.emit(QtCore.SIGNAL('read-lista(PyQt_PyObject)'),lista)
+                
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     window = SelectorWindow()

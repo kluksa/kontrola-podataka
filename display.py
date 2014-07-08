@@ -16,7 +16,8 @@ from PyQt4 import QtGui,QtCore
 import dokument
 import kontroler
 import graf_signal
-import dic_mapper
+#import dic_mapper
+import fileselector
 
 class GlavniProzor(QtGui.QMainWindow):
     def __init__(self,parent=None):
@@ -58,8 +59,9 @@ class GlavniProzor(QtGui.QMainWindow):
             QtGui.QDockWidget.DockWidgetFloatable|QtGui.QDockWidget.DockWidgetMovable)
         
         self.izborMape.setMinimumSize(QtCore.QSize(150,240))
-        self.izborMape.setMaximumSize(QtCore.QSize(240,360))
-        self.izborMapeSadrzaj=dic_mapper.FileSelektor()
+        self.izborMape.setMaximumSize(QtCore.QSize(360,560))
+        #self.izborMapeSadrzaj=dic_mapper.FileSelektor()
+        self.izborMapeSadrzaj=fileselector.SelectorWindow()
         self.izborMape.setWidget(self.izborMapeSadrzaj)
         self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
         
@@ -104,12 +106,22 @@ class GlavniProzor(QtGui.QMainWindow):
         self.connect(self.selektorKanala,
                      QtCore.SIGNAL('currentIndexChanged(int)'),
                      self.gui_crtaj_satni)
-                
+        
+        #connect file selektor izbora filea
+        self.connect(self.izborMapeSadrzaj._sig,
+                     QtCore.SIGNAL('read-lista(PyQt_PyObject)'),
+                     self.reEmit)
                      
         #inicijalizacija dokumenta i kontrolera
         self.doc=dokument.Dokument()
         self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
-
+###############################################################################
+    def reEmit(self,lista):
+        """
+        reemitira signal preuzet iz gui widgeta za odabir fileova
+        radi ok
+        """
+        self.emit(QtCore.SIGNAL('read-lista(PyQt_PyObject)'),lista)
 ###############################################################################
     """
     Dio osnovnih funkcija za mediator (get/set...)

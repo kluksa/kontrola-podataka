@@ -18,6 +18,13 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta
 
+
+from datetime import datetime
+import citac
+from agregator import Agregator
+import uredjaj
+import auto_validacija
+
 ###############################################################################
 class FlagDijalog(QtGui.QDialog):
     """
@@ -576,47 +583,33 @@ class ApplicationMain(QtGui.QMainWindow):
         """
         Testni podaci, dictionary pandas datafrejmova koji je rezultat agregatora.
         Koristim istu strukturu podataka ali random vrijednosti
-        """
-        vrijeme=pd.date_range('2014-03-15 12:00:00',periods=36,freq='H')
-        avg=10+np.random.rand(len(vrijeme))
-        min=6+np.random.rand(len(vrijeme))
-        max=14+np.random.rand(len(vrijeme))
-        median=10+np.random.rand(len(vrijeme))
-        q05=12+np.random.rand(len(vrijeme))
-        q95=8+np.random.rand(len(vrijeme))
-        status=np.random.rand(len(vrijeme))
-        std=np.random.rand(len(vrijeme))
-        count=np.random.rand(len(vrijeme))
-        #testni data frame za satni graf
-        data=pd.DataFrame(
-            {'avg':avg,
-            'min':min,
-            'max':max,
-            'med':median,
-            'q05':q05,
-            'q95':q95,
-            'status':status,
-            'std':std,
-            'count':count},
-            index=vrijeme)
+        """        
+        data = citac.citaj('pj.csv')
+        u1 = uredjaj.M100E()
+        u2 = uredjaj.M100C()
+        u1.pocetak=datetime(2000,1,1)
+        u2.pocetak=datetime(2014,2,24,0,10)
+        u1.kraj=datetime(2014,2,24,0,10)
+        u2.kraj=datetime(2015,1,1)
         
-        #test podatci za minutni graf
-        time=pd.date_range('2014-05-15 12:01:00',periods=60,freq='Min')
-        konc=10+np.random.rand(len(time))
-        flag=np.random.rand(len(time))
-        flag[20:30]=-1
-        status=np.random.rand(len(time))
-        dic={u'koncentracija':konc,u'flag':flag,u'status':status}
+        a = auto_validacija.AutoValidacija()
+        a.dodaj_uredjaj(u2)
+        a.dodaj_uredjaj(u1)
+        a.validiraj(data['1-SO2-ppb'])
         
-        #slapanje datafrejmova za graf
-        df=pd.DataFrame(dic,index=time)
+        ag = Agregator([u1,u2])
+        ag.setDataFrame(data['1-SO2-ppb'])
+        agregirani = ag.agregirajNiz()
+
+        #slapanje datafrejmova za minutni graf
+        df=data['1-SO2-ppb'].iloc[1:61,:]
         dfKonc=df
         dfOk=df[df.loc[:,u'flag']>=0]
         dfNo=df[df.loc[:,u'flag']<0]
         mData=[dfKonc,dfOk,dfNo]
         
         #naredba za plot
-        canvasSatni.crtaj(data)
+        canvasSatni.crtaj(agregirani)
         canvasMinutni.crtaj(mData)
     
     def test_print(self,x):

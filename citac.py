@@ -11,8 +11,7 @@ import re
 class WlReader:
 
     def __init__(self):
-        self.kanali = {'SO2':'1-SO2-ppb',
-                       'CO':'30-CO-ppm',}
+        self.kanali = {}
         """
         key:regex pattern to match it
         

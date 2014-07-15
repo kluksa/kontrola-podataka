@@ -48,7 +48,7 @@ class FileSelector(QtCore.QAbstractListModel):
                     else:
                         icon = QtGui.QIcon("basic_file.png")
                         return icon
-            if str(self._files[row]) == "...":
+            if str(self.__files[row]) == "...":
                 #move to previous folder
                 icon = QtGui.QIcon("document-icon.png")
                 return icon
@@ -97,6 +97,7 @@ class SelectorWindow(base, form):
             self._folder = folder
             for file in os.listdir(folder):
                 self._files.append(str(file))
+                print (str(file))
             sorted(self._files)
             #back one level
             self._upFolder = str(os.path.dirname(self._folder))

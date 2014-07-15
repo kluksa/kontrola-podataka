@@ -67,7 +67,7 @@ class FileSelektor(QtGui.QWidget):
         x=datum.toPyDate()
         x=str(x)
         x=x[0:4]+x[5:7]+x[8:10]
-        stanica=self.comboStanica.currentText()
+        stanica=str(self.comboStanica.currentText())
         if self.loaded:
             #tu bi trebao biti emit sa podatcima ako je sve u redu.
             if x in self.stanice[stanica]:
@@ -83,7 +83,7 @@ class FileSelektor(QtGui.QWidget):
             self.label.setText('unesi neki path foldera u gornji line edit')
         else:
             self.loaded=True
-            self.trenutniFolder=self.path.text()
+            self.trenutniFolder=str(self.path.text())
             #utrpaj funkciju koja radi dictionary strukturu. stanica, datum
             raw=self.find_all_csv(self.path.text())
             if raw=='dir ne postoji':

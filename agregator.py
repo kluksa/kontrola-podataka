@@ -1,30 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Velimir
--Ispravljena pogreška, agreg--- min i std su bili zamjenjeni
--Ispravljena pogreška prilikom inicijalizacije agregatora u testnom dijelu
-
--ostala samo jedna pogreška/upozorenje
-
-C:\WinPython-32bit-3.3.3.3\python-3.3.3\lib\site-packages\pandas\core\
-frame.py:1686: UserWarning: 
-Boolean Series key will be reindexed to match DataFrame index.
-"DataFrame index.", UserWarning)
-
-Grafikon se iscrtava ok.. nisam 100% siguran na što se upozorenje odnosi.
-Potencijalno na određivanje sliceova getSlajs, ili kod auto_validacije
-jer se tamo korisit boolean series key da se izvadi slice, ali warning kaže da
-se pandas sam pobrinuo za poravnavanje podataka (alignment). Možemo li
-ignorirati upozorenje??
+Agregator dio
 """
 
 import pandas as pd
-from datetime import timedelta
-from citac import WlReader
+from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
+
+import citac
 import auto_validacija
 import uredjaj
-from datetime import datetime
+
 
 class Agregator(object):
     
@@ -118,7 +104,7 @@ class Agregator(object):
     
 
 if __name__ == "__main__":
-    data = WlReader().citaj('pj.csv')
+    data = citac.citaj('pj.csv')
     u1 = uredjaj.M100E()
     u2 = uredjaj.M100C()
     u1.pocetak=datetime(2000,1,1)
@@ -129,10 +115,10 @@ if __name__ == "__main__":
     a = auto_validacija.AutoValidacija()
     a.dodaj_uredjaj(u2)
     a.dodaj_uredjaj(u1)
-    a.validiraj(data['SO2'])
+    a.validiraj(data['1-SO2-ppb'])
     
     ag = Agregator([u1,u2])
-    ag.setDataFrame(data['SO2'])
+    ag.setDataFrame(data['1-SO2-ppb'])
     agregirani = ag.agregirajNiz()
     nizNizova = ag.nizNiz()
 

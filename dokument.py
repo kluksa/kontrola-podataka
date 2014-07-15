@@ -20,6 +20,7 @@ class Dokument(QtGui.QWidget):
     '''
     classdocs
     -sublkasa QWidgeta zbog emit metode
+    -self.kljucSviFrejmovi je malo zbunjujuć (svi kljucevi osim 'Zone' i 'Flag')
     '''
 
 
@@ -60,9 +61,11 @@ class Dokument(QtGui.QWidget):
         popunjava dict s uredjajima
         inicijalna agregacija sa autovalidacijom
         """
-        reader=citac.WlReader()
-        self.frejmovi=reader.citaj(str(path))
+        self.frejmovi=citac.citaj(str(path))
         self.kljucSviFrejmovi=list(self.frejmovi)
+        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
+        self.kljucSviFrejmovi.remove('Flag')
+        self.kljucSviFrejmovi.remove('Zone')
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
@@ -80,9 +83,11 @@ class Dokument(QtGui.QWidget):
         
         P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
         """
-        reader=citac.WlReader()
-        self.frejmovi=reader.citaj_listu(lista)
+        self.frejmovi=citac.citaj_listu(lista)
         self.kljucSviFrejmovi=list(self.frejmovi)
+        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
+        self.kljucSviFrejmovi.remove('Flag')
+        self.kljucSviFrejmovi.remove('Zone')        
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
@@ -101,7 +106,7 @@ class Dokument(QtGui.QWidget):
         Direktno matchanje stringova zamjeniti regexom??
         """
         for kljuc in kljucevi:
-            if kljuc=='S02':
+            if kljuc=='1-S02-ppb':
                 #nesto u ovom stilu...
                 self.dictUredjaja[kljuc]=uredjaj.M100E()
             elif kljuc=='neki drugi':
@@ -250,9 +255,13 @@ class Dokument(QtGui.QWidget):
         self.frejmovi=None
         self.kljucSviFrejmovi=None
         
-        okviri=citac.WlReader().load_work(filepath)
+        okviri=citac.load_work(filepath)
         self.frejmovi=okviri
         self.kljucSviFrejmovi=list(self.frejmovi)
+        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
+        self.kljucSviFrejmovi.remove('Flag')
+        self.kljucSviFrejmovi.remove('Zone')
+        
         self.set_uredjaji(self.kljucSviFrejmovi)
         #agregiranje bez autovalidacije? problem
         for kljuc in self.kljucSviFrejmovi:

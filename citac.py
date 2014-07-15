@@ -32,75 +32,45 @@ def citaj(path):
     -benchchmark result je oko 1 sec kod mene
     """
     #read from file, lagano usporava read, ali znatno ubrzava save
-    df = citaj_probno(path)
-    
-    #cut the zone and flag columns from the end of dataframe            
-    dfShort = df.iloc[:,:-2]
-    
-    #get names of all columns that do not have flag or status in name
-    headerList = dfShort.columns.values
-    lenListe = len(headerList)
-    frejmovi = {}
-    
-    for colName in dfShort:
-        match1 = re.search(r'status', colName, re.IGNORECASE)
-        match2 = re.search(r'flag', colName, re.IGNORECASE)
-        if (not match1) and (not match2):
-            i = dfShort.columns.get_loc(colName)
-            if ((i+2) < lenListe) and re.search(r'flag', dfShort.columns[i+2], re.IGNORECASE):
-                #flag column postoji u dataframeu
-                frejmovi[colName] = dfShort.iloc[:,i:i+3]
-                frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-            else:
-                #flag column ne postoji u dataframeu
-                frejmovi[colName] = dfShort.iloc[:,i:i+2]
-                frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
-                frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-    
-    #dodaj stupce 'Flag' i 'Zone' u dictionary
-    frejmovi[u'Flag'] = pd.DataFrame({u'Flag':df.loc[:,u'Flag']})
-    frejmovi[u'Zone'] = pd.DataFrame({u'Zone':df.loc[:,u'Zone']})
-    
-    return frejmovi
-###############################################################################
-#@benchmark
-def citaj_probno(filepath):
-    """
-    funkcija probno ucitava dataframe. Provjerava da li je prvi stupac
-    Ako je prvi stupac 'Time' znaci da u csv tablici imamo 2 stupca ['Date','Time'].
-    Ako je prvi stupac razlicit od 'Time' znaci da u csv tablici imamo 1 stupac
-    [Date_Time], pa moramo drugacije ucitati dataframe.
-    """
-    #read from file
-    _df = pd.read_csv(
-        filepath, 
-        index_col=0, 
-        header=0, 
-        encoding='latin-1')
-    #slucaj [Date,Time]
-    if _df.columns[0]==u'Time':
-        _df = pd.read_csv(
-            filepath, 
+    df = pd.read_csv(
+            path, 
             na_values='-999.00', 
             index_col=0, 
             parse_dates=[[0,1]], 
             dayfirst=True, 
             header=0, 
             sep=',', 
-            encoding='latin-1')
-    #slucaj [Date_Time]
-    else:
-        _df=pd.read_csv(
-            filepath, 
-            na_values='-999.00', 
-            index_col=0, 
-            parse_dates=True, 
-            header=0, 
-            sep=',', 
-            encoding='latin-1')
+            encoding='iso-8859-1')
+ 
+    #cut the zone and flag columns from the end of dataframe            
+    #ovo je sve prekomplicirano. Dakle, ti ZNAS da su nulti i prvi stupac Time i Date (inace Wlreader ne radi)
+    #znas da je 2*n stupac mjerenje, a 2*n+1 stupac uvijek status te da je stupac N-2 Flag, a N-1 Zone (n=1..N-3, N- broj stupaca) 
+    # s obzirom da to ZNAS, trebalo bi provjeriti je li fajl u tom formatu, ako nije, onda WlReader baca iznimku jer je WlReader
+    # klasa za citanje WL datoteka i nikojih drugih
+    #
+    # Dakle prema ovome sto sam rekao, dfShort je nepotrebanm matching je nepotreban, iteracija moze ici u klasicnoj for petlji
+    # sto nas vodi do
+
+    #get names of all columns that do not have flag or status in name
+    headerList = df.columns.values
+
+    provjeri_headere(headerList)
+
+    lenListe = len(headerList)
+    frejmovi = {}
+    for i in range(2,len(headerList)-2,2):
+        colName = headerList[i]
+        frejmovi[colName] = df.iloc[:,i:i+2]
+        frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
+        frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
+    return frejmovi
     
-    return _df
-    
+def provjeri_headere(headerList):
+    # TODO:
+    # ovdje se provjera format datoteka, ako je dobar funkcija izadje, a ako nije
+    # baca iznimku
+    return
+
 ###############################################################################
 #benchmark
 def save_work(frejmovi,filepath):
@@ -108,71 +78,10 @@ def save_work(frejmovi,filepath):
     Sprema dictionary datafrejmova u csv file
     -benchchmark result je oko 1 sec kod mene
     """
-    keyList = list(frejmovi.keys())
-    indeks = frejmovi[keyList[0]].index
-    i = 1
-    for key in keyList:
-        if (key != u'Flag') and (key != u'Zone'):
-            dfCurrent = frejmovi[key]
-            tmp = dfCurrent.columns.values
-            tmp[0] = key
-            tmp[1] = u'status'+str(i)
-            tmp[2] = u'flag'+str(i)
-            dfCurrent.columns = tmp
-            i += 1
-            dfAll = dfAll.merge(dfCurrent, 
-                                how = 'outer', 
-                                left_index = True, 
-                                right_index = True)
-            #jednostavnije (i brze) je vratiti imena nazad nego raditi deep copy
-            tmp = dfCurrent.columns.values
-            tmp[0] = u'koncentracija'
-            tmp[1] = u'status'
-            tmp[2] = u'flag'
-            dfCurrent.columns = tmp
-            
-    dfAll = dfAll.merge(frejmovi[u'Flag'], 
-                        how = 'outer', 
-                        left_index = True, 
-                        right_index = True)
-    dfAll = dfAll.merge(frejmovi[u'Zone'], 
-                        how = 'outer', 
-                        left_index = True, 
-                        right_index = True)
-
-    
-    #write to csv file
-    dfAll.to_csv(
-        filepath, 
-        na_rep = '-999.00', 
-        sep = ',', 
-        encoding = 'latin-1')
+    return
 ###############################################################################
 def load_work(filepath):
-    """
-    MAKNI U BUDUCNOSTI!!!!
-    trenutni fix zbog GUI/kontroler interakcije
-    """
-    return citaj(filepath)
-###############################################################################
-#@benchmark
-def citaj_listu(lista):
-    """
-    Cita cijelu listu element po element, dodajuci ucitane podatke na jedan
-    izlazni dataframe.
-    -koristi funkciju citaj za citanje jednog elementa
-    -podatci se ili prepisuju iz originalnog datafrejma ili se updateaju po potrebi
-    """
-    izlaz = {}
-    for element in lista:
-        frejmovi = citaj(element)
-        _temp = deepcopy(frejmovi)
-        for kljuc in list(_temp.keys()):
-            if kljuc not in izlaz:
-                izlaz[kljuc]=_temp[kljuc]
-            else:
-                izlaz[kljuc].update(_temp[kljuc])
-    return izlaz
+    return
 ###############################################################################
 #benchmark    
 def test_frames1(frames1,frames2):
@@ -229,7 +138,6 @@ if __name__ == '__main__':
     data = citaj('pj.csv')
     save_work(data, 'pj_saved.csv')
     data1 = citaj('pj_saved.csv')
-    data2 = citaj_listu(['pj.csv','pj_saved.csv'])
     test_frames1(data,data1)
     test_frames2(data,data2)
     #test_frames2 je jako spor. treba mu oko 7 minuta za provjeru.

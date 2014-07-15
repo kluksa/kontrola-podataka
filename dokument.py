@@ -61,11 +61,10 @@ class Dokument(QtGui.QWidget):
         popunjava dict s uredjajima
         inicijalna agregacija sa autovalidacijom
         """
-        self.frejmovi=citac.citaj(str(path))
+        self.frejmovi=citac.citaj(unicode(path))
         self.kljucSviFrejmovi=list(self.frejmovi)
         #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
-        self.kljucSviFrejmovi.remove('Flag')
-        self.kljucSviFrejmovi.remove('Zone')
+        # nema smisla, reader ne izbacuje nepotrebne stvari
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
@@ -147,14 +146,13 @@ class Dokument(QtGui.QWidget):
         -emitiraj signal sa satno agregiranim podatcima
         -emitiraj listu satnih vrijednosti (stringova)
         """
-        self.aktivniFrame=str(kanal)
+        self.aktivniFrame=unicode(kanal)
         #za slucaj da netko stisne gumb prije nego ucita podatke
         try:
             data=self.agregirani[self.aktivniFrame]
             self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),data)
             sati=[]
             for vrijeme in self.agregirani[self.aktivniFrame].index:
-                vrijeme=str(vrijeme)
                 sati.append(vrijeme)
             self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
         except KeyError:
@@ -167,8 +165,6 @@ class Dokument(QtGui.QWidget):
         #racunanje gornje i donje granice, castanje u string nakon racunice
         up=pd.to_datetime(sat)
         down=up-timedelta(minutes=59)
-        up=str(up)
-        down=str(down)
         
         #napravi listu data[all,flag>=0,flag<0]
         try:
@@ -189,10 +185,10 @@ class Dokument(QtGui.QWidget):
         """
         Promjena minutnog flaga
         """
-        time=str(dic['time'])
+        time=dic['time']
         flag=dic['flag']
         kanal=dic['kanal']
-        sat=str(dic['sat'])
+        sat=dic['sat']
         self.aktivniFrame=kanal
         self.odabraniSatniPodatak=sat
 
@@ -214,12 +210,12 @@ class Dokument(QtGui.QWidget):
         """
         Promjenia minutnog flaga u rasponu
         """
-        timeMin=str(dic['min'])
-        timeMax=str(dic['max'])
+        timeMin=dic['min']
+        timeMax=dic['max']
         flag=dic['flag']
         kanal=dic['kanal']
-        sat=str(dic['sat'])
-        self.aktivniFrame=str(kanal)
+        sat=dic['sat']
+        self.aktivniFrame=unicode(kanal)
         self.odabraniSatniPodatak=sat
         
         #promjeni flag

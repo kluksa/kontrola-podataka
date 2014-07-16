@@ -43,7 +43,6 @@ def citaj_weblog(path):
             encoding='iso-8859-1')
     
         headerList = df.columns.values
-        print(headerList)
         frejmovi = {}
         for i in range(0,len(headerList)-2,2):
             colName = headerList[i]
@@ -77,7 +76,11 @@ def provjeri_headere_weblog(path):
         #makni \n na kraju linije
         firstLine = firstLine[:-1]
         headerList = firstLine.split(sep=',')
-        
+        """
+        Index error moguc, dodan u exceptione:
+        1. file je prazan ---> headerList[1] ne postoji
+        2. file ima samo jedan column ---> headerList[1] ne postoji
+        """
         #dio za provjeru prva dva stupca...('Date', 'Time')
         if (headerList[0],headerList[1]) != ('Date', 'Time'):
             return False
@@ -99,6 +102,9 @@ def provjeri_headere_weblog(path):
     except IOError:
         print('Problem with reading file {0}'.format(path))
         return False
+    except IndexError:
+        print('Problem with reading file {0}'.format(path))
+        return False
 ###############################################################################
 def save_work(frejmovi,filepath):
     print('save_work not implemented')
@@ -109,16 +115,19 @@ def load_work(filepath):
     return
 ###############################################################################
 if __name__ == '__main__':
-    print('\ntest nepostojeceg filea')
-    x = provjeri_headere_weblog('pj123.csv')
-    print('\ntest postojeceg filea, pravilne strukture')
-    y = provjeri_headere_weblog('pj.csv')
-    print('\ntest postojeceg filea, nepravilne strukture')
-    print('pogreska u Time, jednom statusu, jedom mjerenju')
-    z = provjeri_headere_weblog('pj_corrupted.csv')
-    #ucitavanje
+#    print('\ntest nepostojeceg filea')
+#    x = provjeri_headere_weblog('pj123.csv')
+#    print('\ntest postojeceg filea, pravilne strukture')
+#    y = provjeri_headere_weblog('pj.csv')
+#    print('\ntest postojeceg filea, nepravilne strukture')
+#    print('pogreska u Time, jednom statusu, jedom mjerenju')
+#    z = provjeri_headere_weblog('pj_corrupted.csv')
+#    print('\ntest postojeceg filea, praznog')
+#    k = provjeri_headere_weblog('pj_empty.csv')
+    
     data1 = citaj_weblog('pj.csv')
     data2 = citaj_weblog('pj123.csv')
     data3 = citaj_weblog('pj_corrupted.csv')
+    data4 = citaj_weblog('pj_empty.csv')
     
     

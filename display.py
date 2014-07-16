@@ -10,7 +10,6 @@ Created on Mon May 12 11:23:36 2014
 
 -izbrisao sve bitno osim layouta.
 TODO:
-1.dodaj dijalog za izbor tipa fileova prilikom pritiska na read file gumb
 2.sredi izbornik fileova (dockable widget prema uputama)
 3.spoji read filea sa grafovima
 4.spoji promjene i update grafova u gui-u
@@ -58,24 +57,6 @@ class GlavniProzor(QtGui.QMainWindow):
         self.mainWidget=QtGui.QWidget()
         self.setCentralWidget(self.mainWidget)
         
-        """
-        dock widget za izbor mape,stanice,datuma (file selektor)
-        """
-        self.izborMape=QtGui.QDockWidget(self)
-        self.izborMape.setWindowTitle('Odabir podataka')
-
-        #postavljanje featurea
-        self.izborMape.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
-        self.izborMape.setFeatures(
-            QtGui.QDockWidget.DockWidgetFloatable|QtGui.QDockWidget.DockWidgetMovable)
-        
-        self.izborMape.setMinimumSize(QtCore.QSize(150,240))
-        self.izborMape.setMaximumSize(QtCore.QSize(360,560))
-        #self.izborMapeSadrzaj=dic_mapper.FileSelektor()
-        self.izborMapeSadrzaj=fileselector.SelectorWindow()
-        self.izborMape.setWidget(self.izborMapeSadrzaj)
-        self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
-        
         #layout grafova
         self.graf1=QtGui.QWidget()
         self.graf2=QtGui.QWidget()
@@ -113,16 +94,29 @@ class GlavniProzor(QtGui.QMainWindow):
     
     def gui_action_read_file(self):
         """
-        Akcija za read novi csv file, otvara file dialog i emitira path do
-        csv filea
+        Akcija za read file.
+        Otvara dialog za izbor tipa filea.
+        Ovisno o izboru:
+        -stvara widget za izbor filea za otvaranje i navigaciju
+        -docka ga u main window
         """
-        #TODO:
-        #sredi izbornih za tip filea kao dijalog
-        #ovisno o njemu, napravi i dockaj widget za izbor i navigaciju filea
-        filepath=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
-        self.emit(QtCore.SIGNAL('gui_request_read_csv(PyQt_PyObject)'),
-                  filepath)
-                  
+        dijalog = ReadFileIzbor()
+        
+        #na istu shemu se dodaju i rezultati drugih gumba po potrebi
+        if dijalog.izbor == 'weblogger':
+            self.izborMape=QtGui.QDockWidget(self)
+            self.izborMape.setWindowTitle('Odabir podataka')
+            
+            #velicina, format, postavke QDockWidget
+            self.izborMape.setMinimumSize(QtCore.QSize(150,240))
+            self.izborMape.setMaximumSize(QtCore.QSize(360,560))
+            #definiraj sadrzaj dockable widgeta
+            self.izborMapeSadrzaj=fileselector.SelectorWindow()
+            self.izborMape.setWidget(self.izborMapeSadrzaj)
+            #dodaj ga na main window na lijevom rubu
+            self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
+
+                          
     def set_status_bar(self,tekst):
         """
         Update statusbara
@@ -221,7 +215,31 @@ class GlavniProzor(QtGui.QMainWindow):
             event.ignore()
     """
 ###############################################################################
-
+###############################################################################
+class ReadFileIzbor(QtGui.QDialog):
+    def __init__(self, parent = None):
+        QtGui.QWidget.__init__(self, parent)
+        #izlazna vrijednost izbora preko membera self.izbor
+        self.izbor = None        
+        #definiraj gumbe
+        buttonWeblogger = QtGui.QPushButton('weblogger csv')
+        buttonCancel = QtGui.QPushButton('cancel')
+        #definiraj osnovi layout pop up poruke        
+        msgBox = QtGui.QMessageBox()
+        msgBox.setWindowTitle('Izbor tipa file')
+        msgBox.setText('Odaberi tip filea za citanje')
+        #dodaj gumbe u poruku
+        msgBox.addButton(buttonWeblogger, QtGui.QMessageBox.ActionRole)
+        msgBox.addButton(buttonCancel, QtGui.QMessageBox.ActionRole)
+        #ret pokrece i hvata main loop dijaloga        
+        ret = msgBox.exec_()
+        #test za provjeru gumba (koji je stisnut)
+        if msgBox.clickedButton() == buttonWeblogger:
+            self.izbor = 'weblogger'
+        else:
+            self.izbor = None
+###############################################################################
+###############################################################################
 
 if __name__ == '__main__':
     aplikacija = QtGui.QApplication(sys.argv)

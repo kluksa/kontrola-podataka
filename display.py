@@ -7,6 +7,13 @@ Created on Mon May 12 11:23:36 2014
 
 -treba dodavati grafičke elemente po potrebi
 -napisati metode za prikazivanje pojedinih elemenata (npr. update Comboboxeva)
+
+-izbrisao sve bitno osim layouta.
+TODO:
+1.dodaj dijalog za izbor tipa fileova prilikom pritiska na read file gumb
+2.sredi izbornik fileova (dockable widget prema uputama)
+3.spoji read filea sa grafovima
+4.spoji promjene i update grafova u gui-u
 """
 
 import sys
@@ -21,6 +28,10 @@ import fileselector
 
 class GlavniProzor(QtGui.QMainWindow):
     def __init__(self,parent=None):
+        """
+        -ideja je ovo kasnije pregaziti s nekim ui fileom iz designera
+        -trenutno je lakse povezivati widgete etc...
+        """
         QtGui.QMainWindow.__init__(self, parent)
         self.setWindowTitle('Kontrola podataka')
         self.resize(800, 600)
@@ -94,79 +105,20 @@ class GlavniProzor(QtGui.QMainWindow):
         final.addLayout(IOLayout)
         final.addLayout(grafLayout)
         
-        """
-        Kontrolni dio
-        """
-        #lokalni connect dijelova gui
-        self.connect(self.canvasMinutni,
-                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
-                     self.set_status_bar)
-        
-        #connect, promjena vrijednosti selektora kanala crta satni graf
-        self.connect(self.selektorKanala,
-                     QtCore.SIGNAL('currentIndexChanged(int)'),
-                     self.gui_crtaj_satni)
-        
-        #connect file selektor izbora filea
-        self.connect(self.izborMapeSadrzaj._sig,
-                     QtCore.SIGNAL('read-lista(PyQt_PyObject)'),
-                     self.reEmit)
-                     
-        #inicijalizacija dokumenta i kontrolera
-        self.doc=dokument.Dokument()
-        self.kontrola=kontroler.Mediator(gui=self,model=self.doc)
 ###############################################################################
-    def reEmit(self,lista):
-        """
-        reemitira signal preuzet iz gui widgeta za odabir fileova
-        radi ok
-        """
-        self.emit(QtCore.SIGNAL('read-lista(PyQt_PyObject)'),lista)
-###############################################################################
-    """
-    Dio osnovnih funkcija za mediator (get/set...)
-    """
-    def get_kanali(self):
-        """
-        Emitira listu stringova (sve elemente comboboxa sa kanalima)
-        """
-        rezultat=[]
-        for index in list(range(self.selektorKanala.count())):
-            rezultat.append(self.selektorKanala.itemText(index))
-        self.emit(QtCore.SIGNAL('gui_get_kanali(PyQt_PyObject)'),rezultat)
-        
-    def set_kanali(self,kanali):
-        """
-        Cleara combobox sa kanalima te postavlja nove kanale
-        """
-        self.selektorKanala.clear()
-        self.selektorKanala.addItems(kanali)
-        
-        
-    def get_kanal(self):
-        """
-        Emitira trenutno aktivni kanal u comboboxu s kanalima (string)
-        """
-        self.emit(QtCore.SIGNAL('gui_get_kanal(PyQt_PyObject)'),
-                  self.selektorKanala.currentText())
-    
-    def set_kanal(self,kanal):
-        """
-        Postavlja kanal kao trenutno aktivni u comboboxu s kanalima
-        """
-        index=self.selektorSata.findText(kanal)
-        self.selektorSata.setCurrentIndex(index)
-    
     
     """
-    Gumbi i akcije
+    Gumbi i menu/toolbar akcije
     """
     
-    def gui_request_read_csv(self):
+    def gui_action_read_file(self):
         """
         Akcija za read novi csv file, otvara file dialog i emitira path do
         csv filea
         """
+        #TODO:
+        #sredi izbornih za tip filea kao dijalog
+        #ovisno o njemu, napravi i dockaj widget za izbor i navigaciju filea
         filepath=QtGui.QFileDialog.getOpenFileName(self, 'Open CSV file', '')
         self.emit(QtCore.SIGNAL('gui_request_read_csv(PyQt_PyObject)'),
                   filepath)
@@ -177,30 +129,6 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         self.statusBar().showMessage(tekst)
         
-    def gui_crtaj_satni(self):
-        """
-        Zahtjev za crtanje satnih podataka (gumb), i clear minutnog grafa
-        """
-        kanal=self.selektorKanala.currentText()
-        self.canvasMinutni.brisi_graf()
-        self.emit(QtCore.SIGNAL('gui_request_crtaj_satni(PyQt_PyObject)'),
-                  kanal)
-        
-
-    def gui_request_save(self):
-        """
-        Zahtjev za save (akcija)
-        """
-        filepath=QtGui.QFileDialog.getSaveFileName(self,'Save CSV file','')
-        self.emit(QtCore.SIGNAL('gui_request_save_csv(PyQt_PyObject)'),filepath)
-
-
-    def gui_request_load(self):
-        filepath=QtGui.QFileDialog.getOpenFileName(self,'Open CSV file','')
-        self.emit(QtCore.SIGNAL('gui_request_load_csv(PyQt_PyObject)'),filepath)
-
-
-
 ###############################################################################
     def create_menu(self):
         """
@@ -208,31 +136,18 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         self.fileMenu=self.menuBar().addMenu("&File")
         
-        self.action_save_csv=self.create_action('&Save',
-                                                slot=self.gui_request_save,
-                                                shortcut='Alt+S',
-                                                tooltip='Save file')
-                                                
-        self.action_load_csv=self.create_action('&Open',
-                                                slot=self.gui_request_load,
-                                                shortcut='Alt+O',
-                                                tooltip='Open file')
-                
         self.action_exit=self.create_action('&Exit',
                                             slot=self.close,
                                             shortcut='Ctrl+Q',
                                             tooltip='Exit the application')
                                             
-        self.action_read_csv=self.create_action('&Read CSV file',
-                                                slot=self.gui_request_read_csv,
+        self.action_read_file=self.create_action('&Read file',
+                                                slot=self.gui_action_read_file,
                                                 shortcut='Alt+R',
                                                 tooltip='Read file')
                                             
                                             
-        fileMenuList=[self.action_save_csv,
-                      self.action_load_csv,
-                      None,
-                      self.action_read_csv,
+        fileMenuList=[self.action_read_file,
                       None,
                       self.action_exit]
                 
@@ -244,10 +159,7 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         toolBar=self.addToolBar('Main toolbar')
         
-        toolBarList=[self.action_save_csv,
-                     self.action_load_csv,
-                     None,
-                     self.action_read_csv,
+        toolBarList=[self.action_read_file,
                      None,
                      self.action_exit]
         

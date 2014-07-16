@@ -61,7 +61,7 @@ class Dokument(QtGui.QWidget):
         popunjava dict s uredjajima
         inicijalna agregacija sa autovalidacijom
         """
-        self.frejmovi=citac.citaj(unicode(path))
+        self.frejmovi=citac.citaj_weblog(unicode(path))
         self.kljucSviFrejmovi=list(self.frejmovi)
         #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
         # nema smisla, reader ne izbacuje nepotrebne stvari

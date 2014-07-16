@@ -61,9 +61,14 @@ def citaj_weblog(path):
 def provjeri_headere_weblog(path):
     """
     Testna funkcija za provjeru headera csv filea na lokaciji path.
-    -ne koristim dataframe headere, direktno citam prvi redak iz filea!
+    Ne koristim dataframe headere, direktno citam prvi redak iz filea!
+        - ne treba ucitati cijeli file i upisati ga u dataframe za test
+        - u headeru iz datafrejma nema Date, Time (to je index stupac Date_Time)
+        
+    OK struktura je:
     Date,Time,mjerenje1,status1,...mjerenjeN,statusN,Flag,Zone
-    vraca True ako je struktura dobra, false inace
+    
+    Vraca True ako je struktura dobra, inace vraca False cim naleti na neko odstupanje
     """
     try:
         file = open(path)

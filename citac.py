@@ -8,7 +8,7 @@ Created on Fri Jul 11 08:44:06 2014
 import pandas as pd
 import re
 from functools import wraps
-from copy import deepcopy
+
 
 ###############################################################################
 def benchmark(func):
@@ -25,14 +25,14 @@ def benchmark(func):
         return res
     return wrapper
 ###############################################################################
-#@benchmark
-def citaj(path):
+@benchmark
+def citaj_weblog(path):
     """
-    Function reads from csv file into a dictionary of pandas dataframes
-    -benchchmark result je oko 1 sec kod mene
+    path = fullpath do filea
+    funkcija cita weblogger csv fileove u dictionary pandas datafrejmova
     """
-    #read from file, lagano usporava read, ali znatno ubrzava save
-    df = pd.read_csv(
+    if provjeri_headere_weblog(path):
+        df = pd.read_csv(
             path, 
             na_values='-999.00', 
             index_col=0, 
@@ -41,105 +41,79 @@ def citaj(path):
             header=0, 
             sep=',', 
             encoding='iso-8859-1')
- 
-    #cut the zone and flag columns from the end of dataframe            
-    #ovo je sve prekomplicirano. Dakle, ti ZNAS da su nulti i prvi stupac Time i Date (inace Wlreader ne radi)
-    #znas da je 2*n stupac mjerenje, a 2*n+1 stupac uvijek status te da je stupac N-2 Flag, a N-1 Zone (n=1..N-3, N- broj stupaca) 
-    # s obzirom da to ZNAS, trebalo bi provjeriti je li fajl u tom formatu, ako nije, onda WlReader baca iznimku jer je WlReader
-    # klasa za citanje WL datoteka i nikojih drugih
-    #
-    # Dakle prema ovome sto sam rekao, dfShort je nepotrebanm matching je nepotreban, iteracija moze ici u klasicnoj for petlji
-    # sto nas vodi do
-
-    #get names of all columns that do not have flag or status in name
-    headerList = df.columns.values
-
-    provjeri_headere(headerList)
-
-    lenListe = len(headerList)
-    frejmovi = {}
-    for i in range(2,len(headerList)-2,2):
-        colName = headerList[i]
-        frejmovi[colName] = df.iloc[:,i:i+2]
-        frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
-        frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-    return frejmovi
     
-def provjeri_headere(headerList):
-    # TODO:
-    # ovdje se provjera format datoteka, ako je dobar funkcija izadje, a ako nije
-    # baca iznimku
-    return
+        headerList = df.columns.values
+        print(headerList)
+        frejmovi = {}
+        for i in range(0,len(headerList)-2,2):
+            colName = headerList[i]
+            frejmovi[colName] = df.iloc[:,i:i+2]
+            frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
+            frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
+        return frejmovi
+    else:
+        #trenutno bez implementacije
+        print('\nNekakvo njesra s fileom, implementiraj neki msg da je akcija failala')
+        return
 
 ###############################################################################
-#benchmark
+@benchmark
+def provjeri_headere_weblog(path):
+    """
+    Testna funkcija za provjeru headera csv filea na lokaciji path.
+    -ne koristim dataframe headere, direktno citam prvi redak iz filea!
+    Date,Time,mjerenje1,status1,...mjerenjeN,statusN,Flag,Zone
+    vraca True ako je struktura dobra, false inace
+    """
+    try:
+        file = open(path)
+        firstLine = file.readline()
+        file.close()
+        #makni \n na kraju linije
+        firstLine = firstLine[:-1]
+        headerList = firstLine.split(sep=',')
+        
+        #dio za provjeru prva dva stupca...('Date', 'Time')
+        if (headerList[0],headerList[1]) != ('Date', 'Time'):
+            return False
+        #dio za provjeru zadnja dva stupca... ('Flag', 'Zone')
+        if (headerList[-2],headerList[-1]) != ('Flag','Zone'):
+            return False
+        #svi parni stupci moraju biti razliciti od "status"
+        for i in range(2,len(headerList)-2,2):
+            statusMatch = re.search(r'status', headerList[i], re.IGNORECASE)
+            if statusMatch:
+                return False
+        #svi neparni stupci moraju biti "status"
+        for i in range(3,len(headerList)-2,2):
+            statusMatch = re.search(r'status', headerList[i], re.IGNORECASE)
+            if not statusMatch:
+                return False
+        return True
+    
+    except IOError:
+        print('Problem with reading file {0}'.format(path))
+        return False
+###############################################################################
 def save_work(frejmovi,filepath):
-    """
-    Sprema dictionary datafrejmova u csv file
-    -benchchmark result je oko 1 sec kod mene
-    """
+    print('save_work not implemented')
     return
 ###############################################################################
 def load_work(filepath):
+    print('load_work not implemented')
     return
 ###############################################################################
-#benchmark    
-def test_frames1(frames1,frames2):
-    """
-    -provjera kljuceva dictova u oba frejma
-    """    
-    ukupno = True
-    if len(frames1.keys()) == len(frames2.keys()):
-        print('OK!, isti broj frejmova')
-        ukupno = ukupno and True
-    else:
-        print('ERROR!, broj frejmova ne odgovara')
-        ukupno = ukupno and False
-        
-    f1=list(frames1.keys())
-    f2=list(frames2.keys())
-    for frame in f1:
-        if frame in f2:
-            print('OK!, {0} frame je u obje liste'.format(frame))
-            ukupno = ukupno and True
-        else:
-            print('ERROR!, {0} nije u drugoj listi'.format(frame))
-            ukupno = ukupno and False
-    if ukupno:
-        print('Test OK!')
-    else:
-        print('Error!')
-###############################################################################
-#@benchmark
-def test_frames2(frames1,frames2):
-    """
-    Test_frames2 provjerava podatak po podatak da li je na dobram mjestu.
-    -Provjera identiteta dva dicta datafrejmova (konzistencija read - read_saved)
-    """    
-    ukupno = True
-    keys = frames1.keys()
-    for key in keys:
-        indeks = frames1[key].index
-        cols = frames1[key].columns.values
-        for i in indeks:
-            for j in cols:
-                #da izbjegnem np.nan... castam usporedbu u string
-                if str(frames1[key].loc[i,j]) != str(frames2[key].loc[i,j]):
-                    print('VALUE MISMATCH!:\nkey = {0}\nindeks = {1}\ncolumn = {2}'.format(key,i,j))
-                    ukupno = False
-                    break
-    if ukupno:
-        print('OK!')
-    else:
-        print('ERROR!')
-            
-###############################################################################
 if __name__ == '__main__':
-    data = citaj('pj.csv')
-    save_work(data, 'pj_saved.csv')
-    data1 = citaj('pj_saved.csv')
-    test_frames1(data,data1)
-    test_frames2(data,data2)
-    #test_frames2 je jako spor. treba mu oko 7 minuta za provjeru.
-    #test_frames2(data,data1)
-    #test_frames2(data,data2)
+    print('\ntest nepostojeceg filea')
+    x = provjeri_headere_weblog('pj123.csv')
+    print('\ntest postojeceg filea, pravilne strukture')
+    y = provjeri_headere_weblog('pj.csv')
+    print('\ntest postojeceg filea, nepravilne strukture')
+    print('pogreska u Time, jednom statusu, jedom mjerenju')
+    z = provjeri_headere_weblog('pj_corrupted.csv')
+    #ucitavanje
+    data1 = citaj_weblog('pj.csv')
+    data2 = citaj_weblog('pj123.csv')
+    data3 = citaj_weblog('pj_corrupted.csv')
+    
+    

@@ -22,6 +22,8 @@ class dateCalendar(QtGui.QCalendarWidget):
         #generalni set boje u lagano prozirno zelenu
         self.color = QtGui.QColor(0,200,0)
         self.color.setAlpha(50)
+        self.colorSelected = QtGui.QColor(0,0,200)
+        self.colorSelected.setAlpha(50)
         #connections
         self.selectionChanged.connect(self.updateCells)
         # lista datuma koji se trebaju drugacije obojati
@@ -33,6 +35,10 @@ class dateCalendar(QtGui.QCalendarWidget):
         #override da se odredjeni datumi nacrtaju drugacije
         if date in self.dateList:
             painter.fillRect(rect, self.color)
+        #override za boju trenutno selektiranog datuma
+        izabrani = self.selectedDate()
+        if date == izabrani:
+            painter.fillRect(rect, self.colorSelected)
 ###############################################################################
     def selectDates(self, qdatesList):
         self.dateList = qdatesList
@@ -86,7 +92,7 @@ class WebloggerIzbornik(base, form):
         """
         #dijalog za izbor foldera
         folderName = QtGui.QFileDialog.getExistingDirectory()
-        folderName = unicode(folderName)
+        folderName = str(folderName)
         #slucaj ako se stisne cancel... returns None, empty string
         #ideja je sacuvati prethodne postavke
         if folderName != '':
@@ -131,7 +137,7 @@ class WebloggerIzbornik(base, form):
         self.uiFileList.clear()
         if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
-            stanica = unicode(stanica)
+            stanica = unifix(stanica)
             self.trenutniDatumi = sorted(list(self.dictStanicaDatum[stanica].keys()))
             markeri = []
             for datum in self.trenutniDatumi:
@@ -152,7 +158,7 @@ class WebloggerIzbornik(base, form):
         self.uiFileList.clear()
         if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
-            stanica = unicode(stanica)
+            stanica = unifix(stanica)
             datum = self.get_odabrani_datum()
             if datum in self.trenutniDatumi:
                 self.uiFileList.addItems(self.dictStanicaDatum[stanica][datum])
@@ -176,11 +182,12 @@ class WebloggerIzbornik(base, form):
         """
         if self.folderLoaded:
             izbor = item.text()
-            izbor = unicode(izbor)
+            izbor = unifix(izbor)
             #spoji ime foldera sa imenom filea - konstrukcija full path
             izbor = os.path.join(self.trenutniFolder, izbor)
             print('\ndoubleclick na listi')
             print(izbor)
+            #potencijalni problem... podatak iz foldera ima / dok os.path.join spaja sa \
             #TODO:
             #napisi neki specificni emit zahtjeva
 ###############################################################################
@@ -241,7 +248,7 @@ class WebloggerIzbornik(base, form):
     def get_odabrani_datum(self):
         datum = self.uiWidget.selectedDate()
         datum = datum.toPyDate()
-        datum = unicode(datum)
+        datum = unifix(datum)
         datum = datum[0:4]+datum[5:7]+datum[8:10]
         return datum
 ###############################################################################
@@ -277,8 +284,21 @@ class WebloggerIzbornik(base, form):
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
             self.uiWidget.setSelectedDate(noviDatum)
 ###############################################################################
-        
-        
+###############################################################################
+def unifix(tekst):
+    """
+    kludge fix za unicode
+    
+    Python 3 nema funkciju unicode(). Svi stringovi po defaultu se tretiraju 
+    kao utf-8 (ovisno o kodiranju definiranom na pocetku skripte). Funkcija 
+    str() u principu je ista kao i unicode() na pythonu 2.7.8
+    """
+    if sys.version_info.major < 3:
+        var = unicode(tekst)
+    else:
+        var = str(tekst)
+    return var
+###############################################################################
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     x = WebloggerIzbornik()

@@ -39,6 +39,11 @@ class GlavniProzor(QtGui.QMainWindow):
         self.setMouseTracking(True)
         
         """
+        memberi
+        """        
+        self.readerLoaded = False
+        
+        """
         Inicijalizacija kontrolnog sucelja (menu,toolbar,status bar)
         """
         #napravi status bar
@@ -99,10 +104,11 @@ class GlavniProzor(QtGui.QMainWindow):
         -stvara widget za izbor filea za otvaranje i navigaciju
         -docka ga u main window
         """
-        dijalog = ReadFileIzbor()
+        izbor = self.read_file_dijalog()
         
         #na istu shemu se dodaju i rezultati drugih gumba po potrebi
-        if dijalog.izbor == 'weblogger':
+        if (izbor == 'weblogger') and (not self.readerLoaded):
+            self.readerLoaded = True
             self.izborMape=QtGui.QDockWidget(self)
             self.izborMape.setWindowTitle('Odabir podataka')
             
@@ -114,7 +120,7 @@ class GlavniProzor(QtGui.QMainWindow):
             self.izborMape.setWidget(self.izborMapeSadrzaj)
             #dodaj ga na main window na lijevom rubu
             self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
-
+            self.izborMape.closeEvent = self.reader_widget_close
                           
     def set_status_bar(self,tekst):
         """
@@ -214,29 +220,23 @@ class GlavniProzor(QtGui.QMainWindow):
             event.ignore()
     """
 ###############################################################################
-###############################################################################
-class ReadFileIzbor(QtGui.QDialog):
-    def __init__(self, parent = None):
-        QtGui.QWidget.__init__(self, parent)
-        #izlazna vrijednost izbora preko membera self.izbor
-        self.izbor = None        
-        #definiraj gumbe
-        buttonWeblogger = QtGui.QPushButton('weblogger csv')
-        buttonCancel = QtGui.QPushButton('cancel')
-        #definiraj osnovi layout pop up poruke        
-        msgBox = QtGui.QMessageBox()
-        msgBox.setWindowTitle('Izbor tipa file')
-        msgBox.setText('Odaberi tip filea za citanje')
-        #dodaj gumbe u poruku
-        msgBox.addButton(buttonWeblogger, QtGui.QMessageBox.ActionRole)
-        msgBox.addButton(buttonCancel, QtGui.QMessageBox.ActionRole)
-        #ret pokrece i hvata main loop dijaloga        
-        ret = msgBox.exec_()
-        #test za provjeru gumba (koji je stisnut)
-        if msgBox.clickedButton() == buttonWeblogger:
-            self.izbor = 'weblogger'
-        else:
-            self.izbor = None
+    def read_file_dijalog(self):
+        tipovi = ("weblogger", "PLACEHOLDER1", "PLACEHOLDER2")
+        izbor, ok = QtGui.QInputDialog.getItem(self, 
+            "Izbor citaca:", 
+            "Citac:", 
+            tipovi, 
+            0, 
+            False)
+        if ok and izbor:
+            return izbor
+###############################################################################            
+    def reader_widget_close(self, event):
+        """
+        Ova funkcija hvata close event file readera (self.izborMape)
+        Cilj je izbjeci otvaranje dva reaera istovremeno.
+        """
+        self.readerLoaded = False
 ###############################################################################
 ###############################################################################
 

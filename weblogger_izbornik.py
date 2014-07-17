@@ -43,7 +43,11 @@ class dateCalendar(QtGui.QCalendarWidget):
 base, form = uic.loadUiType('dock3.ui')
 class WebloggerIzbornik(base, form):
     """
-    inicijalizacija gui iz .ui filea
+    NEDOVRSENO!    
+    
+    -inicijalizacija gui iz .ui filea
+    -IZBOR KANALA (combobox) nije implementiran. U principu, kanale mogu dobiti
+    tek nakon sto se file ucita.
     """
     def __init__(self, parent=None):
         super(base, self).__init__(parent)
@@ -57,6 +61,7 @@ class WebloggerIzbornik(base, form):
         
         
         #memberi
+        self.folderLoaded = False
         self.trenutniFolder = None
         self.trenutneStanice = []
         self.trenutniDatumi = []
@@ -70,7 +75,10 @@ class WebloggerIzbornik(base, form):
         self.uiStanicaCombo.currentIndexChanged.connect(self.combo_izbor_stanica)
         self.uiWidget.clicked.connect(self.l_click_kalendar)
         self.uiWidget.activated.connect(self.dbl_click_kalendar)
+        self.uiWidget.selectionChanged.connect(self.l_click_kalendar)
         self.uiFileList.itemDoubleClicked.connect(self.dbl_click_lista)
+        self.uiPrethodni.clicked.connect(self.klik_prethodni)
+        self.uiSljedeci.clicked.connect(self.klik_sljedeci)
 ###############################################################################        
     def load_folder(self):
         """
@@ -82,6 +90,7 @@ class WebloggerIzbornik(base, form):
         #slucaj ako se stisne cancel... returns None, empty string
         #ideja je sacuvati prethodne postavke
         if folderName != '':
+            self.folderLoaded = True
             self.trenutniFolder = folderName
             self.uiCurrentFolder.setText(folderName)
             self.get_files(folderName)
@@ -119,8 +128,8 @@ class WebloggerIzbornik(base, form):
         """
         Promjena vrijednosti na comboboxu kod stanica
         """
-        if self.trenutniFolder != '':
-            self.uiFileList.clear()
+        self.uiFileList.clear()
+        if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
             stanica = unicode(stanica)
             self.trenutniDatumi = sorted(list(self.dictStanicaDatum[stanica].keys()))
@@ -129,6 +138,7 @@ class WebloggerIzbornik(base, form):
                 #moram convertati string datume u QDate objekte
                 markeri.append(QtCore.QDate.fromString(datum,'yyyyMMdd'))
             self.uiWidget.selectDates(markeri)
+            self.uiWidget.emit(QtCore.SIGNAL('selectionChanged()'))
 ###############################################################################
     def l_click_kalendar(self):
         """
@@ -138,23 +148,24 @@ class WebloggerIzbornik(base, form):
         -imaju izabran datum u imenu
         -nemaju _C ispred datuma
         """
-        if self.trenutniFolder != '':
+        self.test_nav_gumbe()
+        self.uiFileList.clear()
+        if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
             stanica = unicode(stanica)
             datum = self.get_odabrani_datum()
             if datum in self.trenutniDatumi:
-                self.uiFileList.clear()
                 self.uiFileList.addItems(self.dictStanicaDatum[stanica][datum])
-                self.test_nav_gumbe()
 ###############################################################################
     def dbl_click_kalendar(self):
         """
         Dupli klik na datum u kalendaru
         -PLACEHOLDER, samo ispis na outputu
         """
-        if self.trenutniFolder != '':
+        if self.folderLoaded:
             datum = self.get_odabrani_datum()
-            print('\ndoubleclick na klendaru, datum : {0}'.format(datum))
+            if datum in self.trenutniDatumi:
+                print('\ndoubleclick na klendaru, datum : {0}'.format(datum))
         #TODO:
         #neka akcija za doubleclick? ucitavanje zadnjeg filea u listi?
 ###############################################################################
@@ -163,14 +174,15 @@ class WebloggerIzbornik(base, form):
         Dupli klik na element liste
         -PLACEHOLDER, samo ispis na outputu
         """
-        izbor = item.text()
-        izbor = unicode(izbor)
-        #spoji ime foldera sa imenom filea - konstrukcija full path
-        izbor = os.path.join(self.trenutniFolder, izbor)
-        print('\ndoubleclick na listi')
-        print(izbor)
-        #TODO:
-        #napisi neki specificni emit zahtjeva
+        if self.folderLoaded:
+            izbor = item.text()
+            izbor = unicode(izbor)
+            #spoji ime foldera sa imenom filea - konstrukcija full path
+            izbor = os.path.join(self.trenutniFolder, izbor)
+            print('\ndoubleclick na listi')
+            print(izbor)
+            #TODO:
+            #napisi neki specificni emit zahtjeva
 ###############################################################################
     def parsiraj(self,item):
         """
@@ -209,17 +221,22 @@ class WebloggerIzbornik(base, form):
         -mjenja status gumba (enabled/disabled)
         """
         datum = self.get_odabrani_datum()
-        pozicija = self.trenutniDatumi.index(datum)
-        #gumb prethodni
-        if pozicija == 0:
+        if datum in self.trenutniDatumi:
+            pozicija = self.trenutniDatumi.index(datum)
+            #gumb prethodni
+            if pozicija == 0:
+                self.uiPrethodni.setDisabled(True)
+            else:
+                self.uiPrethodni.setDisabled(False)
+            #gumb sljedeci
+            if (pozicija + 1) == (len(self.trenutniDatumi)):
+                self.uiSljedeci.setDisabled(True)
+            else:
+                self.uiSljedeci.setDisabled(False)
+        else:
+            #selected date is not valid, disable both buttons
             self.uiPrethodni.setDisabled(True)
-        else:
-            self.uiPrethodni.setDisabled(False)
-        #gumb sljedeci
-        if (pozicija + 1) == (len(self.trenutniDatumi)):
             self.uiSljedeci.setDisabled(True)
-        else:
-            self.uiSljedeci.setDisabled(False)
 ###############################################################################
     def get_odabrani_datum(self):
         datum = self.uiWidget.selectedDate()
@@ -234,16 +251,31 @@ class WebloggerIzbornik(base, form):
         -NEDOVRSENO
         """
         #TODO:
-        #1. prebaci kalendar na prethodni datum
         #2. emit za ucitavanje novih podataka - KOJIH?
         datum = self.get_odabrani_datum()
-        pozicija = self.trenutniDatumi.index(datum)
-        print(pozicija)
-        pozicija = pozicija - 1
-        print(pozicija)
-        noviDatum = self.trenutniDatumi[pozicija]
-        
+        if datum in self.trenutniDatumi:
+            pozicija = self.trenutniDatumi.index(datum)
+            pozicija = pozicija - 1
+            noviDatum = self.trenutniDatumi[pozicija]
+            #cast back to QDate
+            noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
+            self.uiWidget.setSelectedDate(noviDatum)
 ###############################################################################
+    def klik_sljedeci(self):
+        """
+        Nakon klika na gumb prethodni
+        -NEDOVRSENO
+        """
+        #TODO:
+        #2. emit za ucitavanje novih podataka - KOJIH?
+        datum = self.get_odabrani_datum()
+        if datum in self.trenutniDatumi:
+            pozicija = self.trenutniDatumi.index(datum)
+            pozicija = pozicija + 1
+            noviDatum = self.trenutniDatumi[pozicija]
+            #cast back to QDate
+            noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
+            self.uiWidget.setSelectedDate(noviDatum)
 ###############################################################################
         
         

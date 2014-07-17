@@ -22,8 +22,7 @@ from PyQt4 import QtGui,QtCore
 import dokument
 import kontroler
 import graf_signal
-#import dic_mapper
-import fileselector
+import weblogger_izbornik
 
 class GlavniProzor(QtGui.QMainWindow):
     def __init__(self,parent=None):
@@ -111,7 +110,7 @@ class GlavniProzor(QtGui.QMainWindow):
             self.izborMape.setMinimumSize(QtCore.QSize(150,240))
             self.izborMape.setMaximumSize(QtCore.QSize(360,560))
             #definiraj sadrzaj dockable widgeta
-            self.izborMapeSadrzaj=fileselector.SelectorWindow()
+            self.izborMapeSadrzaj=weblogger_izbornik.WebloggerIzbornik()
             self.izborMape.setWidget(self.izborMapeSadrzaj)
             #dodaj ga na main window na lijevom rubu
             self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)

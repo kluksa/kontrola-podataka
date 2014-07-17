@@ -51,6 +51,10 @@ class WebloggerIzbornik(base, form):
         
         #set QWidget (postavi subklasani kalendar)
         self.uiWidget = dateCalendar(self.uiWidget)
+        #disable navigacijske gumbe
+        self.uiPrethodni.setDisabled(True)
+        self.uiSljedeci.setDisabled(True)
+        
         
         #memberi
         self.trenutniFolder = None
@@ -59,10 +63,14 @@ class WebloggerIzbornik(base, form):
         self.files = []
         self.files_C = []
         self.dictStanicaDatum = {}
+        self.uiFileList.clear()
         
         #connections
         self.uiLoadFolder.clicked.connect(self.load_folder)
         self.uiStanicaCombo.currentIndexChanged.connect(self.combo_izbor_stanica)
+        self.uiWidget.clicked.connect(self.l_click_kalendar)
+        self.uiWidget.activated.connect(self.dbl_click_kalendar)
+        self.uiFileList.itemDoubleClicked.connect(self.dbl_click_lista)
 ###############################################################################        
     def load_folder(self):
         """
@@ -75,13 +83,12 @@ class WebloggerIzbornik(base, form):
         #ideja je sacuvati prethodne postavke
         if folderName != '':
             self.trenutniFolder = folderName
-            self.uiCurrentFolder.setText(folderName)        
-            print(folderName)
+            self.uiCurrentFolder.setText(folderName)
             self.get_files(folderName)
 ###############################################################################
     def get_files(self,folder):
         """
-        Pornalazak i grupiranje svih bitnih fileova
+        Pronalazak i grupiranje svih bitnih fileova
         """
         #reset membera
         self.trenutneStanice.clear()
@@ -113,6 +120,7 @@ class WebloggerIzbornik(base, form):
         Promjena vrijednosti na comboboxu kod stanica
         """
         if self.trenutniFolder != '':
+            self.uiFileList.clear()
             stanica = self.uiStanicaCombo.currentText()
             stanica = unicode(stanica)
             self.trenutniDatumi = sorted(list(self.dictStanicaDatum[stanica].keys()))
@@ -121,6 +129,48 @@ class WebloggerIzbornik(base, form):
                 #moram convertati string datume u QDate objekte
                 markeri.append(QtCore.QDate.fromString(datum,'yyyyMMdd'))
             self.uiWidget.selectDates(markeri)
+###############################################################################
+    def l_click_kalendar(self):
+        """
+        Odabir na kalendaru (left click misem) puni listu sa imenima
+        fileova koji zadovoljavaju:
+        -imaju izabranu stanicu u imenu
+        -imaju izabran datum u imenu
+        -nemaju _C ispred datuma
+        """
+        if self.trenutniFolder != '':
+            stanica = self.uiStanicaCombo.currentText()
+            stanica = unicode(stanica)
+            datum = self.get_odabrani_datum()
+            if datum in self.trenutniDatumi:
+                self.uiFileList.clear()
+                self.uiFileList.addItems(self.dictStanicaDatum[stanica][datum])
+                self.test_nav_gumbe()
+###############################################################################
+    def dbl_click_kalendar(self):
+        """
+        Dupli klik na datum u kalendaru
+        -PLACEHOLDER, samo ispis na outputu
+        """
+        if self.trenutniFolder != '':
+            datum = self.get_odabrani_datum()
+            print('\ndoubleclick na klendaru, datum : {0}'.format(datum))
+        #TODO:
+        #neka akcija za doubleclick? ucitavanje zadnjeg filea u listi?
+###############################################################################
+    def dbl_click_lista(self,item):
+        """
+        Dupli klik na element liste
+        -PLACEHOLDER, samo ispis na outputu
+        """
+        izbor = item.text()
+        izbor = unicode(izbor)
+        #spoji ime foldera sa imenom filea - konstrukcija full path
+        izbor = os.path.join(self.trenutniFolder, izbor)
+        print('\ndoubleclick na listi')
+        print(izbor)
+        #TODO:
+        #napisi neki specificni emit zahtjeva
 ###############################################################################
     def parsiraj(self,item):
         """
@@ -152,7 +202,51 @@ class WebloggerIzbornik(base, form):
                     stanice[stanica][datum].append(file)
         
         return stanice
-###############################################################################        
+###############################################################################
+    def test_nav_gumbe(self):
+        """
+        -funkcija provjerava da li postoji prethodni/sljedeci dan
+        -mjenja status gumba (enabled/disabled)
+        """
+        datum = self.get_odabrani_datum()
+        pozicija = self.trenutniDatumi.index(datum)
+        #gumb prethodni
+        if pozicija == 0:
+            self.uiPrethodni.setDisabled(True)
+        else:
+            self.uiPrethodni.setDisabled(False)
+        #gumb sljedeci
+        if (pozicija + 1) == (len(self.trenutniDatumi)):
+            self.uiSljedeci.setDisabled(True)
+        else:
+            self.uiSljedeci.setDisabled(False)
+###############################################################################
+    def get_odabrani_datum(self):
+        datum = self.uiWidget.selectedDate()
+        datum = datum.toPyDate()
+        datum = unicode(datum)
+        datum = datum[0:4]+datum[5:7]+datum[8:10]
+        return datum
+###############################################################################
+    def klik_prethodni(self):
+        """
+        Nakon klika na gumb prethodni
+        -NEDOVRSENO
+        """
+        #TODO:
+        #1. prebaci kalendar na prethodni datum
+        #2. emit za ucitavanje novih podataka - KOJIH?
+        datum = self.get_odabrani_datum()
+        pozicija = self.trenutniDatumi.index(datum)
+        print(pozicija)
+        pozicija = pozicija - 1
+        print(pozicija)
+        noviDatum = self.trenutniDatumi[pozicija]
+        
+###############################################################################
+###############################################################################
+        
+        
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     x = WebloggerIzbornik()

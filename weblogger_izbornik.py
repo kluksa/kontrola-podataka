@@ -116,7 +116,12 @@ class WebloggerIzbornik(base, form):
         allFiles = os.listdir(folder)
         #u folderu nalazi sve file koje matchaju regex
         for file in allFiles:
+            #TODO:
+            #fix, file tipa stanica-datum?.csv ne prolaze regex
+            #provjeri da li dobro rastavlja sve fileove na stanica/datum
+            #more tests :)
             reMatch = re.match(r'.*-\d{8}.?.csv', file, re.IGNORECASE)
+            print(file)
             if reMatch:
                 if file.find(u'_C') == -1:
                     self.files.append(file)

@@ -116,12 +116,7 @@ class WebloggerIzbornik(base, form):
         allFiles = os.listdir(folder)
         #u folderu nalazi sve file koje matchaju regex
         for file in allFiles:
-            #TODO:
-            #fix, file tipa stanica-datum?.csv ne prolaze regex
-            #provjeri da li dobro rastavlja sve fileove na stanica/datum
-            #more tests :)
             reMatch = re.match(r'.*-\d{8}.?.csv', file, re.IGNORECASE)
-            print(file)
             if reMatch:
                 if file.find(u'_C') == -1:
                     self.files.append(file)
@@ -205,7 +200,7 @@ class WebloggerIzbornik(base, form):
         stanica = item[:loc]
         if stanica.find('_C') != -1:
             stanica = stanica[0:len(stanica)-2]
-        datum = item[loc+1:]
+        datum = item[loc+1:loc+9]
         return stanica, datum  
 ###############################################################################
     def napravi_mapu(self,data):

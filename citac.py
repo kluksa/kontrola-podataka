@@ -25,7 +25,6 @@ def benchmark(func):
         return res
     return wrapper
 ###############################################################################
-@benchmark
 def citaj_weblog(path):
     """
     path = fullpath do filea
@@ -34,13 +33,13 @@ def citaj_weblog(path):
     if provjeri_headere_weblog(path):
         df = pd.read_csv(
             path, 
-            na_values='-999.00', 
-            index_col=0, 
-            parse_dates=[[0,1]], 
-            dayfirst=True, 
-            header=0, 
-            sep=',', 
-            encoding='iso-8859-1')
+            na_values = '-999.00', 
+            index_col = 0, 
+            parse_dates = [[0,1]], 
+            dayfirst = True, 
+            header = 0, 
+            sep = ',', 
+            encoding = 'iso-8859-1')
     
         headerList = df.columns.values
         frejmovi = {}
@@ -54,9 +53,60 @@ def citaj_weblog(path):
         #trenutno bez implementacije
         print('\nNekakvo njesra s fileom, implementiraj neki msg da je akcija failala')
         return
-
 ###############################################################################
-@benchmark
+def citaj_weblog_listu(pathLista):
+    """
+    pathLista = lista svih pathova za otvaranje
+    INPUT - lista stringova
+    funkcija cita listu weblogger csv fileova u dictionary pandas datafrejmova
+    """
+    try:
+        #raise IOError if argument is not list, or if list is empty
+        if (type(pathLista) != type ([])) or (len(pathLista) == 0):
+            raise IOError
+        
+        #ucitaj prvi valjani csv file, mici s liste one koji se ne ucitavaju
+        while len(pathLista) != 0:
+            file = pathLista.pop(0)
+            print(file)
+            frejmovi = citaj_weblog(file)
+            if frejmovi != None:
+                break
+        
+        else:
+            print('Svi fileovi ne valjaju. Tretiraj kao I/O error')
+            raise IOError
+        
+        
+        #petlja koja ucitava ostale fileove u listi (lista je sada kraca)
+        for file in pathLista:
+            frejmoviTemp = citaj_weblog(file)
+            if frejmoviTemp != None:
+                #kod za spajanje datafrejma
+                for key in frejmoviTemp.keys():
+                    if key in frejmovi.keys():
+                        #ako postoji isti kljuc u oba datafrejma -  update/merge
+                        frejmovi[key] = pd.merge(
+                            frejmovi[key], 
+                            frejmoviTemp[key], 
+                            how = 'outer', 
+                            left_index = True, 
+                            right_index = True, 
+                            sort = True, 
+                            on = [u'koncentracija', u'status', u'flag'])
+                        #update non np.NaN values in place
+                        frejmovi[key].update(frejmoviTemp[key])
+                    else:
+                        #ako ne postoji kljuc (novi stupac) - dodaj novi frame
+                        frejmovi[key] = frejmoviTemp[key]
+        
+        return frejmovi
+    
+    except IOError:
+        #implementiraj neki fail kod unosa prazne liste ili nekog drugog tipa podataka
+        print('neko njesra sa input / output kod citanja liste csv weblog fileova')
+        return
+###############################################################################
 def provjeri_headere_weblog(path):
     """
     Testna funkcija za provjeru headera csv filea na lokaciji path.
@@ -125,9 +175,8 @@ if __name__ == '__main__':
 #    print('\ntest postojeceg filea, praznog')
 #    k = provjeri_headere_weblog('pj_empty.csv')
     
-    data1 = citaj_weblog('pj.csv')
-    data2 = citaj_weblog('pj123.csv')
-    data3 = citaj_weblog('pj_corrupted.csv')
-    data4 = citaj_weblog('pj_empty.csv')
-    
-    
+#    data1 = citaj_weblog('pj.csv')
+#    data2 = citaj_weblog('pj123.csv')
+#    data3 = citaj_weblog('pj_corrupted.csv')
+#    data4 = citaj_weblog('pj_empty.csv')
+#    df = citaj_weblog_listu(['pj_test.csv'])    #Fails to read file

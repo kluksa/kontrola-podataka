@@ -46,7 +46,7 @@ class dateCalendar(QtGui.QCalendarWidget):
         self.updateCells()
 ###############################################################################
 ###############################################################################
-base, form = uic.loadUiType('dock3.ui')
+base, form = uic.loadUiType('weblogger_izbornik.ui')
 class WebloggerIzbornik(base, form):
     """
     NEDOVRSENO!    
@@ -137,7 +137,7 @@ class WebloggerIzbornik(base, form):
         self.uiFileList.clear()
         if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
-            stanica = unifix(stanica)
+            stanica = str(stanica)
             self.trenutniDatumi = sorted(list(self.dictStanicaDatum[stanica].keys()))
             markeri = []
             for datum in self.trenutniDatumi:
@@ -158,7 +158,7 @@ class WebloggerIzbornik(base, form):
         self.uiFileList.clear()
         if self.folderLoaded:
             stanica = self.uiStanicaCombo.currentText()
-            stanica = unifix(stanica)
+            stanica = str(stanica)
             datum = self.get_odabrani_datum()
             if datum in self.trenutniDatumi:
                 self.uiFileList.addItems(self.dictStanicaDatum[stanica][datum])
@@ -182,7 +182,7 @@ class WebloggerIzbornik(base, form):
         """
         if self.folderLoaded:
             izbor = item.text()
-            izbor = unifix(izbor)
+            izbor = str(izbor)
             #spoji ime foldera sa imenom filea - konstrukcija full path
             izbor = os.path.join(self.trenutniFolder, izbor)
             print('\ndoubleclick na listi')
@@ -248,7 +248,7 @@ class WebloggerIzbornik(base, form):
     def get_odabrani_datum(self):
         datum = self.uiWidget.selectedDate()
         datum = datum.toPyDate()
-        datum = unifix(datum)
+        datum = str(datum)
         datum = datum[0:4]+datum[5:7]+datum[8:10]
         return datum
 ###############################################################################
@@ -284,20 +284,6 @@ class WebloggerIzbornik(base, form):
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
             self.uiWidget.setSelectedDate(noviDatum)
 ###############################################################################
-###############################################################################
-def unifix(tekst):
-    """
-    kludge fix za unicode
-    
-    Python 3 nema funkciju unicode(). Svi stringovi po defaultu se tretiraju 
-    kao utf-8 (ovisno o kodiranju definiranom na pocetku skripte). Funkcija 
-    str() u principu je ista kao i unicode() na pythonu 2.7.8
-    """
-    if sys.version_info.major < 3:
-        var = unicode(tekst)
-    else:
-        var = str(tekst)
-    return var
 ###############################################################################
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

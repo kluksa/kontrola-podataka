@@ -1,2 +1,3 @@
-**/.pyc
-**/.csv
+.pyc
+.csv
+__pycache__/

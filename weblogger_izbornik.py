@@ -60,7 +60,9 @@ class WebloggerIzbornik(base, form):
         self.setupUi(self)
         
         #set QWidget (postavi subklasani kalendar)
-        self.uiWidget = dateCalendar(self.uiWidget)
+        self.kalendar = dateCalendar()        
+        #self.uiWidget = dateCalendar(self.uiWidget)
+        self.uiKalendarLayout.addWidget(self.kalendar)
         #disable navigacijske gumbe
         self.uiPrethodni.setDisabled(True)
         self.uiSljedeci.setDisabled(True)
@@ -79,9 +81,9 @@ class WebloggerIzbornik(base, form):
         #connections
         self.uiLoadFolder.clicked.connect(self.load_folder)
         self.uiStanicaCombo.currentIndexChanged.connect(self.combo_izbor_stanica)
-        self.uiWidget.clicked.connect(self.l_click_kalendar)
-        self.uiWidget.activated.connect(self.dbl_click_kalendar)
-        self.uiWidget.selectionChanged.connect(self.l_click_kalendar)
+        self.kalendar.clicked.connect(self.l_click_kalendar)
+        self.kalendar.activated.connect(self.dbl_click_kalendar)
+        self.kalendar.selectionChanged.connect(self.l_click_kalendar)
         self.uiFileList.itemDoubleClicked.connect(self.dbl_click_lista)
         self.uiPrethodni.clicked.connect(self.klik_prethodni)
         self.uiSljedeci.clicked.connect(self.klik_sljedeci)
@@ -143,8 +145,8 @@ class WebloggerIzbornik(base, form):
             for datum in self.trenutniDatumi:
                 #moram convertati string datume u QDate objekte
                 markeri.append(QtCore.QDate.fromString(datum,'yyyyMMdd'))
-            self.uiWidget.selectDates(markeri)
-            self.uiWidget.emit(QtCore.SIGNAL('selectionChanged()'))
+            self.kalendar.selectDates(markeri)
+            self.kalendar.emit(QtCore.SIGNAL('selectionChanged()'))
 ###############################################################################
     def l_click_kalendar(self):
         """
@@ -246,7 +248,7 @@ class WebloggerIzbornik(base, form):
             self.uiSljedeci.setDisabled(True)
 ###############################################################################
     def get_odabrani_datum(self):
-        datum = self.uiWidget.selectedDate()
+        datum = self.kalendar.selectedDate()
         datum = datum.toPyDate()
         datum = str(datum)
         datum = datum[0:4]+datum[5:7]+datum[8:10]
@@ -266,7 +268,7 @@ class WebloggerIzbornik(base, form):
             noviDatum = self.trenutniDatumi[pozicija]
             #cast back to QDate
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
-            self.uiWidget.setSelectedDate(noviDatum)
+            self.kalendar.setSelectedDate(noviDatum)
 ###############################################################################
     def klik_sljedeci(self):
         """
@@ -282,7 +284,7 @@ class WebloggerIzbornik(base, form):
             noviDatum = self.trenutniDatumi[pozicija]
             #cast back to QDate
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
-            self.uiWidget.setSelectedDate(noviDatum)
+            self.kalendar.setSelectedDate(noviDatum)
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':

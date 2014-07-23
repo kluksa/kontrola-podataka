@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jul 23 09:13:30 2014
@@ -21,7 +22,7 @@ class TestWlReader(unittest.TestCase):
         """
         Funkcija mora vratiti 'False' ako file ne postoji
         """
-        x = self.Reader.provjeri_headere('janepostojim.csv')
+        x = self.Reader.provjeri_headere('./data/janepostojim.csv')
         self.assertFalse(x)
     
     def test_provjeri_headere_2(self):
@@ -30,14 +31,14 @@ class TestWlReader(unittest.TestCase):
         ne postuju strukturu [Date, Time, mjerenje1, status1, ... mjerenjeN,
         statusN, Flag, Zone]
         """
-        x = self.Reader.provjeri_headere('pj_corrupted.csv')
+        x = self.Reader.provjeri_headere('./data/pj_corrupted.csv')
         self.assertFalse(x)
     
     def test_provjeri_headere_3(self):
         """
         Funkcija mora vratiti 'False' ako je file prazan
         """
-        x = self.Reader.provjeri_headere('pj_empty.csv')
+        x = self.Reader.provjeri_headere('./data/pj_empty.csv')
         self.assertFalse(x)
     
     def test_provjeri_headere_4(self):
@@ -45,7 +46,7 @@ class TestWlReader(unittest.TestCase):
         Funkcija mora vratiti 'True' ako headeri postuju strukturu 
         [Date, Time, mjerenje1, status1, ... mjerenjeN, statusN, Flag, Zone]
         """
-        x = self.Reader.provjeri_headere('pj.csv')
+        x = self.Reader.provjeri_headere('./data/pj.csv')
         self.assertTrue(x)
         
     def test_provjeri_headere_5(self):
@@ -60,7 +61,7 @@ class TestWlReader(unittest.TestCase):
         Funkcija mora vratiti false ako se prosljedi string koji ne zavrsava na
         .csv (samo csv fileovi mogu proci test)
         """
-        x = self.Reader.provjeri_headere('pjtest.txt')
+        x = self.Reader.provjeri_headere('./data/pjtest.txt')
         self.assertFalse(x)
     
     def tearDown(self):

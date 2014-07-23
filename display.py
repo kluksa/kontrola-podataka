@@ -10,7 +10,6 @@ Created on Mon May 12 11:23:36 2014
 
 -izbrisao sve bitno osim layouta.
 TODO:
-2.sredi izbornik fileova (dockable widget prema uputama)
 3.spoji read filea sa grafovima
 4.spoji promjene i update grafova u gui-u
 """

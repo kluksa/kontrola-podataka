@@ -170,27 +170,29 @@ class WlReader:
             return True
         
         except IOError:
+            #generalini input / output fail
             return False
         except IndexError:
+            #problem kod indeksiranja praznog filea
             return False
 ###############################################################################
             
 if __name__ == '__main__':
 #    #header test
 #    print('\ntest nepostojeceg filea')
-#    x = WlReader().provjeri_headere('pj123.csv')
+#    x = WlReader().provjeri_headere('./data/pj123.csv')
 #    print('\ntest postojeceg filea, pravilne strukture')
-#    y = WlReader().provjeri_headere('pj.csv')
+#    y = WlReader().provjeri_headere('./data/pj.csv')
 #    print('\ntest postojeceg filea, nepravilne strukture')
 #    print('pogreska u Time, jednom statusu, jedom mjerenju')
-#    z = WlReader().provjeri_headere('pj_corrupted.csv')
+#    z = WlReader().provjeri_headere('./data/pj_corrupted.csv')
 #    print('\ntest postojeceg filea, praznog')
-#    k = WlReader().provjeri_headere('pj_empty.csv')
+#    k = WlReader().provjeri_headere('./data/pj_empty.csv')
 #    #citaj test
-#    data1 = WlReader().citaj('pj.csv')
-#    data2 = WlReader().citaj('pj123.csv')
-#    data3 = WlReader().citaj('pj_corrupted.csv')
-#    data4 = WlReader().citaj('pj_empty.csv')
+#    data1 = WlReader().citaj('./data/pj.csv')
+#    data2 = WlReader().citaj('./data/pj123.csv')
+#    data3 = WlReader().citaj('./data/pj_corrupted.csv')
+#    data4 = WlReader().citaj('./data/pj_empty.csv')
     #citaj_listu test
     """
     Napravio par mock csv fileova da "rucno" provjerim join/merge liste
@@ -205,12 +207,12 @@ if __name__ == '__main__':
     Sve u biti ovisi o ulaznim fileovima...
     """
     data5 = WlReader().citaj_listu([
-        'nepostojeci.csv', 
-        'pj-20140715A.csv', 
-        'pj-20140715B.csv', 
-        'pj_corrupted.csv', 
-        'pj-20140715C.csv', 
-        'pj-20140715D.csv'])
+        './data/nepostojeci.csv', 
+        './data/pj-20140715A.csv', 
+        './data/pj-20140715B.csv', 
+        './data/pj_corrupted.csv', 
+        './data/pj-20140715C.csv', 
+        './data/pj-20140715D.csv'])
     
     if len(data5['1-SO2']) == len(data5['PM1']):
         print('Broj indeksa je jednak')

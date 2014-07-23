@@ -61,7 +61,6 @@ class WlReader:
             return frejmovi
         else:
             #trenutno bez implementacije
-            print('\nNekakvo njesra s fileom, implementiraj neki msg da je akcija failala')
             return
 
 ###############################################################################
@@ -85,7 +84,6 @@ class WlReader:
                     break
             
             else:
-                print('Svi fileovi ne valjaju. Tretiraj kao I/O error')
                 raise IOError
             
             
@@ -115,7 +113,6 @@ class WlReader:
         
         except IOError:
             #implementiraj neki fail kod unosa prazne liste ili nekog drugog tipa podataka
-            print('neko njesra sa input / output kod citanja liste csv weblog fileova')
             return
 
 ###############################################################################
@@ -178,7 +175,7 @@ class WlReader:
 ###############################################################################
             
 if __name__ == '__main__':
-    x = WlReader().citaj('./data/pj.csv')
+    x = WlReader().citaj()
 #    #header test
 #    print('\ntest nepostojeceg filea')
 #    x = WlReader().provjeri_headere('./data/pj123.csv')

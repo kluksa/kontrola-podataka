@@ -84,9 +84,6 @@ class TestWlReader(unittest.TestCase):
     #test metode "citaj"
 ###############################################################################
 #TODO!
-#1. treba vratiti None ako citac faila s citanjem jer je file kriv
-#2. treba provjeriti strukturu ulaza
-#3. treba provjeriti strukturu izlaza (dictionary, dataframe, columns, index)
 #4. treba provjeriti ucitavanjem nekog testnog csv filea da li su sve vrijednosti
 #   na pravom mjestu
 
@@ -131,8 +128,7 @@ class TestWlReader(unittest.TestCase):
         Funkcija mora raiseati TypeError ako se pozove s krivim brojem argumenata
         """
         self.assertRaises(TypeError, 
-                          self.Reader.citaj, 
-                          None)
+                          self.Reader.citaj)
                           
         self.assertRaises(TypeError, 
                           self.Reader.citaj, 
@@ -150,8 +146,10 @@ class TestWlReader(unittest.TestCase):
         Za ispravni unos provjeri strukturu izlaza
         Dictionary pandas datafrejmova. Svaki frame mora imati:
         key dicta - string (ime komponente)
-        indeks - date_time
+        indeks - tip pandas date_time
         stupci - redom: koncentracija, status, flag
+        #TODO!
+        #test vrijednosti u stupcima??? (float,int,int) or np.NaN???
         """
         x = self.Reader.citaj('./data/pj.csv')
         kljucevi = list(x.keys())
@@ -162,16 +160,39 @@ class TestWlReader(unittest.TestCase):
             self.assertEqual(headeri[0],u'koncentracija')
             self.assertEqual(headeri[1],u'status')
             self.assertEqual(headeri[2],u'flag')
-            
             #test index type
-            
-        
-        
+            indeks = x[kljuc].index
+            okTip = pd.date_range('23-07-2014 12:00:00', periods = 10, freq = 'M')
+            self.assertEqual(type(indeks), type(okTip))
+    
+    def test_citaj_9(self):
+        """
+        provjeri da li headeri odgovaraju kljucevima izlaznog dictionarija
+        """
+        x = self.Reader.citaj('./data/pj.csv')
+        kljucevi = list(x.keys())
+        #zadan je dobar testni file pa ne bi trebalo biti problema sa ucitavanjem
+        file = open('./data/pj.csv')
+        firstLine = file.readline()
+        file.close()        
+        #makni \n na kraju linije
+        firstLine = firstLine[:-1]
+        headerList = firstLine.split(sep=',')
+        for i in range(2,len(headerList)-2,2):
+            self.assertIn(headerList[i], kljucevi)
+
+    def test_citaj_10(self):
+        """
+        test pojedinih frejmova nakon ucitavanja poznatog filea.
+        """
+        pass
+
     #test metode "citaj_listu"
 ###############################################################################
     def test_citaj_listu_1(self):
 #TODO!
 #1. srediti slicne testove kao i za slucaj citaca.
+#2. provjera spajanja liste, ponasanje merge/update funkcija
         pass
     
 ###############################################################################

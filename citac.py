@@ -178,6 +178,7 @@ class WlReader:
 ###############################################################################
             
 if __name__ == '__main__':
+    x = WlReader().citaj('./data/pj.csv')
 #    #header test
 #    print('\ntest nepostojeceg filea')
 #    x = WlReader().provjeri_headere('./data/pj123.csv')
@@ -194,29 +195,29 @@ if __name__ == '__main__':
 #    data3 = WlReader().citaj('./data/pj_corrupted.csv')
 #    data4 = WlReader().citaj('./data/pj_empty.csv')
     #citaj_listu test
-    """
-    Napravio par mock csv fileova da "rucno" provjerim join/merge liste
-    Jedini "problem" je u cinjenici da spaja frame po frame, sto ima jednu caku.
-    Frejmovi su dobro spojeni, ali ovisno o ulaznim fileovima nisu svi iste duljine.
-
-    - Pojedini frame nezna kako je drugi frame indeksiran
-    - Indeksi su istog formata, ali ako mjerenja komponente pocinju od 15:00
-    u frameu nece biti indeksa od 00:00 do 14:59 sa np.NaN vrijednostima (osim 
-    ako nisu eksplicitno zadana u csv fileu)
-    
-    Sve u biti ovisi o ulaznim fileovima...
-    """
-    data5 = WlReader().citaj_listu([
-        './data/nepostojeci.csv', 
-        './data/pj-20140715A.csv', 
-        './data/pj-20140715B.csv', 
-        './data/pj_corrupted.csv', 
-        './data/pj-20140715C.csv', 
-        './data/pj-20140715D.csv'])
-    
-    if len(data5['1-SO2']) == len(data5['PM1']):
-        print('Broj indeksa je jednak')
-    else:
-        print('Broj indeksa u oba frejma je razlicit')
+#    """
+#    Napravio par mock csv fileova da "rucno" provjerim join/merge liste
+#    Jedini "problem" je u cinjenici da spaja frame po frame, sto ima jednu caku.
+#    Frejmovi su dobro spojeni, ali ovisno o ulaznim fileovima nisu svi iste duljine.
+#
+#    - Pojedini frame nezna kako je drugi frame indeksiran
+#    - Indeksi su istog formata, ali ako mjerenja komponente pocinju od 15:00
+#    u frameu nece biti indeksa od 00:00 do 14:59 sa np.NaN vrijednostima (osim 
+#    ako nisu eksplicitno zadana u csv fileu)
+#    
+#    Sve u biti ovisi o ulaznim fileovima...
+#    """
+#    data5 = WlReader().citaj_listu([
+#        './data/nepostojeci.csv', 
+#        './data/pj-20140715A.csv', 
+#        './data/pj-20140715B.csv', 
+#        './data/pj_corrupted.csv', 
+#        './data/pj-20140715C.csv', 
+#        './data/pj-20140715D.csv'])
+#    
+#    if len(data5['1-SO2']) == len(data5['PM1']):
+#        print('Broj indeksa je jednak')
+#    else:
+#        print('Broj indeksa u oba frejma je razlicit')
     
     

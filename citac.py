@@ -131,6 +131,14 @@ class WlReader:
         Vraca True ako je struktura dobra, inace vraca False cim naleti na neko odstupanje
         """
         try:
+            #test ulaznih podataka
+            if type(path) != type('string'):
+                raise IOError
+            
+            ekstenzija = path[path.rfind('.')+1:]
+            if ekstenzija != 'csv':
+                raise IOError
+            
             file = open(path)
             firstLine = file.readline()
             file.close()
@@ -161,10 +169,8 @@ class WlReader:
             return True
         
         except IOError:
-            print('Problem with reading file {0}'.format(path))
             return False
         except IndexError:
-            print('Problem with reading file {0}'.format(path))
             return False
 ###############################################################################
             

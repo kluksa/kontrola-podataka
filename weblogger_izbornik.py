@@ -49,21 +49,17 @@ class dateCalendar(QtGui.QCalendarWidget):
 base, form = uic.loadUiType('weblogger_izbornik.ui')
 class WebloggerIzbornik(base, form):
     """
-    NEDOVRSENO!    
-    
-    -inicijalizacija gui iz .ui filea
-    -IZBOR KANALA (combobox) nije implementiran. U principu, kanale mogu dobiti
-    tek nakon sto se file ucita.
-    
+    inicijalizacija gui iz filea weblogger_izbornik.ui
     
     metode koje se smiju pozivati izvana:
     -self.set_mjerenje(string)
     -self.set_mjerenja(lista stringova)
+    -self.get_mjerenje(string) ???
     
     metoda za komuniciranje sa vanjskim modulima
-    -self.open_file()
-    -self.open_file_list()
-    -self.promjena_mjerenja()
+    -self.open_file() ---> 'open_weblogger_file(PyQt_PyObject)'
+    -self.open_file_list() ---> 'open_weblogger_file_list(PyQt_PyObject)'
+    -self.promjena_mjerenja() ---> 'weblogger_promjena_mjerenja(PyQt_PyObject)'
     
     """
     def __init__(self, parent=None):
@@ -99,6 +95,7 @@ class WebloggerIzbornik(base, form):
         self.uiFileList.itemDoubleClicked.connect(self.dbl_click_lista)
         self.uiPrethodni.clicked.connect(self.klik_prethodni)
         self.uiSljedeci.clicked.connect(self.klik_sljedeci)
+        self.uiKanalCombo.currentIndexChanged.connect(self.promjena_mjerenja)
 ###############################################################################        
     def load_folder(self):
         """
@@ -180,30 +177,30 @@ class WebloggerIzbornik(base, form):
     def dbl_click_kalendar(self):
         """
         Dupli klik na datum u kalendaru
-        -PLACEHOLDER, samo ispis na outputu
         """
+        lista = []
         if self.folderLoaded:
             datum = self.get_odabrani_datum()
             if datum in self.trenutniDatumi:
-                print('\ndoubleclick na klendaru, datum : {0}'.format(datum))
-        #TODO:
-        #neka akcija za doubleclick? ucitavanje zadnjeg filea u listi?
+                #caka... treba naljepiti path na svaki element liste...
+                for indeks in range(self.uiFileList.count()):
+                    imeFilea = self.uiFileList.item(indeks).text()
+                    fullpath = os.path.join(self.trenutniFolder, imeFilea)
+                    lista.append(fullpath)
+                #emitiranje liste fileova
+                self.open_file_list(lista)
 ###############################################################################
     def dbl_click_lista(self,item):
         """
         Dupli klik na element liste
-        -PLACEHOLDER, samo ispis na outputu
         """
         if self.folderLoaded:
             izbor = item.text()
             izbor = str(izbor)
             #spoji ime foldera sa imenom filea - konstrukcija full path
             izbor = os.path.join(self.trenutniFolder, izbor)
-            print('\ndoubleclick na listi')
-            print(izbor)
-            #potencijalni problem... podatak iz foldera ima / dok os.path.join spaja sa \
-            #TODO:
-            #napisi neki specificni emit zahtjeva
+            #emitiranje filea            
+            self.open_file(izbor)
 ###############################################################################
     def parsiraj(self,item):
         """
@@ -269,10 +266,7 @@ class WebloggerIzbornik(base, form):
     def klik_prethodni(self):
         """
         Nakon klika na gumb prethodni
-        -NEDOVRSENO
         """
-        #TODO:
-        #2. emit za ucitavanje novih podataka - KOJIH?
         datum = self.get_odabrani_datum()
         if datum in self.trenutniDatumi:
             pozicija = self.trenutniDatumi.index(datum)
@@ -281,14 +275,14 @@ class WebloggerIzbornik(base, form):
             #cast back to QDate
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
             self.kalendar.setSelectedDate(noviDatum)
+            
+            #tretiraj kao dupli klik na kalendaru (ucitavanje svih sa liste)
+            self.dbl_click_kalendar()
 ###############################################################################
     def klik_sljedeci(self):
         """
         Nakon klika na gumb prethodni
-        -NEDOVRSENO
         """
-        #TODO:
-        #2. emit za ucitavanje novih podataka - KOJIH?
         datum = self.get_odabrani_datum()
         if datum in self.trenutniDatumi:
             pozicija = self.trenutniDatumi.index(datum)
@@ -297,6 +291,9 @@ class WebloggerIzbornik(base, form):
             #cast back to QDate
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
             self.kalendar.setSelectedDate(noviDatum)
+            
+            #tretiraj kao dupli klik na kalendaru (ucitavanje svih sa liste)
+            self.dbl_click_kalendar()
 ###############################################################################
     def set_mjerenja(self, mjerenja):
         """
@@ -328,34 +325,36 @@ class WebloggerIzbornik(base, form):
             self.uiKanalCombo.setCurrentIndex(indeks)      
 ###############################################################################
 #TODO:
-#sredi signale do kraja
+#da li je getter bitan??
     def get_mjerenje(self):
         """
-        getter za trenutno odabrano mjerenje ???
-        -mozda za update nekog drugog comboBoxa ili neku poruku?
+        getter za trenutno odabrano mjerenje ???        
         NOT IMPLEMENTED
         """
+        return
 ###############################################################################
-    def open_file(self,file):
+    def open_file(self, file):
         """
         emit signal sa zahtjevom za otvaranje filea
-        NOT IMPLEMENTED
         """
-        return
+        self.emit(QtCore.SIGNAL('open_weblogger_file(PyQt_PyObject)'), file)
+        print('\nopen_weblogger_file : {0}'.format(file))
 ###############################################################################
-    def open_file_list(self,file):
+    def open_file_list(self, lista):
         """
         emit signal sa zahtjevom za otvaranjem liste fileova
-        NOT IMPLEMENTED
         """
-        return
+        self.emit(QtCore.SIGNAL('open_weblogger_file_list(PyQt_PyObject)'), lista)
+        print('\nopen_weblogger_file_list : {0}'.format(lista))
 ###############################################################################
-    def promjena_mjerenja(self,mjerenje):
+    def promjena_mjerenja(self, mjerenje):
         """
         emit signal sa novim izborom mjerenja (kanala)
-        NOT IMPLEMENTED
         """
-        return
+        if self.uiKanalCombo.findText(mjerenje) != -1:
+            self.zadnjeMjerenje = mjerenje
+            self.emit(QtCore.SIGNAL('weblogger_promjena_mjerenja(PyQt_PyObject)'), mjerenje)
+            print('\nweblogger_promjena_mjerenja :{0}'.format(mjerenje))
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':

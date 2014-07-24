@@ -191,10 +191,6 @@ class TestWlReader(unittest.TestCase):
 
     #test metode "citaj_listu"
 ###############################################################################
-#TODO!
-#1. srediti slicne testove kao i za slucaj citaca.
-#2. provjera spajanja liste, ponasanje merge/update funkcija
-
     def test_citaj_listu_1(self):
         """
         vrati none ako je funkcija pozvana s praznom listom, ili s nekim krivim

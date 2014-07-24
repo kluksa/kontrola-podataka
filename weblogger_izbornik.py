@@ -54,6 +54,17 @@ class WebloggerIzbornik(base, form):
     -inicijalizacija gui iz .ui filea
     -IZBOR KANALA (combobox) nije implementiran. U principu, kanale mogu dobiti
     tek nakon sto se file ucita.
+    
+    
+    metode koje se smiju pozivati izvana:
+    -self.set_mjerenje(string)
+    -self.set_mjerenja(lista stringova)
+    
+    metoda za komuniciranje sa vanjskim modulima
+    -self.open_file()
+    -self.open_file_list()
+    -self.promjena_mjerenja()
+    
     """
     def __init__(self, parent=None):
         super(base, self).__init__(parent)
@@ -69,6 +80,7 @@ class WebloggerIzbornik(base, form):
         
         
         #memberi
+        self.zadnjeMjerenje = None
         self.folderLoaded = False
         self.trenutniFolder = None
         self.trenutneStanice = []
@@ -285,6 +297,65 @@ class WebloggerIzbornik(base, form):
             #cast back to QDate
             noviDatum = QtCore.QDate.fromString(noviDatum,'yyyyMMdd')
             self.kalendar.setSelectedDate(noviDatum)
+###############################################################################
+    def set_mjerenja(self, mjerenja):
+        """
+        Setter za populiranje comboboxa sa svim dostupnim kanalima nakon sto se 
+        otvori neki file.
+        """
+        lista = sorted(mjerenja)
+        #privremeno blokiraj sve signale uiKanalCombo widgeta
+        self.uiKanalCombo.blockSignals(True)
+        self.uiKanalCombo.addItems(lista)
+        #provjeri da li ima prije ucitanih signala, i da li je u trenutnoj listi
+        if self.zadnjeMjerenje != None:
+            if self.zadnjeMjerenje in lista:
+                #odblokiraj signal ranije da prodje signal currentIndexChanged (trigger izbora kanala)
+                self.uiKanalCombo.blockSignals(False)
+                indeks = self.uiKanalCombo.findText(self.zadnjeMjerenje)
+                self.uiKanalCombo.setCurrentIndex(indeks)
+        #odblokiraj sve signale uiKanalCombo widgeta
+        self.uiKanalCombo.blockSignals(False)
+###############################################################################
+    def set_mjerenje(self, mjerenje):
+        """
+        Setter za odabir unutar comboboxa.
+        """
+        #test, da li mjerenje postoji u comboboxu
+        indeks = self.uiKanalCombo.findText(mjerenje)
+        if indeks != -1:
+            self.zadnjeMjerenje = mjerenje
+            self.uiKanalCombo.setCurrentIndex(indeks)      
+###############################################################################
+#TODO:
+#sredi signale do kraja
+    def get_mjerenje(self):
+        """
+        getter za trenutno odabrano mjerenje ???
+        -mozda za update nekog drugog comboBoxa ili neku poruku?
+        NOT IMPLEMENTED
+        """
+###############################################################################
+    def open_file(self,file):
+        """
+        emit signal sa zahtjevom za otvaranje filea
+        NOT IMPLEMENTED
+        """
+        return
+###############################################################################
+    def open_file_list(self,file):
+        """
+        emit signal sa zahtjevom za otvaranjem liste fileova
+        NOT IMPLEMENTED
+        """
+        return
+###############################################################################
+    def promjena_mjerenja(self,mjerenje):
+        """
+        emit signal sa novim izborom mjerenja (kanala)
+        NOT IMPLEMENTED
+        """
+        return
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':

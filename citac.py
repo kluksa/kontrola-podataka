@@ -78,7 +78,6 @@ class WlReader:
             #ucitaj prvi valjani csv file, mici s liste one koji se ne ucitavaju
             while len(pathLista) != 0:
                 file = pathLista.pop(0)
-                print(file)
                 frejmovi = self.citaj(file)
                 if frejmovi != None:
                     break

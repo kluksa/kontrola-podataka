@@ -104,7 +104,7 @@ class Agregator(object):
     
 
 if __name__ == "__main__":
-    data = citac.citaj('pj.csv')
+    data = citac.WlReader().citaj('./data/pj.csv')
     u1 = uredjaj.M100E()
     u2 = uredjaj.M100C()
     u1.pocetak=datetime(2000,1,1)

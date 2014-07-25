@@ -61,10 +61,8 @@ class Dokument(QtGui.QWidget):
         popunjava dict s uredjajima
         inicijalna agregacija sa autovalidacijom
         """
-        self.frejmovi=citac.citaj_weblog(unicode(path))
+        self.frejmovi=citac.WlReader().citaj(path)
         self.kljucSviFrejmovi=list(self.frejmovi)
-        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
-        # nema smisla, reader ne izbacuje nepotrebne stvari
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
@@ -82,11 +80,8 @@ class Dokument(QtGui.QWidget):
         
         P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
         """
-        self.frejmovi=citac.citaj_listu(lista)
+        self.frejmovi=citac.WlReader().citaj_listu(lista)
         self.kljucSviFrejmovi=list(self.frejmovi)
-        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
-        self.kljucSviFrejmovi.remove('Flag')
-        self.kljucSviFrejmovi.remove('Zone')        
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
@@ -146,7 +141,7 @@ class Dokument(QtGui.QWidget):
         -emitiraj signal sa satno agregiranim podatcima
         -emitiraj listu satnih vrijednosti (stringova)
         """
-        self.aktivniFrame=unicode(kanal)
+        self.aktivniFrame = str(kanal)
         #za slucaj da netko stisne gumb prije nego ucita podatke
         try:
             data=self.agregirani[self.aktivniFrame]
@@ -215,7 +210,7 @@ class Dokument(QtGui.QWidget):
         flag=dic['flag']
         kanal=dic['kanal']
         sat=dic['sat']
-        self.aktivniFrame=unicode(kanal)
+        self.aktivniFrame = str(kanal)
         self.odabraniSatniPodatak=sat
         
         #promjeni flag
@@ -232,39 +227,39 @@ class Dokument(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 
 ###############################################################################
-    def save_trenutni_frejmovi(self,filepath):
-        """
-        Save self.frejmovi u csv file, report kada si gotov
-        """
-        if self.frejmovi!={}:
-            citac.WlReader().save_work(self.frejmovi,filepath)
-            message='Data saved as '+filepath
-            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-        else:
-            message='Unable to save'
-            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-###############################################################################
-    def load_frejmovi_iz_csv(self,filepath):
-        #clear grafova
-        self.emit(QtCore.SIGNAL('grafovi_clear()'))
-        #clear starih podataka
-        self.frejmovi=None
-        self.kljucSviFrejmovi=None
-        
-        okviri=citac.load_work(filepath)
-        self.frejmovi=okviri
-        self.kljucSviFrejmovi=list(self.frejmovi)
-        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
-        self.kljucSviFrejmovi.remove('Flag')
-        self.kljucSviFrejmovi.remove('Zone')
-        
-        self.set_uredjaji(self.kljucSviFrejmovi)
-        #agregiranje bez autovalidacije? problem
-        for kljuc in self.kljucSviFrejmovi:
-            self.agregiraj_odabir(self.frejmovi,kljuc)
-        
-        message='File load complete'
-        #emitiraj nove podatke o kljucu i status
-        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-###############################################################################
+#    def save_trenutni_frejmovi(self,filepath):
+#        """
+#        Save self.frejmovi u csv file, report kada si gotov
+#        """
+#        if self.frejmovi!={}:
+#            citac.WlReader().save_work(self.frejmovi,filepath)
+#            message='Data saved as '+filepath
+#            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+#        else:
+#            message='Unable to save'
+#            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+################################################################################
+#    def load_frejmovi_iz_csv(self,filepath):
+#        #clear grafova
+#        self.emit(QtCore.SIGNAL('grafovi_clear()'))
+#        #clear starih podataka
+#        self.frejmovi=None
+#        self.kljucSviFrejmovi=None
+#        
+#        okviri=citac.load_work(filepath)
+#        self.frejmovi=okviri
+#        self.kljucSviFrejmovi=list(self.frejmovi)
+#        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
+#        self.kljucSviFrejmovi.remove('Flag')
+#        self.kljucSviFrejmovi.remove('Zone')
+#        
+#        self.set_uredjaji(self.kljucSviFrejmovi)
+#        #agregiranje bez autovalidacije? problem
+#        for kljuc in self.kljucSviFrejmovi:
+#            self.agregiraj_odabir(self.frejmovi,kljuc)
+#        
+#        message='File load complete'
+#        #emitiraj nove podatke o kljucu i status
+#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+################################################################################

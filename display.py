@@ -76,19 +76,23 @@ class GlavniProzor(QtGui.QMainWindow):
         grafLayout.addWidget(self.canvasMinutni)
 
         #layout kontrolnih elemenata (QComboBox, QPushButton, QLabel ... )
-        selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
-        self.selektorKanala=QtGui.QComboBox()
-        self.selektorKanala.setMinimumContentsLength(20)
+        #selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
+        #self.selektorKanala=QtGui.QComboBox()
+        #self.selektorKanala.setMinimumContentsLength(20)
                 
-        IOLayout=QtGui.QHBoxLayout()
-        IOLayout.addWidget(selektorKanalaLabel)
-        IOLayout.addWidget(self.selektorKanala)
+        #IOLayout=QtGui.QHBoxLayout()
+        #IOLayout.addWidget(selektorKanalaLabel)
+        #IOLayout.addWidget(self.selektorKanala)
         
         #zavrsni layout
         final=QtGui.QVBoxLayout(self.mainWidget)
-        final.addLayout(IOLayout)
+        #final.addLayout(IOLayout)
         final.addLayout(grafLayout)
         
+
+        #povezivanje gui - kontoler - dokument
+        self.doc = dokument.Dokument()
+        self.kontrola = kontroler.Mediator(gui = self, model = self.doc)
 ###############################################################################
     
     """
@@ -111,22 +115,22 @@ class GlavniProzor(QtGui.QMainWindow):
             self.izborMape=QtGui.QDockWidget(self)
             self.izborMape.setWindowTitle('Odabir podataka')
             
-            #velicina, format, postavke QDockWidget
-            self.izborMape.setMinimumSize(QtCore.QSize(150,240))
-            self.izborMape.setMaximumSize(QtCore.QSize(360,560))
+#            #velicina, format, postavke QDockWidget
+#            self.izborMape.setMinimumSize(QtCore.QSize(150,240))
+#            self.izborMape.setMaximumSize(QtCore.QSize(360,560))
             #definiraj sadrzaj dockable widgeta
             self.izborMapeSadrzaj=weblogger_izbornik.WebloggerIzbornik()
             self.izborMape.setWidget(self.izborMapeSadrzaj)
             #dodaj ga na main window na lijevom rubu
             self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)
             self.izborMape.closeEvent = self.reader_widget_close
-                          
+
+###############################################################################
     def set_status_bar(self,tekst):
         """
         Update statusbara
         """
-        self.statusBar().showMessage(tekst)
-        
+        self.statusBar().showMessage(tekst)        
 ###############################################################################
     def create_menu(self):
         """

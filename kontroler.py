@@ -35,34 +35,34 @@ class Mediator(QtGui.QWidget):
         Connections
         """
         #status bar updates (jedino direktno spajanje modela i gui)
-        self.connect(self,
-                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
-                     gui.set_status_bar)
-
-        self.connect(gui,
-                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
-                     gui.set_status_bar)
-
-        self.connect(model,
-                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
-                     gui.set_status_bar)
-        
-        #read csv procedure
-        self.connect(gui.izborMapeSadrzaj,
-                     QtCore.SIGNAL('open_weblogger_file(PyQt_PyObject)'),
-                     self.med_read_csv)
-
-        self.connect(self,
-                     QtCore.SIGNAL('med_request_read_csv(PyQt_PyObject)'),
-                     model.citaj_csv)
-
-        self.connect(model,
-                     QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),
-                     self.set_trenutnaListaKanala)
-
-        self.connect(self,
-                     QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),
-                     gui.izborMapeSadrzaj.set_mjerenja)
+#        self.connect(self,
+#                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+#                     gui.set_status_bar)
+#
+#        self.connect(gui,
+#                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+#                     gui.set_status_bar)
+#
+#        self.connect(model,
+#                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+#                     gui.set_status_bar)
+#        
+#        #read csv procedure
+#        self.connect(gui.izborMapeSadrzaj,
+#                     QtCore.SIGNAL('open_weblogger_file(PyQt_PyObject)'),
+#                     self.med_read_csv)
+#
+#        self.connect(self,
+#                     QtCore.SIGNAL('med_request_read_csv(PyQt_PyObject)'),
+#                     model.citaj_csv)
+#
+#        self.connect(model,
+#                     QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),
+#                     self.set_trenutnaListaKanala)
+#
+#        self.connect(self,
+#                     QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),
+#                     gui.izborMapeSadrzaj.set_mjerenja)
 
 #TODO!
 #connectioni se lome jer prilikom inicijalizacije weblogger_izbornik ne postoji :)

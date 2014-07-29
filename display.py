@@ -52,6 +52,8 @@ class GlavniProzor(QtGui.QMainWindow):
         #napravi toolbar, napuni ga sa naredbama
         tbar=self.create_tool_bar()
         self.addToolBar(tbar)
+        #inicjalizacija weblogger izbornika
+        self.webLoggerIzbornik = weblogger_izbornik.WebloggerIzbornik()
         
         """
         Osnovni layout applikacije - pozicija widgeta etc...
@@ -112,14 +114,11 @@ class GlavniProzor(QtGui.QMainWindow):
         #na istu shemu se dodaju i rezultati drugih gumba po potrebi
         if (izbor == 'weblogger') and (not self.readerLoaded):
             self.readerLoaded = True
-            self.izborMape=QtGui.QDockWidget(self)
+            self.izborMape = QtGui.QDockWidget(self)
             self.izborMape.setWindowTitle('Odabir podataka')
-            
-#            #velicina, format, postavke QDockWidget
-#            self.izborMape.setMinimumSize(QtCore.QSize(150,240))
-#            self.izborMape.setMaximumSize(QtCore.QSize(360,560))
+
             #definiraj sadrzaj dockable widgeta
-            self.izborMapeSadrzaj=weblogger_izbornik.WebloggerIzbornik()
+            self.izborMapeSadrzaj = self.webLoggerIzbornik
             self.izborMape.setWidget(self.izborMapeSadrzaj)
             #dodaj ga na main window na lijevom rubu
             self.addDockWidget(QtCore.Qt.DockWidgetArea(1),self.izborMape)

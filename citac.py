@@ -31,6 +31,22 @@ from functools import wraps
 class WlReader:
     """
     Ova klasa odradjuje citanje weblogger csv fileova
+    
+    smo tri metode:
+    1. provjeri_headere
+    -test da li file dobar (dobra struktura i .csv)
+    -vraca True ako je sve u redu i file se moze citati, False inace
+    2. citaj
+    -za neki file (path) (ako je file dobar) ucitava csv u dictionary pandas
+    datafrejmova
+    -ako file nije dobar vraca None
+    3. citaj_listu
+    -za listu stringova (fileovi) vraca dictionary pandas datafrejmova (ako je sve ok)
+    -ako sve ne valja vraca None
+    -3a. provjerava da li mu je predata lista stringova (ako ne, vraca None)
+    -3b. pokusava naci valjani file i ucitati ga (ako ne nadje niti jedan, vraca None)
+    -3c. nakon sto ucita barem jedan file (treba mu zbog merge operacije) cita ostale
+    te ako nadje neki koji moze ucitati spaja ga sa postojecim frejmovima
     """
     def __init__(self):
         pass    
@@ -60,7 +76,7 @@ class WlReader:
                 frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
             return frejmovi
         else:
-            #trenutno bez implementacije
+            #vraca None
             return
 
 ###############################################################################
@@ -70,50 +86,43 @@ class WlReader:
         INPUT - lista stringova
         funkcija cita listu weblogger csv fileova u dictionary pandas datafrejmova
         """
-        try:
-            #raise IOError if argument is not list, or if list is empty
-            if (type(pathLista) != type ([])) or (len(pathLista) == 0):
-                raise IOError
-            
-            #ucitaj prvi valjani csv file, mici s liste one koji se ne ucitavaju
-            while len(pathLista) != 0:
-                file = pathLista.pop(0)
-                frejmovi = self.citaj(file)
-                if frejmovi != None:
-                    break
-            
-            else:
-                raise IOError
-            
-            
-            #petlja koja ucitava ostale fileove u listi (lista je sada kraca)
-            for file in pathLista:
-                frejmoviTemp = self.citaj(file)
-                if frejmoviTemp != None:
-                    #kod za spajanje datafrejma
-                    for key in frejmoviTemp.keys():
-                        if key in frejmovi.keys():
-                            #ako postoji isti kljuc u oba datafrejma -  update/merge
-                            #ovaj korak je nesto u stilu full outer join
-                            frejmovi[key] = pd.merge(
-                                frejmovi[key], 
-                                frejmoviTemp[key], 
-                                how = 'outer', 
-                                left_index = True, 
-                                right_index = True, 
-                                sort = True, 
-                                on = [u'koncentracija', u'status', u'flag'])
-                            #update vrijednosti koje nisu np.NaN
-                            frejmovi[key].update(frejmoviTemp[key])
-                        else:
-                            #ako ne postoji kljuc (novi stupac) - dodaj novi frame
-                            frejmovi[key] = frejmoviTemp[key]
-            return frejmovi
+        #vrati None ako su ulazni parametri krivi
+        if (type(pathLista) != type ([])) or (len(pathLista) == 0):
+            return None
         
-        except IOError:
-            #implementiraj neki fail kod unosa prazne liste ili nekog drugog tipa podataka
-            return
-
+        #ucitaj prvi valjani csv file, mici s liste one koji se ne ucitavaju
+        while len(pathLista) != 0:
+            file = pathLista.pop(0)
+            frejmovi = self.citaj(file)
+            if frejmovi != None:
+                break            
+        else:
+            return None
+        
+        
+        #petlja koja ucitava ostale fileove u listi (lista je sada kraca)
+        for file in pathLista:
+            frejmoviTemp = self.citaj(file)
+            if frejmoviTemp != None:
+                #kod za spajanje datafrejma
+                for key in frejmoviTemp.keys():
+                    if key in frejmovi.keys():
+                        #ako postoji isti kljuc u oba datafrejma -  update/merge
+                        #ovaj korak je nesto u stilu full outer join
+                        frejmovi[key] = pd.merge(
+                            frejmovi[key], 
+                            frejmoviTemp[key], 
+                            how = 'outer', 
+                            left_index = True, 
+                            right_index = True, 
+                            sort = True, 
+                            on = [u'koncentracija', u'status', u'flag'])
+                        #update vrijednosti koje nisu np.NaN
+                        frejmovi[key].update(frejmoviTemp[key])
+                    else:
+                        #ako ne postoji kljuc (novi stupac) - dodaj novi frame
+                        frejmovi[key] = frejmoviTemp[key]
+        return frejmovi
 ###############################################################################
     def provjeri_headere(self, path):
         """
@@ -130,11 +139,11 @@ class WlReader:
         try:
             #test ulaznih podataka
             if type(path) != type('string'):
-                raise IOError
+                return False
             
             ekstenzija = path[path.rfind('.')+1:]
             if ekstenzija != 'csv':
-                raise IOError
+                return False
             
             file = open(path)
             firstLine = file.readline()
@@ -163,8 +172,7 @@ class WlReader:
                 statusMatch = re.search(r'status', headerList[i], re.IGNORECASE)
                 if not statusMatch:
                     return False
-            return True
-        
+            return True    
         except IOError:
             #generalini input / output fail
             return False
@@ -174,22 +182,24 @@ class WlReader:
 ###############################################################################
             
 if __name__ == '__main__':
-    x = WlReader().citaj()
+    test1 = WlReader()
 #    #header test
-#    print('\ntest nepostojeceg filea')
-#    x = WlReader().provjeri_headere('./data/pj123.csv')
-#    print('\ntest postojeceg filea, pravilne strukture')
-#    y = WlReader().provjeri_headere('./data/pj.csv')
-#    print('\ntest postojeceg filea, nepravilne strukture')
-#    print('pogreska u Time, jednom statusu, jedom mjerenju')
-#    z = WlReader().provjeri_headere('./data/pj_corrupted.csv')
-#    print('\ntest postojeceg filea, praznog')
-#    k = WlReader().provjeri_headere('./data/pj_empty.csv')
+    print('\ntest nepostojeceg filea')
+    x = test1.provjeri_headere('./data/pj123.csv')
+    print('\ntest postojeceg filea, pravilne strukture')
+    y = test1.provjeri_headere('./data/pj.csv')
+    print('\ntest postojeceg filea, nepravilne strukture')
+    print('pogreska u Time, jednom statusu, jedom mjerenju')
+    z = test1.provjeri_headere('./data/pj_corrupted.csv')
+    print('\ntest postojeceg filea, praznog')
+    k = test1.provjeri_headere('./data/pj_empty.csv')
+    print('\ntest postojeceg filea krive ekstenzije')
+    l = test1.provjeri_headere('./data/pjtest.txt')
 #    #citaj test
-#    data1 = WlReader().citaj('./data/pj.csv')
-#    data2 = WlReader().citaj('./data/pj123.csv')
-#    data3 = WlReader().citaj('./data/pj_corrupted.csv')
-#    data4 = WlReader().citaj('./data/pj_empty.csv')
+    data1 = test1.citaj('./data/pj.csv')
+    data2 = test1.citaj('./data/pj123.csv')
+    data3 = test1.citaj('./data/pj_corrupted.csv')
+    data4 = test1.citaj('./data/pj_empty.csv')
     #citaj_listu test
 #    """
 #    Napravio par mock csv fileova da "rucno" provjerim join/merge liste
@@ -203,17 +213,23 @@ if __name__ == '__main__':
 #    
 #    Sve u biti ovisi o ulaznim fileovima...
 #    """
-#    data5 = WlReader().citaj_listu([
-#        './data/nepostojeci.csv', 
-#        './data/pj-20140715A.csv', 
-#        './data/pj-20140715B.csv', 
-#        './data/pj_corrupted.csv', 
-#        './data/pj-20140715C.csv', 
-#        './data/pj-20140715D.csv'])
-#    
-#    if len(data5['1-SO2']) == len(data5['PM1']):
-#        print('Broj indeksa je jednak')
-#    else:
-#        print('Broj indeksa u oba frejma je razlicit')
-    
-    
+    data5 = test1.citaj_listu([
+        './data/nepostojeci.csv', 
+        './data/pj-20140715A.csv', 
+        './data/pj-20140715B.csv', 
+        './data/pj_corrupted.csv', 
+        './data/pj-20140715C.csv', 
+        './data/pj-20140715D.csv'])
+    if len(data5['1-SO2']) == len(data5['PM1']):
+        print('Broj indeksa je jednak')
+    else:
+        print('Broj indeksa u oba frejma je razlicit')    
+    #totalno krivi ulazni podatci
+    data6 = test1.citaj_listu([
+        './data/nepostojeci.csv', 
+        './data/pj_corrupted.csv', 
+        './data/pjtest.txt', 
+        ['samo', 'test', 'kriminalno', 'loseg', 'unosa'], 
+        {'ovo':'nema smisla'}, 
+        12, 
+        3.1442])

@@ -184,23 +184,23 @@ class WlReader:
 if __name__ == '__main__':
     test1 = WlReader()
 #    #header test
-    print('\ntest nepostojeceg filea')
-    x = test1.provjeri_headere('./data/pj123.csv')
-    print('\ntest postojeceg filea, pravilne strukture')
-    y = test1.provjeri_headere('./data/pj.csv')
-    print('\ntest postojeceg filea, nepravilne strukture')
-    print('pogreska u Time, jednom statusu, jedom mjerenju')
-    z = test1.provjeri_headere('./data/pj_corrupted.csv')
-    print('\ntest postojeceg filea, praznog')
-    k = test1.provjeri_headere('./data/pj_empty.csv')
-    print('\ntest postojeceg filea krive ekstenzije')
-    l = test1.provjeri_headere('./data/pjtest.txt')
+#    print('\ntest nepostojeceg filea')
+#    x = test1.provjeri_headere('./data/pj123.csv')
+#    print('\ntest postojeceg filea, pravilne strukture')
+#    y = test1.provjeri_headere('./data/pj.csv')
+#    print('\ntest postojeceg filea, nepravilne strukture')
+#    print('pogreska u Time, jednom statusu, jedom mjerenju')
+#    z = test1.provjeri_headere('./data/pj_corrupted.csv')
+#    print('\ntest postojeceg filea, praznog')
+#    k = test1.provjeri_headere('./data/pj_empty.csv')
+#    print('\ntest postojeceg filea krive ekstenzije')
+#    l = test1.provjeri_headere('./data/pjtest.txt')
 #    #citaj test
-    data1 = test1.citaj('./data/pj.csv')
-    data2 = test1.citaj('./data/pj123.csv')
-    data3 = test1.citaj('./data/pj_corrupted.csv')
-    data4 = test1.citaj('./data/pj_empty.csv')
-    #citaj_listu test
+#    data1 = test1.citaj('./data/pj.csv')
+#    data2 = test1.citaj('./data/pj123.csv')
+#    data3 = test1.citaj('./data/pj_corrupted.csv')
+#    data4 = test1.citaj('./data/pj_empty.csv')
+#    #citaj_listu test
 #    """
 #    Napravio par mock csv fileova da "rucno" provjerim join/merge liste
 #    Jedini "problem" je u cinjenici da spaja frame po frame, sto ima jednu caku.
@@ -213,23 +213,23 @@ if __name__ == '__main__':
 #    
 #    Sve u biti ovisi o ulaznim fileovima...
 #    """
-    data5 = test1.citaj_listu([
-        './data/nepostojeci.csv', 
-        './data/pj-20140715A.csv', 
-        './data/pj-20140715B.csv', 
-        './data/pj_corrupted.csv', 
-        './data/pj-20140715C.csv', 
-        './data/pj-20140715D.csv'])
-    if len(data5['1-SO2']) == len(data5['PM1']):
-        print('Broj indeksa je jednak')
-    else:
-        print('Broj indeksa u oba frejma je razlicit')    
-    #totalno krivi ulazni podatci
-    data6 = test1.citaj_listu([
-        './data/nepostojeci.csv', 
-        './data/pj_corrupted.csv', 
-        './data/pjtest.txt', 
-        ['samo', 'test', 'kriminalno', 'loseg', 'unosa'], 
-        {'ovo':'nema smisla'}, 
-        12, 
-        3.1442])
+#    data5 = test1.citaj_listu([
+#        './data/nepostojeci.csv', 
+#        './data/pj-20140715A.csv', 
+#        './data/pj-20140715B.csv', 
+#        './data/pj_corrupted.csv', 
+#        './data/pj-20140715C.csv', 
+#        './data/pj-20140715D.csv'])
+#    if len(data5['1-SO2']) == len(data5['PM1']):
+#        print('Broj indeksa je jednak')
+#    else:
+#        print('Broj indeksa u oba frejma je razlicit')    
+#    #totalno krivi ulazni podatci
+#    data6 = test1.citaj_listu([
+#        './data/nepostojeci.csv', 
+#        './data/pj_corrupted.csv', 
+#        './data/pjtest.txt', 
+#        ['samo', 'test', 'kriminalno', 'loseg', 'unosa'], 
+#        {'ovo':'nema smisla'}, 
+#        12, 
+#        3.1442])

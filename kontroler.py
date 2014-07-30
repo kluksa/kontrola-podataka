@@ -31,9 +31,42 @@ class Mediator(QtGui.QWidget):
         self.trenutnaListaSati=None
         self.lastKanal=None
         self.lastSat=None
+
         """
         Connections
         """
+###############################################################################
+        """
+        Status bar updates.
+        
+        -dodaj nove connectione po potrebi
+        -budi konzistentan sa imenom emitiranog signala
+        -mjenjaj samo odakle signal dolazi
+        """
+        self.connect(gui.webLoggerIzbornik,
+                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+                     gui.set_status_bar)
+        
+        self.connect(model,
+                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+                     gui.set_status_bar)
+###############################################################################
+        """
+        Ulaz za frejmove.
+        
+        -dodaj nove connectione po potrebi
+        -budi konzistentan sa imenom emitiranog signala
+        -mjenjaj samo odakle signal dolazi
+        """
+        self.connect(gui.webLoggerIzbornik,
+                     QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'),
+                     model.set_frejmovi)
+
+###############################################################################
+        
+###############################################################################
+    def printtest(self, x):
+        print(x)
         #status bar updates (jedino direktno spajanje modela i gui)
 #        self.connect(self,
 #                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
@@ -188,11 +221,11 @@ class Mediator(QtGui.QWidget):
 #        
 ################################################################################
 #
-    def med_read_csv(self,filepath):
-        self.lastLoadedFile=filepath
-        message='Loading and preparing file '+filepath
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-        self.emit(QtCore.SIGNAL('med_request_read_csv(PyQt_PyObject)'),filepath)
+#    def med_read_csv(self,filepath):
+#        self.lastLoadedFile=filepath
+#        message='Loading and preparing file '+filepath
+#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+#        self.emit(QtCore.SIGNAL('med_request_read_csv(PyQt_PyObject)'),filepath)
 #        
 #    def med_read_lista_csv(self,lista):
 #        self.lastLoadedFile=lista[-1]
@@ -325,9 +358,9 @@ class Mediator(QtGui.QWidget):
 #    def set_lastLoadedFile(self,filepath):
 #        self.lastLoadedFile=filepath
 #        
-    def set_trenutnaListaKanala(self,kanali):
-        self.trenutnaListaKanala=kanali
-        self.emit(QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),kanali)
+#    def set_trenutnaListaKanala(self,kanali):
+#        self.trenutnaListaKanala=kanali
+#        self.emit(QtCore.SIGNAL('med_update_kanali(PyQt_PyObject)'),kanali)
 #        
 #    def set_lastKanal(self,kanal):
 #        self.lastKanal=kanal

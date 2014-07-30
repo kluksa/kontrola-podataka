@@ -10,6 +10,7 @@ selektor fileova + navigacija
 import sys
 import os
 import re
+import citac
 from PyQt4 import QtCore, QtGui, uic
 
 ###############################################################################
@@ -57,9 +58,9 @@ class WebloggerIzbornik(base, form):
     -self.get_mjerenje(string) ???
     
     metoda za komuniciranje sa vanjskim modulima
-    -self.open_file() ---> 'open_weblogger_file(PyQt_PyObject)'
-    -self.open_file_list() ---> 'open_weblogger_file_list(PyQt_PyObject)'
-    -self.promjena_mjerenja() ---> 'weblogger_promjena_mjerenja(PyQt_PyObject)'
+    -self.open_file() ---> 'ucitani_frejmovi(PyQt_PyObject)'
+    -self.open_file_list() ---> 'ucitani_frejmovi(PyQt_PyObject)'
+    -self.promjena_mjerenja() ---> 'promjena_mjerenja(PyQt_PyObject)'
     
     """
     def __init__(self, parent=None):
@@ -74,7 +75,10 @@ class WebloggerIzbornik(base, form):
         self.uiPrethodni.setDisabled(True)
         self.uiSljedeci.setDisabled(True)
         
-        
+        #inicijalizacija citaca
+        self.wlreader = citac.WlReader()
+        self.frejmovi = None
+                
         #memberi
         self.zadnjeMjerenje = None
         self.folderLoaded = False
@@ -335,26 +339,45 @@ class WebloggerIzbornik(base, form):
 ###############################################################################
     def open_file(self, file):
         """
-        emit signal sa zahtjevom za otvaranje filea
+        citaj file i  emitiraj frejmove
         """
-        self.emit(QtCore.SIGNAL('open_weblogger_file(PyQt_PyObject)'), file)
-        print('\nopen_weblogger_file : {0}'.format(file))
+        self.frejmovi = self.wlreader.citaj(file)
+        if self.frejmovi != None:
+            self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
+            print('\nopen_file, kljucevi frejmova:')
+            print(self.frejmovi.keys())
+            #set sortiranu listu kanala
+            kanali = sorted(list(self.frejmovi.keys()))
+            self.set_mjerenja(kanali)
+        else:
+            message = 'Pogreska kod ucitavanja. Krivi tip ili struktura csv datoteke'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
 ###############################################################################
     def open_file_list(self, lista):
         """
-        emit signal sa zahtjevom za otvaranjem liste fileova
+        citaj iz liste fileova i emitiraj frejmove
         """
-        self.emit(QtCore.SIGNAL('open_weblogger_file_list(PyQt_PyObject)'), lista)
-        print('\nopen_weblogger_file_list : {0}'.format(lista))
+        self.frejmovi = self.wlreader.citaj_listu(lista)
+        if self.frejmovi != None:
+            self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
+            print('\nopen_file_list, kljucevi frejmova:')
+            print(self.frejmovi.keys())
+            #set sortiranu listu kanala
+            kanali = sorted(list(self.frejmovi.keys()))
+            self.set_mjerenja(kanali)
+        else:
+            message = 'Pogreska kod ucitavanja. Krivi tip ili struktura csv datoteka'
+            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
 ###############################################################################
     def promjena_mjerenja(self, mjerenje):
         """
         emit signal sa novim izborom mjerenja (kanala)
         """
+        mjerenje = self.uiKanalCombo.itemText(mjerenje)
         if self.uiKanalCombo.findText(mjerenje) != -1:
             self.zadnjeMjerenje = mjerenje
-            self.emit(QtCore.SIGNAL('weblogger_promjena_mjerenja(PyQt_PyObject)'), mjerenje)
-            print('\nweblogger_promjena_mjerenja :{0}'.format(mjerenje))
+            self.emit(QtCore.SIGNAL('promjena_mjerenja(PyQt_PyObject)'), mjerenje)
+            print('\npromjena_mjerenja :{0}'.format(mjerenje))
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':

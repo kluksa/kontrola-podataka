@@ -52,7 +52,8 @@ class GlavniProzor(QtGui.QMainWindow):
         #napravi toolbar, napuni ga sa naredbama
         tbar=self.create_tool_bar()
         self.addToolBar(tbar)
-        #inicjalizacija weblogger izbornika
+
+        #inicjalizacija weblogger_izbornik
         self.webLoggerIzbornik = weblogger_izbornik.WebloggerIzbornik()
         
         """
@@ -77,14 +78,6 @@ class GlavniProzor(QtGui.QMainWindow):
         grafLayout.addWidget(self.canvasSatni)
         grafLayout.addWidget(self.canvasMinutni)
 
-        #layout kontrolnih elemenata (QComboBox, QPushButton, QLabel ... )
-        #selektorKanalaLabel=QtGui.QLabel('Izbor kanala')
-        #self.selektorKanala=QtGui.QComboBox()
-        #self.selektorKanala.setMinimumContentsLength(20)
-                
-        #IOLayout=QtGui.QHBoxLayout()
-        #IOLayout.addWidget(selektorKanalaLabel)
-        #IOLayout.addWidget(self.selektorKanala)
         
         #zavrsni layout
         final=QtGui.QVBoxLayout(self.mainWidget)

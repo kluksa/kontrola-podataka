@@ -46,49 +46,55 @@ class Dokument(QtGui.QWidget):
         #9. dict uredjaja za agregator?
         self.dictUredjaja={}
         
-        '''
-        self.nizNizova = {}
-        
-        Gornji member u biti ne treba. Podatci za grafove su u drugom formatu
-        -satni graf -> self.agregirani['self.aktivniFrame']
-        -minutni graf -> self.frejmovi['self.aktivniFrame'].loc[min:max,u'koncentracija']
-        '''
-###############################################################################        
-    def citaj_csv(self,path):
-        """
-        Ucitava podatke iz csv filea
-        sprema sve kljuceve u member listu
-        popunjava dict s uredjajima
-        inicijalna agregacija sa autovalidacijom
-        """
-        self.frejmovi=citac.WlReader().citaj(path)
-        self.kljucSviFrejmovi=list(self.frejmovi)
-        self.set_uredjaji(self.kljucSviFrejmovi)
-        self.agregiraj_sve(self.kljucSviFrejmovi)
-        
-        message='File load complete'
-        #emitiraj nove podatke o kljucu i status
-        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
-    def citaj_lista_csv(self,lista):
+    def set_frejmovi(self, frejmovi):
         """
-        Ucitava podatke iz csv filea
-        sprema sve kljuceve u member listu
-        popunjava dict s uredjajima
-        inicijalna agregacija sa autovalidacijom
-        
-        P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
+        Metoda postavlja novi set frejmova u dokument
         """
-        self.frejmovi=citac.WlReader().citaj_listu(lista)
-        self.kljucSviFrejmovi=list(self.frejmovi)
+        self.frejmovi = frejmovi
+        self.kljucSviFrejmovi = sorted(list(self.frejmovi))
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
-        message='Multiple file load complete'
-        #emitiraj nove podatke o kljucu i status
-        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)        
+        message = 'csv file ucitan'
+        #emitiraj novi status
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+###############################################################################        
+#    def citaj_csv(self,path):
+#        """
+#        Ucitava podatke iz csv filea
+#        sprema sve kljuceve u member listu
+#        popunjava dict s uredjajima
+#        inicijalna agregacija sa autovalidacijom
+#        """
+#        self.frejmovi=citac.WlReader().citaj(path)
+#        self.kljucSviFrejmovi=list(self.frejmovi)
+#        self.set_uredjaji(self.kljucSviFrejmovi)
+#        self.agregiraj_sve(self.kljucSviFrejmovi)
+#        
+#        message='File load complete'
+#        #emitiraj nove podatke o kljucu i status
+#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+###############################################################################
+#    def citaj_lista_csv(self,lista):
+#        """
+#        Ucitava podatke iz csv filea
+#        sprema sve kljuceve u member listu
+#        popunjava dict s uredjajima
+#        inicijalna agregacija sa autovalidacijom
+#        
+#        P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
+#        """
+#        self.frejmovi=citac.WlReader().citaj_listu(lista)
+#        self.kljucSviFrejmovi=list(self.frejmovi)
+#        self.set_uredjaji(self.kljucSviFrejmovi)
+#        self.agregiraj_sve(self.kljucSviFrejmovi)
+#        
+#        message='Multiple file load complete'
+#        #emitiraj nove podatke o kljucu i status
+#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
+#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)        
 ###############################################################################
     def set_uredjaji(self,kljucevi):
         """

@@ -583,8 +583,9 @@ class ApplicationMain(QtGui.QMainWindow):
         """
         Testni podaci, dictionary pandas datafrejmova koji je rezultat agregatora.
         Koristim istu strukturu podataka ali random vrijednosti
-        """        
-        data = citac.citaj('pj.csv')
+        """
+        reader = citac.WlReader()        
+        data = reader.citaj('pj.csv')
         u1 = uredjaj.M100E()
         u2 = uredjaj.M100C()
         u1.pocetak=datetime(2000,1,1)

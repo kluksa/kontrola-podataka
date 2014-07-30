@@ -11,7 +11,6 @@ import numpy as np
 from PyQt4 import QtGui,QtCore
 from datetime import timedelta
 
-import citac
 import uredjaj
 import agregator
 import auto_validacija
@@ -71,16 +70,23 @@ class Dokument(QtGui.QWidget):
         """
         self.aktivniFrame = str(kljuc)
 
+        self.crtaj_satni_graf(self.aktivniFrame)
+        
+        #emitiraj novi status
+        message = 'Promjena kanala. Trenutni kanal : {0}'.format(self.aktivniFrame)
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+###############################################################################
+    def crtaj_satni_graf(self, kljuc):
+        """
+        Funkcija brise sve grafove te crta satno agregirane podatke na satnom
+        grafu.
+        """
         #brisanje grafova sa gui-a
         self.emit(QtCore.SIGNAL('brisi_grafove()'))   
         
         #zahtjev za crtanjem satno agregiranih podataka za aktivni frame
         self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), 
-                  self.agregirani[self.aktivniFrame])
-        
-        #emitiraj novi status
-        message = 'Promjena kanala. Trenutni kanal : {0}'.format(self.aktivniFrame)
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+                  self.agregirani[kljuc])        
 ###############################################################################
     def crtaj_minutni_graf(self, sat):
         """
@@ -103,43 +109,29 @@ class Dokument(QtGui.QWidget):
         #emit za crtanje minutnih podataka
         self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), data)
 ###############################################################################
-###############################################################################
-###############################################################################
-#    def citaj_csv(self,path):
-#        """
-#        Ucitava podatke iz csv filea
-#        sprema sve kljuceve u member listu
-#        popunjava dict s uredjajima
-#        inicijalna agregacija sa autovalidacijom
-#        """
-#        self.frejmovi=citac.WlReader().citaj(path)
-#        self.kljucSviFrejmovi=list(self.frejmovi)
-#        self.set_uredjaji(self.kljucSviFrejmovi)
-#        self.agregiraj_sve(self.kljucSviFrejmovi)
-#        
-#        message='File load complete'
-#        #emitiraj nove podatke o kljucu i status
-#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-###############################################################################
-#    def citaj_lista_csv(self,lista):
-#        """
-#        Ucitava podatke iz csv filea
-#        sprema sve kljuceve u member listu
-#        popunjava dict s uredjajima
-#        inicijalna agregacija sa autovalidacijom
-#        
-#        P.S. malo repetativno...valja srediti ovih par slicnih funkcija na bolji nacin
-#        """
-#        self.frejmovi=citac.WlReader().citaj_listu(lista)
-#        self.kljucSviFrejmovi=list(self.frejmovi)
-#        self.set_uredjaji(self.kljucSviFrejmovi)
-#        self.agregiraj_sve(self.kljucSviFrejmovi)
-#        
-#        message='Multiple file load complete'
-#        #emitiraj nove podatke o kljucu i status
-#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)        
+    def promjeni_flag(self, lista):
+        """
+        Opcenita promjena flaga.
+        ulaz : [min vrijeme, max vrijeme, novi flag]
+        izlaz : emit za crtanje novih grafova
+        """
+        timeMin = lista[0]
+        timeMax = lista[1]
+        flag = lista[2]
+        
+        #promjeni flag
+        self.frejmovi[self.aktivniFrame].loc[timeMin:timeMax,u'flag'] = flag
+        
+        #reagregiraj podatke za aktivni frame
+        self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)
+        
+        #nacrtaj satni i minutni graf
+        self.crtaj_satni_graf(self.aktivniFrame)
+        #TODO!
+        #problem... timeMax za slucaj spana nije kraj intervala
+        #problem 2 timeMax za slucaj desnog klika na minutnom nije kraj intervala
+        self.crtaj_minutni_graf(timeMax)
+
 ###############################################################################
     def set_uredjaji(self,kljucevi):
         """
@@ -186,131 +178,4 @@ class Dokument(QtGui.QWidget):
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
 ###############################################################################
-    def doc_pripremi_satne_podatke(self,kanal):
-        """
-        -set aktivni frame
-        -emitiraj signal sa satno agregiranim podatcima
-        -emitiraj listu satnih vrijednosti (stringova)
-        """
-        self.aktivniFrame = str(kanal)
-        #za slucaj da netko stisne gumb prije nego ucita podatke
-        try:
-            data=self.agregirani[self.aktivniFrame]
-            self.emit(QtCore.SIGNAL('doc_draw_satni(PyQt_PyObject)'),data)
-            sati=[]
-            for vrijeme in self.agregirani[self.aktivniFrame].index:
-                sati.append(vrijeme)
-            self.emit(QtCore.SIGNAL('doc_sati(PyQt_PyObject)'),sati)
-        except KeyError:
-            message='Unable to draw data, load some first'
-            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 ###############################################################################
-    def doc_pripremi_minutne_podatke(self,sat):
-        #sat je string
-        self.odabraniSatniPodatak=sat
-        #racunanje gornje i donje granice, castanje u string nakon racunice
-        up=pd.to_datetime(sat)
-        down=up-timedelta(minutes=59)
-        
-        #napravi listu data[all,flag>=0,flag<0]
-        try:
-            df=self.frejmovi[self.aktivniFrame]
-            df=df.loc[down:up,:]
-            dfOk=df[df.loc[:,u'flag']>=0]
-            dfNo=df[df.loc[:,u'flag']<0]
-            data=[df,dfOk,dfNo]
-        
-            #emit data prema kontroleru
-            self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
-        except KeyError:
-            message='Unable to draw data, load some first'
-            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-
-###############################################################################
-    def promjeni_flag_minutni(self,dic):
-        """
-        Promjena minutnog flaga
-        """
-        time=dic['time']
-        flag=dic['flag']
-        kanal=dic['kanal']
-        sat=dic['sat']
-        self.aktivniFrame=kanal
-        self.odabraniSatniPodatak=sat
-
-        #promjeni flag
-        self.frejmovi[self.aktivniFrame].loc[time,u'flag']=flag
-        
-        #reagregiraj aktivni frame
-        self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)
-        
-        #emitiraj zahtjev za ponovnim crtanjem satnog i minutnog grafa
-        data=[kanal,sat]
-        self.emit(QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
-                  data)
-        message='Reaggregating done, displaying data'
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-                  
-###############################################################################
-    def promjeni_flag_minutni_span(self,dic):
-        """
-        Promjenia minutnog flaga u rasponu
-        """
-        timeMin=dic['min']
-        timeMax=dic['max']
-        flag=dic['flag']
-        kanal=dic['kanal']
-        sat=dic['sat']
-        self.aktivniFrame = str(kanal)
-        self.odabraniSatniPodatak=sat
-        
-        #promjeni flag
-        self.frejmovi[self.aktivniFrame].loc[timeMin:timeMax,u'flag']=flag
-        
-        #reagregiraj aktivni frame
-        self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)        
-        
-        #emitiraj zahtjev za ponovnim crtanjem satnog i minutnog grafa
-        data=[kanal,sat]
-        self.emit(QtCore.SIGNAL('reagregiranje_gotovo(PyQt_PyObject)'),
-                  data)
-        message='Reaggregating done, displaying data'
-        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-
-###############################################################################
-#    def save_trenutni_frejmovi(self,filepath):
-#        """
-#        Save self.frejmovi u csv file, report kada si gotov
-#        """
-#        if self.frejmovi!={}:
-#            citac.WlReader().save_work(self.frejmovi,filepath)
-#            message='Data saved as '+filepath
-#            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-#        else:
-#            message='Unable to save'
-#            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-################################################################################
-#    def load_frejmovi_iz_csv(self,filepath):
-#        #clear grafova
-#        self.emit(QtCore.SIGNAL('grafovi_clear()'))
-#        #clear starih podataka
-#        self.frejmovi=None
-#        self.kljucSviFrejmovi=None
-#        
-#        okviri=citac.load_work(filepath)
-#        self.frejmovi=okviri
-#        self.kljucSviFrejmovi=list(self.frejmovi)
-#        #remove FLag i Zone, (jedini nemaju stupce koncentracija,status,flag)        
-#        self.kljucSviFrejmovi.remove('Flag')
-#        self.kljucSviFrejmovi.remove('Zone')
-#        
-#        self.set_uredjaji(self.kljucSviFrejmovi)
-#        #agregiranje bez autovalidacije? problem
-#        for kljuc in self.kljucSviFrejmovi:
-#            self.agregiraj_odabir(self.frejmovi,kljuc)
-#        
-#        message='File load complete'
-#        #emitiraj nove podatke o kljucu i status
-#        self.emit(QtCore.SIGNAL('doc_get_kljucevi(PyQt_PyObject)'),self.kljucSviFrejmovi)
-#        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-################################################################################

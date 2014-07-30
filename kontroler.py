@@ -26,11 +26,11 @@ class Mediator(QtGui.QWidget):
         """
         Nekoliko membera
         """
-        self.lastLoadedFile=None
-        self.trenutnaListaKanala=None
-        self.trenutnaListaSati=None
-        self.lastKanal=None
-        self.lastSat=None
+#        self.lastLoadedFile=None
+#        self.trenutnaListaKanala=None
+#        self.trenutnaListaSati=None
+#        self.lastKanal=None
+#        self.lastSat=None
 
         """
         Connections
@@ -50,6 +50,10 @@ class Mediator(QtGui.QWidget):
         self.connect(model,
                      QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
                      gui.set_status_bar)
+                     
+        self.connect(self, 
+                     QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),
+                     gui.set_status_bar)
 ###############################################################################
         """
         Ulaz za frejmove.
@@ -63,7 +67,72 @@ class Mediator(QtGui.QWidget):
                      model.set_frejmovi)
 
 ###############################################################################
+        """
+        Ulaz za promjenu mjerenja (kanala)
+        -dodaj nove connectione po potrebi
+        -budi konzistentan sa imenom emitiranog signala
+        -mjenjaj samo odakle signal dolazi
+        """
+        self.connect(gui.webLoggerIzbornik,
+                     QtCore.SIGNAL('promjena_mjerenja(PyQt_PyObject)'), 
+                     model.set_aktivni_frejm)
+###############################################################################
+        """
+        Clear gui canvasa (grafova)
+        """
+        self.connect(model,
+                     QtCore.SIGNAL('brisi_satni_graf()'), 
+                     gui.canvasSatni.brisi_graf)
         
+        self.connect(model,
+                     QtCore.SIGNAL('brisi_minutni_graf()'), 
+                     gui.canvasMinutni.brisi_graf)
+
+        self.connect(model,
+                     QtCore.SIGNAL('brisi_grafove()'), 
+                     gui.canvasSatni.brisi_graf)
+                     
+        self.connect(model,
+                     QtCore.SIGNAL('brisi_grafove()'), 
+                     gui.canvasMinutni.brisi_graf)
+###############################################################################
+        """
+        Crtanje grafova i gui kontrole vezane za grafove
+        """
+        #crtanje satnog grafa
+        self.connect(model, 
+                     QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), 
+                     gui.canvasSatni.crtaj)
+        
+        #crtanje minutnog grafa
+        self.connect(model, 
+                     QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), 
+                     gui.canvasMinutni.crtaj)
+                     
+        #lijevi klik na satnom grafu (izbor sata)
+        #1. dohvati signal sa grafa, prosljedi ga adapteru
+        self.connect(gui.canvasSatni,
+                     QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'), 
+                     self.med_request_crtaj_minutni)
+        #2. prosljedi signal iz adaptera dokumentu
+        self.connect(self, 
+                     QtCore.SIGNAL('med_request_draw_minutni(PyQt_PyObject)'), 
+                     model.crtaj_minutni_graf)
+    
+    
+    
+###############################################################################
+    def med_request_crtaj_minutni(self,sat):
+        """
+        Graf moze vratiti listu timestampova ako je graf sitan ili ako je 
+        puno tocaka. Ova funkcija je "adapter"
+        """
+        if type(sat)==list:
+            sat=str(sat[0])
+            
+        sat=str(sat)
+        #self.lastSat=sat
+        self.emit(QtCore.SIGNAL('med_request_draw_minutni(PyQt_PyObject)'), sat)    
 ###############################################################################
     def printtest(self, x):
         print(x)

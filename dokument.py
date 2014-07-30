@@ -51,15 +51,60 @@ class Dokument(QtGui.QWidget):
         """
         Metoda postavlja novi set frejmova u dokument
         """
+        #emitiraj novi status        
+        message = 'Agregiranje podataka u tjeku...'
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+        
         self.frejmovi = frejmovi
         self.kljucSviFrejmovi = sorted(list(self.frejmovi))
         self.set_uredjaji(self.kljucSviFrejmovi)
         self.agregiraj_sve(self.kljucSviFrejmovi)
         
-        message = 'csv file ucitan'
-        #emitiraj novi status
+        #emitiraj novi status        
+        message = 'Agregacija gotova.'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
-###############################################################################        
+###############################################################################
+    def set_aktivni_frejm(self, kljuc):
+        """
+        Funkcija se poziva kada dokument dobije signal da je kanal promjenjen.
+        -brise grafove, ponovo crta satni graf
+        """
+        self.aktivniFrame = str(kljuc)
+
+        #brisanje grafova sa gui-a
+        self.emit(QtCore.SIGNAL('brisi_grafove()'))   
+        
+        #zahtjev za crtanjem satno agregiranih podataka za aktivni frame
+        self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), 
+                  self.agregirani[self.aktivniFrame])
+        
+        #emitiraj novi status
+        message = 'Promjena kanala. Trenutni kanal : {0}'.format(self.aktivniFrame)
+        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+###############################################################################
+    def crtaj_minutni_graf(self, sat):
+        """
+        Funkcija za odabrani sat, priprema minutne podatke.
+        Nakon pripreme podataka emitira signal za crtanje minutnog grafa
+        """
+        #sat je string
+        self.odabraniSatniPodatak = str(sat)
+        #racunanje gornje i donje granice, castanje u string nakon racunice
+        up=pd.to_datetime(self.odabraniSatniPodatak)
+        down=up-timedelta(minutes=59)
+        
+        #napravi listu data[all,flag>=0,flag<0]
+        df=self.frejmovi[self.aktivniFrame]
+        df=df.loc[down:up,:]
+        dfOk=df[df.loc[:,u'flag']>=0]
+        dfNo=df[df.loc[:,u'flag']<0]
+        data=[df,dfOk,dfNo]
+
+        #emit za crtanje minutnih podataka
+        self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), data)
+###############################################################################
+###############################################################################
+###############################################################################
 #    def citaj_csv(self,path):
 #        """
 #        Ucitava podatke iz csv filea
@@ -178,7 +223,7 @@ class Dokument(QtGui.QWidget):
             #emit data prema kontroleru
             self.emit(QtCore.SIGNAL('doc_minutni_podatci(PyQt_PyObject)'),data)
         except KeyError:
-            message='Unable to draw data, load some first1'
+            message='Unable to draw data, load some first'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
 
 ###############################################################################

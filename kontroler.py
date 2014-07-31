@@ -168,18 +168,34 @@ class Mediator(QtGui.QWidget):
         """
         Vezan za desni klik na tocku u satnom grafu
         Ova funkcija je "adapter"
-        ulaz --> [max vrijeme, novi flag] ili [min vrijeme, max vrijeme, novi flag]
+        ulaz --> [max vrijeme, novi flag, "potpis signala"]
+        ulaz --> [min vrijeme, max vrijeme, novi flag, "potpis signala"]
         izlaz --> [min vrijeme, max vrijeme, novi flag]
         """
         
-        if len(lista) == 2:
-            satMax = pd.to_datetime(lista[0])
-            satMin = satMax - timedelta(minutes=59)
-            data = [satMin, satMax, lista[1]]
-            self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
-        elif len(lista) == 3:
-            data = lista
-            self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+        if len(lista) == 3:
+            if lista[2] == 'flagSatni':
+                #slucaj desnog klika na tocku u satnom grafu
+                satMax = pd.to_datetime(lista[0])
+                satMin = satMax - timedelta(minutes=59)
+                data = [satMin, satMax, lista[1]]
+                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+            elif lista[2] == 'flagSpanMinutni':
+                #slucaj ljevog klika na minutnom grafu (tocka je ista)
+                satMax = pd.to_datetime(lista[0])
+                satMin = satMax
+                data = [satMin, satMax, lista[1]]
+                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+            elif lista[2] == 'flagTockaMinutni':
+                #slucaj desnog klika na tocku u minutnom grafu
+                data = [lista[0], lista[0], lista[1]]                
+                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+        elif len(lista) == 4:
+            if lista[3] == 'flagSpanMinutni':
+                #slucaj sa spanom kada je pokriven interval
+                lista.pop()
+                data = lista
+                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
         else:
             message = 'Greska prilikom promjene flaga.'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)

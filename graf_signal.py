@@ -88,7 +88,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         -emitira listu. [vrijeme(timestamp)]
     flagSatni(PyQt_PyObject)
         -promjena flaga jednog satnog agregata, desni klik
-        -emitira listu. [vrijeme(timestamp), novi flag]
+        -emitira listu. [vrijeme(timestamp), novi flag, string 'flagSatni']
     """
     def __init__(self,*args,**kwargs):
         MPLCanvas.__init__(self,*args,**kwargs)
@@ -165,10 +165,13 @@ class GrafSatniSrednjaci(MPLCanvas):
             opis='Odabrano vrijeme: '+str(xtocka)
             flag=FlagDijalog(message=opis)
             if flag.odgovor=='valja':
-                arg=[xtocka,1]
+                #arg=[xtocka,1]
+                #novi princip, nega signal ima i "potpis" posiljatelja
+                arg = [xtocka, 1, 'flagSatni']
                 self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
             elif flag.odgovor=='nevalja':
-                arg=[xtocka,-1]
+                #arg=[xtocka,-1]
+                arg = [xtocka, -1, 'flagSatni']
                 self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
             else:
                 pass
@@ -321,10 +324,10 @@ class GrafMinutniPodaci(MPLCanvas):
     SIGNALI:
     flagTockaMinutni(PyQt_PyObject)
         -izbor jedne tocke kojoj treba promjeniti flag - desni klik
-        -emitira listu - [vrijeme(timestamp),novi flag]
+        -emitira listu - [vrijeme(timestamp),novi flag, string 'flagTockaMinutni']
     flagSpanMinutni(PyQt_PyObject)
         -izbor spana, lijevi klik & drag. na klik granice su identicne
-        -emitira listu - [vrijeme min, vrijeme max, novi flag]
+        -emitira listu - [vrijeme min, vrijeme max, novi flag, string 'flagSpanMinutni']
         -min i max granice su isti broj na jedan ljevi klik...problem?
     """
     def __init__(self,*args,**kwargs):
@@ -385,18 +388,22 @@ class GrafMinutniPodaci(MPLCanvas):
             if flag.odgovor=='valja':
                 #provjeri da li je min i max ista tocka
                 if minOznaka==maxOznaka:
-                    arg=[minOznaka,1]
+                    #arg=[minOznaka,1]
+                    arg=[minOznaka, 1, 'flagSpanMinutni']
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
                 else:
-                    arg=[minOznaka,maxOznaka,1]
+                    #arg=[minOznaka,maxOznaka,1]
+                    arg = [minOznaka, maxOznaka, 1, 'flagSpanMinutni']
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
             elif flag.odgovor=='nevalja':
                 #provjeri da li je min i max ista tocka
                 if minOznaka==maxOznaka:
-                    arg=[minOznaka,-1]
+                    #arg=[minOznaka,-1]
+                    arg=[minOznaka, -1, 'flagSpanMinutni']
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
                 else:
-                    arg=[minOznaka,maxOznaka,-1]
+                    #arg=[minOznaka,maxOznaka,-1]
+                    arg=[minOznaka,maxOznaka, -1, 'flagSpanMinutni']
                     self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
             else:
                 pass
@@ -455,10 +462,12 @@ class GrafMinutniPodaci(MPLCanvas):
             opis='Odabrano vrijeme: '+str(timeOznaka)
             flag=FlagDijalog(message=opis)
             if flag.odgovor=='valja':
-                arg=[timeOznaka,1]
+                #arg=[timeOznaka,1]
+                arg=[timeOznaka, 1, 'flagTockaMinutni']
                 self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
             elif flag.odgovor=='nevalja':
-                arg=[timeOznaka,-1]
+                #arg=[timeOznaka,-1]
+                arg=[timeOznaka, -1, 'flagTockaMinutni']
                 self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
             else:
                 pass

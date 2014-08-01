@@ -86,7 +86,7 @@ class Dokument(QtGui.QWidget):
         
         #zahtjev za crtanjem satno agregiranih podataka za aktivni frame
         self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), 
-                  self.agregirani[kljuc])        
+                  self.agregirani[kljuc])
 ###############################################################################
     def crtaj_minutni_graf(self, sat):
         """
@@ -94,11 +94,12 @@ class Dokument(QtGui.QWidget):
         Nakon pripreme podataka emitira signal za crtanje minutnog grafa
         """
         #sat je string
-        self.odabraniSatniPodatak = str(sat)
+        sat = str(sat)
         #racunanje gornje i donje granice, castanje u string nakon racunice
-        up=pd.to_datetime(self.odabraniSatniPodatak)
-        down=up-timedelta(minutes=59)
-        
+        up = pd.to_datetime(sat)
+        down = up-timedelta(minutes=59)
+        down = pd.to_datetime(down)
+        self.odabraniSatniPodatak = up
         #napravi listu data[all,flag>=0,flag<0]
         df=self.frejmovi[self.aktivniFrame]
         df=df.loc[down:up,:]
@@ -118,20 +119,14 @@ class Dokument(QtGui.QWidget):
         timeMin = lista[0]
         timeMax = lista[1]
         flag = lista[2]
-        
         #promjeni flag
         self.frejmovi[self.aktivniFrame].loc[timeMin:timeMax,u'flag'] = flag
-        
         #reagregiraj podatke za aktivni frame
         self.agregiraj_odabir(self.frejmovi,self.aktivniFrame)
-        
         #nacrtaj satni i minutni graf
         self.crtaj_satni_graf(self.aktivniFrame)
-        #TODO!
-        #problem... timeMax za slucaj spana nije kraj intervala
-        #problem 2 timeMax za slucaj desnog klika na minutnom nije kraj intervala
-        self.crtaj_minutni_graf(timeMax)
-
+        if self.odabraniSatniPodatak != None:
+            self.crtaj_minutni_graf(self.odabraniSatniPodatak)
 ###############################################################################
     def set_uredjaji(self,kljucevi):
         """

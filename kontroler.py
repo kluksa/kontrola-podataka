@@ -118,12 +118,12 @@ class Mediator(QtGui.QWidget):
         #desni klik na satnom grafu (promjena flaga)
         #1. dohvati signal sa grafa
         self.connect(gui.canvasSatni, 
-                     QtCore.SIGNAL('flagSatni(PyQt_PyObject'), 
+                     QtCore.SIGNAL('flagSatni(PyQt_PyObject)'), 
                      self.med_request_flag_change)
                      
         #2. prosljedi signal iz adaptera dokumentu
         self.connect(self, 
-                     QtCore.SIGNAL('med_request_promjena_flaga(PyQt_PyObject)'),
+                     QtCore.SIGNAL('med_promjena_flaga_satni(PyQt_PyObject)'),
                      model.promjeni_flag)
                                       
 
@@ -135,7 +135,7 @@ class Mediator(QtGui.QWidget):
                      
         #2. prosljedi signal iz adaptera dokumentu
         self.connect(self, 
-                     QtCore.SIGNAL('med_request_promjena_flaga(PyQt_PyObject)'), 
+                     QtCore.SIGNAL('med_promjena_flaga_min(PyQt_PyObject)'), 
                      model.promjeni_flag)
                      
 
@@ -147,7 +147,12 @@ class Mediator(QtGui.QWidget):
                      
         #2. prosljedi signal iz adaptera dokumentu
         self.connect(self, 
-                     QtCore.SIGNAL('med_request_promjena_flaga(PyQt_PyObject)'), 
+                     QtCore.SIGNAL('med_promjena_flaga_min_span2(PyQt_PyObject)'), 
+                     model.promjeni_flag)
+                     
+        #3. prosljedi signal iz adaptera dokumentu
+        self.connect(self, 
+                     QtCore.SIGNAL('med_promjena_flaga_min_span1(PyQt_PyObject)'),  
                      model.promjeni_flag)
 
 ###############################################################################
@@ -172,30 +177,30 @@ class Mediator(QtGui.QWidget):
         ulaz --> [min vrijeme, max vrijeme, novi flag, "potpis signala"]
         izlaz --> [min vrijeme, max vrijeme, novi flag]
         """
-        
         if len(lista) == 3:
             if lista[2] == 'flagSatni':
                 #slucaj desnog klika na tocku u satnom grafu
                 satMax = pd.to_datetime(lista[0])
                 satMin = satMax - timedelta(minutes=59)
+                satMin = pd.to_datetime(satMin)
                 data = [satMin, satMax, lista[1]]
-                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
-            elif lista[2] == 'flagSpanMinutni':
+                self.emit(QtCore.SIGNAL('med_promjena_flaga_satni(PyQt_PyObject)'), data)
+            if lista[2] == 'flagSpanMinutni':
                 #slucaj ljevog klika na minutnom grafu (tocka je ista)
                 satMax = pd.to_datetime(lista[0])
                 satMin = satMax
                 data = [satMin, satMax, lista[1]]
-                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
-            elif lista[2] == 'flagTockaMinutni':
+                self.emit(QtCore.SIGNAL('med_promjena_flaga_min_span1(PyQt_PyObject)'), data)
+            if lista[2] == 'flagTockaMinutni':
                 #slucaj desnog klika na tocku u minutnom grafu
                 data = [lista[0], lista[0], lista[1]]                
-                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+                self.emit(QtCore.SIGNAL('med_promjena_flaga_min(PyQt_PyObject)'), data)
         elif len(lista) == 4:
             if lista[3] == 'flagSpanMinutni':
                 #slucaj sa spanom kada je pokriven interval
                 lista.pop()
                 data = lista
-                self.emit(QtCore.SIGNAL('(med_request_promjena_flaga)'), data)
+                self.emit(QtCore.SIGNAL('med_promjena_flaga_min_span2(PyQt_PyObject)'), data)
         else:
             message = 'Greska prilikom promjene flaga.'
             self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)

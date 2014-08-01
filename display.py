@@ -9,9 +9,6 @@ Created on Mon May 12 11:23:36 2014
 -napisati metode za prikazivanje pojedinih elemenata (npr. update Comboboxeva)
 
 -izbrisao sve bitno osim layouta.
-TODO:
-3.spoji read filea sa grafovima
-4.spoji promjene i update grafova u gui-u
 """
 
 import sys

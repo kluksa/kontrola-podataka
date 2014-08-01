@@ -328,8 +328,6 @@ class WebloggerIzbornik(base, form):
             self.zadnjeMjerenje = mjerenje
             self.uiKanalCombo.setCurrentIndex(indeks)      
 ###############################################################################
-#TODO:
-#da li je getter bitan??
     def get_mjerenje(self):
         """
         getter za trenutno odabrano mjerenje ???        
@@ -344,8 +342,8 @@ class WebloggerIzbornik(base, form):
         self.frejmovi = self.wlreader.citaj(file)
         if self.frejmovi != None:
             self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
-            print('\nopen_file, kljucevi frejmova:')
-            print(self.frejmovi.keys())
+#            print('\nopen_file, kljucevi frejmova:')
+#            print(self.frejmovi.keys())
             #set sortiranu listu kanala
             kanali = sorted(list(self.frejmovi.keys()))
             self.set_mjerenja(kanali)
@@ -360,8 +358,8 @@ class WebloggerIzbornik(base, form):
         self.frejmovi = self.wlreader.citaj_listu(lista)
         if self.frejmovi != None:
             self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
-            print('\nopen_file_list, kljucevi frejmova:')
-            print(self.frejmovi.keys())
+#            print('\nopen_file_list, kljucevi frejmova:')
+#            print(self.frejmovi.keys())
             #set sortiranu listu kanala
             kanali = sorted(list(self.frejmovi.keys()))
             self.set_mjerenja(kanali)
@@ -377,7 +375,7 @@ class WebloggerIzbornik(base, form):
         if self.uiKanalCombo.findText(mjerenje) != -1:
             self.zadnjeMjerenje = mjerenje
             self.emit(QtCore.SIGNAL('promjena_mjerenja(PyQt_PyObject)'), mjerenje)
-            print('\npromjena_mjerenja :{0}'.format(mjerenje))
+#            print('\npromjena_mjerenja :{0}'.format(mjerenje))
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':

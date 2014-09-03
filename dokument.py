@@ -54,6 +54,9 @@ class Dokument(QtGui.QWidget):
         message = 'Agregiranje podataka u tjeku...'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
         
+        #emitiraj promjenu kursora u "pjescani sat"
+        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),True)        
+        
         self.frejmovi = frejmovi
         self.kljucSviFrejmovi = sorted(list(self.frejmovi))
         self.set_uredjaji(self.kljucSviFrejmovi)
@@ -62,6 +65,8 @@ class Dokument(QtGui.QWidget):
         #emitiraj novi status        
         message = 'Agregacija gotova.'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
+        #emitiraj promjenu kursora u "strelicu"
+        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),False)        
 ###############################################################################
     def set_aktivni_frejm(self, kljuc):
         """
@@ -169,8 +174,15 @@ class Dokument(QtGui.QWidget):
         Autovalidacija bi pregazila custom flagove.
         Nema smisla reagregirati sve ako je promjena samo na jednoj komponenti
         """
+        #emitiraj promjenu kursora u "pjescani sat"
+        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),True)                
+        
         ag=agregator.Agregator(self.dictUredjaja[kljuc])
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
+        
+        #emitiraj promjenu kursora u "strelicu"
+        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),False)                
+
 ###############################################################################
 ###############################################################################

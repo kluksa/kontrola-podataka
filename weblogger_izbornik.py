@@ -339,6 +339,14 @@ class WebloggerIzbornik(base, form):
         """
         citaj file i  emitiraj frejmove
         """
+        #TODO!
+        #ista procedura i za funkciju open_file_list
+        #1.sredi provjeru da li je zadani file vec ucitan i agregiran
+        #2.ako nije - ucitaj ga i prosljedi dokumentu skupa sa datumom
+        #3.ako je ucitan prije, prosljedi tu informaciju i datum
+        #4.sredi spajanje nadolazecih frejmova u dokumentu, te izbor datuma
+        #5.poslati i ime stanice (grupirati prema stanici)??? 
+        #6.u kontroleru sredi signale...
         self.frejmovi = self.wlreader.citaj(file)
         if self.frejmovi != None:
             self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)

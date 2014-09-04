@@ -185,4 +185,10 @@ class Dokument(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),False)                
 
 ###############################################################################
+    #TODO!
+    #sredi prihvat [frejmovi, datum] iz izbornika
+    #nadolazece frejmove treba agregirati the nadodati na "glavni frejm" i "glavni agreg frejm"
+    #srediti izlaz prema drugim dijelovima da odgovara tj.
+    #za zadani datum, izvadi slice velikog frejma
+###############################################################################
 ###############################################################################

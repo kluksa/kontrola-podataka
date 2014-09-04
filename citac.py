@@ -12,20 +12,19 @@ from functools import wraps
 
 
 ###############################################################################
-#def benchmark(func):
-#    """
-#    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
-#    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
-#    """
-#    import time
-#    @wraps(func)
-#    def wrapper(*args, **kwargs):
-#        t = time.clock()
-#        res = func(*args, **kwargs)
-#        print(func.__name__, time.clock()-t)
-#        return res
-#    return wrapper
-#
+def benchmark(func):
+    """
+    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
+    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
+    """
+    import time
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = time.clock()
+        res = func(*args, **kwargs)
+        print(func.__name__, time.clock()-t, 'sec.')
+        return res
+    return wrapper
 ###############################################################################
 ###############################################################################
 class WlReader:
@@ -51,6 +50,7 @@ class WlReader:
     def __init__(self):
         pass    
 ###############################################################################
+    @benchmark
     def citaj(self, path):
         """
         path = fullpath do filea
@@ -76,6 +76,7 @@ class WlReader:
         return frejmovi
 
 ###############################################################################
+    @benchmark    
     def citaj_listu(self, pathLista):
         """
         pathLista = lista svih pathova za otvaranje
@@ -120,6 +121,7 @@ class WlReader:
                         frejmovi[key] = frejmoviTemp[key]
         return frejmovi
 ###############################################################################
+    @benchmark
     def provjeri_headere(self, path):
         """
         Testna funkcija za provjeru headera csv filea na lokaciji path.

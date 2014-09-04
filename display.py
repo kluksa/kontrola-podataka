@@ -230,6 +230,17 @@ class GlavniProzor(QtGui.QMainWindow):
         """
         self.readerLoaded = False
 ###############################################################################
+    def promjeni_kursor(self, x):
+        """
+        funkcija mjenja izgled kursora u aplikaciji ovisno o x
+        ako je x = True promjena izgleda kursora u pjescani sat
+        ako je x = False promjena izgleda kursora u strelicu (default)
+        """
+        if x:
+            aplikacija.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+        else:
+            aplikacija.restoreOverrideCursor()
+###############################################################################
 ###############################################################################
 
 if __name__ == '__main__':

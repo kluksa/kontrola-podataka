@@ -78,6 +78,9 @@ class WlReader:
 ###############################################################################
     @benchmark    
     def citaj_listu(self, pathLista):
+        #
+        # Sto se ovdje dogadja? Zasto nam treba metoda koja cita listu fajlova?
+        #
         """
         pathLista = lista svih pathova za otvaranje
         INPUT - lista stringova

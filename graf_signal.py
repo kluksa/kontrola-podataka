@@ -202,7 +202,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         Svi koji imaju flagstat stupac False
         tj. normalni slucaj, kada svi minutni podatci u sliceu nemaju negativan flag
         """
-        self.data1=data[data['flagstat']==False]
+#        self.data1=data[data['flagstat']==False]
+        self.data1=data
         vrijeme1=self.data1['avg'].index
         
         #sortiranje prema broju valjanih podataka u agregatu iznad 45 ok (25%)
@@ -266,38 +267,38 @@ class GrafSatniSrednjaci(MPLCanvas):
                                alpha=0.4,
                                zorder=1)
         
-        """
-        Svi koji imaju flagstat stupac True
-        tj - svi minutni podatci u sliceu imaju flag manji od 0
-        """
-        self.data2=data[data['flagstat']==True]
-        vrijeme2=self.data2['avg'].index
-        self.axes.plot(vrijeme2,self.data2['avg'].values,
-                       marker='d',
-                       color='red',
-                       lw=1.5,
-                       alpha=0.7,
-                       picker=2,
-                       zorder=3)
-        self.axes.scatter(vrijeme2,self.data2['min'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme2,self.data2['max'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme2,self.data2['med'].values,
-                       marker='_',
-                       color='black',
-                       lw=1.5,
-                       alpha=0.6,
-                       zorder=2)        
-        
+#        """
+#        Svi koji imaju flagstat stupac True
+#        tj - svi minutni podatci u sliceu imaju flag manji od 0
+#        """
+#        self.data2=data[data['flagstat']==True]
+#        vrijeme2=self.data2['avg'].index
+#        self.axes.plot(vrijeme2,self.data2['avg'].values,
+#                       marker='d',
+#                       color='red',
+#                       lw=1.5,
+#                       alpha=0.7,
+#                       picker=2,
+#                       zorder=3)
+#        self.axes.scatter(vrijeme2,self.data2['min'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme2,self.data2['max'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme2,self.data2['med'].values,
+#                       marker='_',
+#                       color='black',
+#                       lw=1.5,
+#                       alpha=0.6,
+#                       zorder=2)        
+#        
         
         xLabels=self.axes.get_xticklabels()
         for label in xLabels:

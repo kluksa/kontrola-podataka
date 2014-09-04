@@ -56,28 +56,24 @@ class WlReader:
         path = fullpath do filea
         funkcija cita weblogger csv fileove u dictionary pandas datafrejmova
         """
-        if self.provjeri_headere(path):
-            df = pd.read_csv(
-                path, 
-                na_values = '-999.00', 
-                index_col = 0, 
-                parse_dates = [[0,1]], 
-                dayfirst = True, 
-                header = 0, 
-                sep = ',', 
-                encoding = 'iso-8859-1')
+        df = pd.read_csv(
+            path, 
+            na_values = '-999.00', 
+            index_col = 0, 
+            parse_dates = [[0,1]], 
+            dayfirst = True, 
+            header = 0, 
+            sep = ',', 
+            encoding = 'iso-8859-1')
         
-            headerList = df.columns.values
-            frejmovi = {}
-            for i in range(0,len(headerList)-2,2):
-                colName = headerList[i]
-                frejmovi[colName] = df.iloc[:,i:i+2]
-                frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
-                frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-            return frejmovi
-        else:
-            #vraca None
-            return
+        headerList = df.columns.values
+        frejmovi = {}
+        for i in range(0,len(headerList)-2,2):
+            colName = headerList[i]
+            frejmovi[colName] = df.iloc[:,i:i+2]
+            frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
+            frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
+        return frejmovi
 
 ###############################################################################
     def citaj_listu(self, pathLista):

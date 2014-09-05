@@ -224,6 +224,8 @@ class GrafSatniSrednjaci(MPLCanvas):
                        color='blue',
                        alpha=0.7,
                        picker=2,
+                       lw=0.5,
+                       markersize=4,
                        zorder=3)
         
         self.axes.plot(indeksCrveni,avgCrveni,
@@ -246,25 +248,25 @@ class GrafSatniSrednjaci(MPLCanvas):
                           marker='+',
                           color='black',
                           lw=0.3,
-                          alpha=0.6,
+                          alpha=1,
                           zorder=2)
         self.axes.scatter(vrijeme1,self.data1['max'].values,
                           marker='+',
                           color='black',
                           lw=0.3,
-                          alpha=0.6,
+                          alpha=1,
                           zorder=2)
         self.axes.scatter(vrijeme1,self.data1['med'].values,
                        marker='_',
                        color='black',
                        lw=1.5,
-                       alpha=0.6,
+                       alpha=0.9,
                        zorder=2)
         self.axes.fill_between(vrijeme1,
                                self.data1['q05'].values,
                                self.data1['q95'].values,
                                facecolor='green',
-                               alpha=0.4,
+                               alpha=0.2,
                                zorder=1)
         
 #        """

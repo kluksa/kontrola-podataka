@@ -80,6 +80,13 @@ class WlReader:
     def citaj_listu(self, pathLista):
         #
         # Sto se ovdje dogadja? Zasto nam treba metoda koja cita listu fajlova?
+    
+        #Metoda je ubacena da rijesava slucajeve kada za isti dan i stanicu 
+        #postoji vise fileova.
+        #npr. plitvicka jezera-20140601.csv, plitvicka jezera-20140601A.csv, ...
+    
+        #Ideja ih je ucitati sve i utrpati u jedan set frejmova.
+        #Metoda cita file po file dopunjujuci i updateajuci frejmove
         #
         """
         pathLista = lista svih pathova za otvaranje

@@ -48,7 +48,22 @@ class Agregator(object):
         slajs=self.getSlajs(kraj)
         
         #test da li su svi not nan flagovi negativni
-        #Zasto ovo treba???
+        #Zasto ovo treba???        
+        """
+        Kratko objasnjenje:funkcionalni problem prilikom crtanja satnog grafa.
+        
+        Dugo objasnjenje:
+        -Satni graf iscrtava samo tocke koje imaju flag veci ili jednak 0
+        
+        -Kada prebacis cijeli satni interval da ne valja, on se vise ne iscrtava
+        na satnom grafu sto povlaci zanimljivi funkcionalni bug. Iz Gui-a ne postoji
+        nacin da satni interval vratis iz statusa ne valja u valja, ne mozes vidjeti
+        minutni graf (jer nemas na sto kliknuti na satnom grafu), ne mozes razlikovati
+        situaciju kada podatci ne postoje i kada svi podatci imaju flag manji od 0.
+        
+        To je razlog za skalameriju sa allFlagStatus
+        """        
+        
 #        ddNan=slajs[pd.isnull(slajs[u'koncentracija'])==False]
 #        ddFlag=ddNan[ddNan[u'flag']<0]
 #        if len(ddNan)==len(ddFlag):
@@ -58,6 +73,15 @@ class Agregator(object):
 #            allFlagStatus=False
         
         #Zasto dva puta radimo istu stvar?
+        """
+        Razlog je povezan sa gornjim objasnjenjem...ako imam situaciju da od 60
+        minutnih podataka neki postoje ali svi imaju flag manji od 0, trebam satnom
+        grafu reci sto da crta (avg, std...). Od svih mogucnosti, implementirao sam
+        da izracuna statistiku kao da svi ti podatci su ispravni (mean, std ... svih
+        lose flagiranih podataka), ali da ih tretira drugacije. Tada crta crvenu tocku 
+        na mjestu gdje bi bila tocka da je sve ok. To je objasnjenje za allFlagStatus i
+        ponovno ponavljanje istog.
+        """
 
         ddd=slajs[slajs[u'flag']>=0]
         if len(ddd)==0:
@@ -83,6 +107,22 @@ class Agregator(object):
             status=0
             for i in ddd[u'status']:
                 # Cemu ovaj try?? Moze li binarni OR bacati iznimku??????
+                """
+                Ovaj try rijesava jedan problem.. sto se desava kada je jedna
+                linija (ili vise njih) NaN.
+                -Binary OR prihvaca samo integer kao ulaz
+                -i je neki numpy numericki tip ili np.NaN
+                -problem nastaje kada int() susretne nan vrijednost
+                
+                Prtpostavka je : ako nema podataka za status, da ga tretiram kao
+                nulu i nastavim dalje. Mozda se to moglo i spretnije izvesti, ali
+                tocno znam koji tip greske ocekujem i u kojem slucaju.
+                
+                P.S. int() baca iznimku --- int(np.nan)
+                
+                P.P.S. mislim da racunanje satno agregiranih statusa traje najdulje
+                jer provjerava i cita podatak po podatak za svaku minutu, svih frejmova
+                """
         #        try:
                     status|=int(i)
          #       except ValueError:
@@ -93,6 +133,11 @@ class Agregator(object):
         # U ovom slucaju ako nam treba neki "placeholder" na koji cemo kliknuti
         # da eventualno proglasimo neki podatak valjan, onda sve vrijednosti treba staviti
         # na -999
+        """
+        Mozemo i tako, ali mi je bilo smislenije da je "placeholder" blizu pravih
+        vrijednosti i drugacije oznacen.
+        """
+        
 #        if allFlagStatus:
 #            #prikazi agregat cijelog slajsa?
 #            avg=slajs.mean().iloc[0]

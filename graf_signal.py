@@ -310,6 +310,10 @@ class GrafSatniSrednjaci(MPLCanvas):
             label.set_fontsize(4)
             
         #pokusaj automatskog poravnavanja grafa, labela isl.
+        """
+        set_xlim odredjuje rubove nacrtanog grafa... samo treba 
+        pomaknuti vremena (-1sat, +1sat)
+        """
         self.axes.set_xlim(vrijeme.min(),vrijeme.max())
         self.fig.tight_layout()
         self.draw()

@@ -89,6 +89,7 @@ class WebloggerIzbornik(base, form):
         self.files_C = []
         self.dictStanicaDatum = {}
         self.uiFileList.clear()
+        self.ucitaniFileovi = {}
         
         #connections
         self.uiLoadFolder.clicked.connect(self.load_folder)

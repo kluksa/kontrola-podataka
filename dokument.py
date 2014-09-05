@@ -107,6 +107,8 @@ class Dokument(QtGui.QWidget):
         self.odabraniSatniPodatak = up
         #napravi listu data[all,flag>=0,flag<0]
         df=self.frejmovi[self.aktivniFrame]
+        #TODO!
+        #problem kod idneksiranja (error kada down:up je izvan indeksa zbog nepostojecih podataka)        
         df=df.loc[down:up,:]
         dfOk=df[df.loc[:,u'flag']>=0]
         dfNo=df[df.loc[:,u'flag']<0]

@@ -13,7 +13,7 @@ from functools import wraps
 from datetime import timedelta, datetime
 
 
-"""
+""" 
 Pokusaj agregiranja koristeci resample (metoda timeseries datafrejmova)
 """
 ###############################################################################
@@ -126,19 +126,22 @@ class Agregator(object):
 def agreg_frejm(df):
     """
     za zadani dataframe, uzima sve vrijednosti >= 0 i racuna satni prosjek
-    koristeci resample...
+    koristeci resample...na testu kod mene radi otprilike 10 do 20 puta brze
     """
-    #TODO!
-    #vidi ima li opcije how='average' ('q05', 'stdev'....)
     df1 = df[df['flag'] >= 0]
-    avg = df1.resample('H', how = 'mean')    
-    
+    #postojeci keywordovi
+    #avg = df1.resample('H', how = 'mean') #mean
+    #avg = df1.resample('H', how = 'median') #median
+    #avg = df1.resample('H', how = 'std') #standard deviation
+    #avg = df1.resample('H', how = 'var') #variance
+    #pokusaj utrpavanja numpy funkcija ...
+    avg = df1.resample('H', how = np.mean) #radi
     return avg
 
 
 if __name__ == '__main__':
     #uciatavanje pj.csv i uzimanje samo jednog frejma za agregaciju (1-SO2-ppb)
-    rawData = citaj('pj.csv')
+    rawData = citaj('./data/pj.csv')
     data = rawData['1-SO2-ppb']
     
     #usporedba... brzina agregatora / agreg_frejm

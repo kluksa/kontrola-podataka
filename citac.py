@@ -191,6 +191,7 @@ class WlReader:
             
 if __name__ == '__main__':
     test1 = WlReader()
+    data = test1.citaj('./data/pj.csv')
 #    #header test
 #    print('\ntest nepostojeceg filea')
 #    x = test1.provjeri_headere('./data/pj123.csv')

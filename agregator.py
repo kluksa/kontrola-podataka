@@ -29,20 +29,23 @@ def benchmark(func):
 class Agregator(object):
     
     uredjaji=[]
-
+    @benchmark
     def __init__(self, uredjaji):
         self.uredjaj = uredjaji
         
+    @benchmark
     def dodajUredjaj(self, uredjaj):
         self.uredjaji.append(uredjaj)
         
-            
+
+    @benchmark            
     def setDataFrame(self, df):
         self.__df = df
         self.pocetak = df.index.min()+pd.DateOffset(hours=1) 
         self.kraj = df.index.max()
         self.sviSati=pd.date_range(self.pocetak, self.kraj, freq='H')
 
+    @benchmark
     def agreg(self, kraj):
         #modifikacija get slice kopira direktno, bez flag testa
         slajs=self.getSlajs(kraj)
@@ -124,9 +127,9 @@ class Agregator(object):
                 jer provjerava i cita podatak po podatak za svaku minutu, svih frejmova
                 """
         #        try:
-                    status|=int(i)
-         #       except ValueError:
-         #           status|=int(0)
+                status|=int(i)
+#         #       except ValueError:
+#         #           status|=int(0)
         
         #prikazi druge podatke ako su svi flagovi manji od nule jer ddd je prazan
         #Zasto ovo? Ako nema valjanih podataka, onda nema valjanih podataka
@@ -160,7 +163,8 @@ class Agregator(object):
                 'q95':q95, 'q05':q05,
                 'count':count,'status':status} #,'flagstat':allFlagStatus}
         return kraj, data
-    
+
+    @benchmark    
     def getSlajs(self, kraj):
         pocetak= kraj-timedelta(minutes=59)
 # koristimo iskljucivo flagove, a ne statuse. Flagove odredjuje AutoValidacija
@@ -174,7 +178,8 @@ class Agregator(object):
         	vrijeme, vrijednost = self.agreg(sat)
         	niz.append(vrijednost)
         return pd.DataFrame(niz, self.sviSati)
-        
+
+    @benchmark        
     def nizNiz(self):
         niz = []
         for sat in self.sviSati:
@@ -200,6 +205,7 @@ if __name__ == "__main__":
     ag = Agregator([u1,u2])
     ag.setDataFrame(data['1-SO2-ppb'])
     agregirani = ag.agregirajNiz()
+
     nizNizova = ag.nizNiz()
 
     plt.boxplot(nizNizova)

@@ -15,6 +15,134 @@ import uredjaj
 import agregator
 import auto_validacija
 
+class DataStorage:
+    """
+    Klasa za spremanje podataka sa JEDNE stanice
+    -kod instanciranja navedi ime postaje kao jedini argument
+    """
+    def __init__(self, postaja):
+        #inicijalizacija membera
+        self.nazivPostaje = postaja
+        self.ucitaniFrejmovi = {}
+        self.agregiraniFrejmovi = {}
+        self.zadnjiKanal = None
+        self.zadnjiSlice = []
+        self.ucitaniDatumi = []
+
+        
+    def dodaj_frejm(self, tip, frejmovi, datum):
+        """
+        dodavanje frejmova na member varijable
+        
+        input:
+        tip = 'satni' ili 'minutni'
+        frejmovi = dict frejmova sa datafrejmom za svaki kanal
+        
+        output:
+        lokalni update member varijabli
+        """
+        if tip == 'minutni':
+            #prati koje si datume ucitao?
+            self.ucitaniDatumi.append(datum)
+            for kanal in frejmovi:
+                if kanal in self.ucitaniFrejmovi.keys():
+                    #unija frejmova
+                    self.ucitaniFrejmovi[kanal] = pd.merge(
+                        self.ucitaniFrejmovi[kanal], 
+                        frejmovi[kanal], 
+                        how = 'outer', 
+                        left_index = True, 
+                        right_index = True, 
+                        sort = True, 
+                        on = [u'koncentracija', u'status', u'flag'])
+                    #update vrijednosti iz frejmovi koje nisu NaN
+                    self.ucitaniFrejmovi[kanal].update(frejmovi[kanal])
+                else:
+                    self.ucitaniFrejmovi[kanal] = frejmovi[kanal]
+        
+        elif tip == 'satni':
+            for kanal in frejmovi:
+                if kanal in self.agregiraniFrejmovi.keys():
+                    #unija frejmova
+                    self.agregiraniFrejmovi[kanal] = pd.merge(
+                        self.agregiraniFrejmovi[kanal], 
+                        frejmovi[kanal],
+                        how = 'outer', 
+                        left_index = True, 
+                        right_index = True, 
+                        sort = True, 
+                        on = ['broj podataka','status','avg','std','min','max','q05','median','q95','count'])
+                    #update vrijednosti
+                    self.agregiraniFrejmovi[kanal].update(frejmovi[kanal])
+                else:
+                    self.agregiraniFrejmovi[kanal] = frejmovi[kanal]
+    
+    
+    def update_frejm(self, tip, kanal, frejm):
+        """
+        update vec izvucenih dijelova frejmova        
+        
+        input:
+        tip = 'satni' ili 'minutni'
+        kanal = ime kanala
+        frejm = dataframe koji sadrzi podatak o promjenama frejma
+        
+        output:
+        lokalni update member varijable
+        """
+        if tip == 'satni':
+            self.agregiraniFrejmovi[kanal].update(frejm)
+            self.zadnjiKanal = kanal
+        elif tip == 'minutni':
+            self.ucitaniFrejmovi[kanal].update(frejm)
+            self.zadnjiKanal = kanal
+
+            
+    def dohvati_slice(self, tip, kanal, granice):
+        """
+        input:
+        tip = 'satni' ili 'minutni'
+        kanal = ime kanala
+        granice = [min_index, max_index]
+        
+        output:
+        dataframe slice
+        """
+        if tip == 'satni':
+            self.zadnjiKanal = kanal
+            self.zadnjiSlice = granice
+            df = self.agregiraniFrejmovi[kanal].copy()
+            df = df[df.index >= granice[0]]
+            df = df[df.index <= granice[1]]
+            return df
+        elif tip == 'minutni':
+            self.zadnjiKanal = kanal
+            self.zadnjiSlice = granice
+            df = self.ucitaniFrejmovi[kanal].copy()
+            df = df[df.index >= granice[0]]
+            df = df[df.index <= granice[1]]
+            return df
+    
+    def dohvati_kanale(self, tip):
+        """
+        dohvaca popis kananla koji trenutno postoje
+        input:
+        tip = 'satni' ili 'minutni'
+        
+        output:
+        popis kanala u dictu
+        """
+        if tip == 'satni':
+            return self.agregiraniFrejmovi.keys()
+        elif tip == 'minutni':
+            return self.ucitaniFrejmovi.keys()
+            
+    def dohvati_datume(self):
+        """
+        prati koje je sve dane ucitao?
+        """
+        return self.ucitaniDatumi
+
 class Dokument(QtGui.QWidget):
     '''
     classdocs
@@ -54,9 +182,6 @@ class Dokument(QtGui.QWidget):
         message = 'Agregiranje podataka u tjeku...'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
         
-        #emitiraj promjenu kursora u "pjescani sat"
-        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),True)        
-        
         self.frejmovi = frejmovi
         self.kljucSviFrejmovi = sorted(list(self.frejmovi))
         self.set_uredjaji(self.kljucSviFrejmovi)
@@ -65,8 +190,6 @@ class Dokument(QtGui.QWidget):
         #emitiraj novi status        
         message = 'Agregacija gotova.'
         self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)
-        #emitiraj promjenu kursora u "strelicu"
-        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),False)        
 ###############################################################################
     def set_aktivni_frejm(self, kljuc):
         """
@@ -107,8 +230,6 @@ class Dokument(QtGui.QWidget):
         self.odabraniSatniPodatak = up
         #napravi listu data[all,flag>=0,flag<0]
         df=self.frejmovi[self.aktivniFrame]
-        #TODO!
-        #problem kod idneksiranja (error kada down:up je izvan indeksa zbog nepostojecih podataka)        
         df=df.loc[down:up,:]
         dfOk=df[df.loc[:,u'flag']>=0]
         dfNo=df[df.loc[:,u'flag']<0]
@@ -176,21 +297,8 @@ class Dokument(QtGui.QWidget):
         Autovalidacija bi pregazila custom flagove.
         Nema smisla reagregirati sve ako je promjena samo na jednoj komponenti
         """
-        #emitiraj promjenu kursora u "pjescani sat"
-        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),True)                
-        
         ag=agregator.Agregator(self.dictUredjaja[kljuc])
         ag.setDataFrame(self.frejmovi[kljuc])
         self.agregirani[kljuc]=ag.agregirajNiz()
-        
-        #emitiraj promjenu kursora u "strelicu"
-        self.emit(QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),False)                
-
-###############################################################################
-    #TODO!
-    #sredi prihvat [frejmovi, datum] iz izbornika
-    #nadolazece frejmove treba agregirati the nadodati na "glavni frejm" i "glavni agreg frejm"
-    #srediti izlaz prema drugim dijelovima da odgovara tj.
-    #za zadani datum, izvadi slice velikog frejma
 ###############################################################################
 ###############################################################################

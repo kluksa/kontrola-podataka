@@ -4,13 +4,15 @@ Agregator dio
 """
 
 import pandas as pd
+import numpy as np
 from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
+
+from functools import wraps
 
 import citac
 import auto_validacija
 import uredjaj
-from functools import wraps
 
 def benchmark(func):
     """
@@ -22,164 +24,200 @@ def benchmark(func):
     def wrapper(*args, **kwargs):
         t = time.clock()
         res = func(*args, **kwargs)
-        print(func.__name__, time.clock()-t, 'sec.')
+        print(func.__name__, time.clock()-t)
         return res
     return wrapper
+
+class Agregator2(object):
+    """
+    def pomocnih funkcija za agregator
+    ulaz --> numpy array ili neka lista
+    izlaz --> broj
+    """
+    def h_q05(self, x):
+        #5 percentil podataka
+        return np.percentile(x,5)
+        
+    def h_q50(self, x):
+        #median
+        return np.percentile(x,50)
+        
+    def h_q95(self, x):
+        #95 percentil podataka
+        return np.percentile(x,95)
+    
+    def h_binary_or(self, x):
+        #binarni or liste
+        result = 0
+        for i in x:
+            result = result | int(i)
+        return result
+        
+    def h_size(self, x):
+        #broj podataka
+        return len(x)
+        
+    def agregiraj_kanal(self, frejm):
+        """
+        input- pandasdataframe (datetime index, koncentracija, status, flag)
+        output - pandas dataframe (datetime index, hrpa agregiranih vrijednosti)
+        """
+        agregirani = pd.DataFrame()
+        
+        """
+        ukupni broj podataka koji postoje
+        """
+        df = frejm[np.isnan(frejm['koncentracija']) == False]
+        tempDf = df.copy()
+        dfKonc = tempDf['koncentracija']
+        temp = dfKonc.resample('H', how = self.h_size)
+        agregirani['broj podataka'] = temp
+        
+        """
+        agregirani status
+        """
+        tempDf = df.copy()
+        dfStatus = tempDf['status']
+        temp = dfStatus.resample('H', how = self.h_binary_or)
+        agregirani['status'] = temp
+        
+        """
+        -definicija funkcija koje nas zanimaju
+        -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
+        """
+        listaFunkcijaIme = ['avg', 'std', 'min', 'max', 'q05', 'median', 'q95', 'count']
+        listaFunkcija = [np.mean, np.std, np.min, np.max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
+        
+        """
+        -kopija originalnog frejma
+        -samo stupac koncentracije gdje je flag veci od 0
+        """
+        tempDf = df.copy()
+        tempDf = tempDf[tempDf['flag']>=0]
+        tempDf = tempDf['koncentracija']
+        
+        """
+        -glavna petlja za agregiranje
+        -loop preko lista funkcija
+        """
+        for i in range(len(listaFunkcija)):
+            temp = tempDf.copy()
+            temp = temp.resample('H', how = listaFunkcija[i])
+            temp.name = listaFunkcijaIme[i]
+            agregirani[temp.name] = temp
+        
+        """
+        -provjeri da li je broj valjanih podataka sa flagom vecim od 0 veci od 45
+        -ako nije... flagaj interval kao nevaljan...umetni placeholder vrijednosti
+        """
+        for i in agregirani.index:
+            if agregirani.loc[i,'count']<45:
+                agregirani.loc[i,'avg'] = -1
+                agregirani.loc[i,'std'] = -1
+                agregirani.loc[i,'min'] = -1
+                agregirani.loc[i,'max'] = -1
+                agregirani.loc[i,'q05'] = -1
+                agregirani.loc[i,'q95'] = -1
+                agregirani.loc[i,'median'] = -1
+               
+        return agregirani
+        
+    
+    def agregiraj(self, frejmovi):
+        """
+        agregiraj rezultat kanal po kanal i spremaj u dict
+        """
+        rezultat = {}
+        for i in frejmovi:
+            frejm = frejmovi[i]
+            rezultat[i] = self.agregiraj_kanal(frejm)
+            
+        return rezultat
+
 
 class Agregator(object):
     
     uredjaji=[]
-    @benchmark
+
     def __init__(self, uredjaji):
         self.uredjaj = uredjaji
         
-    @benchmark
     def dodajUredjaj(self, uredjaj):
         self.uredjaji.append(uredjaj)
         
-
-    @benchmark            
+            
     def setDataFrame(self, df):
         self.__df = df
         self.pocetak = df.index.min()+pd.DateOffset(hours=1) 
         self.kraj = df.index.max()
         self.sviSati=pd.date_range(self.pocetak, self.kraj, freq='H')
-
-    @benchmark
+    
     def agreg(self, kraj):
         #modifikacija get slice kopira direktno, bez flag testa
-        slajs=self.getSlajs(kraj)
+        dds=self.getSlajs(kraj)
         
         #test da li su svi not nan flagovi negativni
-        #Zasto ovo treba???        
-        """
-        Kratko objasnjenje:funkcionalni problem prilikom crtanja satnog grafa.
-        
-        Dugo objasnjenje:
-        -Satni graf iscrtava samo tocke koje imaju flag veci ili jednak 0
-        
-        -Kada prebacis cijeli satni interval da ne valja, on se vise ne iscrtava
-        na satnom grafu sto povlaci zanimljivi funkcionalni bug. Iz Gui-a ne postoji
-        nacin da satni interval vratis iz statusa ne valja u valja, ne mozes vidjeti
-        minutni graf (jer nemas na sto kliknuti na satnom grafu), ne mozes razlikovati
-        situaciju kada podatci ne postoje i kada svi podatci imaju flag manji od 0.
-        
-        To je razlog za skalameriju sa allFlagStatus
-        """        
-        
-#        ddNan=slajs[pd.isnull(slajs[u'koncentracija'])==False]
-#        ddFlag=ddNan[ddNan[u'flag']<0]
-#        if len(ddNan)==len(ddFlag):
-#            #svi not nan flagovi su negativni
-#            allFlagStatus=True
-#        else:
-#            allFlagStatus=False
-        
-        #Zasto dva puta radimo istu stvar?
-        """
-        Razlog je povezan sa gornjim objasnjenjem...ako imam situaciju da od 60
-        minutnih podataka neki postoje ali svi imaju flag manji od 0, trebam satnom
-        grafu reci sto da crta (avg, std...). Od svih mogucnosti, implementirao sam
-        da izracuna statistiku kao da svi ti podatci su ispravni (mean, std ... svih
-        lose flagiranih podataka), ali da ih tretira drugacije. Tada crta crvenu tocku 
-        na mjestu gdje bi bila tocka da je sve ok. To je objasnjenje za allFlagStatus i
-        ponovno ponavljanje istog.
-        """
-
-        ddd=slajs[slajs[u'flag']>=0]
-        if len(ddd)==0:
-            avg = -999.
-            std = -999.
-            max = -999.
-            min = -999.
-            med = -999.
-            q95 = -999.
-            q05 = -999.
-            count = 0
-            status = -999
+        ddNan=dds[pd.isnull(dds[u'koncentracija'])==False]
+        ddFlag=ddNan[ddNan[u'flag']<0]
+        if len(ddNan)==len(ddFlag):
+            #svi not nan flagovi su negativni
+            allFlagStatus=True
         else:
-            avg=ddd.mean().iloc[0]
-            std=ddd.std().iloc[0]
-            max=ddd.max().iloc[0]
-            min=ddd.min().iloc[0]
-            med=ddd.quantile(0.5).iloc[0]
-            q95=ddd.quantile(0.05).iloc[0]
-            q05=ddd.quantile(0.95).iloc[0]
-            count=ddd.count().iloc[0]
+            allFlagStatus=False
+        
+        ddd=dds[dds[u'flag']>=0]
+        avg=ddd.mean().iloc[0]
+        std=ddd.std().iloc[0]
+        max=ddd.max().iloc[0]
+        min=ddd.min().iloc[0]
+        med=ddd.quantile(0.5).iloc[0]
+        q95=ddd.quantile(0.05).iloc[0]
+        q05=ddd.quantile(0.95).iloc[0]
+        count=ddd.count().iloc[0]
             
-            status=0
-            for i in ddd[u'status']:
-                # Cemu ovaj try?? Moze li binarni OR bacati iznimku??????
-                """
-                Ovaj try rijesava jedan problem.. sto se desava kada je jedna
-                linija (ili vise njih) NaN.
-                -Binary OR prihvaca samo integer kao ulaz
-                -i je neki numpy numericki tip ili np.NaN
-                -problem nastaje kada int() susretne nan vrijednost
-                
-                Prtpostavka je : ako nema podataka za status, da ga tretiram kao
-                nulu i nastavim dalje. Mozda se to moglo i spretnije izvesti, ali
-                tocno znam koji tip greske ocekujem i u kojem slucaju.
-                
-                P.S. int() baca iznimku --- int(np.nan)
-                
-                P.P.S. mislim da racunanje satno agregiranih statusa traje najdulje
-                jer provjerava i cita podatak po podatak za svaku minutu, svih frejmova
-                """
-        #        try:
+        status=0
+        for i in ddd[u'status']:
+            try:
                 status|=int(i)
-#         #       except ValueError:
-#         #           status|=int(0)
+            except ValueError:
+                status|=int(0)
         
         #prikazi druge podatke ako su svi flagovi manji od nule jer ddd je prazan
-        #Zasto ovo? Ako nema valjanih podataka, onda nema valjanih podataka
-        # U ovom slucaju ako nam treba neki "placeholder" na koji cemo kliknuti
-        # da eventualno proglasimo neki podatak valjan, onda sve vrijednosti treba staviti
-        # na -999
-        """
-        Mozemo i tako, ali mi je bilo smislenije da je "placeholder" blizu pravih
-        vrijednosti i drugacije oznacen.
-        """
-        
-#        if allFlagStatus:
-#            #prikazi agregat cijelog slajsa?
-#            avg=slajs.mean().iloc[0]
-#            std=slajs.std().iloc[0]
-#            max=slajs.max().iloc[0]
-#            min=slajs.min().iloc[0]
-#            med=slajs.quantile(0.5).iloc[0]
-#            #q95=slajs.quantile(0.05).iloc[0]
-#            #q05=slajs.quantile(0.95).iloc[0]
-#            count=slajs.count().iloc[0]
-#            
-#            status=0
-#            for i in slajs[u'status']:
-#                try:
-#                    status|=int(i)
-#                except ValueError:
-#                    status|=int(0)
+        if allFlagStatus:
+            #prikazi agregat cijelog slajsa?
+            avg=dds.mean().iloc[0]
+            std=dds.std().iloc[0]
+            max=dds.max().iloc[0]
+            min=dds.min().iloc[0]
+            med=dds.quantile(0.5).iloc[0]
+            q95=dds.quantile(0.05).iloc[0]
+            q05=dds.quantile(0.95).iloc[0]
+            count=dds.count().iloc[0]
+            
+            status=0
+            for i in dds[u'status']:
+                try:
+                    status|=int(i)
+                except ValueError:
+                    status|=int(0)
 
-        data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,
-                'q95':q95, 'q05':q05,
-                'count':count,'status':status} #,'flagstat':allFlagStatus}
+        data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,'q95':q95,
+                'q05':q05,'count':count,'status':status,'flagstat':allFlagStatus}
         return kraj, data
-
-    @benchmark    
+    
     def getSlajs(self, kraj):
         pocetak= kraj-timedelta(minutes=59)
 # koristimo iskljucivo flagove, a ne statuse. Flagove odredjuje AutoValidacija
         #return self.__df[pocetak:kraj][self.__df['flag']>0]
         return self.__df[pocetak:kraj]
-    
-    @benchmark 
+    @benchmark
     def agregirajNiz(self):
         niz = []
         for sat in self.sviSati:
         	vrijeme, vrijednost = self.agreg(sat)
         	niz.append(vrijednost)
         return pd.DataFrame(niz, self.sviSati)
-
-    @benchmark        
+        
     def nizNiz(self):
         niz = []
         for sat in self.sviSati:
@@ -205,7 +243,6 @@ if __name__ == "__main__":
     ag = Agregator([u1,u2])
     ag.setDataFrame(data['1-SO2-ppb'])
     agregirani = ag.agregirajNiz()
-
     nizNizova = ag.nizNiz()
 
     plt.boxplot(nizNizova)

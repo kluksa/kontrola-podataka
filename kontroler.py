@@ -48,14 +48,6 @@ class Mediator(QtGui.QWidget):
                      gui.set_status_bar)
 ###############################################################################
         """
-        Promjena kursora u pjescani sat
-        """
-        #templata xxxxxx zamjeni sa lokacijom odakle signal dolazi
-        self.connect(model,
-                     QtCore.SIGNAL('change_cursor(PyQt_PyObject)'),
-                     gui.promjeni_kursor)
-###############################################################################
-        """
         Ulaz za frejmove.
         
         -dodaj nove connectione po potrebi

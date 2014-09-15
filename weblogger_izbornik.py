@@ -89,7 +89,7 @@ class WebloggerIzbornik(base, form):
         self.files_C = []
         self.dictStanicaDatum = {}
         self.uiFileList.clear()
-        self.ucitaniFileovi = {}
+        self.ucitani = []
         
         #connections
         self.uiLoadFolder.clicked.connect(self.load_folder)
@@ -306,6 +306,7 @@ class WebloggerIzbornik(base, form):
         otvori neki file.
         """
         lista = sorted(mjerenja)
+        self.uiKanalCombo.clear()
         #privremeno blokiraj sve signale uiKanalCombo widgeta
         self.uiKanalCombo.blockSignals(True)
         self.uiKanalCombo.addItems(lista)
@@ -339,17 +340,22 @@ class WebloggerIzbornik(base, form):
     def open_file(self, file):
         """
         citaj file i  emitiraj frejmove
-        """
-        #TODO!
-        #ista procedura i za funkciju open_file_list
-        #1.sredi provjeru da li je zadani file vec ucitan i agregiran
-        #2.ako nije - ucitaj ga i prosljedi dokumentu skupa sa datumom
-        #3.ako je ucitan prije, prosljedi tu informaciju i datum
-        #4.sredi spajanje nadolazecih frejmova u dokumentu, te izbor datuma
-        #5.poslati i ime stanice (grupirati prema stanici)??? 
-        #6.u kontroleru sredi signale...
-        self.frejmovi = self.wlreader.citaj(file)
+        """        
+        if file not in self.ucitani:
+            self.frejmovi = self.wlreader.citaj(file)
+            #zapamti sto si ucitao        
+            self.ucitani.append(file)
+            #TODO!            
+            #emit prema dokumentu da merga ucitane frejmove
+            #emit za postavljanje izbora kanala (moram ih preuzeti iz dokumenta)
+            #na isti nacin sredi ucitavanje liste fileova
+        else:
+            pass
+            #samo request za update liste kanala
+            #pokusaj zapamtiti koji je kanal bio prije i forsiraj njegov izbor
+        
         if self.frejmovi != None:
+            
             self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
 #            print('\nopen_file, kljucevi frejmova:')
 #            print(self.frejmovi.keys())
@@ -365,6 +371,11 @@ class WebloggerIzbornik(base, form):
         citaj iz liste fileova i emitiraj frejmove
         """
         self.frejmovi = self.wlreader.citaj_listu(lista)
+
+        #zapamti sto si ucitao        
+        #for file in lista:
+        #    self.ucitani.append(file)
+            
         if self.frejmovi != None:
             self.emit(QtCore.SIGNAL('ucitani_frejmovi(PyQt_PyObject)'), self.frejmovi)
 #            print('\nopen_file_list, kljucevi frejmova:')

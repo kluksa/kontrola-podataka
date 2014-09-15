@@ -12,19 +12,20 @@ from functools import wraps
 
 
 ###############################################################################
-def benchmark(func):
-    """
-    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
-    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
-    """
-    import time
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t = time.clock()
-        res = func(*args, **kwargs)
-        print(func.__name__, time.clock()-t, 'sec.')
-        return res
-    return wrapper
+#def benchmark(func):
+#    """
+#    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
+#    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
+#    """
+#    import time
+#    @wraps(func)
+#    def wrapper(*args, **kwargs):
+#        t = time.clock()
+#        res = func(*args, **kwargs)
+#        print(func.__name__, time.clock()-t)
+#        return res
+#    return wrapper
+#
 ###############################################################################
 ###############################################################################
 class WlReader:
@@ -50,44 +51,36 @@ class WlReader:
     def __init__(self):
         pass    
 ###############################################################################
-    @benchmark
     def citaj(self, path):
         """
         path = fullpath do filea
         funkcija cita weblogger csv fileove u dictionary pandas datafrejmova
         """
-        df = pd.read_csv(
-            path, 
-            na_values = '-999.00', 
-            index_col = 0, 
-            parse_dates = [[0,1]], 
-            dayfirst = True, 
-            header = 0, 
-            sep = ',', 
-            encoding = 'iso-8859-1')
+        if self.provjeri_headere(path):
+            df = pd.read_csv(
+                path, 
+                na_values = '-999.00', 
+                index_col = 0, 
+                parse_dates = [[0,1]], 
+                dayfirst = True, 
+                header = 0, 
+                sep = ',', 
+                encoding = 'iso-8859-1')
         
-        headerList = df.columns.values
-        frejmovi = {}
-        for i in range(0,len(headerList)-2,2):
-            colName = headerList[i]
-            frejmovi[colName] = df.iloc[:,i:i+2]
-            frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
-            frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-        return frejmovi
+            headerList = df.columns.values
+            frejmovi = {}
+            for i in range(0,len(headerList)-2,2):
+                colName = headerList[i]
+                frejmovi[colName] = df.iloc[:,i:i+2]
+                frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
+                frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
+            return frejmovi
+        else:
+            #vraca None
+            return
 
 ###############################################################################
-    @benchmark    
     def citaj_listu(self, pathLista):
-        #
-        # Sto se ovdje dogadja? Zasto nam treba metoda koja cita listu fajlova?
-    
-        #Metoda je ubacena da rijesava slucajeve kada za isti dan i stanicu 
-        #postoji vise fileova.
-        #npr. plitvicka jezera-20140601.csv, plitvicka jezera-20140601A.csv, ...
-    
-        #Ideja ih je ucitati sve i utrpati u jedan set frejmova.
-        #Metoda cita file po file dopunjujuci i updateajuci frejmove
-        #
         """
         pathLista = lista svih pathova za otvaranje
         INPUT - lista stringova
@@ -131,7 +124,6 @@ class WlReader:
                         frejmovi[key] = frejmoviTemp[key]
         return frejmovi
 ###############################################################################
-    @benchmark
     def provjeri_headere(self, path):
         """
         Testna funkcija za provjeru headera csv filea na lokaciji path.
@@ -191,7 +183,6 @@ class WlReader:
             
 if __name__ == '__main__':
     test1 = WlReader()
-    data = test1.citaj('./data/pj.csv')
 #    #header test
 #    print('\ntest nepostojeceg filea')
 #    x = test1.provjeri_headere('./data/pj123.csv')

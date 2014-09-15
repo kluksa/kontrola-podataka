@@ -27,10 +27,10 @@ class DataStorage:
         self.agregiraniFrejmovi = {}
         self.zadnjiKanal = None
         self.zadnjiSlice = []
-        self.ucitaniDatumi = []
+        self.ucitaniDokumenti = []
 
         
-    def dodaj_frejm(self, tip, frejmovi, datum):
+    def dodaj_frejm(self, tip, frejmovi, filename):
         """
         dodavanje frejmova na member varijable
         
@@ -43,7 +43,7 @@ class DataStorage:
         """
         if tip == 'minutni':
             #prati koje si datume ucitao?
-            self.ucitaniDatumi.append(datum)
+            self.ucitaniDokumenti.append(filename)
             for kanal in frejmovi:
                 if kanal in self.ucitaniFrejmovi.keys():
                     #unija frejmova
@@ -137,11 +137,6 @@ class DataStorage:
         elif tip == 'minutni':
             return self.ucitaniFrejmovi.keys()
             
-    def dohvati_datume(self):
-        """
-        prati koje je sve dane ucitao?
-        """
-        return self.ucitaniDatumi
 
 class Dokument(QtGui.QWidget):
     '''

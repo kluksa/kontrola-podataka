@@ -12,11 +12,15 @@ import numpy as np
 from PyQt4 import QtGui,QtCore
 from datetime import timedelta
 
+import citac
 import uredjaj
 import agregator
 import auto_validacija
 
-class DataStorage:
+
+###############################################################################
+###############################################################################
+class DataStorage(object):
     """
     Klasa za spremanje podataka sa JEDNE stanice
     -kod instanciranja navedi ime postaje kao jedini argument
@@ -28,10 +32,9 @@ class DataStorage:
         self.agregiraniFrejmovi = {}
         self.zadnjiKanal = None
         self.zadnjiSlice = []
-        self.ucitaniDokumenti = []
 
         
-    def dodaj_frejm(self, tip, frejmovi, filename):
+    def dodaj_frejm(self, tip, frejmovi):
         """
         dodavanje frejmova na member varijable
         
@@ -43,8 +46,6 @@ class DataStorage:
         lokalni update member varijabli
         """
         if tip == 'minutni':
-            #prati koje si datume ucitao?
-            self.ucitaniDokumenti.append(filename)
             for kanal in frejmovi:
                 if kanal in self.ucitaniFrejmovi.keys():
                     #unija frejmova
@@ -138,21 +139,71 @@ class DataStorage:
         elif tip == 'minutni':
             return self.ucitaniFrejmovi.keys()
 
+###############################################################################
+###############################################################################
 class Dokument(QtGui.QWidget):
     def __init__(self, parent = None):
+        """
+        konstruktor
+        """
         QtGui.QWidget.__init__(self, parent)
-        #memberi
-        #1. dict svih postaja, elementi su DataStorage objekti definirani iznad        
+        
         self.postaje = {}
         
+        self.CSVcitac = citac.WlReader()
+        self.ag = agregator.Agregator2()
         
-    #TODO!
-    #1. metoda koja postavlja novu postaju u dict
-    #2. metoda koja vraca sve postaje koje postoje u dictu (lista)
-    #3. metoda koja postavlja frejmove u DataStorage objekt
-    #4. metoda koja, za postaju, vraca sve kanale koji postoje (lista)
-    #5. metoda koja za postaju vraca popis svih ucitanih fileova (lista)
-    #6. metoda koja za postaju i kanal vraca popis svih dana u frejmu (lista)
-    #7. metoda koja za zadanu postaju, kanal vraca slice frejma
-    #8. metoda koja agregira frejm
-    #9. metoda koja updatea frejmove (reagregiranje isl...)
+
+    def set_frejmovi(self, postaja, frejmovi):
+        """
+        postavi ucitane frejmove u DataStorage
+        """
+        if postaja not in list(self.postaje.keys()):
+            self.postaje[postaja] = DataStorage(postaja)
+        
+        #TODO!
+        #validiraj podatke
+        data = frejmovi
+        
+        #agregiraj podatke        
+        agData = self.ag.agregiraj(data)
+        #upisi podatke u frejm
+        self.postaje[postaja].dodaj_frejm('minutni', data)
+        self.postaje[postaja].dodaj_frejm('satni', agData)
+        
+    def citaj_csv(self, postaja, path):
+        """
+        read csv i set frejmove u dict
+        """
+        frejmovi = self.CSVcitac.citaj(path)
+        self.set_frejmovi(postaja, frejmovi)
+        
+    def crtaj_satni_graf(self, postaja, kanal, granice):
+        """
+        treba srediti I/O iz grafova
+        granice --> lista, [min index, max index]
+        """
+        #brisanje grafova sa gui-a
+        self.emit(QtCore.SIGNAL('brisi_grafove()'))
+        
+        agSlice = self.postaje[postaja].dohvati_slice('satni', kanal, granice)
+        
+        #emit prema GUI-u
+        self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), agSlice)
+        
+    def crtaj_minutni_graf(self, postaja, kanal, sat):
+        """
+        treba srediti I/O iz grafova
+        """
+        sat = str(sat)
+        #racunanje gornje i donje granice, castanje u string nakon racunice
+        up = pd.to_datetime(sat)
+        down = up-timedelta(minutes=59)
+        down = pd.to_datetime(down)
+                
+        #napravi listu sa minutnim podatcima
+        df = self.postaje[postaja].dohvati_slice('minutni', kanal, [up,down])
+                
+        #emit za crtanje minutnih podataka
+        self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), df)
+        

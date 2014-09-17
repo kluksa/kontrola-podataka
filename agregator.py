@@ -244,9 +244,10 @@ if __name__ == "__main__":
     ag.setDataFrame(data['1-SO2-ppb'])
     agregirani = ag.agregirajNiz()
     nizNizova = ag.nizNiz()
-
+    
     plt.boxplot(nizNizova)
     plt.plot(agregirani['avg'])
     plt.plot(agregirani['q05'])
     plt.plot(agregirani['q95'])
     plt.show()
+    

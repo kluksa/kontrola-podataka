@@ -149,6 +149,8 @@ class Dokument(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         
         self.postaje = {}
+        self.aktivniSatni = None
+        self.aktivniMinutni = None
         
         self.CSVcitac = citac.WlReader()
         self.ag = agregator.Agregator2()
@@ -183,13 +185,21 @@ class Dokument(QtGui.QWidget):
         treba srediti I/O iz grafova
         granice --> lista, [min index, max index]
         """
+
         #brisanje grafova sa gui-a
         self.emit(QtCore.SIGNAL('brisi_grafove()'))
         
         agSlice = self.postaje[postaja].dohvati_slice('satni', kanal, granice)
+        self.aktivniSatni = agSlice
         
-        #emit prema GUI-u
-        self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), agSlice)
+        if len(agSlice) != 0:
+            #dataframe sa podatcima
+            #emit prema GUI-u
+            self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), agSlice)
+        else:
+            #dataframe bez valjanih podataka, agSlice je prazan
+            #emit prema GUI-u
+            self.emit(QtCore.SIGNAL('crtaj_satni(PyQt_PyObject)'), None)
         
     def crtaj_minutni_graf(self, postaja, kanal, sat):
         """
@@ -201,9 +211,29 @@ class Dokument(QtGui.QWidget):
         down = up-timedelta(minutes=59)
         down = pd.to_datetime(down)
                 
-        #napravi listu sa minutnim podatcima
+        #dohvati slice sa minutnim podatcima
         df = self.postaje[postaja].dohvati_slice('minutni', kanal, [up,down])
-                
-        #emit za crtanje minutnih podataka
-        self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), df)
+        self.aktivniMinutni = df
+        if len(df) != 0:
+            dfOK = df[df['flag']>=0]
+            dfNOT = df[df['flag']<0]
+            data = [dfOK, dfNOT]
+            #emit za crtanje minutnih podataka
+            self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), data)
+        else:
+            #dataframe je prazan
+            self.emit(QtCore.SIGNAL('crtaj_minutni(PyQt_PyObject)'), None)
         
+    def promjeni_flag(self, postaja, kanal, lista):
+        """
+        Opcenita promjena flaga.
+        ulaz : [min vrijeme, max vrijeme, novi flag]
+        izlaz : emit za crtanje novih grafova
+        """
+        timeMin = lista[0]
+        timeMax = lista[1]
+        flag = lista[2]
+        #promjeni flag
+        #reagregiraj podatke za aktivni frame
+        #update podatke u glavnom frejmu
+        #nacrtaj satni i minutni graf

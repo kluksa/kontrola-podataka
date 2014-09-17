@@ -213,7 +213,7 @@ class DataStorage(object):
         #inicijalizacija raspolozivih kanala
         self.kanali = []
                 
-    def dodaj_frejm(self, datum, frejmovi):
+    def dodaj_frejmove(self, datum, frejmovi):
         """Dodaje frejmove na self.ucitaniFrejmovi
         
         ulaz:
@@ -315,7 +315,82 @@ class DataStorage(object):
         self.ucitaniFrejmovi[kanal].update(frejm)
 ###############################################################################
 ###############################################################################
-    
+"""
+Osnovni izgled dokumenta
+
+Poslovi koje mora odraditi:
+1. prihvat citaca
+2. po potrebi, inicijalizacija objekta za pohranu podataka
+3. informirati GUI- sto se moze ucitati, a sto je vec ucitano
+4. uz pomoc trenutnog citaca, znati citati podatke koji nedostaju
+5. validacija!
+6. agregiranje podataka
+7. rad sa grafovima (priprema podataka, update flagova, crtanje)
+8. export podataka prema van u nekom smislenom izdanju (valjda preko nekog
+objekta "pisac")
+
+Primjer toka:
+POSTAVLJANJE NOVOG CITACA U DOKUMENT
+1. Gui dio aplikacije inicijalizira citac.
+2. GUI proljedi citac dokumentu
+3. Dokument iz citaca i svojih membera pokusava sastaviti sliku do kojih 
+kombinacija stanica-datum moze doci. Idealno, razlikovati vec ucitane kombinacije
+stanica-datum od onih koje se mogu ucitati. Na temelju tih podataka updateati
+izbornike u GUI-u (combobox stanica i kalendar). Kada to odradi, čeka nove naredbe
+od GUI-a. Na taj nacin izbjegavamo nesuvisle ulazne argumente jer smo sigurni do cega
+dokument moze doci.
+
+GUI ODABIR POSTOJECE KOMBINACIJE STANICE I DATUMA:
+U gui dijelu, izbor stanice bi trebao updateati kalendar sa "valjanim" datumima.
+Tek nakon izbora datuma (bilo direktni klik, ili gumbi sljedeci/prethodni) krece
+priprema podataka za rad.
+
+1. GUI javlja kombinaciju stanica-datum dokumentu. Dokument po potrebi instancira
+DataStorage objekt. Ako objekt za tu stanicu vec postoji (ili ako je tek stvoren)
+postavlja se kao aktivni objekt za rad.
+
+2. Dokument provjerava da li je kombinacija medju vec ucitanim podatcima.
+Takodjer provjerava da li citac moze doci do podataka.
+
+Ako izbor nije prije ucitan, dokument koristi citac da ucita podatke, zatim ih
+validira i nadodaje u objekt pod ucitaneFrejmove. Vraca nazad informaciju o svim
+kanalima koje postoje za update GUI-a.
+
+Ako je izbor prije ucitan, dokument vraca informaciju o postojecim kanalima za
+update GUI-a.
+
+GUI IZBOR NEKOG KANALA (CRTANJE SATNOG GRAFA):
+Gui treba pamtiti zadnji kanal s kojim je radio. Prilikom updatea comboboxa za
+kanal, treba ga pokusati postaviti kao aktivni kanal. Ako nema tog kanala, treba
+dohvatiti prvi na raspolaganju. GUI-tada emitira podatak o izabranom kanalu
+prema dokumentu.
+
+1. Dokument treba dobiti sve informacije da moze pozvati dohvati_slice(kanal,granice)
+metodu objekta koji drzi sve podatke
+2. Dokument sprema slice u temp member sa frejmom minutnih podataka
+3. Dokument agregira minutne podatke is temp slicea i sprema ih u drugi temp dataframe
+4. Dokument salje naredbu za crtanje agregiranih podataka GUI-u
+
+
+GUI CRTANJE MINUTNOG GRAFA:
+odradjuje se izborom sa satnog grafa... emitira se signal koji sadrzi samo timestamp
+odabranog satno agregiranog podatka.
+1. Dokument direktno poziva metodu za crtanje minutnog grafa.
+-dokument cuva referencu zadnje aktivnog slicea sa minutnim podatcima
+-treba dohvatiti slice zadanog sata
+-treba ga podjeliti u dva slicea (podatci koji su flagano OK i onih koji to nisu)
+-emit tako dobivenih sliceovaprema GUI-u za crtanje minutnog grafa
+
+GUI PROMJENA FLAGA:
+Bez obzira o kojem se grafu radi postupak je identican.
+1.Dokument zaprima zahtjev za promjenom flaga. Argumenti su novi flag, raspon za
+kojeg flag treba promjeniti (min, max).
+2.Na temp sliceu koji drzi minutne podatke promjeni se flag u zadanom rasponu (ili tocki)
+3.Updatea se glavni frejm u dokumentu sa novim podatcima (u DataStorage objektu)
+4.ponovno agregiramo temp frejm sa minutnim podatcima
+5.prosljedimo naredbu za crtanje satnog grafa
+6.prosljedimo naredbu za crtanje minutnog grafa
+"""
 
 class Dokument(QtGui.QWidget):
     """Sadrzi metode za prihvat i obradu podataka"""
@@ -324,8 +399,10 @@ class Dokument(QtGui.QWidget):
         
         self.citac --> instanca klase trenutnog citaca podataka
         self.agregator --> instanca klase agregatora podataka
-        self.ucitani --> dict ucitanih datuma {'stanica':[datum1, datum2, ...]}
-        self.spremljeni --> instanca DataStorage objekta, tu se nalaze ucitani frejmovi
+        self.dostupni --> dict {stanica:[lista datuma]} do kojih citac moze doci
+        self.ucitani --> dict ucitanih datuma {stanica:[lista datuma]}
+        self.spremljeni --> dict {stanica:DataStorage} , 
+            tu se nalaze ucitani frejmovi za svaku stanicu.
         self.trenutnaStanica --> string, ime stanice, npr. 'Bilogora'
         self.trenutniKanal --> string, ime kanala, npr. '1-SO2-ug/m3'
         self.trenutniMinutniFrame --> slice datafrejma sa minutnim podatcima
@@ -333,112 +410,129 @@ class Dokument(QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self, parent)
         self.citac = None
-        self.agregator = None
-        self.ucitani = None
-        self.spremljeni = None
+        self.agregator = agregator.Agregator2()
+        self.dostupni = {}
+        self.ucitani = {}
+        self.spremljeni = {}
         self.trenutniKanal = None
         self.trenutnaStanica = None
         self.trenutniMinutniFrame = None
         self.trenutniAgregiraniFrame = None
         
     def set_citac(self, reader):
-        """postavlja citac podataka u dokument.
+        """Postavlja citac podataka u dokument.
         
         Metoda sluzi da kontroler postavi citac koji je preuzeo iz GUI-a.
-        Citac mora sadrzavati metode za citanje podataka i lokaciju podataka
+        Citac mora sadrzavati metode za citanje podataka i lokaciju (ili 
+        izvor) podataka.
         """
         #TODO!
-        #1.provjeri tip readera prije inicijalizacije
+        #1.provjeri tip readera prije inicijalizacije?
         self.citac = reader
-        #update dostupnih podataka (vec ucitani + oni koji se jos mogu ucitati)
-        #emit prema GUI-u sa ciljem populiranja dostupnih stanica
+        #obnovi dictionary dostupnih podataka
+        self.dostupni = self.citac.vrati_dostupne_fileove()
+        #dohvati popis svih ucitanih poadtaka (stanica-dan)
+        for kljuc in self.spremljeni:
+            #za svaku stanicu prepisi listu ucitanih datuma
+            self.ucitani[kljuc] = self.spremljeni[kljuc].ucitaniDatumi
         
-    def get_dostupne_stanice(self):
-        """Vraca popis svih stanica do kojih citac moze doci."""
-        pass
-        
-    def get_dostupni_datumi(self, stanica):
-        """Vraca popis svih raspolozivih datuma za stanicu"""
-        pass
+        #zanima nas popis svih raspolozivih stanica
+        #sve koje su dostupne
+        sveStanice = list(self.dostupni.keys())
+        #sve koje su ucitane a da nisu na popisu dostupnih
+        for stanica in list(self.ucitani.keys()):
+            if stanica not in sveStanice:
+                sveStanice.append(stanica)
+        #TODO!  
+        #EMIT - pazi sto salje i pod kojim nazivom
+        #emit informacije o stanicama za GUI, abecedno sortirane
+        self.emit(QtCore.SIGNAL('update_GUI_stanice(PyQt_PyObject)'),
+                  sorted(sveStanice))
     
-    def pripremi_podatke(self, stanica, kanal, tMin, tMax):
-        """
-        Priprema minutnih podataka za crtanje.
-        
-        Funkcija za zaprimanje zahtjeva za crtanjem (po potrebi ucitavanjem) 
-        podataka. Gui preko kontrolera triggera ovu metodu koja pokrece tjek
-        za crtanje i interakciju sa grafovima.
-        
-        ulaz:
-        stanica --> postaja koja nas zanima
-        kanal --> kanal od interesa
-        tMin --> donja granica intervala (ukljucena)
-        tMax --> gornja granica intervala (ukljucena)
-        
-        izlaz:
-        1. cleara nacrtane grafove
-        
-        2. Pokusava doci do slicea minutnih podataka i postavlja nekoliko membera.
-        Preciznije: self.trenutniMinutniFrejm, self.trenutniKanal, self.trenutnaStanica
-        
-        -stanica i kanal su jednostavni, samo direktni set membera
-        
-        -minutni podatci postupak:
-        *napravi listu svih dana izmedju tMin i tMax
-        *kreni po toj listi element po element i provjeri da li je stanica/datum vec ucitan
-        *ako nije, ucitaj dodaj u self.ucitani, dodaj stanica/datum u listu ucitanih
-        *na kraju iteracije dohvati minutni slice (kakav god da bio)
-        
-        3. pokusava nacrtati satni graf sa metodom self.nacrtaj_agregirane()
-        """
-        pass
-
     
-    def nacrtaj_agregirane(self):
-        """Priprema satnih i minutnih podataka za crtanje.
-                
-        izlaz:
-        Metoda nema return, ali emitira signale i postavlja member 
-        self.trenutniAgregiraniFrejm
-        
-        Pozivom na metodu UVIJEK re-agregiramo podatke za prikazivanje i spremamo
-        ih u za to predvidjeni member.
+    def set_stanica(self, stanica):
         """
-        #nesto u ovom stilu
-        #self.trenutniAgregiraniFrejm = agregator.agregiraj(self.trenutniMinutniFrejm)
-        #self emit zahtjev za crtanjem satno agregiranih podataka
-        #provjeri da li je izlazni frame prazan, ovisno o tome emitiraj poruku da nema podataka
-        pass
-        
-    def nacrtaj_minutne(self, vrijeme):
-        """Priprema minutnih podataka za crtanje.
-        
-        ulaz:
-        vrijeme --> vrijeme agregiranog sata za koje nas zanimaju minutni podatci
-        
-        Crtanje minutnih podataka je moguce iskljucivo preko GUI-a (graf satno 
-        agregiranih podataka za neku stanicu-kanal-interval). To znaci da smo vec
-        dohvatili potrebne minutne podatke u memberu self.trenutniMinutniFrame.
-        Samo treba dohvatiti slice od [vrijeme-59 min : vrijeme]
+        Metoda mora napraviti sljedece:
+        -zapamti izbor stanice
+        -emitiraj listu dozvoljenih datuma za izbor stanice.
         """
-        #1.dohvati tocan slice minutnih frejmova
-        #2.podjeli frame na dva dijela (flag>=0, flag< 0)
-        #3.emitiraj dva frejma prema kontroleru
-        #provjeri da li je izlazni frame prazan, ovisno o tome emitiraj poruku da nema podataka
-        pass
-        
-    def promjena_flaga(self, flag, tMin, tMax):
-        """Promjena vrijednosti flaga u memberu self.trenutniMinutniFrame.
-        
-        ulaz:
-        flag --> int, nova vrijednost flaga, OK je svaki int >=0, ostalo se ignorira
-        tMin, tMax --> granice intervala gdje trebamo promjeniti flag
-        
-        Postupak:
-        -direktno promjeni flag unutar slicea minutnih podataka
-        -reagregiraj podatke
-        -nacrtaj satni
-        -nacrtaj minutni
-        """
-        pass
+        #zapamti izbor stanice
+        self.trenutnaStanica = stanica
+        #instanciraj DataStorage objekt ako vec ne postoji
+        if stanica not in self.spremljeni.keys():
+            self.spremljeni[stanica] = DataStorage(stanica)
 
+        #svi datumi koje je moguce dohvatiti citacem -- lista datuma
+        dostupniCitacu = self.dostupni[stanica]
+        #vec ucitani datumi -- lista datuma
+        ucitaniDatumi = self.ucitani[stanica]
+        
+        #TODO!
+        #da se direktno asignat u listu, trenutno odvojeno radi preglednosti
+        #EMIT - pazi sto salje i pod kojim nazivom
+        #emit informacije o dostupnim datumima za stanicu za GUI
+        self.emit(QtCore.SIGNAL('update_GUI_datumi(PyQt_PyObject)'), 
+                  [dostupniCitacu, ucitaniDatumi])
+        
+    def pripremi_podatke(self, stanica, datum):
+        """Priprema podataka za rad
+        
+        ulaz:
+        stanica --> stanica od interesa
+        datum --> datum od interesa
+        
+        Metoda zaprima zahtjev od GUI-a nakon izbora datuma (u ovom slucaju, 
+        opcenito izbora vremenskog intervala). Metoda ucitava nove podatke po
+        potrebi, i dodaje ih u DataStorage objekt za tu stanicu.
+        
+        GUI se treba pobrinuti za smislene zahtjeve!
+        """
+        self.trenutnaStanica = stanica
+        if datum in self.ucitani[stanica]:
+            #datum je predhodno ucitan za tu stanicu
+            #dohvati sve kanale koji postoje u ucitanim frejmovima
+            kanali = list(self.spremljeni[stanica].ucitaniFrejmovi.keys())
+        else:
+            #datum nije prethodno ucitan
+            #iskoristi citac da procitas podatke za datum
+            frejmovi = self.citac.citaj(stanica, datum)
+            #TODO!
+            #sredi validaciju ovdje, podaci trebaju biti auto-validirani
+            #prije unosa u DataStorage objekt
+            
+            #dodaj frejmove na DataStorage objekt koristeci dodaj 
+            self.spremljeni[stanica].dodaj_frejmove(datum, frejmovi)
+            #ponovno dohvati popis ucitanih datuma
+            self.ucitani[stanica] = self.spremljeni[stanica].ucitaniDatumi
+            #dohvati sve kanale koji postoje u ucitanim frejmovima
+            kanali = list(self.spremljeni[stanica].ucitaniFrejmovi.keys())
+            #novi emit za update kalendara            
+            #TODO!
+            #EMIT - isti kao i kod self.set_stanica lista[dostupni, ucitani]
+            self.emit(QtCore.SIGNAL('update_GUI_datumi(PyQt_PyObject)'), 
+                      [self.dostupni[stanica], self.ucitani[stanica]])
+        
+        #TODO!
+        #emit poopisa svih kanala u frejmovima
+        #EMIT - pazi sto se salje i pod kojim imenom signala
+        self.emit(QtCore.SIGNAL('update_GUI_kanali(PyQt_PyObject)'), 
+                  kanali)
+        
+    def pripremi_slice(self, stanica, datum, kanal):
+        """Priprema dnevnog slicea
+        
+        Metoda se poziva nakon izbora kanala u GUI-u
+        -sprema se informacija o trenutnom kanalu
+        -radi se slice podataka za odredjeni kanal i vremenski period i sprema se
+        u self.trenutniMinutniFrejm
+        -podatci se agregiraju i spremaju u self.trenutniAgregiraniFrejm
+        -poziva se metoda za crtanje satno agregiranih podataka
+        """
+        self.trenutniKanal = kanal
+        #TODO!
+        #konvert datum u [tmin, tmax] timestampove radi sliceanja
+        granice = None
+        self.trenutniMinutniFrame = self.spremljeni[stanica].dohvati_slice(kanal, granice)
+        #agregraj samo slice i spremi ga
+        #pozovi metodu za crtanje satnog grafa
+        

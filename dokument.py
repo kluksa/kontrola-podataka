@@ -83,7 +83,7 @@ class Dokument(QtGui.QWidget):
         self.__dostupniPodaci = {}
         self.__ucitaniPodaci ={}
         #dozvoliti mjenjanje agregatora i/ili validatora nekom setter metodom???
-        self.__agregator = agregator.Agregator2()
+        self.__agregator = agregator.Agregator()
         self.__validator = None
         self.__citac = None
 ###############################################################################

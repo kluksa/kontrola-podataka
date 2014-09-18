@@ -12,20 +12,19 @@ import re
 from functools import wraps
 
 ###############################################################################
-#def benchmark(func):
-#    """
-#    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
-#    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
-#    """
-#    import time
-#    @wraps(func)
-#    def wrapper(*args, **kwargs):
-#        t = time.clock()
-#        res = func(*args, **kwargs)
-#        print(func.__name__, time.clock()-t)
-#        return res
-#    return wrapper
-#
+def benchmark(func):
+    """
+    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
+    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
+    """
+    import time
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = time.clock()
+        res = func(*args, **kwargs)
+        print(func.__name__, time.clock()-t)
+        return res
+    return wrapper
 ###############################################################################
 ###############################################################################
 class WlReader(object):
@@ -214,4 +213,22 @@ class WlReader(object):
 ###############################################################################
 ###############################################################################            
 if __name__ == '__main__':
-    citac = WlReader('./data/')
+    #citac = WlReader('./data/')
+    @benchmark
+    def inicijalizacija_citaca(path):
+        return WlReader(path)
+        
+    citac = inicijalizacija_citaca('./data/')
+    print('\nSVI DOSTUPNI')    
+    print(citac.dohvati_sve_dostupne())
+    stanica = 'plitvicka jezera'
+    print('\nkljuc stanice:',stanica)
+    #treba mi datetime.date    
+    datum = '20140604' #pod tim kljucem ga krece citati
+    datum = pd.to_datetime(datum)
+    datum = datum.date()
+    print('\nkljuc datuma:',datum) #ovo se ocekuje kao imput iz drugih dijelova koda
+    print('\ncitanje fileova')    
+    frejmovi = citac.citaj(stanica, datum)
+    print(frejmovi['1-SO2-ppb'].head())
+    

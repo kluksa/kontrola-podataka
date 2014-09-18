@@ -536,3 +536,8 @@ class Dokument(QtGui.QWidget):
         #agregraj samo slice i spremi ga
         #pozovi metodu za crtanje satnog grafa
         
+        
+    #TODO!
+    #sredi crtanje satnog grafa
+    #sredi crtanje minutnog grafa
+    #sredi promjenu flaga

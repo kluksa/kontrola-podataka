@@ -5,11 +5,11 @@ Created on Fri Jul 11 08:44:06 2014
 
 @author: velimir
 """
-
+import sys
+import os
 import pandas as pd
 import re
 from functools import wraps
-
 
 ###############################################################################
 #def benchmark(func):
@@ -28,81 +28,168 @@ from functools import wraps
 #
 ###############################################################################
 ###############################################################################
-class WlReader:
-    """
-    Ova klasa odradjuje citanje weblogger csv fileova
+class WlReader(object):
+    """Ova klasa odradjuje citanje weblogger csv fileova iz nekog direktorija.
     
-    smo tri metode:
-    1. provjeri_headere
-    -test da li file dobar (dobra struktura i .csv)
-    -vraca True ako je sve u redu i file se moze citati, False inace
-    2. citaj
-    -za neki file (path) (ako je file dobar) ucitava csv u dictionary pandas
-    datafrejmova
-    -ako file nije dobar vraca None
-    3. citaj_listu
-    -za listu stringova (fileovi) vraca dictionary pandas datafrejmova (ako je sve ok)
-    -ako sve ne valja vraca None
-    -3a. provjerava da li mu je predata lista stringova (ako ne, vraca None)
-    -3b. pokusava naci valjani file i ucitati ga (ako ne nadje niti jedan, vraca None)
-    -3c. nakon sto ucita barem jedan file (treba mu zbog merge operacije) cita ostale
-    te ako nadje neki koji moze ucitati spaja ga sa postojecim frejmovima
+    Inicijalizira se sa nekim valjanim pathom.
     """
-    def __init__(self):
-        pass    
+    def __init__(self, path):
+        """Konstruktor klase"""
+        self.__direktorij = None
+        if os.path.isdir(path):
+            self.__direktorij = path
+        else:
+            raise IOError('Ne postoji zadani direktorij')
+        
+        self.__fileList =[]
+        self.__fileList_C = []
+        
+        self.__dostupni = {}
+        self.__files = {}
+
+        self.__get_files()
+        self.__nadji_dostupne()
+        
 ###############################################################################
-    def citaj(self, path):
+    def dohvati_sve_dostupne(self):
+        """Metoda vraca dictionary svih fileova koje zna procitati
+        
+        BITNA METODA ZA DOKUMENT
+        Izlaz je dictionary {'stanica':[lista datuma]}
         """
-        path = fullpath do filea
+        return self.__dostupni
+###############################################################################
+    def citaj(self, stanica, datum):
+        """
+        Metoda vraca frejmove svih fileova koji se nalaze pod kljucevima stanica, 
+        datum
+        
+        PAZI!!!
+        -kljuc datuma je formata string 'yyyymmdd'
+        -ulazni parametar datum je datetime.date objekt!
+        njegova string reprezentacija je 'yyyy-mm-dd'
+        """
+        #adapter za kljuc
+        date = str(datum)
+        date = date[0:4]+date[5:7]+date[8:]
+        #pozovi metodu da procita sve dostupne
+        frejmovi = self.__citaj_listu(self.__files[stanica][date])
+        
+        return frejmovi
+        
+###############################################################################
+    def __nadji_dostupne(self):
+        """Metoda sklapa mapu dostupnih podataka{stanica:[lista datuma]}"""
+        for stanica in self.__files:
+            temp = map(pd.to_datetime, list(self.__files[stanica].keys()))
+            datumi = []
+            for datum in temp:
+                datumi.append(datum.date())
+            self.__dostupni[stanica] = datumi
+###############################################################################
+    def __parsiraj(self, item):
+        """Pomocna funkcija za izradu mape dostupnih fileova
+        
+        Parser da dobijemo ime i datum uz filename. Razdvaja ime stanice od
+        datuma da bi dobili kljuceve za dictionary pod kojima spremamo lokaciju
+        filea.
+        """
+        item = item[0:len(item)-4]
+        loc = item.find('-')
+        stanica = item[:loc]
+        #TODO!
+        #malo nespretno..nadam se da su sve stanice pisane malim slovima
+        #inace npr. 'Zagreb_Centar20140915.csv' nece biti ukljucen
+        if stanica.find('_C') != -1:
+            stanica = stanica[0:len(stanica)-2]
+        datum = item[loc+1:loc+9]
+        return stanica, datum
+###############################################################################
+    def __napravi_mapu(self, data):
+        """Pomocna funkcija za izradu mape dostupnih fileova        
+        
+        Napravi mapu (dictionary) od ulaznih podataka
+        Izlaz je kompozitni dictionary:
+        Vanjski kljuc je ime stanice sa kojim je povezan dict datuma.
+        Svaki pojedini datum je kljuc pod kojim se nalazi lista svih fileova
+        """
+        stanice={}
+    
+        for file in data:
+            stanica,datum=self.__parsiraj(file)
+            
+            if stanica not in stanice:
+                stanice[stanica]={datum:[file]}
+            else:
+                if datum not in stanice[stanica]:
+                    stanice[stanica].update({datum:[file]})
+                else:
+                    stanice[stanica][datum].append(file)
+        return stanice
+###############################################################################
+    def __get_files(self):
+        """Metoda pronalazi sve valjane csv fileove u folderu
+        
+        Podatci o fileovima su spremljeni na sljedeci nacin:
+        Nested dictionary, {'stanica':datum}, {'datum':[csv files]}
+        """
+        #pronadji sve fileove u folderu s kojim je objekt inicijaliziran
+        allFiles = os.listdir(self.__direktorij)
+        #selektiraj sve fileove od interesa (one koje matchaju regexp)
+        for file in allFiles:
+            reMatch = re.match(r'.*-\d{8}.?.csv', file, re.IGNORECASE)
+            if reMatch:
+                if file.find(u'_C') == -1:
+                    self.__fileList.append(file)
+                else:
+                    self.__fileList_C.append(file)
+        #izrada kompozitnog dicta uz pomoc funkcije
+        self.__files = self.__napravi_mapu(self.__fileList)
+###############################################################################
+    def __citaj(self, file):
+        """
+        file = ime filea
         funkcija cita weblogger csv fileove u dictionary pandas datafrejmova
         """
-        if self.provjeri_headere(path):
-            df = pd.read_csv(
-                path, 
-                na_values = '-999.00', 
-                index_col = 0, 
-                parse_dates = [[0,1]], 
-                dayfirst = True, 
-                header = 0, 
-                sep = ',', 
-                encoding = 'iso-8859-1')
+        #dodaj aktivni direktorij ispred filea
+        path = os.path.join(self.__direktorij, file)
         
-            headerList = df.columns.values
-            frejmovi = {}
-            for i in range(0,len(headerList)-2,2):
-                colName = headerList[i]
-                frejmovi[colName] = df.iloc[:,i:i+2]
-                frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
-                frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
-            return frejmovi
-        else:
-            #vraca None
-            return
+        #ucitaj csv file
+        df = pd.read_csv(
+            path, 
+            na_values = '-999.00', 
+            index_col = 0, 
+            parse_dates = [[0,1]], 
+            dayfirst = True, 
+            header = 0, 
+            sep = ',', 
+            encoding = 'iso-8859-1')
+        
+        #skloi frejmove za sve kanale
+        headerList = df.columns.values
+        frejmovi = {}
+        for i in range(0,len(headerList)-2,2):
+            colName = headerList[i]
+            frejmovi[colName] = df.iloc[:,i:i+2]
+            frejmovi[colName][u'flag'] = pd.Series(0, index = frejmovi[colName].index)
+            frejmovi[colName].columns = [u'koncentracija', u'status', u'flag']
+        
+        return frejmovi
 
 ###############################################################################
-    def citaj_listu(self, pathLista):
+    def __citaj_listu(self, pathLista):
         """
         pathLista = lista svih pathova za otvaranje
         INPUT - lista stringova
         funkcija cita listu weblogger csv fileova u dictionary pandas datafrejmova
         """
-        #vrati None ako su ulazni parametri krivi
-        if (type(pathLista) != type ([])) or (len(pathLista) == 0):
-            return None
-        
-        #ucitaj prvi valjani csv file, mici s liste one koji se ne ucitavaju
-        while len(pathLista) != 0:
-            file = pathLista.pop(0)
-            frejmovi = self.citaj(file)
-            if frejmovi != None:
-                break            
-        else:
-            return None
-        
+        #ucitaj prvi file
+        file = pathLista.pop(0)
+        frejmovi = self.__citaj(file)
         
         #petlja koja ucitava ostale fileove u listi (lista je sada kraca)
         for file in pathLista:
-            frejmoviTemp = self.citaj(file)
+            frejmoviTemp = self.__citaj(file)
             if frejmoviTemp != None:
                 #kod za spajanje datafrejma
                 for key in frejmoviTemp.keys():
@@ -122,114 +209,9 @@ class WlReader:
                     else:
                         #ako ne postoji kljuc (novi stupac) - dodaj novi frame
                         frejmovi[key] = frejmoviTemp[key]
+        
         return frejmovi
 ###############################################################################
-    def provjeri_headere(self, path):
-        """
-        Testna funkcija za provjeru headera csv filea na lokaciji path.
-        Ne koristim dataframe headere, direktno citam prvi redak iz filea!
-            - ne treba ucitati cijeli file i upisati ga u dataframe za test
-            - u headeru iz datafrejma nema Date, Time (to je index stupac Date_Time)
-            
-        OK struktura je:
-        Date,Time,mjerenje1,status1,...mjerenjeN,statusN,Flag,Zone
-        
-        Vraca True ako je struktura dobra, inace vraca False cim naleti na neko odstupanje
-        """
-        try:
-            #test ulaznih podataka
-            if type(path) != type('string'):
-                return False
-            
-            ekstenzija = path[path.rfind('.')+1:]
-            if ekstenzija != 'csv':
-                return False
-            
-            file = open(path)
-            firstLine = file.readline()
-            file.close()
-            #makni \n na kraju linije
-            firstLine = firstLine[:-1]
-            headerList = firstLine.split(sep=',')
-            """
-            Index error moguc, dodan u exceptione:
-            1. file je prazan ---> headerList[1] ne postoji
-            2. file ima samo jedan column ---> headerList[1] ne postoji
-            """
-            #dio za provjeru prva dva stupca...('Date', 'Time')
-            if (headerList[0],headerList[1]) != ('Date', 'Time'):
-                return False
-            #dio za provjeru zadnja dva stupca... ('Flag', 'Zone')
-            if (headerList[-2],headerList[-1]) != ('Flag','Zone'):
-                return False
-            #svi parni stupci moraju biti razliciti od "status"
-            for i in range(2,len(headerList)-2,2):
-                statusMatch = re.search(r'status', headerList[i], re.IGNORECASE)
-                if statusMatch:
-                    return False
-            #svi neparni stupci moraju biti "status"
-            for i in range(3,len(headerList)-2,2):
-                statusMatch = re.search(r'status', headerList[i], re.IGNORECASE)
-                if not statusMatch:
-                    return False
-            return True    
-        except IOError:
-            #generalini input / output fail
-            return False
-        except IndexError:
-            #problem kod indeksiranja praznog filea
-            return False
-###############################################################################
-            
+###############################################################################            
 if __name__ == '__main__':
-    test1 = WlReader()
-#    #header test
-#    print('\ntest nepostojeceg filea')
-#    x = test1.provjeri_headere('./data/pj123.csv')
-#    print('\ntest postojeceg filea, pravilne strukture')
-#    y = test1.provjeri_headere('./data/pj.csv')
-#    print('\ntest postojeceg filea, nepravilne strukture')
-#    print('pogreska u Time, jednom statusu, jedom mjerenju')
-#    z = test1.provjeri_headere('./data/pj_corrupted.csv')
-#    print('\ntest postojeceg filea, praznog')
-#    k = test1.provjeri_headere('./data/pj_empty.csv')
-#    print('\ntest postojeceg filea krive ekstenzije')
-#    l = test1.provjeri_headere('./data/pjtest.txt')
-#    #citaj test
-#    data1 = test1.citaj('./data/pj.csv')
-#    data2 = test1.citaj('./data/pj123.csv')
-#    data3 = test1.citaj('./data/pj_corrupted.csv')
-#    data4 = test1.citaj('./data/pj_empty.csv')
-#    #citaj_listu test
-#    """
-#    Napravio par mock csv fileova da "rucno" provjerim join/merge liste
-#    Jedini "problem" je u cinjenici da spaja frame po frame, sto ima jednu caku.
-#    Frejmovi su dobro spojeni, ali ovisno o ulaznim fileovima nisu svi iste duljine.
-#
-#    - Pojedini frame nezna kako je drugi frame indeksiran
-#    - Indeksi su istog formata, ali ako mjerenja komponente pocinju od 15:00
-#    u frameu nece biti indeksa od 00:00 do 14:59 sa np.NaN vrijednostima (osim 
-#    ako nisu eksplicitno zadana u csv fileu)
-#    
-#    Sve u biti ovisi o ulaznim fileovima...
-#    """
-#    data5 = test1.citaj_listu([
-#        './data/nepostojeci.csv', 
-#        './data/pj-20140715A.csv', 
-#        './data/pj-20140715B.csv', 
-#        './data/pj_corrupted.csv', 
-#        './data/pj-20140715C.csv', 
-#        './data/pj-20140715D.csv'])
-#    if len(data5['1-SO2']) == len(data5['PM1']):
-#        print('Broj indeksa je jednak')
-#    else:
-#        print('Broj indeksa u oba frejma je razlicit')    
-#    #totalno krivi ulazni podatci
-#    data6 = test1.citaj_listu([
-#        './data/nepostojeci.csv', 
-#        './data/pj_corrupted.csv', 
-#        './data/pjtest.txt', 
-#        ['samo', 'test', 'kriminalno', 'loseg', 'unosa'], 
-#        {'ovo':'nema smisla'}, 
-#        12, 
-#        3.1442])
+    citac = WlReader('./data/')

@@ -4,21 +4,33 @@ Created on Apr 21, 2014
 
 @author: kraljevic
 '''
-import sys
 import pandas as pd
 import numpy as np
 
 from PyQt4 import QtGui,QtCore
-from datetime import timedelta
 
-import uredjaj
 import agregator
-import auto_validacija
 
 class Dokument(QtGui.QWidget):
     """Sprema ucitane podatke, obradjuje ih te odgovara na zahtjeve kontrolora
     
     -sublkasa QWidgeta zbog emit metode
+    
+    INTERFACE:
+    metode koje se "smiju" pozivati iz drugih modula:
+    -self.dohvati_dostupne_podatke()
+    -self.set_citac(citac)
+    -self.dohvati_podatke(stanica, kanal, tMin, tMax)
+    -self.update_frejm(stanica, kanal)
+    
+    komunikacija sa drugim objektima izvrsava se indirektno preko Qt signala
+    opis signala:
+    1. 'dokument_dostupni_frejmovi(PyQt_PyObject)'
+        -odaziv funkcije self.dohvati_dostupne_podatke
+        -prenosi dictionary {'stanica':[lista dostupnih datuma]}
+    2. 'dokument_trazeni_frejmovi(PyQt_PyObject)'
+        -odaziv funkcije self.dohvati_podatke
+        -prenosi listu sa dva pandas datafrejma [slice minutnih, slice agregiranih]  
     """
 ###############################################################################
     def __init__(self,parent=None):
@@ -145,15 +157,15 @@ class Dokument(QtGui.QWidget):
                     #ako se nalazi medju dostupnim podatcima
                     #ucitaj sve frejmove za zadani datum sa citacem
                     #TODO!
-                    #citac nije implementiran do kraja
+                    #CITAC NIJE IMPLEMENTIRAN DO KRAJA
                     frejmovi = self.__citac.citaj(stanica, datum)
 
                     #TODO!
-                    #validator nije implementiran....sredi ga ovdje
+                    #VALIDATOR NIJE IMPLEMENTIRAN....sredi ga ovdje
                     #self.__validator.validiraj(frejmovi)
                     
                     #dodaj ucitane frejmove na "glavni frame"
-                    self.dodaj_nove_frejmove(stanica, frejmovi)
+                    self.__dodaj_nove_frejmove(stanica, frejmovi)
                     #stavi datum na popis ucitanih
                     if stanica in list(self.__ucitaniPodaci.keys()):
                         self.__ucitaniPodaci[stanica].append[datum]
@@ -167,7 +179,7 @@ class Dokument(QtGui.QWidget):
         #4.
         #iskoristi agregator da dobijes agregirani frejm
         #TODO!
-        #agregator nije implementiran do kraja
+        #AGREGATOR NIJE IMPLEMENTIRAN DO KRAJA
         self.__trenutniAgregiraniSlice = self.__agregator.agregiraj(self._trenutniMinutniSlice)
         
         #5. update stanje dokumenta, argumente zadnjeg zahtjeva za podacima
@@ -176,12 +188,24 @@ class Dokument(QtGui.QWidget):
         self.__tMin = tMin
         self.__tMax = tMax
         
-        #6
+        #6.
         #zapakiraj podatke
         data = [self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice]
         #emit trazenih podataka izvan dokumenta
         self.emit(QtCore.SIGNAL('dokument_trazeni_frejmovi(PyQt_PyObject)'),
                   data)
+###############################################################################
+    def update_frejm(self, stanica, kanal, frejm):
+        """Nadodaje ili updatea jedan pandas datafame
+        
+        Metoda se primarno koristi kada neki drugi objekt zeli "pohraniti"
+        izmjene frejma.
+        """
+        #zapakiraj frame u frejmove
+        frejmovi = {}
+        frejmovi[kanal]=frejm
+        #pozovi funkciju koja ce dodati/izmjeniti frejmove
+        self.__dodaj_nove_frejmove(stanica, frejmovi)
 ###############################################################################
     def __get_slice(self, stanica, kanal, tMin, tMax):
         """
@@ -204,7 +228,7 @@ class Dokument(QtGui.QWidget):
         #vrati dobiveni slice
         return df
 ###############################################################################
-    def dodaj_nove_frejmove(self, stanica, frejmovi):
+    def __dodaj_nove_frejmove(self, stanica, frejmovi):
         """Metoda dodaje/updatea postojece frejmove u dokumentu
         
         Pomocna metoda za dodavanje frejmova u dokument
@@ -235,6 +259,10 @@ class Dokument(QtGui.QWidget):
                 #slucaj kada dodajemo novi kanal
                 self.__stanice[stanica][kanal] = frejmovi[kanal]
 ###############################################################################
+###############################################################################
+"""
+Za sada sve ispod je tehnicki visak, izbrisi nakon sto app proradi kako spada
+"""
 
         
 #        self.frejmovi={}
@@ -277,7 +305,7 @@ class Dokument(QtGui.QWidget):
 #        self.aktivniFrame = str(kljuc)
 #
 #        self.crtaj_satni_graf(self.aktivniFrame)
-#        
+#        self.__dostupniPodaci 
 #        #emitiraj novi status
 #        message = 'Promjena kanala. Trenutni kanal : {0}'.format(self.aktivniFrame)
 #        self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'), message)

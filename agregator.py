@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 Agregator dio
-"""
 
+
+"""
 import pandas as pd
 import numpy as np
 
-from functools import wraps
+#sluzi samo za lokalnu provjeru modula
 import citac
 
-def benchmark(func):
-    """
-    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
-    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
-    """
-    import time
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t = time.clock()
-        res = func(*args, **kwargs)
-        print(func.__name__, time.clock()-t)
-        return res
-    return wrapper
 
 class Agregator(object):
     """
@@ -31,18 +19,30 @@ class Agregator(object):
     """
     def h_q05(self, x):
         #5 percentil podataka
+        if len(x) == 0:
+            #za prazni interval, vrati NaN vrijednost
+            return np.NaN
         return np.percentile(x,5)
         
     def h_q50(self, x):
         #median
+        if len(x) == 0:
+            #za prazni interval, vrati NaN vrijednost
+            return np.NaN
         return np.percentile(x,50)
         
     def h_q95(self, x):
         #95 percentil podataka
+        if len(x) == 0:
+            #za prazni interval, vrati NaN vrijednost
+            return np.NaN
         return np.percentile(x,95)
     
     def h_binary_or(self, x):
         #binarni or liste
+        if len(x) == 0:
+            #za prazni interval, vrati NaN vrijednost
+            return np.NaN
         result = 0
         for i in x:
             result = result | int(i)
@@ -50,8 +50,11 @@ class Agregator(object):
         
     def h_size(self, x):
         #broj podataka
+        if len(x) == 0:
+            #za prazni interval, vrati NaN vrijednost
+            return np.NaN
         return len(x)
-        
+    
     def agregiraj_kanal(self, frejm):
         """
         input- pandasdataframe (datetime index, koncentracija, status, flag)
@@ -62,9 +65,13 @@ class Agregator(object):
         """
         ukupni broj podataka koji postoje
         """
+        #izbaci sve indekse gdje je koncentracija NaN
         df = frejm[np.isnan(frejm[u'koncentracija']) == False]
+        
         tempDf = df.copy()
+        #uzmi samo pandas series koncentracije
         dfKonc = tempDf[u'koncentracija']
+        #resample series, prebroji koliko ima podataka
         temp = dfKonc.resample('H', how = self.h_size)
         agregirani[u'broj podataka'] = temp
         
@@ -102,6 +109,14 @@ class Agregator(object):
             agregirani[temp.name] = temp
         
         """
+        ???
+        -iz agregiranih makni sve gdje je broj podataka np.NaN
+        -desava se kada nedostaju mjerenja u sredini intervala
+        """
+        
+        agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
+        
+        """
         -provjeri da li je broj valjanih podataka sa flagom vecim od 0 veci od 45
         -ako nije... flagaj interval kao nevaljan...umetni placeholder vrijednosti
         """
@@ -117,7 +132,6 @@ class Agregator(object):
                
         return agregirani
         
-    
     def agregiraj(self, frejmovi):
         """
         agregiraj rezultat kanal po kanal i spremaj u dict
@@ -129,99 +143,6 @@ class Agregator(object):
             
         return rezultat
 
-"""
-Kada si siguran da komentirani kod ispod nije potreban, izbrisi ga
-"""
-#class Agregator(object):
-#    
-#    uredjaji=[]
-#
-#    def __init__(self, uredjaji):
-#        self.uredjaj = uredjaji
-#        
-#    def dodajUredjaj(self, uredjaj):
-#        self.uredjaji.append(uredjaj)
-#        
-#            
-#    def setDataFrame(self, df):
-#        self.__df = df
-#        self.pocetak = df.index.min()+pd.DateOffset(hours=1) 
-#        self.kraj = df.index.max()
-#        self.sviSati=pd.date_range(self.pocetak, self.kraj, freq='H')
-#    
-#    def agreg(self, kraj):
-#        #modifikacija get slice kopira direktno, bez flag testa
-#        dds=self.getSlajs(kraj)
-#        
-#        #test da li su svi not nan flagovi negativni
-#        ddNan=dds[pd.isnull(dds[u'koncentracija'])==False]
-#        ddFlag=ddNan[ddNan[u'flag']<0]
-#        if len(ddNan)==len(ddFlag):
-#            #svi not nan flagovi su negativni
-#            allFlagStatus=True
-#        else:
-#            allFlagStatus=False
-#        
-#        ddd=dds[dds[u'flag']>=0]
-#        avg=ddd.mean().iloc[0]
-#        std=ddd.std().iloc[0]
-#        max=ddd.max().iloc[0]
-#        min=ddd.min().iloc[0]
-#        med=ddd.quantile(0.5).iloc[0]
-#        q95=ddd.quantile(0.05).iloc[0]
-#        q05=ddd.quantile(0.95).iloc[0]
-#        count=ddd.count().iloc[0]
-#            
-#        status=0
-#        for i in ddd[u'status']:
-#            try:
-#                status|=int(i)
-#            except ValueError:
-#                status|=int(0)
-#        
-#        #prikazi druge podatke ako su svi flagovi manji od nule jer ddd je prazan
-#        if allFlagStatus:
-#            #prikazi agregat cijelog slajsa?
-#            avg=dds.mean().iloc[0]
-#            std=dds.std().iloc[0]
-#            max=dds.max().iloc[0]
-#            min=dds.min().iloc[0]
-#            med=dds.quantile(0.5).iloc[0]
-#            q95=dds.quantile(0.05).iloc[0]
-#            q05=dds.quantile(0.95).iloc[0]
-#            count=dds.count().iloc[0]
-#            
-#            status=0
-#            for i in dds[u'status']:
-#                try:
-#                    status|=int(i)
-#                except ValueError:
-#                    status|=int(0)
-#
-#        data = {'avg':avg,'std':std,'min':min,'max':max,'med':med,'q95':q95,
-#                'q05':q05,'count':count,'status':status,'flagstat':allFlagStatus}
-#        return kraj, data
-#    
-#    def getSlajs(self, kraj):
-#        pocetak= kraj-timedelta(minutes=59)
-## koristimo iskljucivo flagove, a ne statuse. Flagove odredjuje AutoValidacija
-#        #return self.__df[pocetak:kraj][self.__df['flag']>0]
-#        return self.__df[pocetak:kraj]
-#    @benchmark
-#    def agregirajNiz(self):
-#        niz = []
-#        for sat in self.sviSati:
-#        	vrijeme, vrijednost = self.agreg(sat)
-#        	niz.append(vrijednost)
-#        return pd.DataFrame(niz, self.sviSati)
-#        
-#    def nizNiz(self):
-#        niz = []
-#        for sat in self.sviSati:
-#            fr = self.getSlajs(sat).iloc[:,0]
-#            niz.append(fr)
-#        return niz
-    
 
 if __name__ == "__main__":
     citac = citac.WlReader('./data/')
@@ -233,35 +154,11 @@ if __name__ == "__main__":
     frejmovi = citac.citaj(stanica, datum)
     #jedan frejm    
     frejm = frejmovi['1-SO2-ppb']
+    #frejm = frejmovi['49-O3-ug/m3']
     
     #Inicijaliziraj agregator
     agregator = Agregator()
-    #agregiraj
-    #TODO!
-    #FIX... iskocio je neki bizarni bug sa agregatorom
+    
+    #agregiraj frejm
     agregirani = agregator.agregiraj_kanal(frejm)
-    
-    
-#    data = citac.WlReader().citaj('./data/pj.csv')
-#    u1 = uredjaj.M100E()
-#    u2 = uredjaj.M100C()
-#    u1.pocetak=datetime(2000,1,1)
-#    u2.pocetak=datetime(2014,2,24,0,10)
-#    u1.kraj=datetime(2014,2,24,0,10)
-#    u2.kraj=datetime(2015,1,1)
-#    
-#    a = auto_validacija.AutoValidacija()
-#    a.dodaj_uredjaj(u2)
-#    a.dodaj_uredjaj(u1)
-#    a.validiraj(data['1-SO2-ppb'])
-#    
-#    ag = Agregator([u1,u2])
-#    ag.setDataFrame(data['1-SO2-ppb'])
-#    agregirani = ag.agregirajNiz()
-#    nizNizova = ag.nizNiz()
-#    
-#    plt.boxplot(nizNizova)
-#    plt.plot(agregirani['avg'])
-#    plt.plot(agregirani['q05'])
-#    plt.plot(agregirani['q95'])
-#    plt.show()
+    print(agregirani)

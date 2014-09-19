@@ -14,6 +14,45 @@ from PyQt4 import QtGui,QtCore
 import pandas as pd
 from datetime import timedelta
 
+
+class Kontrola(QtGui.QWidget):
+    """Instanca kontrolera aplikacije
+    
+    Kontrolira tjek izvodjenja operacija izmedju GUI-a i Dokumenta.
+    Pohranjuje trenutno aktivne podatke radi brzeg dohvacanja.
+    
+    Uspjesno se inicijalizira tek kada mu se prosljedi instanca gui-a i instanca
+    dokumenta. Mora znati koje elemente povezuje.
+    """
+    def __init__(self, parent = None, gui = None, model = None):
+        """Konstruktor klase"""
+        QtGui.QWidget.__init__(self, parent)
+        #TODO!
+        #provjeri inicijalizaciju konstruktora
+        
+        #memberi koji prate trenutno stanje tj.sto se trenutno prikazuje
+        self.__trenutnaStanica = None
+        self.__trenutniKanal = None
+        self.__trenutniMinutniSlice = None
+        self.__trenutniAgregiraniSlice = None
+        self.__tMin = None
+        self.__tMax = None
+        self.__dostupni = None
+        
+        """
+        Povezivanja Dokument --> Kontrola
+        -tj. svi signali koje dokument salje prema kontroloru i kako se odradjuju
+        """
+        #dohvacanje dostupnih frejmova
+        self.connect(model, 
+                     QtCore.SIGNAL('dokument_dostupni_frejmovi(PyQt_PyObject)'),
+                     self.funkcija1)
+                     
+    def prihvati_dostupne(self, data):
+        """Prihvacanje mape dostupnih podataka iz dokumenta."""
+        self.__dostupni = data
+
+
 class Mediator(QtGui.QWidget):
     """
     Pokusaj implementacije Mediator patterna

@@ -4,28 +4,13 @@
 Created on Fri Jul 11 08:44:06 2014
 
 @author: velimir
+
 """
-import sys
+
 import os
 import pandas as pd
 import re
-from functools import wraps
 
-###############################################################################
-def benchmark(func):
-    """
-    Dekorator, izbacuje van ime i vrijeme koliko je funkcija radila
-    Napisi @benchmark odmah iznad definicije funkcije da provjeris koliko je brza
-    """
-    import time
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t = time.clock()
-        res = func(*args, **kwargs)
-        print(func.__name__, time.clock()-t)
-        return res
-    return wrapper
-###############################################################################
 ###############################################################################
 class WlReader(object):
     """Ova klasa odradjuje citanje weblogger csv fileova iz nekog direktorija.
@@ -73,7 +58,6 @@ class WlReader(object):
         date = date[0:4]+date[5:7]+date[8:]
         #pozovi metodu da procita sve dostupne
         frejmovi = self.__citaj_listu(self.__files[stanica][date])
-        
         return frejmovi
         
 ###############################################################################
@@ -150,6 +134,26 @@ class WlReader(object):
         file = ime filea
         funkcija cita weblogger csv fileove u dictionary pandas datafrejmova
         """
+        #TODO!
+        #pd.read_csv() moze napraviti hrpu "soft" pogresaka. npr.
+        #1. Da li header uopce postoji?
+        #2. Da li je prvi stupac "Date" drugi stupac "Time"
+        #3. Koji je tocno encoding.
+        #4. Da se postuje redosljed podataka (koncentracija, status)
+        #problem je sto dobar dio tih pogresaka nece raisati exceptione, ali
+        #ce temeljito zaribati izlazne frejmove.
+        
+        #TODO!
+        #neki config da ne citamo hrpu nepotrebnih kanala vec da ciljano nadjemo
+        #one od interesa? Nece znacajno ubrzati citac, ali necemo zauzimati memoriju
+        #sa nepotrebnim podatcima.
+        
+        #TODO!
+        #dodati stupac "validiran" u izlazni frejm???
+        #inicijalno = 0
+        #nakon auto validacije = 1
+        #nakon manualne validacije = 2
+        
         #dodaj aktivni direktorij ispred filea
         path = os.path.join(self.__direktorij, file)
         
@@ -212,13 +216,8 @@ class WlReader(object):
         return frejmovi
 ###############################################################################
 ###############################################################################            
-if __name__ == '__main__':
-    #citac = WlReader('./data/')
-    @benchmark
-    def inicijalizacija_citaca(path):
-        return WlReader(path)
-        
-    citac = inicijalizacija_citaca('./data/')
+if __name__ == '__main__':       
+    citac = WlReader('./data/')
     print('\nSVI DOSTUPNI')    
     print(citac.dohvati_sve_dostupne())
     stanica = 'plitvicka jezera'

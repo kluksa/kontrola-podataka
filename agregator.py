@@ -12,6 +12,13 @@ import citac
 
 
 class Agregator(object):
+    def __init__(self):
+        """
+        mozda u buducnosti dozvoliti iniicjalizaciju nekih parametara.
+
+        """
+        pass
+    
     """
     def pomocnih funkcija za agregator
     ulaz --> numpy array ili neka lista
@@ -60,6 +67,11 @@ class Agregator(object):
         input- pandasdataframe (datetime index, koncentracija, status, flag)
         output - pandas dataframe (datetime index, hrpa agregiranih vrijednosti)
         """
+        #provjera da li ulazni frame ima podataka
+        #tj. postupak u slucaju da agregatoru netko prosljedi prazan slice
+        if len(frejm) == 0:
+            return None
+        
         agregirani = pd.DataFrame()
         
         """
@@ -72,7 +84,7 @@ class Agregator(object):
         #uzmi samo pandas series koncentracije
         dfKonc = tempDf[u'koncentracija']
         #resample series, prebroji koliko ima podataka
-        temp = dfKonc.resample('H', how = self.h_size)
+        temp = dfKonc.resample('H', how = self.h_size, closed = 'right', label = 'right')
         agregirani[u'broj podataka'] = temp
         
         """
@@ -80,7 +92,7 @@ class Agregator(object):
         """
         tempDf = df.copy()
         dfStatus = tempDf[u'status']
-        temp = dfStatus.resample('H', how = self.h_binary_or)
+        temp = dfStatus.resample('H', how = self.h_binary_or, closed = 'right', label = 'right')
         agregirani[u'status'] = temp
         
         """
@@ -104,7 +116,7 @@ class Agregator(object):
         """
         for i in list(range(len(listaFunkcija))):
             temp = tempDf.copy()
-            temp = temp.resample('H', how = listaFunkcija[i])
+            temp = temp.resample('H', how = listaFunkcija[i], closed = 'right', label = 'right')
             temp.name = listaFunkcijaIme[i]
             agregirani[temp.name] = temp
         
@@ -158,7 +170,22 @@ if __name__ == "__main__":
     
     #Inicijaliziraj agregator
     agregator = Agregator()
-    
+    #frejm = pd.DataFrame()
+    #print(frejm)
     #agregiraj frejm
     agregirani = agregator.agregiraj_kanal(frejm)
     print(agregirani)
+    
+    #random sample da provjerim valjanost agregiranja
+    #barem sto se tice slicea i rubova istih
+    test = frejm.loc['2014-06-04 04:01:00':'2014-06-04 05:00:00','koncentracija']
+    avg_test = np.mean(test)
+    res_test = agregirani.loc['2014-06-04 05:00:00','avg']
+    
+    print('treba biti True, ako je sve u redu')
+    print(avg_test == res_test)
+    
+    #test ponasanja ako agregator dobije prazan slice
+    test_prazan = pd.DataFrame()
+    test_agreg = agregator.agregiraj_kanal(test_prazan)
+    

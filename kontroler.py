@@ -29,7 +29,9 @@ class Kontrola(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         #TODO!
         #provjeri inicijalizaciju konstruktora
-        
+        self.__gui = gui
+        self.__model = model
+        self.__citac = None
         #memberi koji prate trenutno stanje tj.sto se trenutno prikazuje
         self.__trenutnaStanica = None
         self.__trenutniKanal = None
@@ -37,21 +39,53 @@ class Kontrola(QtGui.QWidget):
         self.__trenutniAgregiraniSlice = None
         self.__tMin = None
         self.__tMax = None
-        self.__dostupni = None
         
-        """
-        Povezivanja Dokument --> Kontrola
-        -tj. svi signali koje dokument salje prema kontroloru i kako se odradjuju
-        """
-        #dohvacanje dostupnih frejmova
-        self.connect(model, 
-                     QtCore.SIGNAL('dokument_dostupni_frejmovi(PyQt_PyObject)'),
-                     self.funkcija1)
-                     
-    def prihvati_dostupne(self, data):
-        """Prihvacanje mape dostupnih podataka iz dokumenta."""
-        self.__dostupni = data
+        """Povezivanje GUI --> Kontrola"""
+        #TODO!
+        #1. IZBOR CITACA (ili promjena)
+        self.connect(self.__gui,
+                     QtCore.SIGNAL('set_citac(PyQt_PyObject)'),
+                     self.set_citac)
+        #2. IZBOR STANICE 
+        #3. IZBOR DATUMA (dozvoliti neki opceniti izbor raspona, min max ?)
+        #4. IZBOR KANALA
+        #5. INTERAKCIJA SA GRAFOM AGREGIRANIH PODATAKA
+        #6. INTERAKCIJA SA GRAFOM MINUTNIH PODATAKA
+        """Povezivanje Kontrola --> Dokument"""
+        #TODO!
+        #1. ZAHTJEV ZA POSTAVLJANJEM NOVOG CITACA
+        #2. ZAHTJEV ZA MAPOM RASPOLOZIVIH PODATAKA
+        #3. ZAHTJEV ZA POPISOM KANALA ZA STANICU I DATUM
+        #4. ZAHTJEV ZA FREJMOVIMA (stanica, vrijeme, kanal)
+        #5. ZAHTJEV ZA SPREMANJEM PODATAKA
+        
+        """Povezivanja Dokument --> Kontrola"""
+        #TODO!
+        #1. ODGOVOR NA POSTAVLJANJE CITACA
+        #2. ODGOVOR, RASPOLOZIVI PODACI
+        #3. ODGOVOR, RASPOLOZIVI KANALI ZA STANICU I DATUM
+        #4. ODGOVOR, FREJMOVI
+        
+        """Povezivanje Kontrola --> GUI"""
+        #TODO!
+        #1. REFRESH LISTE STANICA
+        #2. REFRESH LISTE DATUMA (update kalendara)
+        #3. REFRESH LISTE KANALA
+        #4. REFRESH GRAFOVA (clear, davanje novih naredbi za crtanjem)
+        #5. INFORMATIVNE PORUKE (exceptions, warnings)
+        #6. PROMJENA IZGLEDA KURSORA TJEKOM RADA
 
+    def set_citac(self, citac):
+        """
+        Preuzima izabrani objekt citaca, prosljedjuje ga dokumentu
+        
+        Dokument je sadrzan u memberu self.__model
+        """
+        self.__citac = citac
+        self.__model.set_citac(citac)
+###############################################################################
+###############################################################################
+                     
 
 class Mediator(QtGui.QWidget):
     """

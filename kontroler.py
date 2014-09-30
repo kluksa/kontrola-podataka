@@ -19,70 +19,113 @@ class Kontrola(QtGui.QWidget):
     """Instanca kontrolera aplikacije
     
     Kontrolira tjek izvodjenja operacija izmedju GUI-a i Dokumenta.
-    Pohranjuje trenutno aktivne podatke radi brzeg dohvacanja.
     
     Uspjesno se inicijalizira tek kada mu se prosljedi instanca gui-a i instanca
     dokumenta. Mora znati koje elemente povezuje.
+    
+    job list:
+    1. na zahtjev gui-a postaviti citac u dokument
+    2. smisleno popunjavanje gui izbornika sa naredbama
+    3. dohvatiti tj. zatraziti od dokumenta podatke
+    4. update podataka po potrebi u dokumentu
+    5. pamtiti stanje zahtjeva
     """
-    def __init__(self, parent = None, gui = None, model = None):
+    def __init__(self, parent = None, gui = None, dokument = None):
         """Konstruktor klase"""
         QtGui.QWidget.__init__(self, parent)
-        #TODO!
-        #provjeri inicijalizaciju konstruktora
-        self.__gui = gui
-        self.__model = model
+        
+        if gui == None and dokument == None:
+            raise IOError('Pogresno inicijalizirani kontroler')
+        
+        #atributi
+        self.__dokument = dokument
         self.__citac = None
-        #memberi koji prate trenutno stanje tj.sto se trenutno prikazuje
+        self.__dostupni = None
         self.__trenutnaStanica = None
-        self.__trenutniKanal = None
-        self.__trenutniMinutniSlice = None
-        self.__trenutniAgregiraniSlice = None
-        self.__tMin = None
-        self.__tMax = None
-        
-        """Povezivanje GUI --> Kontrola"""
-        #TODO!
-        #1. IZBOR CITACA (ili promjena)
-        self.connect(self.__gui,
-                     QtCore.SIGNAL('set_citac(PyQt_PyObject)'),
-                     self.set_citac)
-        #2. IZBOR STANICE 
-        #3. IZBOR DATUMA (dozvoliti neki opceniti izbor raspona, min max ?)
-        #4. IZBOR KANALA
-        #5. INTERAKCIJA SA GRAFOM AGREGIRANIH PODATAKA
-        #6. INTERAKCIJA SA GRAFOM MINUTNIH PODATAKA
-        """Povezivanje Kontrola --> Dokument"""
-        #TODO!
-        #1. ZAHTJEV ZA POSTAVLJANJEM NOVOG CITACA
-        #2. ZAHTJEV ZA MAPOM RASPOLOZIVIH PODATAKA
-        #3. ZAHTJEV ZA POPISOM KANALA ZA STANICU I DATUM
-        #4. ZAHTJEV ZA FREJMOVIMA (stanica, vrijeme, kanal)
-        #5. ZAHTJEV ZA SPREMANJEM PODATAKA
-        
-        """Povezivanja Dokument --> Kontrola"""
-        #TODO!
-        #1. ODGOVOR NA POSTAVLJANJE CITACA
-        #2. ODGOVOR, RASPOLOZIVI PODACI
-        #3. ODGOVOR, RASPOLOZIVI KANALI ZA STANICU I DATUM
-        #4. ODGOVOR, FREJMOVI
-        
-        """Povezivanje Kontrola --> GUI"""
-        #TODO!
-        #1. REFRESH LISTE STANICA
-        #2. REFRESH LISTE DATUMA (update kalendara)
-        #3. REFRESH LISTE KANALA
-        #4. REFRESH GRAFOVA (clear, davanje novih naredbi za crtanjem)
-        #5. INFORMATIVNE PORUKE (exceptions, warnings)
-        #6. PROMJENA IZGLEDA KURSORA TJEKOM RADA
 
-    def set_citac(self, citac):
-        """
-        Preuzima izabrani objekt citaca, prosljedjuje ga dokumentu
+        #TODO!
+        #veze sa gui-em nisu podesene kako treba, provjeri objekte koji salju i
+        #primaju signale npr. gui.weblogger_izbornik
+        #popravi na kraju
+
+        #gui - set citac        
+        self.connect(gui, 
+                     QtCore.SIGNAL('gui_set_citac(PyQt_PyObject)'),
+                     self.set_citac)
         
-        Dokument je sadrzan u memberu self.__model
-        """
+        #setter stanica za gui
+        self.connect(self, 
+                     QtCore.SIGNAL('kontrola_set_stanice(PyQt_PyObject)'), 
+                     gui.set_stanice)
+        
+        #gui - izbor stanice
+        self.connect(gui,
+                     QtCore.SIGNAL('gui_izbor_stanice(PyQt_PyObject)'),
+                     self.postavi_datume)
+        #setter datuma za gui
+        self.connect(gui, 
+                     QtCore.SIGNAL('dostupni_datumi(PyQt_PyObject)'),
+                     gui.set_datumi)
+
+###############################################################################
+    def set_citac(self, citac):
+        """Postavljanje citaca u dokument"""
         self.__citac = citac
-        self.__model.set_citac(citac)
+        #poziv metode dokumenta da postavi citac
+        self.__dokument.set_citac(self.__citac)
+        #upit za dostupne podatke do kojih dokument moze doci
+        self.__dostupni = self.__dokument.dohvati_dostupne_podatke()
+        #update izbornik stanica u gui-u
+        stanice = sorted(list(self.__dostupni.keys()))
+        if stanice != []:
+            self.emit(QtCore.SIGNAL('kontrola_set_stanice(PyQt_PyObject)'), stanice)
+        else:
+            #TODO!
+            #neki info da nema dostupnih stanica, popup il nesto u tom stilu
+            pass
+###############################################################################
+    def postavi_datume(self, stanica):
+        """
+        Metoda signalizira gui-u koji su datumi dostupni za stanicu
+        """
+        def string_to_date(x):
+            return QtCore.QDate.fromString(x, 'yyyy-MM-dd')
+            
+        temp = []
+        datumi = []
+        #zapamti izbor stanice
+        self.__trenutnaStanica = stanica
+        
+        for i in map(str, self.__dostupni[stanica]):
+            temp.append(i)
+        
+        for i in map(string_to_date, temp):
+            datumi.append(i)
+        #emit list to gui
+        self.emit(QtCore.SIGNAL('dostupni_datumi(PyQt_PyObject)'), datumi)
+###############################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ###############################################################################
 ###############################################################################
                      

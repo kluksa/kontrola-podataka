@@ -22,15 +22,6 @@ class Dokument(QtGui.QWidget):
     -self.set_citac(citac)
     -self.dohvati_podatke(stanica, kanal, tMin, tMax)
     -self.update_frejm(stanica, kanal)
-    
-    komunikacija sa drugim objektima izvrsava se indirektno preko Qt signala
-    opis signala:
-    1. 'dokument_dostupni_frejmovi(PyQt_PyObject)'
-        -odaziv funkcije self.dohvati_dostupne_podatke
-        -prenosi dictionary {'stanica':[lista dostupnih datuma]}
-    2. 'dokument_trazeni_frejmovi(PyQt_PyObject)'
-        -odaziv funkcije self.dohvati_podatke
-        -prenosi listu sa dva pandas datafrejma [slice minutnih, slice agregiranih]  
     """
 ###############################################################################
     def __init__(self,parent=None):
@@ -104,10 +95,15 @@ class Dokument(QtGui.QWidget):
                 data[stanica] = []
             for datum in list(self.__ucitaniPodaci[stanica]):
                 data[stanica].append(datum)
-
-        #emit informacije o dostupnim kombinacijama stanica/datum
-        self.emit(QtCore.SIGNAL('dokument_dostupni_frejmovi(PyQt_PyObject)'), 
-                  data)
+        
+        return data
+###############################################################################
+    def dohvati_ucitane_kanale(self, stanica):
+        """
+        Za zadanu stanicu, vraca sve ucitane kanale
+        """
+        if stanica in self.__stanice.keys():
+            return sorted(list(self.__stanice[stanica].keys()))
 ###############################################################################
     def set_citac(self, citac):
         """Postavlja instancirani objekt citac u dokument
@@ -125,20 +121,17 @@ class Dokument(QtGui.QWidget):
         self.__citac = citac
         #provjeri do cega citac moze doci
         self.__dostupniPodaci = self.__citac.dohvati_sve_dostupne()
-        #javi promjenu o dostupnim podatcima preko dohvati_dostupne_podatke
-        self.dohvati_dostupne_podatke()
 ###############################################################################
-    def dohvati_podatke(self, stanica, kanal, tMin, tMax):
+    def pripremi_podatke(self, stanica, tMin, tMax):
         """Vrati trazeni slice glavnog datafrejma i satno agregirani slice
 
         dosta opsirna metoda, mora odraditi sljedece        
         1. provjeri da li trazeni raspon pokriva sve ucitane podatke
         2. po potrebi ucitaj sto nedostaje, validiraj te dodaj na "glavni frame"
-        3. dohvati slice minutnih podataka iz "glavnog frejma"
-        4. agregiraj
-        5. promjeni stanje dokumenta 
-        6. vrati trazeni rezultat
         """
+        self.__aktivnaStanica = stanica
+        self.__tMin = tMin
+        self.__tMax = tMax
         #1.
         #nadji raspon vremenskog intervala [tMin, tMax] izrazen kao lista dana
         raspon = []
@@ -156,8 +149,6 @@ class Dokument(QtGui.QWidget):
                 if datum in self.__dostupniPodaci[stanica]:
                     #ako se nalazi medju dostupnim podatcima
                     #ucitaj sve frejmove za zadani datum sa citacem
-                    #TODO!
-                    #CITAC NIJE IMPLEMENTIRAN DO KRAJA
                     frejmovi = self.__citac.citaj(stanica, datum)
 
                     #TODO!
@@ -171,29 +162,24 @@ class Dokument(QtGui.QWidget):
                         self.__ucitaniPodaci[stanica].append[datum]
                     else:
                         self.__ucitaniPodaci[stanica] = [datum]
-                    
-        #3.
-        #dohvati slice podataka i updateaj status
-        self.__trenutniMinutniSlice = self.__get_slice(stanica, kanal, tMin, tMax)
-        
-        #4.
-        #iskoristi agregator da dobijes agregirani frejm
-        #TODO!
-        #AGREGATOR NIJE IMPLEMENTIRAN DO KRAJA
-        self.__trenutniAgregiraniSlice = self.__agregator.agregiraj(self._trenutniMinutniSlice)
-        
-        #5. update stanje dokumenta, argumente zadnjeg zahtjeva za podacima
+
+    def dohvati_podatke(self, stanica, kanal, tMin, tMax):                    
+        """
+        metoda dohvaca slice, agregira
+        """
         self.__aktivnaStanica = stanica
         self.__aktivniKanal = kanal
         self.__tMin = tMin
         self.__tMax = tMax
         
-        #6.
-        #zapakiraj podatke
-        data = [self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice]
-        #emit trazenih podataka izvan dokumenta
-        self.emit(QtCore.SIGNAL('dokument_trazeni_frejmovi(PyQt_PyObject)'),
-                  data)
+        self.__trenutniMinutniSlice = self.__get_slice(stanica, kanal, tMin, tMax)
+        
+        #iskoristi agregator da dobijes agregirani frejm
+        self.__trenutniAgregiraniSlice = self.__agregator.agregiraj_kanal(self._trenutniMinutniSlice)
+                
+        #vrati minutni frejm i satno agregirani frejm
+        return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice
+                
 ###############################################################################
     def update_frejm(self, stanica, kanal, frejm):
         """Nadodaje ili updatea jedan pandas datafame

@@ -593,26 +593,31 @@ class ApplicationMain(QtGui.QMainWindow):
         Testni podaci, dictionary pandas datafrejmova koji je rezultat agregatora.
         Koristim istu strukturu podataka ali random vrijednosti
         """
-        reader = citac.WlReader()        
-        data = reader.citaj('pj.csv')
-        u1 = uredjaj.M100E()
-        u2 = uredjaj.M100C()
-        u1.pocetak=datetime(2000,1,1)
-        u2.pocetak=datetime(2014,2,24,0,10)
-        u1.kraj=datetime(2014,2,24,0,10)
-        u2.kraj=datetime(2015,1,1)
-        
-        a = auto_validacija.AutoValidacija()
-        a.dodaj_uredjaj(u2)
-        a.dodaj_uredjaj(u1)
-        a.validiraj(data['1-SO2-ppb'])
-        
-        ag = Agregator([u1,u2])
-        ag.setDataFrame(data['1-SO2-ppb'])
-        agregirani = ag.agregirajNiz()
+        reader = citac.WlReader('./data/')
+        datum=pd.to_datetime('2014-06-03')
+        datum=datum.date()        
+        data = reader.citaj('plitvicka jezera', datum)
+        data = data['1-SO2-ppb']
+        agregator = Agregator()
+        agregirani = agregator.agregiraj_kanal(data)
+#        u1 = uredjaj.M100E()
+#        u2 = uredjaj.M100C()
+#        u1.pocetak=datetime(2000,1,1)
+#        u2.pocetak=datetime(2014,2,24,0,10)
+#        u1.kraj=datetime(2014,2,24,0,10)
+#        u2.kraj=datetime(2015,1,1)
+#        
+#        a = auto_validacija.AutoValidacija()
+#        a.dodaj_uredjaj(u2)
+#        a.dodaj_uredjaj(u1)
+#        a.validiraj(data['1-SO2-ppb'])
+#        
+#        ag = Agregator([u1,u2])
+#        ag.setDataFrame(data['1-SO2-ppb'])
+#        agregirani = ag.agregirajNiz()
 
         #slapanje datafrejmova za minutni graf
-        df=data['1-SO2-ppb'].iloc[1:61,:]
+        df=data.iloc[1:61,:]
         dfKonc=df
         dfOk=df[df.loc[:,u'flag']>=0]
         dfNo=df[df.loc[:,u'flag']<0]

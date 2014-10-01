@@ -132,7 +132,7 @@ class Dokument(QtGui.QWidget):
         self.__aktivnaStanica = stanica
         self.__tMin = tMin
         self.__tMax = tMax
-        #1.
+
         #nadji raspon vremenskog intervala [tMin, tMax] izrazen kao lista dana
         raspon = []
         temp = pd.date_range(start = tMin, end = tMax, freq = 'D')
@@ -140,7 +140,6 @@ class Dokument(QtGui.QWidget):
             raspon.append(ind.date())
         #raspon sada sadrzi listu datuma, datetime.date objekata
         
-        #2.
         #ucitaj fileove po potrebi
         for datum in raspon:
             #za svaki datum u rasponu
@@ -162,7 +161,7 @@ class Dokument(QtGui.QWidget):
                         self.__ucitaniPodaci[stanica].append[datum]
                     else:
                         self.__ucitaniPodaci[stanica] = [datum]
-
+###############################################################################
     def dohvati_podatke(self, stanica, kanal, tMin, tMax):                    
         """
         metoda dohvaca slice, agregira

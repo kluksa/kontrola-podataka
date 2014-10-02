@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>400</height>
+    <width>218</width>
+    <height>330</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>218</width>
-    <height>400</height>
+    <height>330</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -100,9 +100,6 @@
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <widget class="QListWidget" name="uiFileList"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">

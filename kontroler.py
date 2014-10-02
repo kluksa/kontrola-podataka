@@ -53,64 +53,66 @@ class Kontrola(QtGui.QWidget):
         #veze sa gui-em nisu podesene kako treba, provjeri objekte koji salju i
         #primaju signale npr. gui.weblogger_izbornik
         #popravi na kraju
+        #TODO!
+        #sredi promjenu kursora tjekom ucitavanja isl...kao dekorator?
 
         #gui - set citac        
-        self.connect(gui, 
+        self.connect(gui.webLoggerIzbornik, 
                      QtCore.SIGNAL('gui_set_citac(PyQt_PyObject)'),
                      self.set_citac)
         
         #setter stanica za gui
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_set_stanice(PyQt_PyObject)'), 
-                     gui.nekicombobox.set_stanice)
+                     gui.webLoggerIzbornik.set_stanice)
         
         #gui - izbor stanice
-        self.connect(gui,
+        self.connect(gui.webLoggerIzbornik,
                      QtCore.SIGNAL('gui_izbor_stanice(PyQt_PyObject)'),
                      self.postavi_datume)
 
         #setter datuma za gui
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_dostupni_datumi(PyQt_PyObject)'),
-                     gui.nekicombobox.set_datumi)
+                     gui.webLoggerIzbornik.set_datumi)
         
         #gui - odabir datuma (direktno ili preko navigacijskih gumbi)
-        self.connect(gui,
+        self.connect(gui.webLoggerIzbornik,
                      QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject'), 
                      self.priredi_vremenski_raspon)
         
         #setter raspolozivih stanica za gui
         self.connect(self,
                      QtCore.SIGNAL('kontrola_raspolozivi_kanali(PyQt_PyObject)'),
-                     gui.nekicombobox.set_kanali)
+                     gui.webLoggerIzbornik.set_kanali)
                      
         #gui - izbor kanala (uz prethodno izabranu stanicu i datum), naredba za crtanje satnih
-        self.connect(gui, 
+        self.connect(gui.webLoggerIzbornik, 
                      QtCore.SIGNAL('gui_crtaj_satni_graf(PyQt_PyObject)'), 
                      self.crtaj_satni)
                      
         #gui - izbor na satnom grafu, naredba za crtanje minutnih podataka
-        self.connect(gui.satnicanvas,
+        self.connect(gui.canvasSatni,
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'),
                      self.crtaj_minutni)
                      
         #naredba gui dijelu za crtanje satnih podataka
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_crtaj_satni_frejm(PyQt_PyObject)'), 
-                     gui.nekicanvas.crtaj)
+                     gui.canvasSatni.crtaj)
                      
         #naredba gui dijelu za crtanje minutnih podataka
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_crtaj_minutni_frejm(PyQt_PyObject)'), 
-                     gui.nekicanvas.crtaj)
+                     gui.canvasMinutni.crtaj)
                      
         #gui - promjena flaga na satnom grafu
-        self.connect(gui.satnicanvas, 
+        self.connect(gui.canvasSatni, 
                      QtCore.SIGNAL('gui_promjena_flaga'), 
                      self.promjena_flaga)
 
         #gui - promjena flaga na minutnom grafu
-        self.connect(gui.minutnicanvas, 
+        self.connect(gui.canvasMinutni, 
                      QtCore.SIGNAL('gui_promjena_flaga'), 
                      self.promjena_flaga)
                      
@@ -151,18 +153,21 @@ class Kontrola(QtGui.QWidget):
         #emit list to gui
         self.emit(QtCore.SIGNAL('kontrola_dostupni_datumi(PyQt_PyObject)'), datumi)
 ###############################################################################
-    def priredi_vremenski_raspon(self, stanica, tMin, tMax):
+    def priredi_vremenski_raspon(self, data):
         """
         Funkcija naredjuje dokumentu da pripremi trazene podatke
         """
         #zapamti izbor
-        self.__trenutnaStanica = stanica
-        self.__tMin = tMin
-        self.__tMax = tMax
+        self.__trenutnaStanica = data[0]
+        self.__tMin = data[1]
+        self.__tMax = data[2]
         
         #naredba dokumentu da pripremi podatke (ucitava po potrebi)
-        self.__dokument.pripremi_podatke()
-        self.__dostupniKanali = self.__dokument.dohvati_ucitane_kanale(stanica)
+        self.__dokument.pripremi_podatke(self.__trenutnaStanica,
+                                         self.__tMin, 
+                                         self.__tMax)
+                                         
+        self.__dostupniKanali = self.__dokument.dohvati_ucitane_kanale(self.__trenutnaStanica)
         
         #emit novih podataka o kanalima
         self.emit(QtCore.SIGNAL('kontrola_raspolozivi_kanali(PyQt_PyObject)'), self.__dostupniKanali)

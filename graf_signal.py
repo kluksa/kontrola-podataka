@@ -9,31 +9,72 @@ Izdvajanje grafova u pojedine klase. Dodana je mini aplikacija za funkcionalno t
 
 #import statements
 import sys
+import matplotlib
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from matplotlib.widgets import SpanSelector
-
+import datetime
+from datetime import timedelta
 from PyQt4 import QtGui,QtCore
 import pandas as pd
-import numpy as np
-from datetime import timedelta
-
-
-from datetime import datetime
+#from matplotlib.widgets import SpanSelector
+#import numpy as np
+#from datetime import datetime
 import citac
 from agregator import Agregator
-import uredjaj
-import auto_validacija
 
+
+def zaokruzi_vrijeme(dt_objekt, nSekundi):
+    """
+    Funkcija zaokruzuje na najblize vrijeme zadano sa nSekundi
+    dt_objekt -> ulaz je datetime.datetime objekt
+    nSekundi -> broj sekundi na koje se zaokruzuje, npr.
+        60 - minuta
+        3600 - sat
+    
+    izlaz je datetime.datetime objekt ili None (po defaultu)
+    """
+    if dt_objekt == None:
+        return
+    else:
+        tmin = datetime.datetime.min
+        delta = (dt_objekt - tmin).seconds
+        zaokruzeno = ((delta + (nSekundi / 2)) // nSekundi) * nSekundi
+        izlaz = dt_objekt + timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
+        return izlaz
+
+###############################################################################
+class MPLCanvas(FigureCanvas):
+    """
+    matplotlib canvas class, generalni
+    -overloadaj metodu crtaj sa specificnim naredbama
+    """
+    def __init__(self, parent = None, width = 6, height = 5, dpi=100):
+        self.fig = Figure(figsize = (width, height), dpi = dpi)
+        self.axes = self.fig.add_subplot(111)
+        FigureCanvas.__init__(self, self.fig)
+        self.setParent(parent)
+        FigureCanvas.setSizePolicy(
+            self,
+            QtGui.QSizePolicy.Expanding,
+            QtGui.QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        
+    def crtaj(self):
+        pass
+    
+    def brisi_graf(self):
+        self.axes.clear()
+        self.draw()
+###############################################################################
 ###############################################################################
 class FlagDijalog(QtGui.QDialog):
     """
     Custom dijalog za promjenu flaga
     """
-    def __init__(self, parent=None, message=None):
+    def __init__(self, parent = None, message = None):
         QtGui.QDialog.__init__(self)
 
-        self.odgovor=None        
+        self.odgovor = None        
         msgBox = QtGui.QMessageBox()
         msgBox.setWindowTitle('Dijalog za promjenu valjanosti podataka')
         msgBox.setText(message)
@@ -52,518 +93,727 @@ class FlagDijalog(QtGui.QDialog):
         else:
         #2==RejectRole
             self.odgovor='bez promjene'
+###############################################################################
+###############################################################################
+class HoverAnotation(object):
+    """
+    cilj: kad se misem priblizimo nekoj od zadanih tocaka, da se za nju prikaze
+    annotation
+    """
+    def __init__(self, ax, x, y, tolerance = 3, formatter = str, offsets = (-20, 20)):
+        self.offsets = offsets
+        self.formatter = formatter
+        self.tolerance = tolerance
+        self.ax = ax
+        self.dot = ax.scatter(x[0], y[0], s=130, color='yellow', alpha=0.7)
+        self.annotation = self.setup_annotation()
+        self.ax.connect('motion_notify_event', self)
+        
+    def setup_annotation(self):
+        """
+        setup za annotation
+        """
+        annotation = self.ax.annotate(
+            '', 
+            xy=(0, 0), 
+            ha = 'right',
+            xytext = self.offsets, 
+            textcoords = 'offset points', 
+            va = 'bottom', 
+            bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.75), 
+            arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'))
+        return annotation
+        
+    def __call__(self, event):
+        """
+        event je pomak cursora unutar grafa
+        cilj: oznaciti tocku blizu koje je mis, napisati njen annotation
+        """
+        ax = self.ax
+        if event.inaxes == ax:
+            x, y = event.xdata, event.ydata
+        else:
+            return
+            
+        annotation = self.annotation
+        x, y = self.snap(x,y)
+        annotation.xy = x, y
+        annotation.set_text(self.formatter(x, y))
+        self.dot.set_offsets((x, y))
+        event.canvas.draw()
+        
+    def snap(self, x, y):
+        """
+        funkcija treba vratiti kooridinate x,y blize tocke cursoru
+        """
+        pass
 
 ###############################################################################
-class MPLCanvas(FigureCanvas):
-    """
-    matplotlib canvas class, generalni
-    -overloadaj metodu crtaj sa specificnim naredbama
-    """
-    def __init__(self,parent=None,width=6,height=5,dpi=100):
-        self.fig=Figure(figsize=(width,height),dpi=dpi)
-        self.axes=self.fig.add_subplot(111)
-        FigureCanvas.__init__(self,self.fig)
-        self.setParent(parent)
-        FigureCanvas.setSizePolicy(
-            self,
-            QtGui.QSizePolicy.Expanding,
-            QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-        
-    def crtaj(self):
-        pass
-    
-    def brisi_graf(self):
-        self.axes.clear()
-        self.draw()
-        
 ###############################################################################
 class GrafSatniSrednjaci(MPLCanvas):
     """
-    subklasa MPLCanvas, ona definira detalje crtanja isl.
-    ulaz je jedan pandas dataframe a ne dictiorary...treba prepraviti klasu!!!
-    SIGNALI:
-    odabirSatni(PyQt_PyObject)
-        -odabir jednog satnog agregata, lijevi klik
-        -emitira listu. [vrijeme(timestamp)]
-    flagSatni(PyQt_PyObject)
-        -promjena flaga jednog satnog agregata, desni klik
-        -emitira listu. [vrijeme(timestamp), novi flag, string 'flagSatni']
+    subklasa MPLCanvas, definira detalje crtanja
     """
-    def __init__(self,*args,**kwargs):
-        MPLCanvas.__init__(self,*args,**kwargs)
-        self.donjaGranica=None
-        self.gornjaGranica=None
+    def __init__(self, *args, **kwargs):
+        MPLCanvas.__init__(self, *args, **kwargs)
+        self.donjaGranica = None
+        self.gornjaGranica = None
+        self.data = None
         self.veze()
-    
-    def veze(self):
-        self.cidpick=self.mpl_connect('pick_event',self.onpick)
-    
-    def onpick(self,event):
-        """
-        Pick average, plavi dijamanti - emitira signal sa izborom
-        """
-        #start annotation part
-        self.tooltipTekst='time: %s\naverage: %0.2f\nmedian: %0.2f\nq05: %0.2f\nq95: %0.2f\nmin: %0.2f\nmax: %0.2f\ncount: %0.2f\nstatus: %0.2f'
-        self.annX=0
-        self.annY=0
-        self.annotation=self.axes.annotate(
-            self.tooltipTekst,
-            xy=(self.annX,self.annY),
-            xytext=(0.1,0.6),
-            textcoords='axes fraction',
-            ha='left',
-            va='bottom',
-            fontsize=5,
-            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
-            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
-            )
-        self.annotation.set_visible(False)
-        #kraj annotation part
-        linija=event.artist
-        xTocke=linija.get_xdata()
-        tocka=event.ind
-        xtocka=xTocke[tocka]
-        xtocka=pd.to_datetime(xtocka)
-        #kod resizanja grafa - mogući problem je preklapanje pickera
-        #kludge fix za sada - odabrati manji i smanjiti radijus pickera
-        xtocka=xtocka[0]
-                
-        if event.mouseevent.button==1:
-            #left click
-            arg=[xtocka]
-            self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
-            
-        if event.mouseevent.button==2:
-            #annotations sa middle mouse gumbom
-            #set pozicije na koju pointa strelica
-            if self.zadnjiAnnotation==xtocka:
-                self.annotation.remove()
-                self.zadnjiAnnotation=None
-                self.draw()
-            else:
-                self.annX=event.mouseevent.xdata
-                self.annY=event.mouseevent.ydata
-                self.annotation.xy=self.annX,self.annY
-                #tekst annotationa
-                avg=self.data['avg'].loc[xtocka]
-                med=self.data['med'].loc[xtocka]
-                q95=self.data['q95'].loc[xtocka]
-                q05=self.data['q05'].loc[xtocka]
-                min=self.data['min'].loc[xtocka]
-                max=self.data['max'].loc[xtocka]
-                count=self.data['count'].loc[xtocka]
-                status=self.data['status'].loc[xtocka]
-                self.annotation.set_text(self.tooltipTekst % (xtocka,avg,med,q05,q95,min,max,count,status))
-                self.annotation.set_visible(True)
-                self.zadnjiAnnotation=xtocka
-                self.draw()
-                self.annotation.remove()
         
-        if event.mouseevent.button==3:
+    def veze(self):
+        self.cidpick = self.mpl_connect('pick_event', self.onpick)
+        
+    def onpick(self, event):
+        """
+        akcije prilikom eventa, odabira na grafu
+        """
+        xpoint = event.mouseevent.xdata
+        xpoint = matplotlib.dates.num2date(xpoint) #datetime.datetime
+        #problem.. rounding offset aware i offset naive datetimes..workaround
+        god = xpoint.year
+        mon = xpoint.month
+        day = xpoint.day
+        h = xpoint.hour
+        m = xpoint.minute
+        s = xpoint.second
+        xpoint = datetime.datetime(god, mon, day, h, m, s)
+        xpoint = zaokruzi_vrijeme(point, 3600)   #round na najblizi sat
+                
+        if event.mouseevent.button == 1:
+            #left click
+            xtime = pd.to_datetime(xpoint)
+            arg = xtime
+            print('ljevi klik, arg: ', arg)
+            #self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
+        
+        if event.mouseevent.button == 3:
             #right click
-            opis='Odabrano vrijeme: '+str(xtocka)
-            flag=FlagDijalog(message=opis)
-            if flag.odgovor=='valja':
+            xtime = pd.to_datetime(xpoint)
+            opis = 'Odabrano vrijeme: ' + str(xtime)
+            flag = FlagDijalog(message = opis)
+            if flag.odgovor == 'valja':
                 #arg=[xtocka,1]
                 #novi princip, nega signal ima i "potpis" posiljatelja
-                arg = [xtocka, 1, 'flagSatni']
-                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+                arg = [xtime, 1, 'flagSatni']
+                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'), arg)
             elif flag.odgovor=='nevalja':
                 #arg=[xtocka,-1]
-                arg = [xtocka, -1, 'flagSatni']
-                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+                arg = [xtime, -1, 'flagSatni']
+                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'), arg)
             else:
                 pass
             
+    
+    def crtaj(self, data):
+        """
+        priprema podataka i eksplicitne naredbe za crtanje
+        """
+        if len(data) != 0:
+            self.data = data
+            self.axes.clear()
             
-    def crtaj(self,data):
-        """
-        data je pandas dataframe koji izbacuje agregator-ima posebni stupac
-        'flagstat'. Taj stupac je True ako su svi flagovi tocaka
-        s podatcima negativni (False ako ima pozitivnih flagova).
-        -kako smisleno prikazati podatke???
-        """
-        self.data=data
-        self.zadnjiAnnotation=None
-        #x granice podataka - timestamp
-        self.donjaGranica=data['avg'].index.min()
-        self.gornjaGranica=data['avg'].index.max()
-        #clear axes i crtaj
-        
-        self.axes.clear()
-        title='Agregirani satni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
-        self.axes.set_title(title,fontsize=4)
-        
-        #ukupni raspon podataka
-        vrijeme=data['avg'].index
-        
-        """
-        Svi koji imaju flagstat stupac False
-        tj. normalni slucaj, kada svi minutni podatci u sliceu nemaju negativan flag
-        """
-        self.data1=data[data['flagstat']==False]
-        vrijeme1=self.data1['avg'].index
-        
-        #sortiranje prema broju valjanih podataka u agregatu iznad 45 ok (25%)
-        indeksPlavi=[]
-        avgPlavi=[]
-        indeksCrveni=[]
-        avgCrveni=[]
-        for i in self.data1.index:
-            if self.data1.loc[i,'count']>45:
-                indeksPlavi.append(i)
-                avgPlavi.append(self.data1.loc[i,'avg'])
-            else:
-                indeksCrveni.append(i)
-                avgCrveni.append(self.data1.loc[i,'avg'])
+            #x granice podataka - timestamp
+            self.donjaGranica = data[u'avg'].index.min()
+            self.gornjaGranica = data[u'avg'].index.max()
+            
+            #naslov grafa
+            title = 'Agregirani podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
+            self.axes.set_title(title, fontsize=4)
+            
+            #priprema vrijednosti za crtanje
+            #agregirani podatci sa dobrim flagovima
+            data = self.data.copy()
+            data1 = data[data[u'flag'] >= 0]
+            #agregirani podatci sa losim flagovima
+            data = self.data.copy()
+            data2 = data[data[u'flag'] < 0]
+            
+            if len(data1) != 0:
+                vrijeme1 = list(data1[u'avg'].index)
+                avg1 = list(data1[u'avg'])                
+                self.axes.scatter(vrijeme1, avg1,
+                          marker='d',
+                          color='green', 
+                          zorder = 3, 
+                          picker = 2)                          
+                          
+            if len(data2) != 0:
+                vrijeme2 = list(data2[u'avg'].index)
+                avg2 = list(data2[u'avg'])               
+                self.axes.scatter(vrijeme2, avg2,
+                          marker='d',
+                          color='red', 
+                          zorder = 3, 
+                          picker = 2)
+                          
+            #ostali dijelovi grafa
+            vrijeme = list(data[u'avg'].index)
+            minValue = list(data[u'min'])
+            maxValue = list(data[u'max'])
+            q05 = list(data[u'q05'])
+            q95 = list(data[u'q95'])
+            median = list(data[u'median'])
+            
+            self.axes.scatter(vrijeme, minValue,
+                              marker = '+', 
+                              color = 'black', 
+                              lw = 0.5, 
+                              zorder = 2)
+            
+            self.axes.scatter(vrijeme, maxValue,
+                              marker = '+', 
+                              color = 'black', 
+                              lw = 0.5, 
+                              zorder = 2)
+
+            self.axes.plot(vrijeme, median,  
+                       color='black', 
+                       lw = 1.2, 
+                       alpha = 0.5, 
+                       zorder = 2)
+                       
+            self.axes.fill_between(vrijeme, 
+                               q05, 
+                               q95, 
+                               facecolor = 'blue', 
+                               alpha = 0.3, 
+                               zorder = 1)
+
+
+                                          
+            #granice crtanog podrucja
+            #x-os
+            minxlim = vrijeme[0] - timedelta(hours = 1)
+            minxlim = pd.to_datetime(minxlim)
+            maxxlim = vrijeme[len(vrijeme)-1] + timedelta(hours = 1)
+            maxxlim = pd.to_datetime(maxxlim)
+            self.axes.set_xlim(minxlim, maxxlim)
+            
+            #y-os
+            raspon = minValue + maxValue
+            raspon.sort()
+            minylim = raspon[0] #najmanja crijednost
+            maxylim = raspon[len(raspon)-1] #najveca vrijednost
+            pad = (minylim + maxylim)/5 #padding da nisu na rubu
+            minylim = minylim - pad
+            maxylim = maxylim + pad
+            self.axes.set_ylim(minylim, maxylim)
+            
+            #format x kooridinate
+            xLabels = self.axes.get_xticklabels()
+            for label in xLabels:
+                label.set_rotation(20)
+                label.set_fontsize(4)
+            
+            #format y kooridinate
+            yLabels=self.axes.get_yticklabels()
+            for label in yLabels:
+                label.set_fontsize(4)
                 
-        self.axes.plot(indeksPlavi,avgPlavi,
-                       marker='d',
-                       color='blue',
-                       alpha=0.7,
-                       picker=2,
-                       zorder=3)
-        
-        self.axes.plot(indeksCrveni,avgCrveni,
-                       marker='d',
-                       color='red',
-                       alpha=0.7,
-                       picker=2,
-                       zorder=3)
-        """
-        #old
-        self.axes.plot(vrijeme1,self.data1['avg'].values,
-                       marker='d',
-                       color='blue',
-                       lw=1.5,
-                       alpha=0.7,
-                       picker=2,
-                       zorder=3)
-        """
-        self.axes.scatter(vrijeme1,self.data1['min'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme1,self.data1['max'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme1,self.data1['med'].values,
-                       marker='_',
-                       color='black',
-                       lw=1.5,
-                       alpha=0.6,
-                       zorder=2)
-        self.axes.fill_between(vrijeme1,
-                               self.data1['q05'].values,
-                               self.data1['q95'].values,
-                               facecolor='green',
-                               alpha=0.4,
-                               zorder=1)
-        
-        """
-        Svi koji imaju flagstat stupac True
-        tj - svi minutni podatci u sliceu imaju flag manji od 0
-        """
-        self.data2=data[data['flagstat']==True]
-        vrijeme2=self.data2['avg'].index
-        self.axes.plot(vrijeme2,self.data2['avg'].values,
-                       marker='d',
-                       color='red',
-                       lw=1.5,
-                       alpha=0.7,
-                       picker=2,
-                       zorder=3)
-        self.axes.scatter(vrijeme2,self.data2['min'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme2,self.data2['max'].values,
-                          marker='+',
-                          color='black',
-                          lw=0.3,
-                          alpha=0.6,
-                          zorder=2)
-        self.axes.scatter(vrijeme2,self.data2['med'].values,
-                       marker='_',
-                       color='black',
-                       lw=1.5,
-                       alpha=0.6,
-                       zorder=2)        
-        
-        
-        xLabels=self.axes.get_xticklabels()
-        for label in xLabels:
-            label.set_rotation(20)
-            label.set_fontsize(4)
+            self.fig.tight_layout()
+            self.draw()
             
-        yLabels=self.axes.get_yticklabels()
-        for label in yLabels:
-            label.set_fontsize(4)
-            
-        #pokusaj automatskog poravnavanja grafa, labela isl.
-        self.axes.set_xlim(vrijeme.min(),vrijeme.max())
-        self.fig.tight_layout()
-        self.draw()
+        else:
+            #napisi poruku na grafu da nema podataka
+            print('nema podataka')
+            pass
+
+###############################################################################
 ###############################################################################
 class GrafMinutniPodaci(MPLCanvas):
     """
-    Graf za crtanje minutnih podataka.
-    Ulaz:
-        data je lista pandas datafrejmova, satni slice koncetracije
-        [0] cijeli -> cijeli dataframe (sluzi za plot linije)
-        [1] pozitivanFlag ->dio dataframe gdje je flag >=0 (za scatter plot)
-        [2] negativanFlag ->dio dataframe gdje je flag <0 (za scatter plot)
-    SIGNALI:
-    flagTockaMinutni(PyQt_PyObject)
-        -izbor jedne tocke kojoj treba promjeniti flag - desni klik
-        -emitira listu - [vrijeme(timestamp),novi flag, string 'flagTockaMinutni']
-    flagSpanMinutni(PyQt_PyObject)
-        -izbor spana, lijevi klik & drag. na klik granice su identicne
-        -emitira listu - [vrijeme min, vrijeme max, novi flag, string 'flagSpanMinutni']
-        -min i max granice su isti broj na jedan ljevi klik...problem?
+    Klasa, canvas za crtanje minutnih podataka
     """
-    def __init__(self,*args,**kwargs):
-        MPLCanvas.__init__(self,*args,**kwargs)
-        self.donjaGranica=None
-        self.gornjaGranica=None
-        self.veze()
-    
-    def veze(self):
-        #desni klik za izbor jedne točke
-        self.cidpick=self.mpl_connect('pick_event',self.onpick)
-        #span selector
-        self.span=SpanSelector(self.axes,
-                               self.minutni_span_flag,
-                               'horizontal',
-                               useblit=True,
-                               rectprops=dict(alpha=0.5,facecolor='tomato')
-                               )
-    
-    def minutni_span_flag(self,xmin,xmax):
-        #test da li je graf nacrtan
-        if ((self.donjaGranica!=None) and (self.gornjaGranica!=None)):
-            xmin=round(xmin)
-            xmax=round(xmax)
-            puniSatMin=False
-            puniSatMax=False
-        
-            if xmin==60:
-                puniSatMin=True
-                xmin='00'
-            else:
-                xmin=str(xmin)
-            
-            if xmax==60:
-                puniSatMax=True
-                xmax='00'
-            else:
-                xmax=str(xmax)
-        
-            #sastavi timestamp
-            godina=str(self.donjaGranica.year)
-            mjesec=str(self.donjaGranica.month)
-            dan=str(self.donjaGranica.day)
-            sat=str(self.donjaGranica.hour)
-            timeMin=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmin+':'+'00'
-            timeMax=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmax+':'+'00'
-            minOznaka=pd.to_datetime(timeMin)
-            maxOznaka=pd.to_datetime(timeMax)
-        
-            if puniSatMin:
-                minOznaka=minOznaka+timedelta(hours=1)
-            
-            if puniSatMax:
-                maxOznaka=maxOznaka+timedelta(hours=1)
-            
-            opis='Odabrani interval od '+str(minOznaka)+' do '+str(maxOznaka)
-            flag=FlagDijalog(message=opis)
-            if flag.odgovor=='valja':
-                #provjeri da li je min i max ista tocka
-                if minOznaka==maxOznaka:
-                    #arg=[minOznaka,1]
-                    arg=[minOznaka, 1, 'flagSpanMinutni']
-                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
-                else:
-                    #arg=[minOznaka,maxOznaka,1]
-                    arg = [minOznaka, maxOznaka, 1, 'flagSpanMinutni']
-                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
-            elif flag.odgovor=='nevalja':
-                #provjeri da li je min i max ista tocka
-                if minOznaka==maxOznaka:
-                    #arg=[minOznaka,-1]
-                    arg=[minOznaka, -1, 'flagSpanMinutni']
-                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
-                else:
-                    #arg=[minOznaka,maxOznaka,-1]
-                    arg=[minOznaka,maxOznaka, -1, 'flagSpanMinutni']
-                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
-            else:
-                pass
-            
-            
-        else:
-            message='Unable to select data, draw some first'
-            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
-        
-    def onpick(self,event):
-        """
-        Picker na minutnom grafu
-        """
-        #start annotation part
-        self.tooltipTekst='time: %s\nkoncentracija: %0.2f\nflag: %0.2f\nstatus: %0.2f'
-        self.annX=0
-        self.annY=0
-        self.annotation=self.axes.annotate(
-            self.tooltipTekst,
-            xy=(self.annX,self.annY),
-            xytext=(0.1,0.6),
-            textcoords='axes fraction',
-            ha='left',
-            va='bottom',
-            fontsize=5,
-            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
-            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
-            )
-        self.annotation.set_visible(False)
-        #kraj annotation part
-        
-        puniSat=False
-        #overlap pickera?
-        izbor=event.mouseevent.xdata
-        if type(izbor)==list:
-            izbor=izbor[0]
-            
-        izbor=round(izbor)
-        if izbor==60:
-            puniSat=True
-            izbor='00'
-        else:
-            izbor=str(izbor)
-        #sastavi timestamp
-        godina=str(self.donjaGranica.year)
-        mjesec=str(self.donjaGranica.month)
-        dan=str(self.donjaGranica.day)
-        sat=str(self.donjaGranica.hour)
-        time=godina+'-'+mjesec+'-'+dan+' '+sat+':'+izbor+':'+'00'
-        timeOznaka=pd.to_datetime(time)
-        if puniSat:
-            timeOznaka=timeOznaka+timedelta(hours=1)
-        
-        #desni klik - promjena flaga jedne tocke
-        if event.mouseevent.button==3:
-            opis='Odabrano vrijeme: '+str(timeOznaka)
-            flag=FlagDijalog(message=opis)
-            if flag.odgovor=='valja':
-                #arg=[timeOznaka,1]
-                arg=[timeOznaka, 1, 'flagTockaMinutni']
-                self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
-            elif flag.odgovor=='nevalja':
-                #arg=[timeOznaka,-1]
-                arg=[timeOznaka, -1, 'flagTockaMinutni']
-                self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
-            else:
-                pass
-                
-        #middle klik misem, annotation tocke
-        if event.mouseevent.button==2:
-            if self.zadnjiAnnotation==timeOznaka:
-                self.annotation.remove()
-                self.zadnjiAnnotation=None
-                self.draw()
-            else:
-                self.annX=event.mouseevent.xdata
-                self.annY=event.mouseevent.ydata
-                self.annotation.xy=self.annX,self.annY
-                #tekst annotationa
-                izbor=str(timeOznaka)
-                koncentracija=self.dataframe.loc[izbor,u'koncentracija']
-                status=self.dataframe.loc[izbor,u'status']
-                flag=self.dataframe.loc[izbor,u'flag']
-                self.annotation.set_text(self.tooltipTekst % (izbor,koncentracija,flag,status))
-                self.annotation.set_visible(True)
-                self.zadnjiAnnotation=timeOznaka
-                self.draw()
-                self.annotation.remove()
-
-    def crtaj(self,data):
-        """
-        x os plota će biti minute timestampa od 1 do 60
-        """
-        self.zadnjiAnnotation=None
-        self.dataframe=data[0]
-        #zapamti podatke o timestampu za datum i sat
-        self.donjaGranica=data[0].index.min()
-        self.gornjaGranica=data[0].index.max()
-        #priprema za crtanje
-        self.axes.clear()
-        title='Minutni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
-        self.axes.set_title(title,fontsize=4)
-        linija=data[0].loc[:,u'koncentracija']
-        tockeOk=data[1].loc[:,u'koncentracija']
-        tockeNo=data[2].loc[:,u'koncentracija']
-        xMinute=[]
-        xFlagOk=[]
-        xFlagNo=[]
-        
-        if len(linija)!=0:
-            for i in linija.index:
-                if i.minute!=0:
-                    xMinute.append(i.minute)
-                else:
-                    xMinute.append(60)
-        
-        if len(tockeOk)!=0:
-            for i in tockeOk.index:
-                if i.minute!=0:
-                    xFlagOk.append(i.minute)
-                else:
-                    xFlagOk.append(60)
-        
-        if len(tockeNo)!=0:
-            for i in tockeNo.index:
-                if i.minute!=0:
-                    xFlagNo.append(i.minute)
-                else:
-                    xFlagNo.append(60)
-        
-        if len(xMinute)==len(linija.values):
-            self.axes.plot(xMinute,linija.values,
-                           color='black')
-        
-        if len(xFlagOk)==len(tockeOk.values):
-            self.axes.scatter(xFlagOk,tockeOk.values,
-                              color='green',
-                              marker='o',
-                              picker=2,
-                              alpha=0.4)
-        
-        if len(xFlagNo)==len(tockeNo.values):
-            self.axes.scatter(xFlagNo,tockeNo.values,
-                              color='red',
-                              marker='o',
-                              picker=2,
-                              alpha=0.4)
-        
-        xLabels=self.axes.get_xticklabels()
-        for label in xLabels:
-            label.set_fontsize(4)
-            
-        yLabels=self.axes.get_yticklabels()
-        for label in yLabels:
-            label.set_fontsize(4)
-        #pokusaj automatskog proavnavanja
-        self.axes.set_xlim(1,60)
-        self.fig.tight_layout()
-        self.draw()
 ###############################################################################
+################################################################################
+################################################################################
+#class GrafSatniSrednjaci(MPLCanvas):
+#    """
+#    subklasa MPLCanvas, ona definira detalje crtanja isl.
+#    ulaz je jedan pandas dataframe a ne dictiorary...treba prepraviti klasu!!!
+#    SIGNALI:
+#    odabirSatni(PyQt_PyObject)
+#        -odabir jednog satnog agregata, lijevi klik
+#        -emitira listu. [vrijeme(timestamp)]
+#    flagSatni(PyQt_PyObject)
+#        -promjena flaga jednog satnog agregata, desni klik
+#        -emitira listu. [vrijeme(timestamp), novi flag, string 'flagSatni']
+#    """
+#    def __init__(self,*args,**kwargs):
+#        MPLCanvas.__init__(self,*args,**kwargs)
+#        self.donjaGranica=None
+#        self.gornjaGranica=None
+#        self.veze()
+#    
+#    def veze(self):
+#        self.cidpick=self.mpl_connect('pick_event',self.onpick)
+#    
+#    def onpick(self,event):
+#        """
+#        Pick average, plavi dijamanti - emitira signal sa izborom
+#        """
+#        #start annotation part
+#        self.tooltipTekst='time: %s\naverage: %0.2f\nmedian: %0.2f\nq05: %0.2f\nq95: %0.2f\nmin: %0.2f\nmax: %0.2f\ncount: %0.2f\nstatus: %0.2f'
+#        self.annX=0
+#        self.annY=0
+#        self.annotation=self.axes.annotate(
+#            self.tooltipTekst,
+#            xy=(self.annX,self.annY),
+#            xytext=(0.1,0.6),
+#            textcoords='axes fraction',
+#            ha='left',
+#            va='bottom',
+#            fontsize=5,
+#            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
+#            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
+#            )
+#        self.annotation.set_visible(False)
+#        #kraj annotation part
+#        linija=event.artist
+#        xTocke=linija.get_xdata()
+#        tocka=event.ind
+#        xtocka=xTocke[tocka]
+#        xtocka=pd.to_datetime(xtocka)
+#        #kod resizanja grafa - mogući problem je preklapanje pickera
+#        #kludge fix za sada - odabrati manji i smanjiti radijus pickera
+#        xtocka=xtocka[0]
+#                
+#        if event.mouseevent.button==1:
+#            #left click
+#            arg=[xtocka]
+#            self.emit(QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),arg)
+#            
+#        if event.mouseevent.button==2:
+#            #annotations sa middle mouse gumbom
+#            #set pozicije na koju pointa strelica
+#            if self.zadnjiAnnotation==xtocka:
+#                self.annotation.remove()
+#                self.zadnjiAnnotation=None
+#                self.draw()
+#            else:
+#                self.annX=event.mouseevent.xdata
+#                self.annY=event.mouseevent.ydata
+#                self.annotation.xy=self.annX,self.annY
+#                #tekst annotationa
+#                avg=self.data['avg'].loc[xtocka]
+#                med=self.data['med'].loc[xtocka]
+#                q95=self.data['q95'].loc[xtocka]
+#                q05=self.data['q05'].loc[xtocka]
+#                min=self.data['min'].loc[xtocka]
+#                max=self.data['max'].loc[xtocka]
+#                count=self.data['count'].loc[xtocka]
+#                status=self.data['status'].loc[xtocka]
+#                self.annotation.set_text(self.tooltipTekst % (xtocka,avg,med,q05,q95,min,max,count,status))
+#                self.annotation.set_visible(True)
+#                self.zadnjiAnnotation=xtocka
+#                self.draw()
+#                self.annotation.remove()
+#        
+#        if event.mouseevent.button==3:
+#            #right click
+#            opis='Odabrano vrijeme: '+str(xtocka)
+#            flag=FlagDijalog(message=opis)
+#            if flag.odgovor=='valja':
+#                #arg=[xtocka,1]
+#                #novi princip, nega signal ima i "potpis" posiljatelja
+#                arg = [xtocka, 1, 'flagSatni']
+#                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+#            elif flag.odgovor=='nevalja':
+#                #arg=[xtocka,-1]
+#                arg = [xtocka, -1, 'flagSatni']
+#                self.emit(QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),arg)
+#            else:
+#                pass
+#            
+#            
+#    def crtaj(self,data):
+#        """
+#        data je pandas dataframe koji izbacuje agregator-ima posebni stupac
+#        'flagstat'. Taj stupac je True ako su svi flagovi tocaka
+#        s podatcima negativni (False ako ima pozitivnih flagova).
+#        -kako smisleno prikazati podatke???
+#        """
+#        self.data=data
+#        self.zadnjiAnnotation=None
+#        #x granice podataka - timestamp
+#        self.donjaGranica=data['avg'].index.min()
+#        self.gornjaGranica=data['avg'].index.max()
+#        #clear axes i crtaj
+#        
+#        self.axes.clear()
+#        title='Agregirani satni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
+#        self.axes.set_title(title,fontsize=4)
+#        
+#        #ukupni raspon podataka
+#        vrijeme=data['avg'].index
+#        
+#        """
+#        Svi koji imaju flagstat stupac False
+#        tj. normalni slucaj, kada svi minutni podatci u sliceu nemaju negativan flag
+#        """
+#        self.data1=data[data['flagstat']==False]
+#        vrijeme1=self.data1['avg'].index
+#        
+#        #sortiranje prema broju valjanih podataka u agregatu iznad 45 ok (25%)
+#        indeksPlavi=[]
+#        avgPlavi=[]
+#        indeksCrveni=[]
+#        avgCrveni=[]
+#        for i in self.data1.index:
+#            if self.data1.loc[i,'count']>45:
+#                indeksPlavi.append(i)
+#                avgPlavi.append(self.data1.loc[i,'avg'])
+#            else:
+#                indeksCrveni.append(i)
+#                avgCrveni.append(self.data1.loc[i,'avg'])
+#                
+#        self.axes.plot(indeksPlavi,avgPlavi,
+#                       marker='d',
+#                       color='blue',
+#                       alpha=0.7,
+#                       picker=2,
+#                       zorder=3)
+#        
+#        self.axes.plot(indeksCrveni,avgCrveni,
+#                       marker='d',
+#                       color='red',
+#                       alpha=0.7,
+#                       picker=2,
+#                       zorder=3)
+#        """
+#        #old
+#        self.axes.plot(vrijeme1,self.data1['avg'].values,
+#                       marker='d',
+#                       color='blue',
+#                       lw=1.5,
+#                       alpha=0.7,
+#                       picker=2,
+#                       zorder=3)
+#        """
+#        self.axes.scatter(vrijeme1,self.data1['min'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme1,self.data1['max'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme1,self.data1['med'].values,
+#                       marker='_',
+#                       color='black',
+#                       lw=1.5,
+#                       alpha=0.6,
+#                       zorder=2)
+#        self.axes.fill_between(vrijeme1,
+#                               self.data1['q05'].values,
+#                               self.data1['q95'].values,
+#                               facecolor='green',
+#                               alpha=0.4,
+#                               zorder=1)
+#        
+#        """
+#        Svi koji imaju flagstat stupac True
+#        tj - svi minutni podatci u sliceu imaju flag manji od 0
+#        """
+#        self.data2=data[data['flagstat']==True]
+#        vrijeme2=self.data2['avg'].index
+#        self.axes.plot(vrijeme2,self.data2['avg'].values,
+#                       marker='d',
+#                       color='red',
+#                       lw=1.5,
+#                       alpha=0.7,
+#                       picker=2,
+#                       zorder=3)
+#        self.axes.scatter(vrijeme2,self.data2['min'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme2,self.data2['max'].values,
+#                          marker='+',
+#                          color='black',
+#                          lw=0.3,
+#                          alpha=0.6,
+#                          zorder=2)
+#        self.axes.scatter(vrijeme2,self.data2['med'].values,
+#                       marker='_',
+#                       color='black',
+#                       lw=1.5,
+#                       alpha=0.6,
+#                       zorder=2)        
+#        
+#        
+#        xLabels=self.axes.get_xticklabels()
+#        for label in xLabels:
+#            label.set_rotation(20)
+#            label.set_fontsize(4)
+#            
+#        yLabels=self.axes.get_yticklabels()
+#        for label in yLabels:
+#            label.set_fontsize(4)
+#            
+#        #pokusaj automatskog poravnavanja grafa, labela isl.
+#        self.axes.set_xlim(vrijeme.min(),vrijeme.max())
+#        self.fig.tight_layout()
+#        self.draw()
+################################################################################
+#class GrafMinutniPodaci(MPLCanvas):
+#    """
+#    Graf za crtanje minutnih podataka.
+#    Ulaz:
+#        data je lista pandas datafrejmova, satni slice koncetracije
+#        [0] cijeli -> cijeli dataframe (sluzi za plot linije)
+#        [1] pozitivanFlag ->dio dataframe gdje je flag >=0 (za scatter plot)
+#        [2] negativanFlag ->dio dataframe gdje je flag <0 (za scatter plot)
+#    SIGNALI:
+#    flagTockaMinutni(PyQt_PyObject)
+#        -izbor jedne tocke kojoj treba promjeniti flag - desni klik
+#        -emitira listu - [vrijeme(timestamp),novi flag, string 'flagTockaMinutni']
+#    flagSpanMinutni(PyQt_PyObject)
+#        -izbor spana, lijevi klik & drag. na klik granice su identicne
+#        -emitira listu - [vrijeme min, vrijeme max, novi flag, string 'flagSpanMinutni']
+#        -min i max granice su isti broj na jedan ljevi klik...problem?
+#    """
+#    def __init__(self,*args,**kwargs):
+#        MPLCanvas.__init__(self,*args,**kwargs)
+#        self.donjaGranica=None
+#        self.gornjaGranica=None
+#        self.veze()
+#    
+#    def veze(self):
+#        #desni klik za izbor jedne točke
+#        self.cidpick=self.mpl_connect('pick_event',self.onpick)
+#        #span selector
+#        self.span=SpanSelector(self.axes,
+#                               self.minutni_span_flag,
+#                               'horizontal',
+#                               useblit=True,
+#                               rectprops=dict(alpha=0.5,facecolor='tomato')
+#                               )
+#    
+#    def minutni_span_flag(self,xmin,xmax):
+#        #test da li je graf nacrtan
+#        if ((self.donjaGranica!=None) and (self.gornjaGranica!=None)):
+#            xmin=round(xmin)
+#            xmax=round(xmax)
+#            puniSatMin=False
+#            puniSatMax=False
+#        
+#            if xmin==60:
+#                puniSatMin=True
+#                xmin='00'
+#            else:
+#                xmin=str(xmin)
+#            
+#            if xmax==60:
+#                puniSatMax=True
+#                xmax='00'
+#            else:
+#                xmax=str(xmax)
+#        
+#            #sastavi timestamp
+#            godina=str(self.donjaGranica.year)
+#            mjesec=str(self.donjaGranica.month)
+#            dan=str(self.donjaGranica.day)
+#            sat=str(self.donjaGranica.hour)
+#            timeMin=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmin+':'+'00'
+#            timeMax=godina+'-'+mjesec+'-'+dan+' '+sat+':'+xmax+':'+'00'
+#            minOznaka=pd.to_datetime(timeMin)
+#            maxOznaka=pd.to_datetime(timeMax)
+#        
+#            if puniSatMin:
+#                minOznaka=minOznaka+timedelta(hours=1)
+#            
+#            if puniSatMax:
+#                maxOznaka=maxOznaka+timedelta(hours=1)
+#            
+#            opis='Odabrani interval od '+str(minOznaka)+' do '+str(maxOznaka)
+#            flag=FlagDijalog(message=opis)
+#            if flag.odgovor=='valja':
+#                #provjeri da li je min i max ista tocka
+#                if minOznaka==maxOznaka:
+#                    #arg=[minOznaka,1]
+#                    arg=[minOznaka, 1, 'flagSpanMinutni']
+#                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+#                else:
+#                    #arg=[minOznaka,maxOznaka,1]
+#                    arg = [minOznaka, maxOznaka, 1, 'flagSpanMinutni']
+#                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+#            elif flag.odgovor=='nevalja':
+#                #provjeri da li je min i max ista tocka
+#                if minOznaka==maxOznaka:
+#                    #arg=[minOznaka,-1]
+#                    arg=[minOznaka, -1, 'flagSpanMinutni']
+#                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+#                else:
+#                    #arg=[minOznaka,maxOznaka,-1]
+#                    arg=[minOznaka,maxOznaka, -1, 'flagSpanMinutni']
+#                    self.emit(QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),arg)
+#            else:
+#                pass
+#            
+#            
+#        else:
+#            message='Unable to select data, draw some first'
+#            self.emit(QtCore.SIGNAL('set_status_bar(PyQt_PyObject)'),message)
+#        
+#    def onpick(self,event):
+#        """
+#        Picker na minutnom grafu
+#        """
+#        #start annotation part
+#        self.tooltipTekst='time: %s\nkoncentracija: %0.2f\nflag: %0.2f\nstatus: %0.2f'
+#        self.annX=0
+#        self.annY=0
+#        self.annotation=self.axes.annotate(
+#            self.tooltipTekst,
+#            xy=(self.annX,self.annY),
+#            xytext=(0.1,0.6),
+#            textcoords='axes fraction',
+#            ha='left',
+#            va='bottom',
+#            fontsize=5,
+#            bbox=dict(boxstyle='square',fc='cyan',alpha=0.7,zorder=10),
+#            arrowprops=dict(arrowstyle='->',connectionstyle='arc3,rad=0',alpha=0.6,zorder=10)
+#            )
+#        self.annotation.set_visible(False)
+#        #kraj annotation part
+#        
+#        puniSat=False
+#        #overlap pickera?
+#        izbor=event.mouseevent.xdata
+#        if type(izbor)==list:
+#            izbor=izbor[0]
+#            
+#        izbor=round(izbor)
+#        if izbor==60:
+#            puniSat=True
+#            izbor='00'
+#        else:
+#            izbor=str(izbor)
+#        #sastavi timestamp
+#        godina=str(self.donjaGranica.year)
+#        mjesec=str(self.donjaGranica.month)
+#        dan=str(self.donjaGranica.day)
+#        sat=str(self.donjaGranica.hour)
+#        time=godina+'-'+mjesec+'-'+dan+' '+sat+':'+izbor+':'+'00'
+#        timeOznaka=pd.to_datetime(time)
+#        if puniSat:
+#            timeOznaka=timeOznaka+timedelta(hours=1)
+#        
+#        #desni klik - promjena flaga jedne tocke
+#        if event.mouseevent.button==3:
+#            opis='Odabrano vrijeme: '+str(timeOznaka)
+#            flag=FlagDijalog(message=opis)
+#            if flag.odgovor=='valja':
+#                #arg=[timeOznaka,1]
+#                arg=[timeOznaka, 1, 'flagTockaMinutni']
+#                self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
+#            elif flag.odgovor=='nevalja':
+#                #arg=[timeOznaka,-1]
+#                arg=[timeOznaka, -1, 'flagTockaMinutni']
+#                self.emit(QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),arg)
+#            else:
+#                pass
+#                
+#        #middle klik misem, annotation tocke
+#        if event.mouseevent.button==2:
+#            if self.zadnjiAnnotation==timeOznaka:
+#                self.annotation.remove()
+#                self.zadnjiAnnotation=None
+#                self.draw()
+#            else:
+#                self.annX=event.mouseevent.xdata
+#                self.annY=event.mouseevent.ydata
+#                self.annotation.xy=self.annX,self.annY
+#                #tekst annotationa
+#                izbor=str(timeOznaka)
+#                koncentracija=self.dataframe.loc[izbor,u'koncentracija']
+#                status=self.dataframe.loc[izbor,u'status']
+#                flag=self.dataframe.loc[izbor,u'flag']
+#                self.annotation.set_text(self.tooltipTekst % (izbor,koncentracija,flag,status))
+#                self.annotation.set_visible(True)
+#                self.zadnjiAnnotation=timeOznaka
+#                self.draw()
+#                self.annotation.remove()
+#
+#    def crtaj(self,data):
+#        """
+#        x os plota će biti minute timestampa od 1 do 60
+#        """
+#        self.zadnjiAnnotation=None
+#        self.dataframe=data[0]
+#        #zapamti podatke o timestampu za datum i sat
+#        self.donjaGranica=data[0].index.min()
+#        self.gornjaGranica=data[0].index.max()
+#        #priprema za crtanje
+#        self.axes.clear()
+#        title='Minutni podaci od: '+str(self.donjaGranica)+' do: '+str(self.gornjaGranica)
+#        self.axes.set_title(title,fontsize=4)
+#        linija=data[0].loc[:,u'koncentracija']
+#        tockeOk=data[1].loc[:,u'koncentracija']
+#        tockeNo=data[2].loc[:,u'koncentracija']
+#        xMinute=[]
+#        xFlagOk=[]
+#        xFlagNo=[]
+#        
+#        if len(linija)!=0:
+#            for i in linija.index:
+#                if i.minute!=0:
+#                    xMinute.append(i.minute)
+#                else:
+#                    xMinute.append(60)
+#        
+#        if len(tockeOk)!=0:
+#            for i in tockeOk.index:
+#                if i.minute!=0:
+#                    xFlagOk.append(i.minute)
+#                else:
+#                    xFlagOk.append(60)
+#        
+#        if len(tockeNo)!=0:
+#            for i in tockeNo.index:
+#                if i.minute!=0:
+#                    xFlagNo.append(i.minute)
+#                else:
+#                    xFlagNo.append(60)
+#        
+#        if len(xMinute)==len(linija.values):
+#            self.axes.plot(xMinute,linija.values,
+#                           color='black')
+#        
+#        if len(xFlagOk)==len(tockeOk.values):
+#            self.axes.scatter(xFlagOk,tockeOk.values,
+#                              color='green',
+#                              marker='o',
+#                              picker=2,
+#                              alpha=0.4)
+#        
+#        if len(xFlagNo)==len(tockeNo.values):
+#            self.axes.scatter(xFlagNo,tockeNo.values,
+#                              color='red',
+#                              marker='o',
+#                              picker=2,
+#                              alpha=0.4)
+#        
+#        xLabels=self.axes.get_xticklabels()
+#        for label in xLabels:
+#            label.set_fontsize(4)
+#            
+#        yLabels=self.axes.get_yticklabels()
+#        for label in yLabels:
+#            label.set_fontsize(4)
+#        #pokusaj automatskog proavnavanja
+#        self.axes.set_xlim(1,60)
+#        self.fig.tight_layout()
+#        self.draw()
+################################################################################
 class ApplicationMain(QtGui.QMainWindow):
     """
     Testna aplikacija za provjeru ispravnosti MPL klasa za Qt
@@ -576,61 +826,37 @@ class ApplicationMain(QtGui.QMainWindow):
         self.widget2=QtGui.QWidget()
         
         canvasSatni=GrafSatniSrednjaci(self.widget1,width=6,height=5,dpi=150)
-        canvasMinutni=GrafMinutniPodaci(self.widget2,width=6,height=5,dpi=150)
         
         mainLayout=QtGui.QVBoxLayout(self.mainWidget)
         mainLayout.addWidget(canvasSatni)
-        mainLayout.addWidget(canvasMinutni)
+        
         self.setCentralWidget(self.mainWidget)
        
-        #connect to test signal
-        self.connect(canvasSatni,QtCore.SIGNAL('flagSatni(PyQt_PyObject)'),self.test_print)
-        self.connect(canvasSatni,QtCore.SIGNAL('odabirSatni(PyQt_PyObject)'),self.test_print)
-        self.connect(canvasMinutni,QtCore.SIGNAL('flagTockaMinutni(PyQt_PyObject)'),self.test_print)
-        self.connect(canvasMinutni,QtCore.SIGNAL('flagSpanMinutni(PyQt_PyObject)'),self.test_print)
         
         """
         Testni podaci, dictionary pandas datafrejmova koji je rezultat agregatora.
-        Koristim istu strukturu podataka ali random vrijednosti
         """
+        
         reader = citac.WlReader('./data/')
-        datum=pd.to_datetime('2014-06-03')
-        datum=datum.date()        
-        data = reader.citaj('plitvicka jezera', datum)
-        data = data['1-SO2-ppb']
+        reader.dohvati_sve_dostupne()
+        stanica = 'plitvicka jezera'
+        datum = '20140604'
+        datum = pd.to_datetime(datum)
+        datum = datum.date()
+        frejmovi = reader.citaj(stanica, datum)
+        #jedan frejm
+        frejm = frejmovi['1-SO2-ppb']
+        #frejm = frejmovi['49-O3-ug/m3']
+        
+        #Inicijaliziraj agregator
         agregator = Agregator()
-        agregirani = agregator.agregiraj_kanal(data)
-#        u1 = uredjaj.M100E()
-#        u2 = uredjaj.M100C()
-#        u1.pocetak=datetime(2000,1,1)
-#        u2.pocetak=datetime(2014,2,24,0,10)
-#        u1.kraj=datetime(2014,2,24,0,10)
-#        u2.kraj=datetime(2015,1,1)
-#        
-#        a = auto_validacija.AutoValidacija()
-#        a.dodaj_uredjaj(u2)
-#        a.dodaj_uredjaj(u1)
-#        a.validiraj(data['1-SO2-ppb'])
-#        
-#        ag = Agregator([u1,u2])
-#        ag.setDataFrame(data['1-SO2-ppb'])
-#        agregirani = ag.agregirajNiz()
-
-        #slapanje datafrejmova za minutni graf
-        df=data.iloc[1:61,:]
-        dfKonc=df
-        dfOk=df[df.loc[:,u'flag']>=0]
-        dfNo=df[df.loc[:,u'flag']<0]
-        mData=[dfKonc,dfOk,dfNo]
+        #agregiraj frejm
+        agregirani = agregator.agregiraj_kanal(frejm)
+        print(agregirani)
         
         #naredba za plot
         canvasSatni.crtaj(agregirani)
-        canvasMinutni.crtaj(mData)
-    
-    def test_print(self,x):
-        #samo test za provjeru emitiranog signala
-        print(x)
-        
+            
 if __name__=='__main__':
     aplikacija=QtGui.QApplication(sys.argv)
     app=ApplicationMain()

@@ -128,19 +128,16 @@ class Agregator(object):
         
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
         
+        #dodaj stupac flag inicijaliziran na 0
+        agregirani[u'flag'] = 0
         """
         -provjeri da li je broj valjanih podataka sa flagom vecim od 0 veci od 45
         -ako nije... flagaj interval kao nevaljan...umetni placeholder vrijednosti
         """
         for i in agregirani.index:
             if agregirani.loc[i,u'count']<45:
-                agregirani.loc[i,u'avg'] = -1
-                agregirani.loc[i,u'std'] = -1
-                agregirani.loc[i,u'min'] = -1
-                agregirani.loc[i,u'max'] = -1
-                agregirani.loc[i,u'q05'] = -1
-                agregirani.loc[i,u'q95'] = -1
-                agregirani.loc[i,u'median'] = -1
+                agregirani.loc[i,u'flag'] = -1
+
                
         return agregirani
         

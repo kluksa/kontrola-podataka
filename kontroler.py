@@ -108,12 +108,12 @@ class Kontrola(QtGui.QWidget):
                      
         #gui - promjena flaga na satnom grafu
         self.connect(gui.canvasSatni, 
-                     QtCore.SIGNAL('gui_promjena_flaga'), 
+                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjena_flaga)
 
         #gui - promjena flaga na minutnom grafu
         self.connect(gui.canvasMinutni, 
-                     QtCore.SIGNAL('gui_promjena_flaga'), 
+                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjena_flaga)
                      
 ###############################################################################

@@ -97,6 +97,8 @@ class FlagDijalog(QtGui.QDialog):
 ###############################################################################
 ###############################################################################
 class HoverAnotation(object):
+    #TODO!
+    #dovrsi
     """
     cilj: kad se misem priblizimo nekoj od zadanih tocaka, da se za nju prikaze
     annotation
@@ -318,11 +320,15 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.draw()
             
         else:
+            self.axes.clear()
             #napisi poruku na grafu da nema podataka
             self.axes.text(0.5, 0.5, 
                            'Nema izmjerenih podataka.', 
                            horizontalalignment = 'center', 
-                           verticalalignment ='center')
+                           verticalalignment ='center', 
+                           size = 'medium')
+            self.fig.tight_layout()
+            self.draw()
 
 ###############################################################################
 ###############################################################################
@@ -335,6 +341,8 @@ class GrafMinutniPodaci(MPLCanvas):
         self.donjaGranica = None
         self.gornjaGranica = None
         self.data = None
+        self.dataTest = False
+        
         self.veze()
 ###############################################################################        
     def veze(self):
@@ -391,6 +399,9 @@ class GrafMinutniPodaci(MPLCanvas):
         """
         span selector za promjenu flaga na nizu podataka
         """
+        if self.dataTest == False:
+            #ako nema nacrtanih podataka, zanemari span
+            return
         xmin = matplotlib.dates.num2date(xmin)
         xmax = matplotlib.dates.num2date(xmax)
         xmin = datetime.datetime(xmin.year, xmin.month, xmin.day, xmin.hour, xmin.minute, xmin.second)
@@ -427,6 +438,7 @@ class GrafMinutniPodaci(MPLCanvas):
         crtanje minutnih podataka
         """
         if len(data) != 0:
+            self.dataTest = True
             self.data = data
             self.axes.clear()
             
@@ -501,13 +513,16 @@ class GrafMinutniPodaci(MPLCanvas):
             self.fig.tight_layout()
             self.draw()
         else:
+            self.axes.clear()
+            self.dataTest = False
             #napisi poruku na grafu da nema podataka
             self.axes.text(0.5, 0.5, 
                            'Nema izmjerenih podataka.', 
                            horizontalalignment = 'center', 
-                           verticalalignment ='center')
-            #TODO!
-            #problem sa resizanjem teksta kada se resizea graf
+                           verticalalignment ='center', 
+                           size = 'medium')
+            self.fig.tight_layout()
+            self.draw()
 ###############################################################################
 ################################################################################
 #class GrafMinutniPodaci(MPLCanvas):

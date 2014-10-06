@@ -108,8 +108,10 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.donjaGranica = None
         self.gornjaGranica = None
         self.data = None
-
         
+        self.testAnnotation = None
+        self.zadnjiAnnotation = False
+
         self.veze()
 ###############################################################################        
     def veze(self):
@@ -129,23 +131,74 @@ class GrafSatniSrednjaci(MPLCanvas):
                                    xpoint.minute, 
                                    xpoint.second)
         xpoint = zaokruzi_vrijeme(xpoint, 3600)   #round na najblizi sat
+        xpoint = pd.to_datetime(xpoint)
+        
+        if xpoint >= self.data.index.max():
+            xpoint = self.data.index.max()
+        if xpoint <= self.data.index.min():
+            xpoint = self.data.index.min()
+
+        
                 
         if event.mouseevent.button == 1:
             #left click
-            xtime = pd.to_datetime(xpoint)
-            arg = xtime
-            print('ljevi klik, arg: ', arg) #samo test izlaznog podatka
             self.emit(QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
-                      arg)
+                      xpoint)
         
-        #TODO!
         #annotations
         if event.mouseevent.button == 2:
-            x = pd.to_datetime(xpoint)
-            print('najblizi x: ', x)
-            print(event.mouseevent)
+            xtime = xpoint
+            if xtime != self.zadnjiAnnotation:
+                if self.testAnnotation == True:
+                    self.annotation.remove()
+                    self.draw()
+                    
+                self.zadnjiAnnotation = xtime
+                self.testAnnotation = True
+                yavg = self.data.loc[xtime, u'avg']
+                ymin = self.data.loc[xtime, u'min']
+                ymax = self.data.loc[xtime, u'max']
+                ystatus = self.data.loc[xtime, u'status']
+                ycount = self.data.loc[xtime, u'count']
+                
+                tekst = 'Vrijeme: '+str(xtime)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+                
+                size = self.frameSize()
+                x, y = size.width(), size.height()
+                x = x//2
+                y= y//2
+                clickedx = event.mouseevent.x
+                clickedy = event.mouseevent.y
             
-            
+                if clickedx >= x:
+                    clickedx = -60
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                else:
+                    clickedx = 30
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                
+                self.annotation = self.axes.annotate(
+                    tekst, 
+                    xy = (xtime, yavg), 
+                    xytext = (clickedx, clickedy), 
+                    textcoords = 'offset points', 
+                    ha = 'left', 
+                    va = 'center', 
+                    fontsize = 5, 
+                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7, zorder = 4), 
+                    arrowprops = dict(arrowstyle = '->', alpha = 0.7, zorder = 4))
+                self.draw()
+            else:
+                self.annotation.remove()
+                self.zadnjiAnnotation = None
+                self.testAnnotation = False
+                self.draw()
         
         if event.mouseevent.button == 3:
             #right click
@@ -588,26 +641,12 @@ class ApplicationMain(QtGui.QMainWindow):
         minutedata = frejm.loc['2014-06-04 15:01:00':'2014-06-04 16:00:00',:]
         #dio sa negativnim flagovima...
         minutedata.loc['2014-06-04 15:01:00':'2014-06-04 15:30:00',u'flag'] = -1
-        
         #naredba za plot
         self.agregirani = agregirani
         self.minutni = minutedata
         
         self.canvasSatni.crtaj(agregirani)
         self.canvasMinutni.crtaj(minutedata)
-        
-        self.connect(self.canvasMinutni, 
-                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
-                     self.flag_update)
-        
-    def flag_update(self, data):
-        tmin = data[0]
-        tmax = data[1]
-        nflag = data[2]
-        #BROKEN... RADI NA MINUTNOM--- 
-        self.minutni.loc[tmin:tmax,u'flag'] = nflag
-        self.canvasMinutni.crtaj(self.minutni)
-        
         
             
 if __name__=='__main__':

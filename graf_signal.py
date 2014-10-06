@@ -45,7 +45,7 @@ def zaokruzi_vrijeme(dt_objekt, nSekundi):
         zaokruzeno = ((delta + (nSekundi / 2)) // nSekundi) * nSekundi
         izlaz = dt_objekt + timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
         return izlaz
-
+###############################################################################
 ###############################################################################
 class MPLCanvas(FigureCanvas):
     """
@@ -99,77 +99,6 @@ class FlagDijalog(QtGui.QDialog):
             self.odgovor='bez promjene'
 ###############################################################################
 ###############################################################################
-class HoverAnotation(object):
-    #TODO!
-    #losa ideja u biti je ciklicki loop...procesorski intenzivan
-    #scrap i implementiraj desni klik
-    """
-    cilj: kad se misem priblizimo nekoj od zadanih tocaka, da se za nju prikaze
-    annotation
-    """
-    def __init__(self, fig, x, y, tolerance = 3, formatter = str, offsets = (-20, 20)):
-        self.offsets = offsets
-        self.x = x
-        self.y = y
-        self.formatter = formatter
-        self.tolerance = tolerance
-        self.fig = fig
-        self.dot = fig.axes.scatter(x[0], y[0], s=130, color='yellow', alpha=0.7)
-        self.annotation = self.setup_annotation()
-        self.fig.mpl_connect('motion_notify_event', self)
-        
-    def setup_annotation(self):
-        """
-        setup za annotation
-        """
-        annotation = self.fig.axes.annotate(
-            '', 
-            xy=(0, 0), 
-            ha = 'right',
-            xytext = self.offsets, 
-            textcoords = 'offset points', 
-            va = 'bottom', 
-            bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.75), 
-            arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'))
-        return annotation
-        
-    def __call__(self, event):
-        """
-        event je pomak cursora unutar grafa
-        cilj: oznaciti tocku blizu koje je mis, napisati njen annotation
-        """
-        if event.inaxes == self.fig.axes:
-            x, y = event.xdata, event.ydata
-        else:
-            return
-            
-        annotation = self.annotation
-        x, y = self.snap(x,y)
-        annotation.xy = x, y
-        annotation.set_text(self.formatter(x, y))
-        self.dot.set_offsets((x, y))
-        event.canvas.draw()
-        
-    def snap(self, x, y):
-        """
-        funkcija treba vratiti kooridinate x,y blize tocke cursoru
-        """
-        xtime = matplotlib.dates.num2date(x)
-        xtime = datetime.datetime(xtime.year, 
-                                  xtime.month, 
-                                  xtime.day, 
-                                  xtime.hour, 
-                                  xtime.minute, 
-                                  xtime.second)
-        xtime = zaokruzi_vrijeme(xtime, 3600)
-        xtime = pd.to_datetime(xtime)
-        
-        ind = self.x.index(xtime)
-        yval = self.y[ind]
-        return xtime, yval
-
-###############################################################################
-###############################################################################
 class GrafSatniSrednjaci(MPLCanvas):
     """
     subklasa MPLCanvas, definira detalje crtanja satnog grafa
@@ -210,6 +139,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                       arg)
         
         #TODO!
+        #annotations
         if event.mouseevent.button == 2:
             x = pd.to_datetime(xpoint)
             print('najblizi x: ', x)
@@ -337,11 +267,11 @@ class GrafSatniSrednjaci(MPLCanvas):
                 label.set_rotation(20)
                 label.set_fontsize(4)
             
-#            #format y kooridinate
-#            yLabels=self.axes.get_yticklabels()
-#            for label in yLabels:
-#                label.set_fontsize(4)
-#            self.fig.tight_layout()
+            #format y kooridinate
+            yLabels=self.axes.get_yticklabels()
+            for label in yLabels:
+                label.set_fontsize(4)
+            self.fig.tight_layout()
             self.draw()
             
         else:
@@ -352,7 +282,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                            horizontalalignment = 'center', 
                            verticalalignment ='center', 
                            size = 'medium')
-#            self.fig.tight_layout()
+            self.fig.tight_layout()
             self.draw()
 
 ###############################################################################
@@ -367,6 +297,9 @@ class GrafMinutniPodaci(MPLCanvas):
         self.gornjaGranica = None
         self.data = None
         self.dataTest = False
+        
+        self.zadnjiAnnotation = None
+        self.testAnnotation = False
         
         self.veze()
 ###############################################################################        
@@ -392,21 +325,81 @@ class GrafMinutniPodaci(MPLCanvas):
         """
         pick event, desni klik za promjenu flaga
         """
-        xpoint = event.mouseevent.x
+        xpoint = event.mouseevent.xdata
         xpoint = matplotlib.dates.num2date(xpoint) #datetime.datetime
         #problem.. rounding offset aware i offset naive datetimes..workaround
-        god = xpoint.year
-        mon = xpoint.month
-        day = xpoint.day
-        h = xpoint.hour
-        m = xpoint.minute
-        s = xpoint.second
-        xpoint = datetime.datetime(god, mon, day, h, m, s)
+        xpoint = datetime.datetime(xpoint.year, 
+                                   xpoint.month, 
+                                   xpoint.day, 
+                                   xpoint.hour, 
+                                   xpoint.minute, 
+                                   xpoint.second)
         xpoint = zaokruzi_vrijeme(xpoint, 60)   #round na najblizu minutu
+        xpoint = pd.to_datetime(xpoint)
+        
+        if xpoint >= self.data.index.max():
+            xpoint = self.data.index.max()
+        if xpoint <= self.data.index.min():
+            xpoint = self.data.index.min()
+        
+        #annotations
+        if event.mouseevent.button == 2:
+            #odabrana tocka
+            xtime = xpoint
+            if xtime != self.zadnjiAnnotation:
+                if self.testAnnotation == True:
+                    self.annotation.remove()
+                    self.draw()
+                    
+                self.zadnjiAnnotation = xtime
+                self.testAnnotation = True
+                yconc = self.data.loc[xtime, u'koncentracija']
+                ystat = self.data.loc[xtime, u'status']
+                yflag = self.data.loc[xtime, u'flag']
+            
+                tekst = 'Vrijeme: '+str(xtime.time())+'\nKonc.: '+str(yconc)+'\nStatus: '+str(ystat)+'\nFlag: '+str(yflag)
+            
+                #grubo odredjena sredina grafa za ofset anotationa
+                size = self.frameSize()
+                x, y = size.width(), size.height()
+                x = x//2
+                y= y//2
+                #grube koorininate kliknute tocke 
+                clickedx = event.mouseevent.x
+                clickedy = event.mouseevent.y
+            
+                if clickedx >= x:
+                    clickedx = -60
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                else:
+                    clickedx = 30
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                self.annotation = self.axes.annotate(
+                    tekst, 
+                    xy = (xtime, yconc), 
+                    xytext = (clickedx, clickedy), 
+                    textcoords = 'offset points', 
+                    ha = 'left', 
+                    va = 'center', 
+                    fontsize = 5, 
+                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7, zorder = 4), 
+                    arrowprops = dict(arrowstyle = '->', alpha = 0.7, zorder = 4))
+                self.draw()
+            else:
+                self.annotation.remove()
+                self.zadnjiAnnotation = None
+                self.testAnnotation = False
+                self.draw()
                 
         if event.mouseevent.button == 3:
             #right click
-            t = pd.to_datetime(xpoint)
+            t = xpoint
             opis = 'Odabrano vrijeme: '+str(t)
             flag = FlagDijalog(message = opis)
             if flag.odgovor == 'valja':
@@ -485,7 +478,7 @@ class GrafMinutniPodaci(MPLCanvas):
             #flag manji od nule
             df2 = data[data[u'flag'] < 0]
             vrijeme2 = list(df2.index)
-            konc2 = list(df2.index)
+            konc2 = list(df2[u'koncentracija'])
             
             #plot crne linije
             self.axes.plot(vrijeme, konc,
@@ -493,18 +486,20 @@ class GrafMinutniPodaci(MPLCanvas):
                            zorder = 1)
             
             #scatter plot podataka, vrijednost flaga pozitivna
-            self.axes.scatter(vrijeme1, konc1,
-                              marker = 'o', 
-                              color = 'green', 
-                              zorder = 2, 
-                              picker = 2)
-            
+            if len(df1 > 0):
+                self.axes.scatter(vrijeme1, konc1,
+                                  marker = 'o', 
+                                  color = 'green', 
+                                  zorder = 2, 
+                                  picker = 2)
+                
             #scatter plot podataka, vrijednost flaga negativna
-            self.axes.scatter(vrijeme2, konc2, 
-                              marker = 'o', 
-                              color = 'red', 
-                              zorder = 2, 
-                              picker = 2)
+            if len(df2 > 0):
+                self.axes.scatter(vrijeme2, konc2, 
+                                  marker = 'o', 
+                                  color = 'red', 
+                                  zorder = 2, 
+                                  picker = 2)
                       
             #granice crtanog podrucja
             #x-os
@@ -530,11 +525,11 @@ class GrafMinutniPodaci(MPLCanvas):
                 label.set_rotation(20)
                 label.set_fontsize(4)
             
-#            #format y kooridinate
-#            yLabels = self.axes.get_yticklabels()
-#            for label in yLabels:
-#                label.set_fontsize(4)                
-#            self.fig.tight_layout()
+            #format y kooridinate
+            yLabels = self.axes.get_yticklabels()
+            for label in yLabels:
+                label.set_fontsize(4)                
+            self.fig.tight_layout()
             self.draw()
         else:
             self.axes.clear()
@@ -545,7 +540,7 @@ class GrafMinutniPodaci(MPLCanvas):
                            horizontalalignment = 'center', 
                            verticalalignment ='center', 
                            size = 'medium')
-#            self.fig.tight_layout()
+            self.fig.tight_layout()
             self.draw()
 ###############################################################################
 ################################################################################
@@ -591,6 +586,8 @@ class ApplicationMain(QtGui.QMainWindow):
         #agregiraj frejm
         agregirani = agregator.agregiraj_kanal(frejm)
         minutedata = frejm.loc['2014-06-04 15:01:00':'2014-06-04 16:00:00',:]
+        #dio sa negativnim flagovima...
+        minutedata.loc['2014-06-04 15:01:00':'2014-06-04 15:30:00',u'flag'] = -1
         
         #naredba za plot
         self.agregirani = agregirani
@@ -604,13 +601,11 @@ class ApplicationMain(QtGui.QMainWindow):
                      self.flag_update)
         
     def flag_update(self, data):
-        print('FLAG CHANGE POZVAN')
         tmin = data[0]
         tmax = data[1]
         nflag = data[2]
         #BROKEN... RADI NA MINUTNOM--- 
         self.minutni.loc[tmin:tmax,u'flag'] = nflag
-        print(self.minutni)
         self.canvasMinutni.crtaj(self.minutni)
         
         

@@ -78,7 +78,7 @@ class Kontrola(QtGui.QWidget):
         
         #gui - odabir datuma (direktno ili preko navigacijskih gumbi)
         self.connect(gui.webLoggerIzbornik,
-                     QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject'), 
+                     QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), 
                      self.priredi_vremenski_raspon)
         
         #setter raspolozivih stanica za gui
@@ -204,8 +204,8 @@ class Kontrola(QtGui.QWidget):
         start = pd.to_datetime(start)
         #dohvati trazeni dio minutnog frejma
         frejm = self.__minutni.copy()
-        frejm = frejm[frejm.inidex >= start]
-        frejm = frejm[frejm.inidex <= self.__trenutniSat]
+        frejm = frejm[frejm.index >= start]
+        frejm = frejm[frejm.index <= self.__trenutniSat]
         
         self.emit(QtCore.SIGNAL('kontrola_crtaj_minutni_frejm(PyQt_PyObject)'), frejm)
 ###############################################################################
@@ -223,10 +223,11 @@ class Kontrola(QtGui.QWidget):
         #start i end potencijalo ne postoje kao indeksi, workaround
         #dohvati slice
         frejm = self.__minutni.copy()
-        frejm = frejm[frejm.inidex >= start]
-        frejm = frejm[frejm.inidex <= end]
+        frejm = frejm[frejm.index >= start]
+        frejm = frejm[frejm.index <= end]
         #postavi flag
         frejm['flag'] = noviFlag
+        print(frejm)
         #TODO!
         #update flaga u dokumentu
         self.__dokument.update_frejm(

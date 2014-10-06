@@ -142,25 +142,23 @@ class Dokument(QtGui.QWidget):
         
         #ucitaj fileove po potrebi
         for datum in raspon:
-            #za svaki datum u rasponu
-            if datum not in self.__ucitaniPodaci[stanica]:
-                #ako nije prethodno ucitan
-                if datum in self.__dostupniPodaci[stanica]:
-                    #ako se nalazi medju dostupnim podatcima
-                    #ucitaj sve frejmove za zadani datum sa citacem
+            #combo stanica / datum moraju biti medju dostupnima
+            test1 = False
+            if stanica in list(self.__dostupniPodaci.keys()): #dostupnost stanice
+                if datum in list(self.__dostupniPodaci[stanica]): #dostupnost datuma
+                    test1 = True
+            
+            if stanica not in list(self.__ucitaniPodaci.keys()) and test1:
+                #stanica nije prije ucitana, ali stanica i datum su dostupni
+                frejmovi = self.__citac.citaj(stanica, datum)
+                self.__dodaj_nove_frejmove(stanica, frejmovi)
+                self.__ucitaniPodaci[stanica] = [datum]
+            else:
+                #stanica je prije ucitana, datum je dostupan
+                if datum not in list(self.__ucitaniPodaci[stanica]) and test1:
                     frejmovi = self.__citac.citaj(stanica, datum)
-
-                    #TODO!
-                    #VALIDATOR NIJE IMPLEMENTIRAN....sredi ga ovdje
-                    #self.__validator.validiraj(frejmovi)
-                    
-                    #dodaj ucitane frejmove na "glavni frame"
                     self.__dodaj_nove_frejmove(stanica, frejmovi)
-                    #stavi datum na popis ucitanih
-                    if stanica in list(self.__ucitaniPodaci.keys()):
-                        self.__ucitaniPodaci[stanica].append[datum]
-                    else:
-                        self.__ucitaniPodaci[stanica] = [datum]
+                    self.__ucitaniPodaci[stanica].append(datum)                
 ###############################################################################
     def dohvati_podatke(self, stanica, kanal, tMin, tMax):                    
         """
@@ -174,7 +172,7 @@ class Dokument(QtGui.QWidget):
         self.__trenutniMinutniSlice = self.__get_slice(stanica, kanal, tMin, tMax)
         
         #iskoristi agregator da dobijes agregirani frejm
-        self.__trenutniAgregiraniSlice = self.__agregator.agregiraj_kanal(self._trenutniMinutniSlice)
+        self.__trenutniAgregiraniSlice = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice)
                 
         #vrati minutni frejm i satno agregirani frejm
         return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice
@@ -222,27 +220,27 @@ class Dokument(QtGui.QWidget):
         stanica --> kljuc pod kojim se nalaze ciljani frejmovi za merge
         frejmovi --> frejmvi koje mergamo na postojece
         """
-        for kanal in frejmovi:
-            #provjeri da li kanal postoji u self.ucitaniFrejmovi
-            if kanal in self.__stanice[stanica].keys():
-                #ako kanal vec postoji, "pametno" spoji frejmove
-                #dodaj sve indekse i vrijednosti koje nedostaju
-                #ako ima preklapanja indeksa, ostaju stare vrijednosti
-                self.__stanice[stanica][kanal] = pd.merge(
-                    self.__stanice[stanica][kanal], 
-                    frejmovi[kanal], 
-                    how = 'outer', 
-                    left_index = True, 
-                    right_index = True, 
-                    sort = True, 
-                    on = [u'koncentracija', u'status', u'flag'])
-                #updateaj frame sa svim vrijednostima koje nisu NaN
-                #ova metoda osigurava ako ima preklapanja indeksa, da se
-                #spreme novo ucitane vrijednosti
-                self.__stanice[stanica][kanal].update(frejmovi[kanal])
-            else:
-                #slucaj kada dodajemo novi kanal
-                self.__stanice[stanica][kanal] = frejmovi[kanal]
+        if stanica in list(self.__stanice.keys()):
+            for kanal in frejmovi:
+                #ako stanica postoji, provjeri postojanje knala
+                if kanal in list(self.__stanice[stanica].keys()):
+                    self.__stanice[stanica][kanal] = pd.merge(
+                        self.__stanice[stanica][kanal], 
+                        frejmovi[kanal], 
+                        how = 'outer', 
+                        left_index = True, 
+                        right_index = True, 
+                        sort = True, 
+                        on = [u'koncentracija', u'status', u'flag'])
+                    self.__stanice[stanica][kanal].update(frejmovi[kanal])
+                else:
+                    #slucaj kada dodajemo novi kanal na postojecu stanicu
+                    self.__stanice[stanica][kanal] = frejmovi[kanal]
+        else:
+            #slucaj kada stanica ne postoji u dictu, dodaj sve frejmove
+            self.__stanice[stanica] = frejmovi
+                
+                
 ###############################################################################
 ###############################################################################
 """

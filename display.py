@@ -84,7 +84,7 @@ class GlavniProzor(QtGui.QMainWindow):
 
         #povezivanje gui - kontoler - dokument
         self.doc = dokument.Dokument()
-        self.kontrola = kontroler.Kontrola(gui = self, model = self.doc)
+        self.kontrola = kontroler.Kontrola(gui = self, dokument = self.doc)
 ###############################################################################
     
     """

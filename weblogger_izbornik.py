@@ -143,9 +143,9 @@ class WebloggerIzbornik(base, form):
         #zapamti zadnji datum
         self.trenutniDatum = self.kalendar.selectedDate()
         #postavi novi popis datuma
-        self.datumi = datumi
+        self.datumi = sorted(datumi)
         #postavi boje dostupnih u kalendaru
-        self.kalendar.selectDates(datumi)
+        self.kalendar.selectDates(self.datumi)
         #pokusaj forsirati zadnji izbor datuma
         if self.trenutniDatum in self.datumi:
             dan = self.trenutniDatum.toPyDate()
@@ -192,7 +192,7 @@ class WebloggerIzbornik(base, form):
                   self.trenutnaStanica)
                   
 ###############################################################################
-    def kalendar_izbor_datuma(self, datum):
+    def kalendar_izbor_datuma(self):
         """
         Funkcija se poziva svaki puta kada se klikne na datum u kalendaru, ili
         kada se izabrani datum promjeni
@@ -211,7 +211,7 @@ class WebloggerIzbornik(base, form):
             self.tmax = dan + timedelta(days = 1)
             #tmax je timestamp "dan+1 00:00:00"
             data = [self.trenutnaStanica, self.tmin, self.tmax]
-            self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject'), data)
+            self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), data)
         
 ###############################################################################
     def test_nav_gumbe(self):
@@ -220,22 +220,23 @@ class WebloggerIzbornik(base, form):
         -mjenja status gumba (enabled/disabled)
         """
         self.trenutniDatum = self.kalendar.selectedDate()
-        if self.trenutniDatum in self.datumi:
-            pozicija = self.datumi.index(self.trenutniDatum)
-            #gumb prethodni
-            if pozicija == 0:
+        if self.datumi != None:
+            if self.trenutniDatum in self.datumi:
+                pozicija = self.datumi.index(self.trenutniDatum)
+                #gumb prethodni
+                if pozicija == 0:
+                    self.uiPrethodni.setDisabled(True)
+                else:
+                    self.uiPrethodni.setDisabled(False)
+                #gumb sljedeci
+                if (pozicija + 1) == (len(self.datumi)):
+                    self.uiSljedeci.setDisabled(True)
+                else:
+                    self.uiSljedeci.setDisabled(False)
+            else:
+                #selected date is not valid, disable both buttons
                 self.uiPrethodni.setDisabled(True)
-            else:
-                self.uiPrethodni.setDisabled(False)
-            #gumb sljedeci
-            if (pozicija + 1) == (len(self.datumi)):
                 self.uiSljedeci.setDisabled(True)
-            else:
-                self.uiSljedeci.setDisabled(False)
-        else:
-            #selected date is not valid, disable both buttons
-            self.uiPrethodni.setDisabled(True)
-            self.uiSljedeci.setDisabled(True)
 ###############################################################################
     def promjena_mjerenja(self, index):
         """
@@ -268,9 +269,8 @@ class WebloggerIzbornik(base, form):
         if datum in self.datumi:
             pozicija = self.datumi.index(datum)
             pozicija = pozicija + 1
-            noviDatum = self.trenutniDatumi[pozicija]
+            noviDatum = self.datumi[pozicija]
             self.trenutniDatum = noviDatum            
-            self.kalendar.setSelectedDate(noviDatum)
             self.kalendar.setSelectedDate(noviDatum)
 ###############################################################################
 

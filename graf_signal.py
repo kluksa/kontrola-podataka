@@ -65,11 +65,6 @@ class MPLCanvas(FigureCanvas):
         
     def crtaj(self):
         pass
-    
-    def brisi_graf(self):
-        self.axes.clear()
-        self.draw()
-###############################################################################
 ###############################################################################
 class FlagDijalog(QtGui.QDialog):
     """
@@ -111,17 +106,24 @@ class GrafSatniSrednjaci(MPLCanvas):
         
         self.testAnnotation = None
         self.zadnjiAnnotation = False
+        
+        self.zadnjiHighlight = None
+        self.testHighlight = False
 
         self.veze()
-###############################################################################        
+###############################################################################
+    def brisi_graf(self, x):
+        if x == 'satni':
+            self.axes.clear()
+###############################################################################
     def veze(self):
-        self.cidpick = self.mpl_connect('pick_event', self.onpick)
+        self.cidpick = self.mpl_connect('button_press_event', self.onpick)
 ###############################################################################        
     def onpick(self, event):
         """
         akcije prilikom eventa, odabira na grafu
         """
-        xpoint = event.mouseevent.xdata
+        xpoint = event.xdata
         xpoint = matplotlib.dates.num2date(xpoint) #datetime.datetime
         #problem.. rounding offset aware i offset naive datetimes..workaround
         xpoint = datetime.datetime(xpoint.year, 
@@ -137,38 +139,67 @@ class GrafSatniSrednjaci(MPLCanvas):
             xpoint = self.data.index.max()
         if xpoint <= self.data.index.min():
             xpoint = self.data.index.min()
-
-        
+            
+        #TODO!
+        #highlight selected point
+        if xpoint in list(self.data.index):
+            ypoint = self.data.loc[xpoint, u'avg']
+        else:
+            ypoint = (self.data[u'min'].min() + self.data[u'max'].max())/2
+                    
                 
-        if event.mouseevent.button == 1:
+        if event.button == 1:
             #left click
             self.emit(QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
                       xpoint)
+            #yellow highlight circle
+            xhdot = xpoint
+            if xhdot != self.zadnjiHighlight:
+                if self.testHighlight == True and self.zadnjiHighlight != None:
+                    self.hdot.remove()
+                    self.draw()
+                
+                self.zadnjiHighlight = xhdot
+                self.testHighlight = True
+                
+                self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5)
+                self.draw()
+            else:
+                self.zadnjiHighlight = None
+                self.testHighlight = False
+                self.hdot.remove()
+                self.draw()
         
         #annotations
-        if event.mouseevent.button == 2:
+        if event.button == 2:
             xtime = xpoint
             if xtime != self.zadnjiAnnotation:
-                if self.testAnnotation == True:
+                if self.testAnnotation == True and self.annotation != None:
                     self.annotation.remove()
                     self.draw()
                     
                 self.zadnjiAnnotation = xtime
                 self.testAnnotation = True
-                yavg = self.data.loc[xtime, u'avg']
-                ymin = self.data.loc[xtime, u'min']
-                ymax = self.data.loc[xtime, u'max']
-                ystatus = self.data.loc[xtime, u'status']
-                ycount = self.data.loc[xtime, u'count']
+                #problem kod indeksiranja... potencijalni indeksi ne postoje!!! key errors
+                if xtime in list(self.data.index):
+                    yavg = self.data.loc[xtime, u'avg']
+                    ymin = self.data.loc[xtime, u'min']
+                    ymax = self.data.loc[xtime, u'max']
+                    ystatus = self.data.loc[xtime, u'status']
+                    ycount = self.data.loc[xtime, u'count']
                 
-                tekst = 'Vrijeme: '+str(xtime)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+                    tekst = 'Vrijeme: '+str(xtime)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+                else:
+                    tekst = 'Vrijeme: '+str(xtime)+'\nNema podataka'
+                    yavg = ypoint
                 
                 size = self.frameSize()
                 x, y = size.width(), size.height()
                 x = x//2
                 y= y//2
-                clickedx = event.mouseevent.x
-                clickedy = event.mouseevent.y
+                clickedx = event.x
+                clickedy = event.y
+                print(clickedx, clickedy)
             
                 if clickedx >= x:
                     clickedx = -60
@@ -183,6 +214,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                     else:
                         clickedy = 30
                 
+
                 self.annotation = self.axes.annotate(
                     tekst, 
                     xy = (xtime, yavg), 
@@ -200,8 +232,25 @@ class GrafSatniSrednjaci(MPLCanvas):
                 self.testAnnotation = False
                 self.draw()
         
-        if event.mouseevent.button == 3:
+        if event.button == 3:
             #right click
+            xhdot = xpoint
+            if xhdot != self.zadnjiHighlight:
+                if self.testHighlight == True and self.zadnjiHighlight != None:
+                    self.hdot.remove()
+                    self.draw()
+                
+                self.zadnjiHighlight = xhdot
+                self.testHighlight = True
+                
+                self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5)
+                self.draw()
+            else:
+                self.zadnjiHighlight = None
+                self.testHighlight = False
+                self.hdot.remove()
+                self.draw()
+
             tmax = xpoint
             tmin = xpoint - timedelta(minutes = 59)
             tmax = pd.to_datetime(tmax)
@@ -304,15 +353,15 @@ class GrafSatniSrednjaci(MPLCanvas):
             maxxlim = pd.to_datetime(maxxlim)
             self.axes.set_xlim(minxlim, maxxlim)
             
-            #y-os
-            raspon = minValue + maxValue
-            raspon.sort()
-            minylim = raspon[0] #najmanja crijednost
-            maxylim = raspon[len(raspon)-1] #najveca vrijednost
-            pad = (minylim + maxylim)/5 #padding da nisu na rubu
-            minylim = minylim - pad
-            maxylim = maxylim + pad
-            self.axes.set_ylim(minylim, maxylim)
+#            #y-os
+#            raspon = minValue + maxValue
+#            raspon.sort()
+#            minylim = raspon[0] #najmanja crijednost
+#            maxylim = raspon[len(raspon)-1] #najveca vrijednost
+#            pad = (minylim + maxylim)/5 #padding da nisu na rubu
+#            minylim = minylim - pad
+#            maxylim = maxylim + pad
+#            self.axes.set_ylim(minylim, maxylim)
             
             #format x kooridinate
             xLabels = self.axes.get_xticklabels()
@@ -325,6 +374,11 @@ class GrafSatniSrednjaci(MPLCanvas):
             for label in yLabels:
                 label.set_fontsize(4)
             self.fig.tight_layout()
+            self.zadnjiAnnotation = None
+            self.testAnnotation == False
+            self.zadnjiHighlight = None
+            self.testHighlight = False
+
             self.draw()
             
         else:
@@ -334,8 +388,13 @@ class GrafSatniSrednjaci(MPLCanvas):
                            'Nema izmjerenih podataka.', 
                            horizontalalignment = 'center', 
                            verticalalignment ='center', 
-                           size = 'medium')
+                           size = 'medium', 
+                           fontsize = 5)
             self.fig.tight_layout()
+            self.zadnjiAnnotation = None
+            self.testAnnotation == False
+            self.zadnjiHighlight = None
+            self.testHighlight = False
             self.draw()
 
 ###############################################################################
@@ -365,7 +424,7 @@ class GrafMinutniPodaci(MPLCanvas):
                           picker = 2)   
         event connect, span selector...
         """
-        self.cidpick = self.mpl_connect('pick_event', self.onpick)
+        self.cidpick = self.mpl_connect('button_press_event', self.onpick)
         self.span = SpanSelector(self.axes, 
                                  self.minutni_span_flag, 
                                  'horizontal', 
@@ -378,7 +437,7 @@ class GrafMinutniPodaci(MPLCanvas):
         """
         pick event, desni klik za promjenu flaga
         """
-        xpoint = event.mouseevent.xdata
+        xpoint = event.xdata
         xpoint = matplotlib.dates.num2date(xpoint) #datetime.datetime
         #problem.. rounding offset aware i offset naive datetimes..workaround
         xpoint = datetime.datetime(xpoint.year, 
@@ -396,7 +455,7 @@ class GrafMinutniPodaci(MPLCanvas):
             xpoint = self.data.index.min()
         
         #annotations
-        if event.mouseevent.button == 2:
+        if event.button == 2:
             #odabrana tocka
             xtime = xpoint
             if xtime != self.zadnjiAnnotation:
@@ -418,8 +477,8 @@ class GrafMinutniPodaci(MPLCanvas):
                 x = x//2
                 y= y//2
                 #grube koorininate kliknute tocke 
-                clickedx = event.mouseevent.x
-                clickedy = event.mouseevent.y
+                clickedx = event.x
+                clickedy = event.y
             
                 if clickedx >= x:
                     clickedx = -60
@@ -450,7 +509,7 @@ class GrafMinutniPodaci(MPLCanvas):
                 self.testAnnotation = False
                 self.draw()
                 
-        if event.mouseevent.button == 3:
+        if event.button == 3:
             #right click
             t = xpoint
             opis = 'Odabrano vrijeme: '+str(t)
@@ -562,15 +621,15 @@ class GrafMinutniPodaci(MPLCanvas):
             maxxlim = pd.to_datetime(maxxlim)
             self.axes.set_xlim(minxlim, maxxlim)
             
-            #y-os
-            raspon = konc
-            raspon.sort()
-            minylim = raspon[0] #najmanja crijednost
-            maxylim = raspon[len(raspon)-1] #najveca vrijednost
-            pad = (minylim + maxylim)/5 #padding da nisu na rubu
-            minylim = minylim - pad
-            maxylim = maxylim + pad
-            self.axes.set_ylim(minylim, maxylim)
+#            #y-os
+#            raspon = konc
+#            raspon.sort()
+#            minylim = raspon[0] #najmanja crijednost
+#            maxylim = raspon[len(raspon)-1] #najveca vrijednost
+#            pad = (minylim + maxylim)/5 #padding da nisu na rubu
+#            minylim = minylim - pad
+#            maxylim = maxylim + pad
+#            self.axes.set_ylim(minylim, maxylim)
             
             #format x kooridinate
             xLabels = self.axes.get_xticklabels()

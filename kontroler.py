@@ -115,6 +115,7 @@ class Kontrola(QtGui.QWidget):
         self.connect(gui.canvasMinutni, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjena_flaga)
+        
                      
 ###############################################################################
     def set_citac(self, citac):

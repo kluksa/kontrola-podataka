@@ -211,6 +211,8 @@ class WebloggerIzbornik(base, form):
             self.tmax = dan + timedelta(days = 1)
             #tmax je timestamp "dan+1 00:00:00"
             data = [self.trenutnaStanica, self.tmin, self.tmax]
+            #TODO!
+            #treba clearati minutni graf OVDJE, kada se prebacuju datumi, minutni bi trebao biti prazan
             self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), data)
         
 ###############################################################################

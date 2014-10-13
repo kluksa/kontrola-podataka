@@ -7,6 +7,12 @@ Created on Tue Apr 29 08:32:47 2014
 Izdvajanje grafova u pojedine klase. Dodana je mini aplikacija za funkcionalno testiranje
 """
 
+#TODO!
+#1. dozvoliti vise grafova na canvasu (glavni i pomocni)
+#2. dozvoliti dinamicko mjenjanje boje i drugih hardcoded dijelova grafa
+#3. srediti bolje sucelje za graf - kontrole koje pokrecu crtanje staviti pored
+
+
 #import statements
 import sys
 import matplotlib
@@ -14,7 +20,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import datetime
 from datetime import timedelta
-from PyQt4 import QtGui,QtCore
+from PyQt4 import QtGui,QtCore, uic
 import pandas as pd
 from matplotlib.widgets import SpanSelector
 #import numpy as np
@@ -22,9 +28,6 @@ from matplotlib.widgets import SpanSelector
 #pomocni...samo za lokalni test
 import citac
 from agregator import Agregator
-
-def format1(x,y):
-    return 'izlaz: \nx:'+str(x)+'\ny:'+str(y)
 
 ###############################################################################
 def zaokruzi_vrijeme(dt_objekt, nSekundi):
@@ -123,6 +126,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         """
         akcije prilikom eventa, odabira na grafu
         """
+        #TODO!
+        #krug se brise prilikom ponovnog klika na istu tocku... fix that
         xpoint = event.xdata
         xpoint = matplotlib.dates.num2date(xpoint) #datetime.datetime
         #problem.. rounding offset aware i offset naive datetimes..workaround
@@ -140,8 +145,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         if xpoint <= self.data.index.min():
             xpoint = self.data.index.min()
             
-        #TODO!
-        #highlight selected point
+        #highlight selected point - kooridinate ako nedostaju podaci
         if xpoint in list(self.data.index):
             ypoint = self.data.loc[xpoint, u'avg']
         else:
@@ -416,15 +420,9 @@ class GrafMinutniPodaci(MPLCanvas):
         self.veze()
 ###############################################################################        
     def veze(self):
-        """avg1 = list(data1[u'avg'])                
-                self.axes.scatter(vrijeme1, avg1,
-                          marker='d',
-                          color='green', 
-                          zorder = 3, 
-                          picker = 2)   
-        event connect, span selector...
-        """
         self.cidpick = self.mpl_connect('button_press_event', self.onpick)
+        #TODO!
+        #sklepati neki generalni toggle za span selector
         self.span = SpanSelector(self.axes, 
                                  self.minutni_span_flag, 
                                  'horizontal', 
@@ -453,6 +451,11 @@ class GrafMinutniPodaci(MPLCanvas):
             xpoint = self.data.index.max()
         if xpoint <= self.data.index.min():
             xpoint = self.data.index.min()
+            
+        if xpoint in list(self.data.index):
+            ypoint = self.data.loc[xpoint, u'koncentracija']
+        else:
+            ypoint = (self.data[u'koncentracija'].min() + self.data[u'koncentracija'].max())/2
         
         #annotations
         if event.button == 2:
@@ -465,11 +468,15 @@ class GrafMinutniPodaci(MPLCanvas):
                     
                 self.zadnjiAnnotation = xtime
                 self.testAnnotation = True
-                yconc = self.data.loc[xtime, u'koncentracija']
-                ystat = self.data.loc[xtime, u'status']
-                yflag = self.data.loc[xtime, u'flag']
+                if xtime in list(self.data.index):
+                    yconc = self.data.loc[xtime, u'koncentracija']
+                    ystat = self.data.loc[xtime, u'status']
+                    yflag = self.data.loc[xtime, u'flag']
             
-                tekst = 'Vrijeme: '+str(xtime.time())+'\nKonc.: '+str(yconc)+'\nStatus: '+str(ystat)+'\nFlag: '+str(yflag)
+                    tekst = 'Vrijeme: '+str(xtime.time())+'\nKonc.: '+str(yconc)+'\nStatus: '+str(ystat)+'\nFlag: '+str(yflag)
+                else:
+                    yconc = ypoint
+                    tekst = 'Vrijeme: '+str(xtime.time())+'\nNema podataka'
             
                 #grubo odredjena sredina grafa za ofset anotationa
                 size = self.frameSize()
@@ -604,7 +611,6 @@ class GrafMinutniPodaci(MPLCanvas):
                                   color = 'green', 
                                   zorder = 2, 
                                   picker = 2)
-                
             #scatter plot podataka, vrijednost flaga negativna
             if len(df2 > 0):
                 self.axes.scatter(vrijeme2, konc2, 
@@ -642,6 +648,8 @@ class GrafMinutniPodaci(MPLCanvas):
             for label in yLabels:
                 label.set_fontsize(4)                
             self.fig.tight_layout()
+            self.zadnjiAnnotation = None
+            self.testAnnotation = False
             self.draw()
         else:
             self.axes.clear()
@@ -653,6 +661,8 @@ class GrafMinutniPodaci(MPLCanvas):
                            verticalalignment ='center', 
                            size = 'medium')
             self.fig.tight_layout()
+            self.zadnjiAnnotation = None
+            self.testAnnotation = False
             self.draw()
 ###############################################################################
 ################################################################################

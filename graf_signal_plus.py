@@ -910,9 +910,9 @@ class SatniGraf(base2, form2):
         self.mplToolbar = NavigationToolbar(self.canvasSatni, self.widget2)
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
-
-        self.veze()
         
+        self.veze()
+        self.initial_setup()        
         
         
         #opis slicea : slice od: do:
@@ -929,8 +929,48 @@ class SatniGraf(base2, form2):
         #minor ticks handle
         self.canvasSatni.axes.minorticks_on()
 
+    def initial_setup(self):
+        """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
+        #TODO!
+        #inicijalno upisivanje.....
         
+        #checkboxes
+        self.glavniGrafCheck.setChecked(True)
+        self.enable_glavni_kanal()
+        self.pGraf1Check.setChecked(self.__defaulti['pomocnikanal1']['crtaj'])
+        self.enable_pomocni_kanal1()
+        self.pGraf2Check.setChecked(self.__defaulti['pomocnikanal2']['crtaj'])
+        self.enable_pomocni_kanal2()
+        self.pGraf3Check.setChecked(self.__defaulti['pomocnikanal3']['crtaj'])
+        self.enable_pomocni_kanal3()
+        self.pGraf4Check.setChecked(self.__defaulti['pomocnikanal4']['crtaj'])
+        self.enable_pomocni_kanal4()
+        self.pGraf5Check.setChecked(self.__defaulti['pomocnikanal5']['crtaj'])
+        self.enable_pomocni_kanal5()
+        self.pGraf6Check.setChecked(self.__defaulti['pomocnikanal6']['crtaj'])
+        self.enable_pomocni_kanal6()
+        self.gridCheck.setChecked(self.__defaulti['opcenito']['grid'])
+        self.enable_grid()
+        self.cursorCheck.setChecked(self.__defaulti['opcenito']['cursor'])
+        self.enable_cursor()
+        self.spanSelectorCheck.setChecked(self.__defaulti['opcenito']['span'])
+        self.enable_spanSelector()
+        self.minorTickCheck.setChecked(self.__defaulti['opcenito']['minorTicks'])
+        self.enable_minorTick()
         
+        #button colors
+        self.change_boja_pGraf1Detalji()
+        self.change_boja_pGraf2Detalji()
+        self.change_boja_pGraf3Detalji()
+        self.change_boja_pGraf4Detalji()
+        self.change_boja_pGraf5Detalji()
+        self.change_boja_pGraf6Detalji()
+        
+        #initial combobox values... popis kanala, treba prosljediti dokument
+        #dict svih agregiranih...tada se mogu populirati comboboxevi
+
+
+
     def veze(self):
         """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
         #TODO!
@@ -944,28 +984,184 @@ class SatniGraf(base2, form2):
         self.pGraf4Detalji.clicked.connect(self.dijalog_pGraf4Detalji)
         self.pGraf5Detalji.clicked.connect(self.dijalog_pGraf5Detalji)
         self.pGraf6Detalji.clicked.connect(self.dijalog_pGraf6Detalji)
+        #comboboxes
+        self.glavniGrafIzbor.currentIndexChanged.connect(self.update_glavni_kanal)
+        self.pGraf1Izbor.currentIndexChanged.connect(self.update_pomocni_kanal1)
+        self.pGraf2Izbor.currentIndexChanged.connect(self.update_pomocni_kanal2)
+        self.pGraf3Izbor.currentIndexChanged.connect(self.update_pomocni_kanal3)
+        self.pGraf4Izbor.currentIndexChanged.connect(self.update_pomocni_kanal4)
+        self.pGraf5Izbor.currentIndexChanged.connect(self.update_pomocni_kanal5)
+        self.pGraf6Izbor.currentIndexChanged.connect(self.update_pomocni_kanal6)
+        #checkboxes
+        self.glavniGrafCheck.stateChanged.connect(self.enable_glavni_kanal)
+        self.pGraf1Check.stateChanged.connect(self.enable_pomocni_kanal1)
+        self.pGraf2Check.stateChanged.connect(self.enable_pomocni_kanal2)
+        self.pGraf3Check.stateChanged.connect(self.enable_pomocni_kanal3)
+        self.pGraf4Check.stateChanged.connect(self.enable_pomocni_kanal4)
+        self.pGraf5Check.stateChanged.connect(self.enable_pomocni_kanal5)
+        self.pGraf6Check.stateChanged.connect(self.enable_pomocni_kanal6)
+        self.gridCheck.stateChanged.connect(self.enable_grid)
+        self.cursorCheck.stateChanged.connect(self.enable_cursor)
+        self.spanSelectorCheck.stateChanged.connect(self.enable_spanSelector)
+        self.minorTickCheck.stateChanged.connect(self.enable_minorTick)
         
+    def enable_grid(self):
+        if self.gridCheck.isChecked() == True:
+            self.__defaulti['opcenito']['grid'] = True
+        else:
+            self.__defaulti['opcenito']['grid'] = False
+    
+    def enable_cursor(self):
+        if self.cursorCheck.isChecked() == True:
+            self.__defaulti['opcenito']['cursor'] = True
+        else:
+            self.__defaulti['opcenito']['cursor'] = False
+    
+    def enable_spanSelector(self):
+        if self.spanSelectorCheck.isChecked() == True:
+            self.__defaulti['opcenito']['span'] = True
+        else:
+            self.__defaulti['opcenito']['span'] = False
+    
+    def enable_minorTick(self):
+        if self.minorTickCheck.isChecked() == True:
+            self.__defaulti['opcenito']['minorTicks'] = True
+        else:
+            self.__defaulti['opcenito']['minorTicks'] = False
+    
+    def enable_glavni_kanal(self):
+        if self.glavniGrafCheck.isChecked() == True:
+            self.glavniGrafIzbor.setEnabled(True)
+            self.glavniGrafDetalji.setEnabled(True)
+        else:
+            self.glavniGrafIzbor.setEnabled(False)
+            self.glavniGrafDetalji.setEnabled(False)
 
-    def update_glavni_kanal():
-        pass
+    def enable_pomocni_kanal1(self):
+        if self.pGraf1Check.isChecked() == True:
+            self.pGraf1Izbor.setEnabled(True)
+            self.pGraf1Detalji.setEnabled(True)
+        else:
+            self.pGraf1Izbor.setEnabled(False)
+            self.pGraf1Detalji.setEnabled(False)
+            
+    def enable_pomocni_kanal2(self):
+        if self.pGraf2Check.isChecked() == True:
+            self.pGraf2Izbor.setEnabled(True)
+            self.pGraf2Detalji.setEnabled(True)
+        else:
+            self.pGraf2Izbor.setEnabled(False)
+            self.pGraf2Detalji.setEnabled(False)
     
-    def update_pomocni_kanal1():
-        pass
+    def enable_pomocni_kanal3(self):
+        if self.pGraf3Check.isChecked() == True:
+            self.pGraf3Izbor.setEnabled(True)
+            self.pGraf3Detalji.setEnabled(True)
+        else:
+            self.pGraf3Izbor.setEnabled(False)
+            self.pGraf3Detalji.setEnabled(False)
+
+    def enable_pomocni_kanal4(self):
+        if self.pGraf4Check.isChecked() == True:
+            self.pGraf4Izbor.setEnabled(True)
+            self.pGraf4Detalji.setEnabled(True)
+        else:
+            self.pGraf4Izbor.setEnabled(False)
+            self.pGraf4Detalji.setEnabled(False)
+
+    def enable_pomocni_kanal5(self):
+        if self.pGraf5Check.isChecked() == True:
+            self.pGraf5Izbor.setEnabled(True)
+            self.pGraf5Detalji.setEnabled(True)
+        else:
+            self.pGraf5Izbor.setEnabled(False)
+            self.pGraf5Detalji.setEnabled(False)
+
+    def enable_pomocni_kanal6(self):
+        if self.pGraf6Check.isChecked() == True:
+            self.pGraf6Izbor.setEnabled(True)
+            self.pGraf6Detalji.setEnabled(True)
+        else:
+            self.pGraf6Izbor.setEnabled(False)
+            self.pGraf6Detalji.setEnabled(False)
+
+    def update_glavni_kanal(self):
+        newValue = self.glavniGrafIzbor.currentText()
+        self.__defaulti['validanOK']['kanal'] = newValue
+        self.__defaulti['validanNOK']['kanal'] = newValue
+        self.__defaulti['nevalidanOK']['kanal'] = newValue
+        self.__defaulti['nevalidanNOK']['kanal'] = newValue
+        self.__defaulti['glavnikanal1']['kanal'] = newValue
+        self.__defaulti['glavnikanal2']['kanal'] = newValue
+        self.__defaulti['glavnikanal3']['kanal'] = newValue
+        self.__defaulti['glavnikanal4']['kanal'] = newValue
+        self.__defaulti['glavnikanalfill']['kanal'] = newValue
     
-    def update_pomocni_kanal2():
-        pass
+    def update_pomocni_kanal1(self):
+        newValue = self.pGraf1Izbor.currentText()
+        self.__defaulti['pomocnikanal1']['kanal'] = newValue
     
-    def update_pomocni_kanal3():
-        pass
+    def update_pomocni_kanal2(self):
+        newValue = self.pGraf2Izbor.currentText()
+        self.__defaulti['pomocnikanal2']['kanal'] = newValue
     
-    def update_pomocni_kanal4():
-        pass
+    def update_pomocni_kanal3(self):
+        newValue = self.pGraf3Izbor.currentText()
+        self.__defaulti['pomocnikanal3']['kanal'] = newValue
     
-    def update_pomocni_kanal5():
-        pass
+    def update_pomocni_kanal4(self):
+        newValue = self.pGraf4Izbor.currentText()
+        self.__defaulti['pomocnikanal4']['kanal'] = newValue
     
-    def update_pomocni_kanal6():
-        pass
+    def update_pomocni_kanal5(self):
+        newValue = self.pGraf5Izbor.currentText()
+        self.__defaulti['pomocnikanal5']['kanal'] = newValue
+    
+    def update_pomocni_kanal6(self):
+        newValue = self.pGraf6Izbor.currentText()
+        self.__defaulti['pomocnikanal6']['kanal'] = newValue
+        
+    def change_boja_pGraf1Detalji(self):
+        rgb = self.__defaulti['pomocnikanal1']['color']
+        a = self.__defaulti['pomocnikanal1']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf1Detalji', boja)
+        self.pGraf1Detalji.setStyleSheet(stil)
+        
+    def change_boja_pGraf2Detalji(self):
+        rgb = self.__defaulti['pomocnikanal2']['color']
+        a = self.__defaulti['pomocnikanal2']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf2Detalji', boja)
+        self.pGraf2Detalji.setStyleSheet(stil)
+
+    def change_boja_pGraf3Detalji(self):
+        rgb = self.__defaulti['pomocnikanal3']['color']
+        a = self.__defaulti['pomocnikanal3']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf3Detalji', boja)
+        self.pGraf3Detalji.setStyleSheet(stil)
+
+    def change_boja_pGraf4Detalji(self):
+        rgb = self.__defaulti['pomocnikanal4']['color']
+        a = self.__defaulti['pomocnikanal4']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf4Detalji', boja)
+        self.pGraf4Detalji.setStyleSheet(stil)
+
+    def change_boja_pGraf5Detalji(self):
+        rgb = self.__defaulti['pomocnikanal5']['color']
+        a = self.__defaulti['pomocnikanal5']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf5Detalji', boja)
+        self.pGraf5Detalji.setStyleSheet(stil)
+
+    def change_boja_pGraf6Detalji(self):
+        rgb = self.__defaulti['pomocnikanal6']['color']
+        a = self.__defaulti['pomocnikanal6']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pGraf6Detalji', boja)
+        self.pGraf6Detalji.setStyleSheet(stil)
 
     def dijalog_glavniGrafDetalji(self):
         """dijalog za promjenu izgleda glavnog grafa"""
@@ -986,6 +1182,7 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pGraf1Detalji()
             
     def dijalog_pGraf2Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 2"""
@@ -996,6 +1193,7 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pGraf2Detalji()
 
     def dijalog_pGraf3Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 3"""
@@ -1006,6 +1204,7 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pGraf3Detalji()
 
     def dijalog_pGraf4Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 4"""
@@ -1016,6 +1215,7 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pGraf4Detalji()
 
     def dijalog_pGraf5Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 5"""
@@ -1026,6 +1226,7 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pGraf5Detalji()
 
     def dijalog_pGraf6Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 6"""
@@ -1036,7 +1237,58 @@ class SatniGraf(base2, form2):
         if pomocnigrafdijalog.exec_():
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
-
+            self.change_boja_pGraf6Detalji()
+            
+    def default_color_to_qcolor(self, rgb, a):
+        """
+        helper funkcija za transformaciju boje u QColor
+        input:
+            rgb -> (r, g, b) tuple
+            a -> float izmedju [0:1]
+        output:
+            QtGui.QColor objekt
+        """
+        boja = QtGui.QColor()
+        #unpack tuple of rgb color
+        r, g, b = rgb
+        boja.setRed(r)
+        boja.setGreen(g)
+        boja.setBlue(b)
+        #alpha je izmedju 0-1, input treba biti int 0-255
+        a = int(a*255)
+        boja.setAlpha(a)
+        return boja
+        
+    def qcolor_to_default_color(self, color):
+        """
+        helper funkcija za transformacije qcolor u defaultnu boju
+        input:
+            color ->QtGui.QColor
+        output:
+            (r,g,b) tuple, i alpha
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = color.alpha()/255
+        return (r,g,b), a
+        
+    def color_to_style_string(self, target, color):
+        """
+        helper funkcija za izradu styleSheet stringa
+        input:
+            target -> string, target of background color change
+                npr. 'QLabel#label1'
+            color -> QtGui.QColor
+        output:
+            string - styleSheet 'css' style background for target element
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = int(100*color.alpha()/255)
+        stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+        return stil
 ###############################################################################
 ###############################################################################
 

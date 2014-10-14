@@ -24,6 +24,24 @@ class Agregator(object):
     ulaz --> numpy array ili neka lista
     izlaz --> broj
     """
+    def test_validacije(self, x):
+        """
+        test da li su svi unutar intervala validirani
+        validairani minutni podatci imaju flag 1000 ili -1000
+        """
+        if len(x) == 0:
+            return np.NaN
+        total = True
+        for ind in x:
+            if abs(ind) != 1000:
+                #postoji barem jedan minutni podatak koji nije validiran
+                total = False
+        
+        if total == True:
+            return 1000 #slucaj kada su svi minutni validirani
+        else:
+            return 1 #slucaj kada postoje nevalidirani podaci
+    
     def h_q05(self, x):
         #5 percentil podataka
         if len(x) == 0:
@@ -96,6 +114,14 @@ class Agregator(object):
         agregirani[u'status'] = temp
         
         """
+        test validacije
+        """
+        tempDf = df.copy()
+        dfFlag = tempDf[u'flag']
+        temp = dfFlag.resample('H', how = self.test_validacije, closed = 'right', label = 'right')
+        agregirani[u'flag'] = temp
+        
+        """
         -definicija funkcija koje nas zanimaju
         -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
         """
@@ -127,17 +153,24 @@ class Agregator(object):
         """
         
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
+
         
-        #dodaj stupac flag inicijaliziran na 0
-        agregirani[u'flag'] = 0
+        #TODO!
+        #treba testirati kako prati status validiranih
+        #validirani i OK - flag=1000
+        #validirani i prekratak niz valjanih - flag=-1000
+        #nevalidirani i OK - flag=1
+        #nevalidirani i prekratak niz valjanih - flag)-1
         """
         -provjeri da li je broj valjanih podataka sa flagom vecim od 0 veci od 45
         -ako nije... flagaj interval kao nevaljan...umetni placeholder vrijednosti
         """
         for i in agregirani.index:
-            if agregirani.loc[i,u'count']<45:
-                agregirani.loc[i,u'flag'] = -1
-
+            if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i,u'count']<45:
+                if agregirani.loc[i, u'flag'] == 1000:
+                    agregirani.loc[i, u'flag'] = -1000
+                else:
+                    agregirani.loc[i,u'flag'] = -1
                
         return agregirani
         
@@ -163,6 +196,9 @@ if __name__ == "__main__":
     frejmovi = citac.citaj(stanica, datum)
     #jedan frejm    
     frejm = frejmovi['1-SO2-ppb']
+    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
+    frejm.loc['2014-06-04 20:00:00':'2014-06-04 22:00:00','flag'] = -1000
+    frejm.loc['2014-06-04 08:00:00':'2014-06-04 13:00:00','flag'] = -1000
     #frejm = frejmovi['49-O3-ug/m3']
     
     #Inicijaliziraj agregator
@@ -185,4 +221,6 @@ if __name__ == "__main__":
     #test ponasanja ako agregator dobije prazan slice
     test_prazan = pd.DataFrame()
     test_agreg = agregator.agregiraj_kanal(test_prazan)
+    print('prazan frejm:')
+    print(test_agreg)
     

@@ -414,6 +414,8 @@ class GlavniKanalDetalji(base, form):
         self.fillBoja.setStyleSheet(stil)
         self.fillCheck.setChecked(self.__defaulti['glavnikanalfill']['crtaj'])
     
+    #TODO!
+    #update 'crtaj' s flipom checkboxa
     def enable_graf1(self):
         """toggle checkbox, enables or disables related controls"""
         if self.kanal1Check.isChecked() == True:
@@ -422,12 +424,14 @@ class GlavniKanalDetalji(base, form):
             self.kanal1Linija.setEnabled(True)
             self.kanal1Boja.setEnabled(True)
             self.kanal1Tip.setEnabled(True)
+            self.__defaulti['glavnikanal1']['crtaj'] = True
         else:
             self.kanal1Komponenta.setEnabled(False)
             self.kanal1Marker.setEnabled(False)
             self.kanal1Linija.setEnabled(False)
             self.kanal1Boja.setEnabled(False)
             self.kanal1Tip.setEnabled(False)
+            self.__defaulti['glavnikanal1']['crtaj'] = False
             
     def enable_graf2(self):
         """toggle checkbox, enables or disables related controls"""
@@ -437,12 +441,14 @@ class GlavniKanalDetalji(base, form):
             self.kanal2Linija.setEnabled(True)
             self.kanal2Boja.setEnabled(True)
             self.kanal2Tip.setEnabled(True)
+            self.__defaulti['glavnikanal2']['crtaj'] = True
         else:
             self.kanal2Komponenta.setEnabled(False)
             self.kanal2Marker.setEnabled(False)
             self.kanal2Linija.setEnabled(False)
             self.kanal2Boja.setEnabled(False)
             self.kanal2Tip.setEnabled(False)
+            self.__defaulti['glavnikanal2']['crtaj'] = False
 
     def enable_graf3(self):
         """toggle checkbox, enables or disables related controls"""
@@ -452,12 +458,14 @@ class GlavniKanalDetalji(base, form):
             self.kanal3Linija.setEnabled(True)
             self.kanal3Boja.setEnabled(True)
             self.kanal3Tip.setEnabled(True)
+            self.__defaulti['glavnikanal3']['crtaj'] = True
         else:
             self.kanal3Komponenta.setEnabled(False)
             self.kanal3Marker.setEnabled(False)
             self.kanal3Linija.setEnabled(False)
             self.kanal3Boja.setEnabled(False)
             self.kanal3Tip.setEnabled(False)
+            self.__defaulti['glavnikanal3']['crtaj'] = False
 
     def enable_graf4(self):
         """toggle checkbox, enables or disables related controls"""
@@ -467,12 +475,14 @@ class GlavniKanalDetalji(base, form):
             self.kanal4Linija.setEnabled(True)
             self.kanal4Boja.setEnabled(True)
             self.kanal4Tip.setEnabled(True)
+            self.__defaulti['glavnikanal4']['crtaj'] = True
         else:
             self.kanal4Komponenta.setEnabled(False)
             self.kanal4Marker.setEnabled(False)
             self.kanal4Linija.setEnabled(False)
             self.kanal4Boja.setEnabled(False)
             self.kanal4Tip.setEnabled(False)
+            self.__defaulti['glavnikanal4']['crtaj'] = False
 
     def enable_fill(self):
         """toggle checkbox, enables or disables related controls"""
@@ -480,10 +490,12 @@ class GlavniKanalDetalji(base, form):
             self.fillKomponenta1.setEnabled(True)
             self.fillKomponenta2.setEnabled(True)
             self.fillBoja.setEnabled(True)
+            self.__defaulti['glavnikanalfill']['crtaj'] = True
         else:
             self.fillKomponenta1.setEnabled(False)
             self.fillKomponenta2.setEnabled(False)
             self.fillBoja.setEnabled(False)
+            self.__defaulti['glavnikanalfill']['crtaj'] = False
     
     def change_markerOK(self):
         newValue = self.markerOK.currentText()
@@ -895,12 +907,15 @@ class SatniGraf(base2, form2):
     Klasa za "prikaz" satnog grafa
     Sadrzi kontrole i canvas za graf (canvas je u drugoj klasi)
     """
-    def __init__(self, parent = None, defaulti = None):
+    def __init__(self, parent = None, defaulti = None, frejmovi = None):
         super(base2, self).__init__(parent)
         self.setupUi(self)
         
         #defaultini izbor za grafove
         self.__defaulti = defaulti
+        #TODO!
+        #provjeri dobro metodu s kojim ce se mjenjati frejmovi....
+        self.__agregiraniFrejmovi = frejmovi
         #inicijalizacija ostalih grafickih elemenata
         self.widget1 = QtGui.QWidget()
         self.widget2 = QtGui.QWidget()
@@ -914,26 +929,16 @@ class SatniGraf(base2, form2):
         self.veze()
         self.initial_setup()        
         
-        
         #opis slicea : slice od: do:
         self.labelSlice.setText('opis slicea- programski handle')
         
-        
-        #razne kontrole za rad sa grafom
-        #grid handle        
-        self.canvasSatni.axes.grid()
-
-        #cursor handle
-        self.cursor = Cursor(self.canvasSatni.axes, useblit=True, color='tomato', linewidth=1 )
-
-        #minor ticks handle
-        self.canvasSatni.axes.minorticks_on()
+    def zamjeni_frejmove(self, frejmovi):
+        self.__agregiraniFrejmovi = frejmovi
+        #ponovno updateaj izbor kanala uz pomoc initial_setup()
+        self.initial_setup()
 
     def initial_setup(self):
-        """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
-        #TODO!
-        #inicijalno upisivanje.....
-        
+        """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""        
         #checkboxes
         self.glavniGrafCheck.setChecked(True)
         self.enable_glavni_kanal()
@@ -965,17 +970,59 @@ class SatniGraf(base2, form2):
         self.change_boja_pGraf4Detalji()
         self.change_boja_pGraf5Detalji()
         self.change_boja_pGraf6Detalji()
-        
-        #initial combobox values... popis kanala, treba prosljediti dokument
-        #dict svih agregiranih...tada se mogu populirati comboboxevi
-
+               
+        if self.__agregiraniFrejmovi != None:
+            kanali = sorted(list(self.__agregiraniFrejmovi.keys()))
+            self.glavniGrafIzbor.clear()
+            self.glavniGrafIzbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['validanOK']['kanal']
+            if zadnjiKanal != None:
+                ind = self.glavniGrafIzbor.findText(zadnjiKanal)
+                self.glavniGrafIzbor.setCurrentIndex(ind)
+            self.pGraf1Izbor.clear()
+            self.pGraf1Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal1']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf1Izbor.findText(zadnjiKanal)
+                self.pGraf1Izbor.setCurrentIndex(ind)
+            self.pGraf2Izbor.clear()
+            self.pGraf2Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal2']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf2Izbor.findText(zadnjiKanal)
+                self.pGraf2Izbor.setCurrentIndex(ind)
+            self.pGraf3Izbor.clear()
+            self.pGraf3Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal3']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf3Izbor.findText(zadnjiKanal)
+                self.pGraf3Izbor.setCurrentIndex(ind)
+            self.pGraf4Izbor.clear()
+            self.pGraf4Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal4']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf4Izbor.findText(zadnjiKanal)
+                self.pGraf4Izbor.setCurrentIndex(ind)
+            self.pGraf5Izbor.clear()
+            self.pGraf5Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal5']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf5Izbor.findText(zadnjiKanal)
+                self.pGraf5Izbor.setCurrentIndex(ind)
+            self.pGraf6Izbor.clear()
+            self.pGraf6Izbor.addItems(kanali)
+            zadnjiKanal = self.__defaulti['pomocnikanal6']['kanal']
+            if zadnjiKanal != None:
+                ind = self.pGraf6Izbor.findText(zadnjiKanal)
+                self.pGraf6Izbor.setCurrentIndex(ind)
 
 
     def veze(self):
         """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
-        #TODO!
         #BITNO... SVE FUNKCIJE KOJE MJENJAJU NEKE POSTAVKE GRAFA MORAJU POZIVATI
-        #PONOVNO CRTANJE!!!!!!!!!
+        #PONOVNO CRTANJE! UKUPNO SU TO 25 METODE.
+        #naredba za crtanje (ulazni podaci su dict opisa grafa, dict frejmova)
+        #self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         #dijalozi
         self.glavniGrafDetalji.clicked.connect(self.dijalog_glavniGrafDetalji)
         self.pGraf1Detalji.clicked.connect(self.dijalog_pGraf1Detalji)
@@ -1008,82 +1055,129 @@ class SatniGraf(base2, form2):
     def enable_grid(self):
         if self.gridCheck.isChecked() == True:
             self.__defaulti['opcenito']['grid'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['grid'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def enable_cursor(self):
         if self.cursorCheck.isChecked() == True:
             self.__defaulti['opcenito']['cursor'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['cursor'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def enable_spanSelector(self):
         if self.spanSelectorCheck.isChecked() == True:
             self.__defaulti['opcenito']['span'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['span'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def enable_minorTick(self):
         if self.minorTickCheck.isChecked() == True:
             self.__defaulti['opcenito']['minorTicks'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['minorTicks'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def enable_glavni_kanal(self):
         if self.glavniGrafCheck.isChecked() == True:
             self.glavniGrafIzbor.setEnabled(True)
             self.glavniGrafDetalji.setEnabled(True)
+            self.__defaulti['validanOK']['crtaj'] = True
+            self.__defaulti['validanNOK']['crtaj'] = True
+            self.__defaulti['nevalidanOK']['crtaj'] = True
+            self.__defaulti['nevalidanNOK']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.glavniGrafIzbor.setEnabled(False)
             self.glavniGrafDetalji.setEnabled(False)
+            self.__defaulti['validanOK']['crtaj'] = False
+            self.__defaulti['validanNOK']['crtaj'] = False
+            self.__defaulti['nevalidanOK']['crtaj'] = False
+            self.__defaulti['nevalidanNOK']['crtaj'] = False
+            self.__defaulti['glavnikanal1']['crtaj'] = False
+            self.__defaulti['glavnikanal2']['crtaj'] = False
+            self.__defaulti['glavnikanal3']['crtaj'] = False
+            self.__defaulti['glavnikanal4']['crtaj'] = False
+            self.__defaulti['glavnikanalfill']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def enable_pomocni_kanal1(self):
         if self.pGraf1Check.isChecked() == True:
             self.pGraf1Izbor.setEnabled(True)
             self.pGraf1Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal1']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf1Izbor.setEnabled(False)
             self.pGraf1Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal1']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
             
     def enable_pomocni_kanal2(self):
         if self.pGraf2Check.isChecked() == True:
             self.pGraf2Izbor.setEnabled(True)
             self.pGraf2Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal2']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf2Izbor.setEnabled(False)
             self.pGraf2Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal2']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def enable_pomocni_kanal3(self):
         if self.pGraf3Check.isChecked() == True:
             self.pGraf3Izbor.setEnabled(True)
             self.pGraf3Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal3']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf3Izbor.setEnabled(False)
             self.pGraf3Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal3']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def enable_pomocni_kanal4(self):
         if self.pGraf4Check.isChecked() == True:
             self.pGraf4Izbor.setEnabled(True)
             self.pGraf4Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal4']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf4Izbor.setEnabled(False)
             self.pGraf4Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal4']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def enable_pomocni_kanal5(self):
         if self.pGraf5Check.isChecked() == True:
             self.pGraf5Izbor.setEnabled(True)
             self.pGraf5Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal5']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf5Izbor.setEnabled(False)
             self.pGraf5Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal5']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def enable_pomocni_kanal6(self):
         if self.pGraf6Check.isChecked() == True:
             self.pGraf6Izbor.setEnabled(True)
             self.pGraf6Detalji.setEnabled(True)
+            self.__defaulti['pomocnikanal6']['crtaj'] = True
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.pGraf6Izbor.setEnabled(False)
             self.pGraf6Detalji.setEnabled(False)
+            self.__defaulti['pomocnikanal6']['crtaj'] = False
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def update_glavni_kanal(self):
         newValue = self.glavniGrafIzbor.currentText()
@@ -1096,30 +1190,37 @@ class SatniGraf(base2, form2):
         self.__defaulti['glavnikanal3']['kanal'] = newValue
         self.__defaulti['glavnikanal4']['kanal'] = newValue
         self.__defaulti['glavnikanalfill']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal1(self):
         newValue = self.pGraf1Izbor.currentText()
         self.__defaulti['pomocnikanal1']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal2(self):
         newValue = self.pGraf2Izbor.currentText()
         self.__defaulti['pomocnikanal2']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal3(self):
         newValue = self.pGraf3Izbor.currentText()
         self.__defaulti['pomocnikanal3']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal4(self):
         newValue = self.pGraf4Izbor.currentText()
         self.__defaulti['pomocnikanal4']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal5(self):
         newValue = self.pGraf5Izbor.currentText()
         self.__defaulti['pomocnikanal5']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal6(self):
         newValue = self.pGraf6Izbor.currentText()
         self.__defaulti['pomocnikanal6']['kanal'] = newValue
+        self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         
     def change_boja_pGraf1Detalji(self):
         rgb = self.__defaulti['pomocnikanal1']['color']
@@ -1172,6 +1273,7 @@ class SatniGraf(base2, form2):
         if glavnigrafdijalog.exec_(): #ako OK, returns 1 , isto kao i True
             grafinfo = glavnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         
     def dijalog_pGraf1Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 1"""
@@ -1183,6 +1285,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf1Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
             
     def dijalog_pGraf2Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 2"""
@@ -1194,6 +1297,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf2Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def dijalog_pGraf3Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 3"""
@@ -1205,6 +1309,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf3Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def dijalog_pGraf4Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 4"""
@@ -1216,6 +1321,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf4Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def dijalog_pGraf5Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 5"""
@@ -1227,6 +1333,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf5Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
 
     def dijalog_pGraf6Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 6"""
@@ -1238,6 +1345,7 @@ class SatniGraf(base2, form2):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf6Detalji()
+            self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
             
     def default_color_to_qcolor(self, rgb, a):
         """
@@ -1300,8 +1408,6 @@ class GrafSatniSrednjaci(MPLCanvas):
         """konstruktor"""
         MPLCanvas.__init__(self, *args, **kwargs)
 
-        self.data = None #frejmovi
-        
         self.veze()
     
     def veze(self):
@@ -1310,13 +1416,170 @@ class GrafSatniSrednjaci(MPLCanvas):
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
+        #TODO!
+        #sredi pick selection do kraja, vidi za neki dropdown?
         pass
     
-    def crtaj(self, lista):
-        """Eksplicitne naredbe za crtanje"""
-        for graf in lista:
-            pass
+    def satni_span_flag(self, tmin, tmax):
+        """satni span selector"""
+        #TODO!
+        #sredi span selection do kraja
+        pass
     
+    def crtaj(self, mapaGrafova, satniFrejmovi):
+        """Eksplicitne naredbe za crtanje
+        
+        ulaz:
+        mapaGrafova -> defaultni dict sa opcijama grafova
+        satniFrejmovi -> izvor podataka za crtanje
+        """
+        
+        self.__defaulti = mapaGrafova
+        self.__data = satniFrejmovi
+        self.axes.clear()
+        #test opcenitih postavki priije crtanja : cursor, grid...
+        if self.__defaulti['opcenito']['cursor'] == True:
+            self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
+        else:
+            self.cursor = None
+
+        if self.__defaulti['opcenito']['grid'] == True:
+            self.axes.grid(True)
+        else:
+            self.axes.grid(False)
+            
+        if self.__defaulti['opcenito']['minorTicks'] == True:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        
+        if self.__defaulti['opcenito']['span'] == True:
+            self.spanSelector = SpanSelector(self.axes, 
+                                             self.satni_span_flag, 
+                                             direction = 'horizontal', 
+                                             useblit = True, 
+                                             rectprops = dict(alpha = 0.3, facecolor = 'yellow'))
+        else:
+            self.spanSelector = None
+            
+            
+            
+        plotlista = list(self.__defaulti.keys()) #svi kljucevi
+        plotlista.remove('opcenito') #makni 'opcenito', ostaju samo grafovi
+        specials = ['validanOK', 'validanNOK', 'nevalidanOK', 'nevalidanNOK']
+        #TODO!
+        #treba bolji nacin
+        
+        for graf in plotlista:
+            #kreni graf po graf, provjeri da li je predvidjen za crtanje i crtaj
+            kanal = self.__defaulti[graf]['kanal']
+            test1 = (kanal != None) #postojanje kanala
+            if self.__data == None:
+                test2 = False
+            else:
+                test2 = (kanal in list(self.__data.keys())) #postojanje istog kanala u podatcima
+            test3 = (self.__defaulti[graf]['crtaj'] == True) #flag za crtanje mora biti True
+            #kanal mora postojati i mora biti u podatcima da bi se nacrtao
+            if test1 and test2 and test3:
+                if graf in specials:
+                    #slucaj sa glavnim scatter tockama
+                    #priprema podataka je specificna
+                    if graf == 'validanOK':
+                        #samo svi podaci gdje je flag = 1000
+                        data = self.data[kanal]
+                        data = data[data[u'flag'] == 1000]
+                        x = list(data.index())
+                        y = list(data[u'avg'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['validanOK']['marker'], 
+                                          color = self.__defaulti['validanOK']['color'], 
+                                          alpha = self.__defaulti['validanOK']['alpha'], 
+                                          zorder = self.__defaulti['validanOK']['zorder'])
+
+                    elif graf == 'validanNOK':
+                        #samo svi podaci gdje je flag = -1000
+                        data = self.data[kanal]
+                        data = data[data[u'flag'] == -1000]
+                        x = list(data.index())
+                        y = list(data[u'avg'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['validanNOK']['marker'], 
+                                          color = self.__defaulti['validanNOK']['color'], 
+                                          alpha = self.__defaulti['validanNOK']['alpha'], 
+                                          zorder = self.__defaulti['validanNOK']['zorder'])
+
+                    elif graf == 'nevalidanOK':
+                        #samo svi podaci gdje je flag = 1
+                        data = self.data[kanal]
+                        data = data[data[u'flag'] == 1]
+                        x = list(data.index())
+                        y = list(data[u'avg'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['nevalidanOK']['marker'], 
+                                          color = self.__defaulti['nevalidanOK']['color'], 
+                                          alpha = self.__defaulti['nevalidanOK']['alpha'], 
+                                          zorder = self.__defaulti['nevalidanOK']['zorder'])
+
+                    elif graf == 'nevalidanNOK':
+                        #samo svi podaci gdje je flag = -1
+                        data = self.data[kanal]
+                        data = data[data[u'flag'] == -1000]
+                        x = list(data.index())
+                        y = list(data[u'avg'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['nevalidanNOK']['marker'], 
+                                          color = self.__defaulti['nevalidanNOK']['color'], 
+                                          alpha = self.__defaulti['nevalidanNOK']['alpha'], 
+                                          zorder = self.__defaulti['nevalidanNOK']['zorder'])
+
+                else:
+                    #normalan slucaj (plotamo cijeli niz)
+                    data = self.data[kanal]
+                    #izbaci iz popisa sve koje imaju np.NaN vrijednost za avg?
+                    data = data[np.isnan(data[u'avg']) != True]
+                    
+                    x = list(data.index())
+                    y = list(data[self.__defaulti[graf]['stupac1']])
+                    assert(len(x) == len(y))
+                    #scatter
+                    if graf['tip'] == 'scatter':
+                        self.axes.scatter(x,
+                                          y,
+                                          marker = self.__defaulti[graf]['marker'], 
+                                          color = self.__defaulti[graf]['color'], 
+                                          alpha = self.__defaulti[graf]['alpha'], 
+                                          zorder = self.__defaulti[graf]['zorder'])
+                    #plot
+                    elif graf['tip'] == 'plot':
+                        self.axes.plot(x, 
+                                       y, 
+                                       marker = self.__defaulti[graf]['marker'], 
+                                       linestyle = self.__defaulti[graf]['line'], 
+                                       color = self.__defaulti[graf]['color'], 
+                                       alpha = self.__defaulti[graf]['alpha'], 
+                                       zorder = self.__defaulti[graf]['zorder'])
+                    #fill_between
+                    elif graf['tip'] == 'fill':
+                        y2 = data[self.__defaulti[graf]['stupac2']]
+                        assert(len(y2) == len(y))
+                        self.axes.fill_between(x, 
+                                               y, 
+                                               y2, 
+                                               facecolor = self.__defaulti[graf]['color'], 
+                                               alpha = self.__defaulti[graf]['alpha'], 
+                                               zorder = self.__defaulti[graf]['zoder'])
+        
+        self.draw()
+        
+        
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -1364,7 +1627,8 @@ if __name__=='__main__':
              'pomocnikanal5':pomocnikanal5, 
              'pomocnikanal6':pomocnikanal6, 
              'opcenito':opcenito}
-             
+    
+    
     aplikacija = QtGui.QApplication(sys.argv)
     app = SatniGraf(parent = None, defaulti = mapa2)
     app.show()

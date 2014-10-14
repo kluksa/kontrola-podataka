@@ -16,6 +16,7 @@ Izdvajanje grafova u pojedine klase. Dodana je mini aplikacija za funkcionalno t
 
 #import statements
 import sys
+import copy
 import matplotlib
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
@@ -198,7 +199,7 @@ class GlavniKanalDetalji(base, form):
              'glavnikanal3':glavnikanal3, 
              'glavnikanal4':glavnikanal4, 
              'glavnikanalfill':glavnikanalfill, 
-             'pomovnikanal1':pomocnikanal1, 
+             'pomocnikanal1':pomocnikanal1, 
              'pomocnikanal2':pomocnikanal2, 
              'pomocnikanal3':pomocnikanal3, 
              'pomocnikanal4':pomocnikanal4, 
@@ -732,16 +733,170 @@ class GlavniKanalDetalji(base, form):
         a = int(100*color.alpha()/255)
         stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
         return stil
+        
+    def vrati_dict(self):
+        """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
+        return self.__defaulti
 ###############################################################################
 ###############################################################################
-base1, form1 = uic.loadUiType('satnigraf.ui')
-class SatniGraf(base1, form1):
+base1, form1 = uic.loadUiType('pomocnigrafdetalji.ui')
+class PomocniGrafDetalji(base1, form1):
+    """
+    Opcenita klasa za izbor detalja grafa
+
+    incijalizacija sa:
+        defaulti : dict, popis svih predvidjenih grafova
+        graf : string, kljuc mape pojedinog grafa
+    """
+    def __init__(self, parent = None, defaulti = None, graf = None):
+        super(base1, self).__init__(parent)
+        self.setupUi(self)
+        
+        #defaultni izbor za grafove
+        self.__defaulti = defaulti #defaultni dict svih grafova
+        self.__graf = graf #string kljuca specificnog grafa
+        
+        self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
+        self.__sveLinije = ['None', '-', '--', '-.', ':']
+        self.__sviPodaci = ['min', 'max', 'count', 'status', 'median', 'avg', 'q05', 'q95', 'std']
+        self.__sviTipovi = ['scatter', 'plot']
+        
+        self.popuni_izbornike()
+        self.veze()
+        
+    def veze(self):
+        """poveznice izmedju kontrolih elemenata i funkcija koje mjenjaju stanje
+        objekta"""
+        self.komponenta.currentIndexChanged.connect(self.change_komponenta)
+        self.tip.currentIndexChanged.connect(self.change_tip)
+        self.marker.currentIndexChanged.connect(self.change_marker)
+        self.linija.currentIndexChanged.connect(self.change_linija)
+        self.boja.clicked.connect(self.change_boja)
+    
+    def change_komponenta(self):
+        newValue = self.komponenta.currentText()
+        self.__defaulti[self.__graf]['stupac1'] = newValue
+    
+    def change_tip(self):
+        newValue = self.tip.currentText()
+        self.__defaulti[self.__graf]['tip'] = newValue
+    
+    def change_marker(self):
+        newValue = self.marker.currentText()
+        self.__defaulti[self.__graf]['marker'] = newValue
+    
+    def change_linija(self):
+        newValue = self.linija.currentText()
+        self.__defaulti[self.__graf]['line'] = newValue
+    
+    def change_boja(self):
+        rgb = self.__defaulti[self.__graf]['color']
+        a = self.__defaulti[self.__graf]['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        #dijalog
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test za validnu boju
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = self.qcolor_to_default_color(color)
+            #update dict
+            self.__defaulti[self.__graf]['color'] = rgb
+            self.__defaulti[self.__graf]['alpha'] = a
+            #set new color
+            stil = self.color_to_style_string('QPushButton#boja', color)
+            self.boja.setStyleSheet(stil)
+    
+    def popuni_izbornike(self):
+        """inicijalizacija izbornika sa defaultinim postavkama"""
+        naziv = 'Detalji pomocnog grafa, kanal: ' + str(self.__defaulti[self.__graf]['kanal'])
+        self.setWindowTitle(naziv)
+        self.komponenta.clear()
+        self.komponenta.addItems(self.__sviPodaci)
+        ind = self.komponenta.findText(self.__defaulti[self.__graf]['stupac1'])
+        self.komponenta.setCurrentIndex(ind)
+        self.tip.clear()
+        self.tip.addItems(self.__sviTipovi)
+        ind = self.tip.findText(self.__defaulti[self.__graf]['tip'])
+        self.tip.setCurrentIndex(ind)
+        self.marker.clear()
+        self.marker.addItems(self.__sviMarkeri)
+        ind = self.marker.findText(self.__defaulti[self.__graf]['marker'])
+        self.marker.setCurrentIndex(ind)
+        self.linija.clear()
+        self.linija.addItems(self.__sveLinije)
+        ind = self.linija.findText(self.__defaulti[self.__graf]['line'])
+        self.linija.setCurrentIndex(ind)
+        
+        rgb = self.__defaulti[self.__graf]['color']
+        a = self.__defaulti[self.__graf]['alpha']
+        color = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#boja', color)
+        self.boja.setStyleSheet(stil)
+
+    def default_color_to_qcolor(self, rgb, a):
+        """
+        helper funkcija za transformaciju boje u QColor
+        input:
+            rgb -> (r, g, b) tuple
+            a -> float izmedju [0:1]
+        output:
+            QtGui.QColor objekt
+        """
+        boja = QtGui.QColor()
+        #unpack tuple of rgb color
+        r, g, b = rgb
+        boja.setRed(r)
+        boja.setGreen(g)
+        boja.setBlue(b)
+        #alpha je izmedju 0-1, input treba biti int 0-255
+        a = int(a*255)
+        boja.setAlpha(a)
+        return boja
+        
+    def qcolor_to_default_color(self, color):
+        """
+        helper funkcija za transformacije qcolor u defaultnu boju
+        input:
+            color ->QtGui.QColor
+        output:
+            (r,g,b) tuple, i alpha
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = color.alpha()/255
+        return (r,g,b), a
+        
+    def color_to_style_string(self, target, color):
+        """
+        helper funkcija za izradu styleSheet stringa
+        input:
+            target -> string, target of background color change
+                npr. 'QLabel#label1'
+            color -> QtGui.QColor
+        output:
+            string - styleSheet 'css' style background for target element
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = int(100*color.alpha()/255)
+        stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+        return stil
+        
+    def vrati_dict(self):
+        """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
+        return self.__defaulti
+###############################################################################
+###############################################################################
+
+base2, form2 = uic.loadUiType('satnigraf.ui')
+class SatniGraf(base2, form2):
     """
     Klasa za "prikaz" satnog grafa
     Sadrzi kontrole i canvas za graf (canvas je u drugoj klasi)
     """
     def __init__(self, parent = None, defaulti = None):
-        super(base1, self).__init__(parent)
+        super(base2, self).__init__(parent)
         self.setupUi(self)
         
         #defaultini izbor za grafove
@@ -755,17 +910,15 @@ class SatniGraf(base1, form1):
         self.mplToolbar = NavigationToolbar(self.canvasSatni, self.widget2)
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
+
+        self.veze()
         
-        #TODO!
-        #dijalozi
-        self.glavniGrafDetalji.clicked.connect(self.dijalog_glavniGrafDetalji)
+        
         
         #opis slicea : slice od: do:
         self.labelSlice.setText('opis slicea- programski handle')
         
         
-        
-        #TODO!
         #razne kontrole za rad sa grafom
         #grid handle        
         self.canvasSatni.axes.grid()
@@ -775,17 +928,115 @@ class SatniGraf(base1, form1):
 
         #minor ticks handle
         self.canvasSatni.axes.minorticks_on()
-        #self.canvasSatni.axes.minorticks_off()
+
+        
+        
+    def veze(self):
+        """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
+        #TODO!
+        #BITNO... SVE FUNKCIJE KOJE MJENJAJU NEKE POSTAVKE GRAFA MORAJU POZIVATI
+        #PONOVNO CRTANJE!!!!!!!!!
+        #dijalozi
+        self.glavniGrafDetalji.clicked.connect(self.dijalog_glavniGrafDetalji)
+        self.pGraf1Detalji.clicked.connect(self.dijalog_pGraf1Detalji)
+        self.pGraf2Detalji.clicked.connect(self.dijalog_pGraf2Detalji)
+        self.pGraf3Detalji.clicked.connect(self.dijalog_pGraf3Detalji)
+        self.pGraf4Detalji.clicked.connect(self.dijalog_pGraf4Detalji)
+        self.pGraf5Detalji.clicked.connect(self.dijalog_pGraf5Detalji)
+        self.pGraf6Detalji.clicked.connect(self.dijalog_pGraf6Detalji)
+        
+
+    def update_glavni_kanal():
+        pass
+    
+    def update_pomocni_kanal1():
+        pass
+    
+    def update_pomocni_kanal2():
+        pass
+    
+    def update_pomocni_kanal3():
+        pass
+    
+    def update_pomocni_kanal4():
+        pass
+    
+    def update_pomocni_kanal5():
+        pass
+    
+    def update_pomocni_kanal6():
+        pass
 
     def dijalog_glavniGrafDetalji(self):
-        grafinfo = self.__defaulti
-        print('marker validan ok prije:')
-        print(grafinfo['validanOK']['marker'])
-        self.glavnigrafdijalog = GlavniKanalDetalji(defaulti = grafinfo)
-        self.glavnigrafdijalog.exec_()
-        print('marker validan ok poslje:')
-        print(grafinfo['validanOK']['marker'])
+        """dijalog za promjenu izgleda glavnog grafa"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        glavnigrafdijalog = GlavniKanalDetalji(defaulti = grafinfo)
+        if glavnigrafdijalog.exec_(): #ako OK, returns 1 , isto kao i True
+            grafinfo = glavnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
         
+    def dijalog_pGraf1Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 1"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal1')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            
+    def dijalog_pGraf2Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 2"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal2')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+
+    def dijalog_pGraf3Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 3"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal3')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+
+    def dijalog_pGraf4Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 4"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal4')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+
+    def dijalog_pGraf5Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 5"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal5')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+
+    def dijalog_pGraf6Detalji(self):
+        """dijalog za promjenu izgleda pomocnog grafa 6"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetalji(defaulti = grafinfo, graf = 'pomocnikanal6')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+
 ###############################################################################
 ###############################################################################
 
@@ -854,7 +1105,7 @@ if __name__=='__main__':
              'glavnikanal3':glavnikanal3, 
              'glavnikanal4':glavnikanal4, 
              'glavnikanalfill':glavnikanalfill, 
-             'pomovnikanal1':pomocnikanal1, 
+             'pomocnikanal1':pomocnikanal1, 
              'pomocnikanal2':pomocnikanal2, 
              'pomocnikanal3':pomocnikanal3, 
              'pomocnikanal4':pomocnikanal4, 

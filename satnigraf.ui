@@ -46,6 +46,9 @@
         </item>
         <item row="0" column="1">
          <widget class="QComboBox" name="glavniGrafIzbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -56,6 +59,9 @@
         </item>
         <item row="0" column="2">
          <widget class="QPushButton" name="glavniGrafDetalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -84,6 +90,9 @@
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="2">
          <widget class="QPushButton" name="pGraf1Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -97,6 +106,9 @@
         </item>
         <item row="0" column="1">
          <widget class="QComboBox" name="pGraf1Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -185,6 +197,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QComboBox" name="pGraf2Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -195,6 +210,9 @@
         </item>
         <item row="2" column="1">
          <widget class="QComboBox" name="pGraf3Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -205,6 +223,9 @@
         </item>
         <item row="3" column="1">
          <widget class="QComboBox" name="pGraf4Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -215,6 +236,9 @@
         </item>
         <item row="4" column="1">
          <widget class="QComboBox" name="pGraf5Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -225,6 +249,9 @@
         </item>
         <item row="5" column="1">
          <widget class="QComboBox" name="pGraf6Izbor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -235,6 +262,9 @@
         </item>
         <item row="1" column="2">
          <widget class="QPushButton" name="pGraf2Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -248,6 +278,9 @@
         </item>
         <item row="2" column="2">
          <widget class="QPushButton" name="pGraf3Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -261,6 +294,9 @@
         </item>
         <item row="3" column="2">
          <widget class="QPushButton" name="pGraf4Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -274,6 +310,9 @@
         </item>
         <item row="4" column="2">
          <widget class="QPushButton" name="pGraf5Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -287,6 +326,9 @@
         </item>
         <item row="5" column="2">
          <widget class="QPushButton" name="pGraf6Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>

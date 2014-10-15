@@ -29,8 +29,8 @@ from matplotlib.widgets import SpanSelector, Cursor
 import numpy as np
 
 #pomocni...samo za lokalni test
-#import citac
-#from agregator import Agregator
+import citac
+from agregator import Agregator
 
 ###############################################################################
 #TODO!
@@ -940,28 +940,17 @@ class SatniGraf(base2, form2):
     def initial_setup(self):
         """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""        
         #checkboxes
-        self.glavniGrafCheck.setChecked(True)
-        self.enable_glavni_kanal()
+        self.glavniGrafCheck.setChecked(self.__defaulti['validanOK']['crtaj'])
         self.pGraf1Check.setChecked(self.__defaulti['pomocnikanal1']['crtaj'])
-        self.enable_pomocni_kanal1()
         self.pGraf2Check.setChecked(self.__defaulti['pomocnikanal2']['crtaj'])
-        self.enable_pomocni_kanal2()
         self.pGraf3Check.setChecked(self.__defaulti['pomocnikanal3']['crtaj'])
-        self.enable_pomocni_kanal3()
         self.pGraf4Check.setChecked(self.__defaulti['pomocnikanal4']['crtaj'])
-        self.enable_pomocni_kanal4()
         self.pGraf5Check.setChecked(self.__defaulti['pomocnikanal5']['crtaj'])
-        self.enable_pomocni_kanal5()
         self.pGraf6Check.setChecked(self.__defaulti['pomocnikanal6']['crtaj'])
-        self.enable_pomocni_kanal6()
         self.gridCheck.setChecked(self.__defaulti['opcenito']['grid'])
-        self.enable_grid()
         self.cursorCheck.setChecked(self.__defaulti['opcenito']['cursor'])
-        self.enable_cursor()
         self.spanSelectorCheck.setChecked(self.__defaulti['opcenito']['span'])
-        self.enable_spanSelector()
         self.minorTickCheck.setChecked(self.__defaulti['opcenito']['minorTicks'])
-        self.enable_minorTick()
         
         #button colors
         self.change_boja_pGraf1Detalji()
@@ -972,50 +961,71 @@ class SatniGraf(base2, form2):
         self.change_boja_pGraf6Detalji()
                
         if self.__agregiraniFrejmovi != None:
+            #popis svih dostupnih kanala
             kanali = sorted(list(self.__agregiraniFrejmovi.keys()))
+            #TODO!
+            zadnjiKanal = self.__defaulti['validanOK']['kanal']
+            self.glavniGrafIzbor.blockSignals(True)            
             self.glavniGrafIzbor.clear()
             self.glavniGrafIzbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['validanOK']['kanal']
             if zadnjiKanal != None:
                 ind = self.glavniGrafIzbor.findText(zadnjiKanal)
                 self.glavniGrafIzbor.setCurrentIndex(ind)
+            self.glavniGrafIzbor.blockSignals(False)
+
+            zadnjiKanal = self.__defaulti['pomocnikanal1']['kanal']
+            self.pGraf1Izbor.blockSignals(True)
             self.pGraf1Izbor.clear()
             self.pGraf1Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal1']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf1Izbor.findText(zadnjiKanal)
                 self.pGraf1Izbor.setCurrentIndex(ind)
+            self.pGraf1Izbor.blockSignals(False)
+                
+            zadnjiKanal = self.__defaulti['pomocnikanal2']['kanal']
+            self.pGraf2Izbor.blockSignals(True)
             self.pGraf2Izbor.clear()
             self.pGraf2Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal2']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf2Izbor.findText(zadnjiKanal)
                 self.pGraf2Izbor.setCurrentIndex(ind)
+            self.pGraf2Izbor.blockSignals(False)
+
+            zadnjiKanal = self.__defaulti['pomocnikanal3']['kanal']
+            self.pGraf3Izbor.blockSignals(True)
             self.pGraf3Izbor.clear()
             self.pGraf3Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal3']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf3Izbor.findText(zadnjiKanal)
                 self.pGraf3Izbor.setCurrentIndex(ind)
+            self.pGraf3Izbor.blockSignals(False)
+            
+            zadnjiKanal = self.__defaulti['pomocnikanal4']['kanal']
+            self.pGraf4Izbor.blockSignals(True)
             self.pGraf4Izbor.clear()
             self.pGraf4Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal4']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf4Izbor.findText(zadnjiKanal)
                 self.pGraf4Izbor.setCurrentIndex(ind)
+            self.pGraf4Izbor.blockSignals(False)
+            
+            zadnjiKanal = self.__defaulti['pomocnikanal5']['kanal']
+            self.pGraf5Izbor.blockSignals(True)
             self.pGraf5Izbor.clear()
             self.pGraf5Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal5']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf5Izbor.findText(zadnjiKanal)
                 self.pGraf5Izbor.setCurrentIndex(ind)
+            self.pGraf5Izbor.blockSignals(False)
+            
+            zadnjiKanal = self.__defaulti['pomocnikanal6']['kanal']
+            self.pGraf6Izbor.blockSignals(True)
             self.pGraf6Izbor.clear()
             self.pGraf6Izbor.addItems(kanali)
-            zadnjiKanal = self.__defaulti['pomocnikanal6']['kanal']
             if zadnjiKanal != None:
                 ind = self.pGraf6Izbor.findText(zadnjiKanal)
                 self.pGraf6Izbor.setCurrentIndex(ind)
-
+            self.pGraf6Izbor.blockSignals(False)
 
     def veze(self):
         """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
@@ -1469,7 +1479,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         specials = ['validanOK', 'validanNOK', 'nevalidanOK', 'nevalidanNOK']
         #TODO!
         #treba bolji nacin
-        
+        print('\nGLAVNA METODA ZA PLOTTANJE: crtaj(dict postavki, dict podataka)\n')
         for graf in plotlista:
             #kreni graf po graf, provjeri da li je predvidjen za crtanje i crtaj
             kanal = self.__defaulti[graf]['kanal']
@@ -1479,103 +1489,104 @@ class GrafSatniSrednjaci(MPLCanvas):
             else:
                 test2 = (kanal in list(self.__data.keys())) #postojanje istog kanala u podatcima
             test3 = (self.__defaulti[graf]['crtaj'] == True) #flag za crtanje mora biti True
+            print('u petlji: trenutni graf: ', str(graf), ' draw test : ', test1 and test2 and test3)
             #kanal mora postojati i mora biti u podatcima da bi se nacrtao
-            if test1 and test2 and test3:
-                if graf in specials:
-                    #slucaj sa glavnim scatter tockama
-                    #priprema podataka je specificna
-                    if graf == 'validanOK':
-                        #samo svi podaci gdje je flag = 1000
-                        data = self.data[kanal]
-                        data = data[data[u'flag'] == 1000]
-                        x = list(data.index())
-                        y = list(data[u'avg'])
-                        assert(len(x) == len(y))
-                        self.axes.scatter(x, 
-                                          y, 
-                                          marker = self.__defaulti['validanOK']['marker'], 
-                                          color = self.__defaulti['validanOK']['color'], 
-                                          alpha = self.__defaulti['validanOK']['alpha'], 
-                                          zorder = self.__defaulti['validanOK']['zorder'])
-
-                    elif graf == 'validanNOK':
-                        #samo svi podaci gdje je flag = -1000
-                        data = self.data[kanal]
-                        data = data[data[u'flag'] == -1000]
-                        x = list(data.index())
-                        y = list(data[u'avg'])
-                        assert(len(x) == len(y))
-                        self.axes.scatter(x, 
-                                          y, 
-                                          marker = self.__defaulti['validanNOK']['marker'], 
-                                          color = self.__defaulti['validanNOK']['color'], 
-                                          alpha = self.__defaulti['validanNOK']['alpha'], 
-                                          zorder = self.__defaulti['validanNOK']['zorder'])
-
-                    elif graf == 'nevalidanOK':
-                        #samo svi podaci gdje je flag = 1
-                        data = self.data[kanal]
-                        data = data[data[u'flag'] == 1]
-                        x = list(data.index())
-                        y = list(data[u'avg'])
-                        assert(len(x) == len(y))
-                        self.axes.scatter(x, 
-                                          y, 
-                                          marker = self.__defaulti['nevalidanOK']['marker'], 
-                                          color = self.__defaulti['nevalidanOK']['color'], 
-                                          alpha = self.__defaulti['nevalidanOK']['alpha'], 
-                                          zorder = self.__defaulti['nevalidanOK']['zorder'])
-
-                    elif graf == 'nevalidanNOK':
-                        #samo svi podaci gdje je flag = -1
-                        data = self.data[kanal]
-                        data = data[data[u'flag'] == -1000]
-                        x = list(data.index())
-                        y = list(data[u'avg'])
-                        assert(len(x) == len(y))
-                        self.axes.scatter(x, 
-                                          y, 
-                                          marker = self.__defaulti['nevalidanNOK']['marker'], 
-                                          color = self.__defaulti['nevalidanNOK']['color'], 
-                                          alpha = self.__defaulti['nevalidanNOK']['alpha'], 
-                                          zorder = self.__defaulti['nevalidanNOK']['zorder'])
-
-                else:
-                    #normalan slucaj (plotamo cijeli niz)
-                    data = self.data[kanal]
-                    #izbaci iz popisa sve koje imaju np.NaN vrijednost za avg?
-                    data = data[np.isnan(data[u'avg']) != True]
-                    
-                    x = list(data.index())
-                    y = list(data[self.__defaulti[graf]['stupac1']])
-                    assert(len(x) == len(y))
-                    #scatter
-                    if graf['tip'] == 'scatter':
-                        self.axes.scatter(x,
-                                          y,
-                                          marker = self.__defaulti[graf]['marker'], 
-                                          color = self.__defaulti[graf]['color'], 
-                                          alpha = self.__defaulti[graf]['alpha'], 
-                                          zorder = self.__defaulti[graf]['zorder'])
-                    #plot
-                    elif graf['tip'] == 'plot':
-                        self.axes.plot(x, 
-                                       y, 
-                                       marker = self.__defaulti[graf]['marker'], 
-                                       linestyle = self.__defaulti[graf]['line'], 
-                                       color = self.__defaulti[graf]['color'], 
-                                       alpha = self.__defaulti[graf]['alpha'], 
-                                       zorder = self.__defaulti[graf]['zorder'])
-                    #fill_between
-                    elif graf['tip'] == 'fill':
-                        y2 = data[self.__defaulti[graf]['stupac2']]
-                        assert(len(y2) == len(y))
-                        self.axes.fill_between(x, 
-                                               y, 
-                                               y2, 
-                                               facecolor = self.__defaulti[graf]['color'], 
-                                               alpha = self.__defaulti[graf]['alpha'], 
-                                               zorder = self.__defaulti[graf]['zoder'])
+#            if test1 and test2 and test3:
+#                if graf in specials:
+#                    #slucaj sa glavnim scatter tockama
+#                    #priprema podataka je specificna
+#                    if graf == 'validanOK':
+#                        #samo svi podaci gdje je flag = 1000
+#                        data = self.__data[kanal]
+#                        data = data[data[u'flag'] == 1000]
+#                        x = list(data.index)
+#                        y = list(data[u'avg'])
+#                        assert(len(x) == len(y))
+#                        self.axes.scatter(x, 
+#                                          y, 
+#                                          marker = self.__defaulti['validanOK']['marker'], 
+#                                          color = self.__defaulti['validanOK']['color'], 
+#                                          alpha = self.__defaulti['validanOK']['alpha'], 
+#                                          zorder = self.__defaulti['validanOK']['zorder'])
+#
+#                    elif graf == 'validanNOK':
+#                        #samo svi podaci gdje je flag = -1000
+#                        data = self.__data[kanal]
+#                        data = data[data[u'flag'] == -1000]
+#                        x = list(data.index)
+#                        y = list(data[u'avg'])
+#                        assert(len(x) == len(y))
+#                        self.axes.scatter(x, 
+#                                          y, 
+#                                          marker = self.__defaulti['validanNOK']['marker'], 
+#                                          color = self.__defaulti['validanNOK']['color'], 
+#                                          alpha = self.__defaulti['validanNOK']['alpha'], 
+#                                          zorder = self.__defaulti['validanNOK']['zorder'])
+#
+#                    elif graf == 'nevalidanOK':
+#                        #samo svi podaci gdje je flag = 1
+#                        data = self.__data[kanal]
+#                        data = data[data[u'flag'] == 1]
+#                        x = list(data.index)
+#                        y = list(data[u'avg'])
+#                        assert(len(x) == len(y))
+#                        self.axes.scatter(x, 
+#                                          y, 
+#                                          marker = self.__defaulti['nevalidanOK']['marker'], 
+#                                          color = self.__defaulti['nevalidanOK']['color'], 
+#                                          alpha = self.__defaulti['nevalidanOK']['alpha'], 
+#                                          zorder = self.__defaulti['nevalidanOK']['zorder'])
+#
+#                    elif graf == 'nevalidanNOK':
+#                        #samo svi podaci gdje je flag = -1
+#                        data = self.__data[kanal]
+#                        data = data[data[u'flag'] == -1000]
+#                        x = list(data.index)
+#                        y = list(data[u'avg'])
+#                        assert(len(x) == len(y))
+#                        self.axes.scatter(x, 
+#                                          y, 
+#                                          marker = self.__defaulti['nevalidanNOK']['marker'], 
+#                                          color = self.__defaulti['nevalidanNOK']['color'], 
+#                                          alpha = self.__defaulti['nevalidanNOK']['alpha'], 
+#                                          zorder = self.__defaulti['nevalidanNOK']['zorder'])
+#
+#                else:
+#                    #normalan slucaj (plotamo cijeli niz)
+#                    data = self.__data[kanal]
+#                    #izbaci iz popisa sve koje imaju np.NaN vrijednost za avg?
+#                    data = data[np.isnan(data[u'avg']) != True]
+#                    
+#                    x = list(data.index)
+#                    y = list(data[self.__defaulti[graf]['stupac1']])
+#                    assert(len(x) == len(y))
+#                    #scatter
+#                    if graf['tip'] == 'scatter':
+#                        self.axes.scatter(x,
+#                                          y,
+#                                          marker = self.__defaulti[graf]['marker'], 
+#                                          color = self.__defaulti[graf]['color'], 
+#                                          alpha = self.__defaulti[graf]['alpha'], 
+#                                          zorder = self.__defaulti[graf]['zorder'])
+#                    #plot
+#                    elif graf['tip'] == 'plot':
+#                        self.axes.plot(x, 
+#                                       y, 
+#                                       marker = self.__defaulti[graf]['marker'], 
+#                                       linestyle = self.__defaulti[graf]['line'], 
+#                                       color = self.__defaulti[graf]['color'], 
+#                                       alpha = self.__defaulti[graf]['alpha'], 
+#                                       zorder = self.__defaulti[graf]['zorder'])
+#                    #fill_between
+#                    elif graf['tip'] == 'fill':
+#                        y2 = data[self.__defaulti[graf]['stupac2']]
+#                        assert(len(y2) == len(y))
+#                        self.axes.fill_between(x, 
+#                                               y, 
+#                                               y2, 
+#                                               facecolor = self.__defaulti[graf]['color'], 
+#                                               alpha = self.__defaulti[graf]['alpha'], 
+#                                               zorder = self.__defaulti[graf]['zoder'])
         
         self.draw()
         
@@ -1595,22 +1606,22 @@ class GrafSatniSrednjaci(MPLCanvas):
             
 if __name__=='__main__':
     #NOVA konstrukcija ulaznog dicta svih mogucih grafova 
-    validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    glavnikanal1 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'min', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':8}
-    glavnikanal2 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'max', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':9}
-    glavnikanal3 = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'median', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    nevalidanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    glavnikanal1 = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'stupac1':'min', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':8}
+    glavnikanal2 = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'stupac1':'max', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':9}
+    glavnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'median', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
     glavnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'--', 'color':(73,189,191), 'alpha':0.9, 'zorder':11}
-    glavnikanalfill = {'crtaj':True, 'tip':'fill', 'kanal':None, 'stupac1':'q05', 'stupac2':'q95', 'marker':'None', 'line':'--', 'color':(31,117,229), 'alpha':0.4, 'zorder':7}
+    glavnikanalfill = {'crtaj':False, 'tip':'fill', 'kanal':None, 'stupac1':'q05', 'stupac2':'q95', 'marker':'None', 'line':'--', 'color':(31,117,229), 'alpha':0.4, 'zorder':7}
     pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
     pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
     pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
     pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
     pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}        
+    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':False}        
     mapa2 = {'validanOK':validanOK, 
              'validanNOK':validanNOK, 
              'nevalidanOK':nevalidanOK, 
@@ -1628,8 +1639,26 @@ if __name__=='__main__':
              'pomocnikanal6':pomocnikanal6, 
              'opcenito':opcenito}
     
+    reader = citac.WlReader('./data/')
+    reader.dohvati_sve_dostupne()
+    stanica = 'plitvicka jezera'
+    datum = '20140604'
+    datum = pd.to_datetime(datum)
+    datum = datum.date()
+    frejmovi = reader.citaj(stanica, datum)
+    #jedan frejm
+    frejm = frejmovi['1-SO2-ppb']
+    #frejm = frejmovi['49-O3-ug/m3']
+    
+    #Inicijaliziraj agregator
+    agregator = Agregator()
+    #agregiraj frejm
+    agregirani = agregator.agregiraj(frejmovi)
     
     aplikacija = QtGui.QApplication(sys.argv)
     app = SatniGraf(parent = None, defaulti = mapa2)
     app.show()
+    #dodaj frejmove
+    app.zamjeni_frejmove(agregirani)
+    
     sys.exit(aplikacija.exec_())

@@ -356,7 +356,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             maxxlim = vrijeme[len(vrijeme)-1] + timedelta(hours = 1)
             maxxlim = pd.to_datetime(maxxlim)
             self.axes.set_xlim(minxlim, maxxlim)
-            
+
 #            #y-os
 #            raspon = minValue + maxValue
 #            raspon.sort()

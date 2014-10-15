@@ -33,71 +33,6 @@ import citac
 from agregator import Agregator
 
 ###############################################################################
-#TODO!
-#fix so this works puno toga promjenjeno
-def crtaj_graf(canvas = None, 
-               xlist = [], 
-               ylist1 = [], 
-               ylist2 = [], 
-               tip = None, 
-               linestyle = '-', 
-               linewidth = 1.0, 
-               marker = None, 
-               color = 'black', 
-               alpha = 1.0, 
-               z = 1):
-    """
-    Generalna funkcija za crtanje grafova.
-        
-    Ulazni parametri su zadani preko keyword argumenata da kasnije ne dodje do
-    zabune.
-    
-    Izlaz, crtanje na datom canvasu
-    """
-    
-    if tip == 'plot' and len(xlist) == len(ylist1):
-        #lineplot
-        if len(xlist) != 0:
-            canvas.axes.plot(xlist, 
-                             ylist1, 
-                             marker = marker, 
-                             linestyle = linestyle, 
-                             linewidth = linewidth, 
-                             color = color, 
-                             alpha = alpha, 
-                             zorder = z)
-            #naredba canvasu za crtanje
-            canvas.draw()
-        else:
-            pass
-        
-    elif tip == 'scatter' and len(xlist) == len(ylist1):
-        #scatter plot
-        if len(xlist) != 0:
-            canvas.axes.scatter(xlist, 
-                                ylist1, 
-                                marker = marker, 
-                                color = color, 
-                                alpha = alpha, 
-                                zorder = z)
-            #naredba za crtanje
-            canvas.draw()
-        else:
-            pass
-        
-    elif tip == 'fill' and len(xlist) == len(ylist1) == len(ylist2):
-        #fill between 2 y lines
-        if len(xlist) != 0:
-            canvas.axes.fill_between(xlist, 
-                                     ylist1, 
-                                     ylist2, 
-                                     facecolor = color, 
-                                     alpha = alpha, 
-                                     zorder = z)
-            #naredba canvasu za crtanje
-            canvas.draw()
-        else:
-            pass
 ###############################################################################
 def zaokruzi_vrijeme(dt_objekt, nSekundi):
     """
@@ -922,19 +857,29 @@ class SatniGraf(base2, form2):
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
         
+        self.tmin = None
+        self.tmax = None
+        
         self.veze()
         self.initial_setup()        
         
         #opis slicea : slice od: do:
-        self.labelSlice.setText('opis slicea- programski handle')
+        self.labelSlice.setText('Prikazano vrijeme:')
         
     def zamjeni_frejmove(self, frejmovi):
         self.__agregiraniFrejmovi = frejmovi
         #ponovno updateaj izbor kanala uz pomoc initial_setup()
         self.initial_setup()
+        
 
     def initial_setup(self):
-        """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""        
+        """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
+        
+        if self.__agregiraniFrejmovi != None:
+            self.tmin, self.tmax = self.plot_time_span()
+            naslov = 'Prikazano vrijeme od: '+str(self.tmin)+' do: '+str(self.tmax)
+            self.labelSlice.setText(naslov)
+        
         #checkboxes
         self.glavniGrafCheck.setChecked(self.__defaulti['validanOK']['crtaj'])
         self.pGraf1Check.setChecked(self.__defaulti['pomocnikanal1']['crtaj'])
@@ -1426,6 +1371,27 @@ class SatniGraf(base2, form2):
         a = int(100*color.alpha()/255)
         stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
         return stil
+        
+    def plot_time_span(self):
+        """Vraca granice plota, min i max prikazano vrijeme"""
+        duljina = 0
+        najveci = None
+        for frejm in self.__agregiraniFrejmovi:
+            l = len(self.__agregiraniFrejmovi[frejm])
+            if l > duljina:
+                najveci = frejm
+                duljina = l
+        
+        xmin = self.__agregiraniFrejmovi[najveci].index.min()
+        xmax = self.__agregiraniFrejmovi[najveci].index.max()
+        xmin = pd.to_datetime(xmin.date())
+        xmax = pd.to_datetime(xmax.date())
+        xmin = xmin - timedelta(hours = 1)
+        xmin = pd.to_datetime(xmin)
+        xmax = xmax + timedelta(hours = 1)
+        xmax = pd.to_datetime(xmax)
+        return xmin, xmax
+
 ###############################################################################
 ###############################################################################
 
@@ -1437,6 +1403,14 @@ class GrafSatniSrednjaci(MPLCanvas):
         """konstruktor"""
         MPLCanvas.__init__(self, *args, **kwargs)
 
+        self.__defaulti = None
+        self.__data = None
+        self.__statusGlavniGraf = False #da li je nacrtan glavni graf
+        self.__statusSpanSelector = False #da li je span selector aktivan
+        #min i max, vremenski raspon glavnog kanala
+        self.__tmin, self.__tmax = self.xlimit_glavnog_kanala()
+
+
         self.veze()
     
     def veze(self):
@@ -1446,8 +1420,40 @@ class GrafSatniSrednjaci(MPLCanvas):
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
         #TODO!
-        #sredi pick selection do kraja, vidi za neki dropdown?
-        pass
+        #pick event radi samo i samo ako je glavni graf nacrtan!!!
+        if self.__statusGlavniGraf:
+            xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
+            #problem.. rounding offset aware i offset naive datetimes..workaround
+            xpoint = datetime.datetime(xpoint.year, 
+                                       xpoint.month, 
+                                       xpoint.day, 
+                                       xpoint.hour, 
+                                       xpoint.minute, 
+                                       xpoint.second)
+            xpoint = zaokruzi_vrijeme(xpoint, 3600)
+            xpoint = pd.to_datetime(xpoint)
+            #pobrini se da xpoint ne prelazi granice zadanih podataka glavnog kanala
+            if xpoint >= self.__tmax:
+                xpoint = self.__tmax
+            if xpoint <= self.__tmin:
+                xpoint = self.__tmin
+
+            
+            if event.button == 1:
+                #left click
+                #test da li je span aktivan
+                if self.__statusSpanSelector == False:
+                    print('left click: ', xpoint)
+                else:
+                    print('left click disabled due to span being active')
+            
+            if event.button == 2:
+                #annotations
+                print('middle mouse: ', xpoint)
+            
+            if event.button == 3:
+                #flag change event
+                print('right click: ', xpoint)
     
     def satni_span_flag(self, tmin, tmax):
         """satni span selector"""
@@ -1460,6 +1466,17 @@ class GrafSatniSrednjaci(MPLCanvas):
         izmedju [0-1]"""
         r, g, b = rgbTuple
         return (r/255, g/255, b/255)
+
+    def xlimit_glavnog_kanala(self):
+        """FUnkcija vraca tmin i tmax, vremenski raspon glavnog kanala"""
+        if self.__defaulti != None:
+            glavniKanal = self.__defaulti['validanOK']['kanal']
+            tmin = self.__data[glavniKanal].index.min()
+            tmax = self.__data[glavniKanal].index.max()
+            return tmin, tmax
+        else:
+            return None, None
+        
         
     def xlimit_grafa(self):
         """
@@ -1499,12 +1516,14 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__defaulti = mapaGrafova
         self.__data = satniFrejmovi
         self.axes.clear()
+        self.__statusGlavniGraf = False
 
         #TODO!
         #opcenite postavke grafa, x limiti etc....
         
         #x-limit
-        self.xmin, self.xmax = self.xlimit_grafa()        
+        self.xmin, self.xmax = self.xlimit_grafa()
+        self.__tmin, self.__tmax = self.xlimit_glavnog_kanala()
         self.axes.set_xlim(self.xmin, self.xmax)
         
         #format x kooridinate
@@ -1513,7 +1532,9 @@ class GrafSatniSrednjaci(MPLCanvas):
             label.set_rotation(20)
             label.set_fontsize(8)
 
-        
+        #TODO!
+        #provjeri crtanje validiranih podataka, nevalidiranih podataka....
+        #glavni scatter plor mora raditi!!!
         
         
         #test opcenitih postavki priije crtanja : cursor, grid...
@@ -1533,6 +1554,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.axes.minorticks_off()
         
         if self.__defaulti['opcenito']['span'] == True:
+            self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.satni_span_flag, 
                                              direction = 'horizontal', 
@@ -1540,6 +1562,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                                              rectprops = dict(alpha = 0.3, facecolor = 'yellow'))
         else:
             self.spanSelector = None
+            self.__statusSpanSelector = False
             
             
             
@@ -1573,6 +1596,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['validanOK']['color']), 
                                           alpha = self.__defaulti['validanOK']['alpha'], 
                                           zorder = self.__defaulti['validanOK']['zorder'])
+                        self.__statusGlavniGraf = True
 
                     elif graf == 'validanNOK':
                         #samo svi podaci gdje je flag = -1000
@@ -1587,7 +1611,8 @@ class GrafSatniSrednjaci(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['validanNOK']['color']), 
                                           alpha = self.__defaulti['validanNOK']['alpha'], 
                                           zorder = self.__defaulti['validanNOK']['zorder'])
-
+                        self.__statusGlavniGraf = True
+                        
                     elif graf == 'nevalidanOK':
                         #samo svi podaci gdje je flag = 1
                         data = self.__data[kanal]
@@ -1601,7 +1626,8 @@ class GrafSatniSrednjaci(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['nevalidanOK']['color']), 
                                           alpha = self.__defaulti['nevalidanOK']['alpha'], 
                                           zorder = self.__defaulti['nevalidanOK']['zorder'])
-
+                        self.__statusGlavniGraf = True
+                        
                     elif graf == 'nevalidanNOK':
                         #samo svi podaci gdje je flag = -1
                         data = self.__data[kanal]
@@ -1615,7 +1641,8 @@ class GrafSatniSrednjaci(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['nevalidanNOK']['color']), 
                                           alpha = self.__defaulti['nevalidanNOK']['alpha'], 
                                           zorder = self.__defaulti['nevalidanNOK']['zorder'])
-
+                        self.__statusGlavniGraf = True
+                        
                 else:
                     #normalan slucaj (plotamo cijeli niz)
                     data = self.__data[kanal]

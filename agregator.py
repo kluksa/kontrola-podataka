@@ -45,28 +45,25 @@ class Agregator(object):
     def h_q05(self, x):
         #5 percentil podataka
         if len(x) == 0:
-            #za prazni interval, vrati NaN vrijednost
             return np.NaN
         return np.percentile(x,5)
         
     def h_q50(self, x):
         #median
         if len(x) == 0:
-            #za prazni interval, vrati NaN vrijednost
             return np.NaN
         return np.percentile(x,50)
         
     def h_q95(self, x):
         #95 percentil podataka
         if len(x) == 0:
-            #za prazni interval, vrati NaN vrijednost
             return np.NaN
         return np.percentile(x,95)
     
     def h_binary_or(self, x):
         #binarni or liste
         if len(x) == 0:
-            #za prazni interval, vrati NaN vrijednost
+            #za prazni interval, vrati -1 (ocita greska)
             return np.NaN
         result = 0
         for i in x:
@@ -76,7 +73,6 @@ class Agregator(object):
     def h_size(self, x):
         #broj podataka
         if len(x) == 0:
-            #za prazni interval, vrati NaN vrijednost
             return np.NaN
         return len(x)
     
@@ -127,7 +123,6 @@ class Agregator(object):
         """
         listaFunkcijaIme = [u'avg', u'std', u'min', u'max', u'q05', u'median', u'q95', u'count']
         listaFunkcija = [np.mean, np.std, np.min, np.max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
-        
         """
         -kopija originalnog frejma
         -samo stupac koncentracije gdje je flag veci od 0
@@ -196,9 +191,10 @@ if __name__ == "__main__":
     frejmovi = citac.citaj(stanica, datum)
     #jedan frejm    
     frejm = frejmovi['1-SO2-ppb']
-    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
-    frejm.loc['2014-06-04 20:00:00':'2014-06-04 22:00:00','flag'] = -1000
-    frejm.loc['2014-06-04 08:00:00':'2014-06-04 13:00:00','flag'] = -1000
+#    frejm = frejmovi['49-O3-ug/m3']
+#    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
+#    frejm.loc['2014-06-04 20:00:00':'2014-06-04 22:00:00','flag'] = -15
+#    frejm.loc['2014-06-04 08:00:00':'2014-06-04 13:00:00','flag'] = -1000
     #frejm = frejmovi['49-O3-ug/m3']
     
     #Inicijaliziraj agregator
@@ -211,16 +207,16 @@ if __name__ == "__main__":
     
     #random sample da provjerim valjanost agregiranja
     #barem sto se tice slicea i rubova istih
-    test = frejm.loc['2014-06-04 04:01:00':'2014-06-04 05:00:00','koncentracija']
-    avg_test = np.mean(test)
-    res_test = agregirani.loc['2014-06-04 05:00:00','avg']
-    
-    print('treba biti True, ako je sve u redu')
-    print(avg_test == res_test)
-    
-    #test ponasanja ako agregator dobije prazan slice
-    test_prazan = pd.DataFrame()
-    test_agreg = agregator.agregiraj_kanal(test_prazan)
-    print('prazan frejm:')
-    print(test_agreg)
+#    test = frejm.loc['2014-06-04 04:01:00':'2014-06-04 05:00:00','koncentracija']
+#    avg_test = np.mean(test)
+#    res_test = agregirani.loc['2014-06-04 05:00:00','avg']
+#    
+#    print('treba biti True, ako je sve u redu')
+#    print(avg_test == res_test)
+#    
+#    #test ponasanja ako agregator dobije prazan slice
+#    test_prazan = pd.DataFrame()
+#    test_agreg = agregator.agregiraj_kanal(test_prazan)
+#    print('prazan frejm:')
+#    print(test_agreg)
     

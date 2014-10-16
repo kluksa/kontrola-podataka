@@ -151,7 +151,7 @@ class GlavniKanalDetalji(base, form):
         
         self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
         self.__sveLinije = ['None', '-', '--', '-.', ':']
-        self.__sviPodaci = ['min', 'max', 'count', 'status', 'median', 'avg', 'q05', 'q95', 'std']
+        self.__sviPodaci = ['min', 'max', 'median', 'avg', 'q05', 'q95']
         self.__sviTipovi = ['scatter', 'plot']
         
         self.setup_glavni()
@@ -703,7 +703,7 @@ class PomocniGrafDetalji(base1, form1):
         
         self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
         self.__sveLinije = ['None', '-', '--', '-.', ':']
-        self.__sviPodaci = ['min', 'max', 'count', 'status', 'median', 'avg', 'q05', 'q95', 'std']
+        self.__sviPodaci = ['min', 'max', 'median', 'avg', 'q05', 'q95']
         self.__sviTipovi = ['scatter', 'plot']
         
         self.popuni_izbornike()
@@ -874,6 +874,9 @@ class SatniGraf(base2, form2):
 
     def initial_setup(self):
         """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
+        #TODO!
+        #satni graf ce trebati promjeniti tonu postavki za crtanje grafova:
+        #posebna paznja na annotatione, etc... reinicijalizacija canvasa???
         
         if self.__agregiraniFrejmovi != None:
             self.tmin, self.tmax = self.plot_time_span()
@@ -1409,6 +1412,14 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__statusSpanSelector = False #da li je span selector aktivan
         #min i max, vremenski raspon glavnog kanala
         self.__tmin, self.__tmax = self.xlimit_glavnog_kanala()
+        #highlight
+        self.__zadnjiHighlightx = None #xpoint zadnjeg highlighta
+        self.__zadnjiHighlighty = None #ypoint zadnjeg highlighta
+        self.__testHighlight = False #test da li je highligt nacrtan
+        #annotation
+        self.__zadnjiAnnotationx = None
+        self.__testAnnotation = False
+
 
 
         self.veze()
@@ -1419,8 +1430,6 @@ class GrafSatniSrednjaci(MPLCanvas):
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
-        #TODO!
-        #pick event radi samo i samo ako je glavni graf nacrtan!!!
         if self.__statusGlavniGraf:
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
             #problem.. rounding offset aware i offset naive datetimes..workaround
@@ -1438,20 +1447,126 @@ class GrafSatniSrednjaci(MPLCanvas):
             if xpoint <= self.__tmin:
                 xpoint = self.__tmin
 
+#            #highlight selected point - kooridinate ako nedostaju podaci
+            trenutniGlavniKanal = self.__defaulti['validanOK']['kanal']
+            
+            if xpoint in list(self.__data[trenutniGlavniKanal].index):
+                ypoint = self.__data[trenutniGlavniKanal].loc[xpoint, u'avg']
+            else:
+                miny = self.__data[trenutniGlavniKanal][u'min'].min()
+                maxy = self.__data[trenutniGlavniKanal][u'max'].max()
+                ypoint = (miny + maxy)/2
+
             
             if event.button == 1:
                 #left click
                 #test da li je span aktivan
                 if self.__statusSpanSelector == False:
+                    #TODO!
+                    #signal to draw minute data
+                
+                    #highlight choice
+                    if self.__testHighlight == False:
+                        self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5, zorder = 21)
+                        self.draw()
+                        self.__zadnjiHighlightx = xpoint
+                        self.__zadnjiHighlighty = ypoint
+                        self.__testHighlight = True
+                        
+                    else:
+                        if self.__zadnjiHighlightx != xpoint:
+                            self.hdot.remove()
+                            self.__zadnjiHighlightx = xpoint
+                            self.__zadnjiHighlighty = ypoint
+                            self.__testHighlight = True
+                            self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5, zorder = 21)
+                            self.draw()
+
                     print('left click: ', xpoint)
                 else:
                     print('left click disabled due to span being active')
             
             if event.button == 2:
+                #TODO!
                 #annotations
+                #dohvati tekst annotationa
+                if xpoint in list(self.__data[trenutniGlavniKanal].index):
+                    yavg = self.__data[trenutniGlavniKanal].loc[xpoint, u'avg']
+                    ymin = self.__data[trenutniGlavniKanal].loc[xpoint, u'min']
+                    ymax = self.__data[trenutniGlavniKanal].loc[xpoint, u'max']
+                    ystatus = self.__data[trenutniGlavniKanal].loc[xpoint, u'status']
+                    ycount = self.__data[trenutniGlavniKanal].loc[xpoint, u'count']
+                
+                    tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+                else:
+                    tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
+                
+                #annotation offset
+                size = self.frameSize()
+                x, y = size.width(), size.height()
+                x = x//2
+                y= y//2
+                clickedx = event.x
+                clickedy = event.y
+                print(clickedx, clickedy)
+            
+                if clickedx >= x:
+                    clickedx = -80
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                else:
+                    clickedx = 30
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+
+                if self.__testAnnotation == False:
+                    #napravi annotation
+                    self.__zadnjiAnnotationx = xpoint
+                    self.__testAnnotation = True
+                    #sami annotation
+                    self.annotation = self.axes.annotate(
+                        tekst, 
+                        xy = (xpoint, ypoint), 
+                        xytext = (clickedx, clickedy), 
+                        textcoords = 'offset points', 
+                        ha = 'left', 
+                        va = 'center', 
+                        fontsize = 7, 
+                        zorder = 22, 
+                        bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+                        arrowprops = dict(arrowstyle = '->'))
+                    self.draw()
+                    
+                else:
+                    if xpoint == self.__zadnjiAnnotationx:
+                        self.annotation.remove()
+                        self.__zadnjiAnnotationx = None
+                        self.__testAnnotation = False
+                        self.draw()
+                    else:
+                        self.annotation.remove()
+                        self.__zadnjiAnnotationx = xpoint
+                        self.__testAnnotation = True
+                        self.annotation = self.axes.annotate(
+                            tekst, 
+                            xy = (xpoint, ypoint), 
+                            xytext = (clickedx, clickedy), 
+                            textcoords = 'offset points', 
+                            ha = 'left', 
+                            va = 'center', 
+                            fontsize = 7, 
+                            zorder = 22, 
+                            bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+                            arrowprops = dict(arrowstyle = '->'))
+                        self.draw()
                 print('middle mouse: ', xpoint)
             
             if event.button == 3:
+                #TODO!
                 #flag change event
                 print('right click: ', xpoint)
     
@@ -1517,9 +1632,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__data = satniFrejmovi
         self.axes.clear()
         self.__statusGlavniGraf = False
-
-        #TODO!
-        #opcenite postavke grafa, x limiti etc....
+        self.__testAnnotation = False
         
         #x-limit
         self.xmin, self.xmax = self.xlimit_grafa()
@@ -1532,11 +1645,6 @@ class GrafSatniSrednjaci(MPLCanvas):
             label.set_rotation(20)
             label.set_fontsize(8)
 
-        #TODO!
-        #provjeri crtanje validiranih podataka, nevalidiranih podataka....
-        #glavni scatter plor mora raditi!!!
-        
-        
         #test opcenitih postavki priije crtanja : cursor, grid...
         if self.__defaulti['opcenito']['cursor'] == True:
             self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
@@ -1564,7 +1672,14 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.spanSelector = None
             self.__statusSpanSelector = False
             
-            
+        if self.__testHighlight and self.__statusGlavniGraf:
+            self.hdot = self.axes.scatter(self.__zadnjiHighlightx, 
+                                          self.__zadnjiHighlighty, 
+                                          s = 100, 
+                                          color = 'yellow', 
+                                          alpha = 0.5, 
+                                          zorder = 21)
+                                                      
             
         plotlista = list(self.__defaulti.keys()) #svi kljucevi
         plotlista.remove('opcenito') #makni 'opcenito', ostaju samo grafovi
@@ -1631,7 +1746,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                     elif graf == 'nevalidanNOK':
                         #samo svi podaci gdje je flag = -1
                         data = self.__data[kanal]
-                        data = data[data[u'flag'] == -1000]
+                        data = data[data[u'flag'] == -1]
                         x = list(data.index)
                         y = list(data[u'avg'])
                         assert(len(x) == len(y))

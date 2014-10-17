@@ -856,10 +856,7 @@ class SatniGraf(base2, form2):
         self.mplToolbar = NavigationToolbar(self.canvasSatni, self.widget2)
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
-        
-        self.tmin = None
-        self.tmax = None
-        
+                
         self.veze()
         self.initial_setup()        
         
@@ -868,15 +865,23 @@ class SatniGraf(base2, form2):
         
     def zamjeni_frejmove(self, frejmovi):
         self.__agregiraniFrejmovi = frejmovi
-        #ponovno updateaj izbor kanala uz pomoc initial_setup()
         self.initial_setup()
         
-
     def initial_setup(self):
         """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
         #TODO!
-        #satni graf ce trebati promjeniti tonu postavki za crtanje grafova:
-        #posebna paznja na annotatione, etc... reinicijalizacija canvasa???
+        #reinicjalizacija dijela canvasa prilikom promjene kanala?
+        self.tmin = None
+        self.tmax = None
+        
+        self.canvasSatni.__statusGlavniGraf = False
+        self.canvasSatni.__testAnnotation = False
+        self.canvasSatni.__zadnjiHighlightx = None
+        self.canvasSatni.__zadnjiHighlighty = None
+        self.canvasSatni.__zadnjiAnnotationx = None
+        self.canvasSatni.__testAnnotation = False
+        
+
         
         if self.__agregiraniFrejmovi != None:
             self.tmin, self.tmax = self.plot_time_span()
@@ -1405,6 +1410,9 @@ class GrafSatniSrednjaci(MPLCanvas):
     def __init__(self, *args, **kwargs):
         """konstruktor"""
         MPLCanvas.__init__(self, *args, **kwargs)
+        
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        #self.customContextMenuRequested.connect(self.showMenu)
 
         self.__defaulti = None
         self.__data = None
@@ -1419,18 +1427,49 @@ class GrafSatniSrednjaci(MPLCanvas):
         #annotation
         self.__zadnjiAnnotationx = None
         self.__testAnnotation = False
-
-
-
+        
         self.veze()
+
+    def show_menu(self, pos, tmin, tmax):
+        self.__lastTimeMin = tmin
+        self.__lastTimeMax = tmax
+        menu = QtGui.QMenu(self)
+        menu.setTitle('Promjeni flag')
+        action1 = QtGui.QAction("Flag: Dobar", menu) #pozitivan flag
+        action2 = QtGui.QAction("Flag: Los", menu) #negativan flag
+        menu.addAction(action1)
+        menu.addAction(action2)
+        action1.triggered.connect(self.dijalog_promjena_flaga_OK)
+        action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
+        menu.popup(pos)
     
+    def dijalog_promjena_flaga_OK(self):
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+        #pomak slicea da uhvati sve ciljane minutne podatke
+        tmin = tmin - timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        arg = [tmin, tmax, 1000]
+        #sredi generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
+        
+    def dijalog_promjena_flaga_NOK(self):
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+        #pomak slicea da uhvati sve ciljane minutne podatke
+        tmin = tmin - timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        arg = [tmin, tmax, -1000]
+        #sredi generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
+        
     def veze(self):
         """povezivanje mpl_eventa"""
         self.mpl_connect('button_press_event', self.on_pick)
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
-        if self.__statusGlavniGraf:
+        if self.__statusGlavniGraf and event.inaxes == self.axes:
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
             #problem.. rounding offset aware i offset naive datetimes..workaround
             xpoint = datetime.datetime(xpoint.year, 
@@ -1447,7 +1486,7 @@ class GrafSatniSrednjaci(MPLCanvas):
             if xpoint <= self.__tmin:
                 xpoint = self.__tmin
 
-#            #highlight selected point - kooridinate ako nedostaju podaci
+            #highlight selected point - kooridinate ako nedostaju podaci
             trenutniGlavniKanal = self.__defaulti['validanOK']['kanal']
             
             if xpoint in list(self.__data[trenutniGlavniKanal].index):
@@ -1462,32 +1501,19 @@ class GrafSatniSrednjaci(MPLCanvas):
                 #left click
                 #test da li je span aktivan
                 if self.__statusSpanSelector == False:
-                    #TODO!
                     #signal to draw minute data
+                    self.emit(QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), xpoint)
                 
                     #highlight choice
                     if self.__testHighlight == False:
-                        self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5, zorder = 21)
-                        self.draw()
-                        self.__zadnjiHighlightx = xpoint
-                        self.__zadnjiHighlighty = ypoint
-                        self.__testHighlight = True
-                        
+                        self.highlight_dot(xpoint, ypoint)
                     else:
                         if self.__zadnjiHighlightx != xpoint:
                             self.hdot.remove()
-                            self.__zadnjiHighlightx = xpoint
-                            self.__zadnjiHighlighty = ypoint
-                            self.__testHighlight = True
-                            self.hdot = self.axes.scatter(xpoint, ypoint, s = 100, color = 'yellow', alpha = 0.5, zorder = 21)
-                            self.draw()
-
-                    print('left click: ', xpoint)
-                else:
-                    print('left click disabled due to span being active')
+                            self.__testHighlight = False
+                            self.highlight_dot(xpoint, ypoint)
             
             if event.button == 2:
-                #TODO!
                 #annotations
                 #dohvati tekst annotationa
                 if xpoint in list(self.__data[trenutniGlavniKanal].index):
@@ -1508,7 +1534,6 @@ class GrafSatniSrednjaci(MPLCanvas):
                 y= y//2
                 clickedx = event.x
                 clickedy = event.y
-                print(clickedx, clickedy)
             
                 if clickedx >= x:
                     clickedx = -80
@@ -1522,7 +1547,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         clickedy = -30
                     else:
                         clickedy = 30
-
+                
                 if self.__testAnnotation == False:
                     #napravi annotation
                     self.__zadnjiAnnotationx = xpoint
@@ -1563,18 +1588,42 @@ class GrafSatniSrednjaci(MPLCanvas):
                             bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
                             arrowprops = dict(arrowstyle = '->'))
                         self.draw()
-                print('middle mouse: ', xpoint)
             
             if event.button == 3:
-                #TODO!
-                #flag change event
-                print('right click: ', xpoint)
+                #flag change
+                
+                #test da li je span aktivan
+                if self.__statusSpanSelector == False:
+                    #poziva context menu sa informacijom o lokaciji i satu
+                    loc = QtGui.QCursor.pos()
+                    self.show_menu(loc, xpoint, xpoint)
     
     def satni_span_flag(self, tmin, tmax):
         """satni span selector"""
-        #TODO!
-        #sredi span selection do kraja
-        pass
+        if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
+            tmin = matplotlib.dates.num2date(tmin)
+            tmax = matplotlib.dates.num2date(tmax)
+            tmin = datetime.datetime(tmin.year, tmin.month, tmin.day, tmin.hour, tmin.minute, tmin.second)
+            tmax = datetime.datetime(tmax.year, tmax.month, tmax.day, tmax.hour, tmax.minute, tmax.second)
+            tmin = zaokruzi_vrijeme(tmin, 3600)
+            tmax = zaokruzi_vrijeme(tmax, 3600)
+            tmin = pd.to_datetime(tmin)
+            tmax = pd.to_datetime(tmax)
+    
+            #osiguranje da se ne preskoce granice glavnog kanala
+            if tmin < self.__tmin:
+                tmin = self.__tmin
+            if tmin > self.__tmax:
+                tmin = self.__tmax
+            if tmax < self.__tmin:
+                tmax = self.__tmin
+            if tmax > self.__tmax:
+                tmax = self.__tmax
+                
+            if tmin != tmax: #tocke ne smiju biti iste
+                #pozovi dijalog za promjenu flaga
+                loc = QtGui.QCursor.pos()
+                self.show_menu(loc, tmin, tmax)
     
     def normalize_rgb(self, rgbTuple):
         """konverter za plotanje, mpl kao color ima sequence vrijednosti 
@@ -1618,6 +1667,20 @@ class GrafSatniSrednjaci(MPLCanvas):
         xmax = xmax + timedelta(hours = 1)
         xmax = pd.to_datetime(xmax)
         return xmin, xmax
+
+    def highlight_dot(self, x, y):
+        """Highligt zuti dot kao vizualni marker za odabranu tocku"""
+        if not self.__testHighlight and self.__statusGlavniGraf:
+            self.hdot = self.axes.scatter(x, 
+                                          y, 
+                                          s = 100, 
+                                          color = 'yellow', 
+                                          alpha = 0.5, 
+                                          zorder = 21)
+            self.__zadnjiHighlightx = x
+            self.__zadnjiHighlighty = y
+            self.__testHighlight = True
+            self.draw()
 
     
     def crtaj(self, mapaGrafova, satniFrejmovi):
@@ -1671,16 +1734,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         else:
             self.spanSelector = None
             self.__statusSpanSelector = False
-            
-        if self.__testHighlight and self.__statusGlavniGraf:
-            self.hdot = self.axes.scatter(self.__zadnjiHighlightx, 
-                                          self.__zadnjiHighlighty, 
-                                          s = 100, 
-                                          color = 'yellow', 
-                                          alpha = 0.5, 
-                                          zorder = 21)
-                                                      
-            
+           
         plotlista = list(self.__defaulti.keys()) #svi kljucevi
         plotlista.remove('opcenito') #makni 'opcenito', ostaju samo grafovi
         specials = ['validanOK', 'validanNOK', 'nevalidanOK', 'nevalidanNOK']
@@ -1794,7 +1848,12 @@ class GrafSatniSrednjaci(MPLCanvas):
                                                facecolor = self.normalize_rgb(self.__defaulti[graf]['color']), 
                                                alpha = self.__defaulti[graf]['alpha'], 
                                                zorder = self.__defaulti[graf]['zorder'])
-        
+                                               
+        #highlight dot
+        if self.__statusGlavniGraf:
+            self.__testHighlight = False
+            self.highlight_dot(self.__zadnjiHighlightx, self.__zadnjiHighlighty)
+
         self.draw()
         
         

@@ -856,6 +856,10 @@ class SatniGraf(base2, form2):
         self.mplToolbar = NavigationToolbar(self.canvasSatni, self.widget2)
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
+        
+        #TODO! test toggle gumba
+        self.toggleDetalji.toggled.connect(self.groupBox.setVisible)
+        self.toggleDetalji.toggled.connect(self.groupBox_2.setVisible)
                 
         self.veze()
         self.initial_setup()        
@@ -1895,6 +1899,12 @@ class MinutniGraf(base3, form3):
         self.mplToolbar = NavigationToolbar(self.canvasMinutni, self.widget2)
         self.canvasLayout.addWidget(self.canvasMinutni)
         self.canvasLayout.addWidget(self.mplToolbar)
+        
+        #TODO! test toggle gumba
+        self.toggleDetalji.toggled.connect(self.groupBox.setVisible)
+        self.toggleDetalji.toggled.connect(self.groupBox_2.setVisible)
+        
+        
     
     
 
@@ -1911,7 +1921,8 @@ class MinutniGraf(base3, form3):
 ###############################################################################
             
 if __name__=='__main__':
-    #NOVA konstrukcija ulaznog dicta svih mogucih grafova 
+    #NOVA konstrukcija ulaznog dicta svih mogucih grafova
+    #TODO! problem loop za satne ide i preko minutnih defaulta
     validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
     validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
     nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}

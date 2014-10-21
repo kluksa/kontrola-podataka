@@ -1895,6 +1895,8 @@ class MinutniGraf(base3, form3):
         self.mplToolbar = NavigationToolbar(self.canvasMinutni, self.widget2)
         self.canvasLayout.addWidget(self.canvasMinutni)
         self.canvasLayout.addWidget(self.mplToolbar)
+    
+    
 
 
 ###############################################################################
@@ -1925,7 +1927,19 @@ if __name__=='__main__':
     pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
     pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':False}        
+    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':False}
+    m_validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_nevalidanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_glavnikanal = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    m_pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
+    m_pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
+    m_pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
+    m_pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
+    m_pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
+    m_pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
+    m_opcenito = {'grid':False, 'cursor':False, 'span':True, 'minorTicks':False}
     mapa2 = {'validanOK':validanOK, 
              'validanNOK':validanNOK, 
              'nevalidanOK':nevalidanOK, 
@@ -1941,7 +1955,17 @@ if __name__=='__main__':
              'pomocnikanal4':pomocnikanal4, 
              'pomocnikanal5':pomocnikanal5, 
              'pomocnikanal6':pomocnikanal6, 
-             'opcenito':opcenito}
+             'opcenito':opcenito, 
+             'm_validanOK':m_validanOK, 
+             'm_validanNOK':m_validanNOK, 
+             'm_glavnikanal':m_glavnikanal, 
+             'm_pomocnikanal1':m_pomocnikanal1, 
+             'm_pomocnikanal2':m_pomocnikanal2, 
+             'm_pomocnikanal3':m_pomocnikanal3, 
+             'm_pomocnikanal4':m_pomocnikanal4, 
+             'm_pomocnikanal5':m_pomocnikanal5, 
+             'm_pomocnikanal6':m_pomocnikanal6, 
+             'm_opcenito':m_opcenito}
     
     reader = citac.WlReader('./data/')
     reader.dohvati_sve_dostupne()

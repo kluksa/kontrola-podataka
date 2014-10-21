@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>519</width>
+    <height>483</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="mouseTracking">
+   <bool>true</bool>
+  </property>
+  <property name="windowTitle">
+   <string>Kontrola podataka</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>16777215</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>519</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_ReadFile"/>
+    <addaction name="separator"/>
+    <addaction name="action_Exit"/>
+   </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <widget class="QMenu" name="menuSatni_graf">
+     <property name="title">
+      <string>Satni graf</string>
+     </property>
+     <addaction name="action_SatniGrid"/>
+     <addaction name="action_SatniCursor"/>
+     <addaction name="action_SatniSpan"/>
+     <addaction name="action_SatniMinorTicks"/>
+    </widget>
+    <widget class="QMenu" name="menuMinutni_graf">
+     <property name="title">
+      <string>Minutni graf</string>
+     </property>
+     <addaction name="action_MinutniGrid"/>
+     <addaction name="action_MinutniCursor"/>
+     <addaction name="action_MinutniSpan"/>
+     <addaction name="action_MinutniMinorTicks"/>
+    </widget>
+    <addaction name="menuSatni_graf"/>
+    <addaction name="separator"/>
+    <addaction name="menuMinutni_graf"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dockWidget_kontrola">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Kontrolno sucelje</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_kontrola"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_satni">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Satno agregirani podaci</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_satni"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_minutni">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Minutni podaci</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_minutni"/>
+  </widget>
+  <action name="action_Exit">
+   <property name="text">
+    <string>&amp;Exit</string>
+   </property>
+   <property name="toolTip">
+    <string>Izlaz iz aplikacije</string>
+   </property>
+   <property name="statusTip">
+    <string>Izlaz iz aplikacije</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Q</string>
+   </property>
+  </action>
+  <action name="action_SatniGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grid toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Crtaj grid na satnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Crtaj grid na satnom grafu</string>
+   </property>
+  </action>
+  <action name="action_SatniCursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Cursor toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Pomocni cursor na satnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Pomocni cursor na satnom grafu</string>
+   </property>
+  </action>
+  <action name="action_SatniSpan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Span selection toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Span izbor vise tocaka na satnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Span izbor vise tocaka na satnom grafu</string>
+   </property>
+  </action>
+  <action name="action_SatniMinorTicks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Minor ticks toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Prikaz minor tickova na satnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Prikaz minor tickova na satnom grafu</string>
+   </property>
+  </action>
+  <action name="action_MinutniGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grid toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Crtaj grid na minutnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Crtaj grid na minutnom grafu</string>
+   </property>
+  </action>
+  <action name="action_MinutniCursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Cursor toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Pomocni cursor na minutnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Pomocni cursor na minutnom grafu</string>
+   </property>
+  </action>
+  <action name="action_MinutniSpan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Span selector toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Span izbor vise tocaka na minutnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Span izbor vise tocaka na minutnom grafu</string>
+   </property>
+  </action>
+  <action name="action_MinutniMinorTicks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Minor ticks toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Prikaz minor tickova na minutnom grafu</string>
+   </property>
+   <property name="statusTip">
+    <string>Prikaz minor tickova na minutnom grafu</string>
+   </property>
+  </action>
+  <action name="action_ReadFile">
+   <property name="text">
+    <string>Read data</string>
+   </property>
+   <property name="toolTip">
+    <string>Ucitaj podatke</string>
+   </property>
+   <property name="statusTip">
+    <string>Ucitaj podatke</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

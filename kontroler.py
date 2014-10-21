@@ -92,27 +92,27 @@ class Kontrola(QtGui.QWidget):
                      self.crtaj_satni)
                      
         #gui - izbor na satnom grafu, naredba za crtanje minutnih podataka
-        self.connect(gui.canvasSatni,
+        self.connect(gui.satniCanvas,
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'),
                      self.crtaj_minutni)
                      
         #naredba gui dijelu za crtanje satnih podataka
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_crtaj_satni_frejm(PyQt_PyObject)'), 
-                     gui.canvasSatni.crtaj)
+                     gui.satniCanvas.crtaj)
                      
         #naredba gui dijelu za crtanje minutnih podataka
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_crtaj_minutni_frejm(PyQt_PyObject)'), 
-                     gui.canvasMinutni.crtaj)
+                     gui.minutniCanvas.crtaj)
                      
         #gui - promjena flaga na satnom grafu
-        self.connect(gui.canvasSatni, 
+        self.connect(gui.satniCanvas, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjena_flaga)
 
         #gui - promjena flaga na minutnom grafu
-        self.connect(gui.canvasMinutni, 
+        self.connect(gui.minutniCanvas, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjena_flaga)
         

@@ -896,10 +896,6 @@ class SatniGraf(base2, form2):
         self.pGraf4Check.setChecked(self.__defaulti['pomocnikanal4']['crtaj'])
         self.pGraf5Check.setChecked(self.__defaulti['pomocnikanal5']['crtaj'])
         self.pGraf6Check.setChecked(self.__defaulti['pomocnikanal6']['crtaj'])
-        self.gridCheck.setChecked(self.__defaulti['opcenito']['grid'])
-        self.cursorCheck.setChecked(self.__defaulti['opcenito']['cursor'])
-        self.spanSelectorCheck.setChecked(self.__defaulti['opcenito']['span'])
-        self.minorTickCheck.setChecked(self.__defaulti['opcenito']['minorTicks'])
         
         #button colors
         self.change_boja_pGraf1Detalji()
@@ -1002,7 +998,7 @@ class SatniGraf(base2, form2):
     def veze(self):
         """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
         #BITNO... SVE FUNKCIJE KOJE MJENJAJU NEKE POSTAVKE GRAFA MORAJU POZIVATI
-        #PONOVNO CRTANJE! UKUPNO SU TO 25 METODE.
+        #PONOVNO CRTANJE!
         #naredba za crtanje (ulazni podaci su dict opisa grafa, dict frejmova)
         #self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         #dijalozi
@@ -1029,37 +1025,33 @@ class SatniGraf(base2, form2):
         self.pGraf4Check.stateChanged.connect(self.enable_pomocni_kanal4)
         self.pGraf5Check.stateChanged.connect(self.enable_pomocni_kanal5)
         self.pGraf6Check.stateChanged.connect(self.enable_pomocni_kanal6)
-        self.gridCheck.stateChanged.connect(self.enable_grid)
-        self.cursorCheck.stateChanged.connect(self.enable_cursor)
-        self.spanSelectorCheck.stateChanged.connect(self.enable_spanSelector)
-        self.minorTickCheck.stateChanged.connect(self.enable_minorTick)
         
-    def enable_grid(self):
-        if self.gridCheck.isChecked() == True:
+    def enable_grid(self, x):
+        if x:
             self.__defaulti['opcenito']['grid'] = True
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['grid'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
-    def enable_cursor(self):
-        if self.cursorCheck.isChecked() == True:
+    def enable_cursor(self, x):
+        if x:
             self.__defaulti['opcenito']['cursor'] = True
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['cursor'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
-    def enable_spanSelector(self):
-        if self.spanSelectorCheck.isChecked() == True:
+    def enable_spanSelector(self, x):
+        if x:
             self.__defaulti['opcenito']['span'] = True
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.__defaulti['opcenito']['span'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
-    def enable_minorTick(self):
-        if self.minorTickCheck.isChecked() == True:
+    def enable_minorTick(self, x):
+        if x:
             self.__defaulti['opcenito']['minorTicks'] = True
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
@@ -1074,6 +1066,11 @@ class SatniGraf(base2, form2):
             self.__defaulti['validanNOK']['crtaj'] = True
             self.__defaulti['nevalidanOK']['crtaj'] = True
             self.__defaulti['nevalidanNOK']['crtaj'] = True
+            self.__defaulti['glavnikanal1']['crtaj'] = True
+            self.__defaulti['glavnikanal2']['crtaj'] = True
+            self.__defaulti['glavnikanal3']['crtaj'] = True
+            self.__defaulti['glavnikanal4']['crtaj'] = True
+            self.__defaulti['glavnikanalfill']['crtaj'] = True
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
         else:
             self.glavniGrafIzbor.setEnabled(False)
@@ -1633,7 +1630,7 @@ class GrafSatniSrednjaci(MPLCanvas):
 
     def xlimit_glavnog_kanala(self):
         """FUnkcija vraca tmin i tmax, vremenski raspon glavnog kanala"""
-        if self.__defaulti != None:
+        if self.__defaulti != None and self.__data != None:
             glavniKanal = self.__defaulti['validanOK']['kanal']
             tmin = self.__data[glavniKanal].index.min()
             tmax = self.__data[glavniKanal].index.max()
@@ -1650,24 +1647,28 @@ class GrafSatniSrednjaci(MPLCanvas):
         2.nalazi rubne indexe tog frejma
         3.odmice ih za 1 sat (od vrijednosti datuma)
         """
-        duljina = 0
-        najveci = None
-        for frejm in self.__data:
-            l = len(self.__data[frejm])
-            if l > duljina:
-                najveci = frejm
-                duljina = l
-        
-        xmin = self.__data[najveci].index.min()
-        xmax = self.__data[najveci].index.max()
-        xmin = pd.to_datetime(xmin.date())
-        xmax = pd.to_datetime(xmax.date())
-        xmin = xmin - timedelta(hours = 1)
-        xmin = pd.to_datetime(xmin)
-        xmax = xmax + timedelta(hours = 1)
-        xmax = pd.to_datetime(xmax)
-        return xmin, xmax
+        if self.__data != None:
+            duljina = 0
+            najveci = None
+            for frejm in self.__data:
+                l = len(self.__data[frejm])
+                if l > duljina:
+                    najveci = frejm
+                    duljina = l
+                    
+            xmin = self.__data[najveci].index.min()
+            xmax = self.__data[najveci].index.max()
+            xmin = pd.to_datetime(xmin.date())
+            xmax = pd.to_datetime(xmax.date())
+            xmin = xmin - timedelta(hours = 1)
+            xmin = pd.to_datetime(xmin)
+            xmax = xmax + timedelta(hours = 1)
+            xmax = pd.to_datetime(xmax)
+            return xmin, xmax
+        else:
+            return 0, 1
 
+            
     def highlight_dot(self, x, y):
         """Highligt zuti dot kao vizualni marker za odabranu tocku"""
         if not self.__testHighlight and self.__statusGlavniGraf:
@@ -1697,7 +1698,6 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__statusGlavniGraf = False
         self.__testAnnotation = False
         
-        #x-limit
         self.xmin, self.xmax = self.xlimit_grafa()
         self.__tmin, self.__tmax = self.xlimit_glavnog_kanala()
         self.axes.set_xlim(self.xmin, self.xmax)
@@ -1734,7 +1734,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         else:
             self.spanSelector = None
             self.__statusSpanSelector = False
-           
+        
+        
         plotlista = list(self.__defaulti.keys()) #svi kljucevi
         plotlista.remove('opcenito') #makni 'opcenito', ostaju samo grafovi
         specials = ['validanOK', 'validanNOK', 'nevalidanOK', 'nevalidanNOK']
@@ -1778,7 +1779,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                                           y, 
                                           marker = self.__defaulti['validanNOK']['marker'], 
                                           color = self.normalize_rgb(self.__defaulti['validanNOK']['color']), 
-                                          alpha = self.__defaulti['validanNOK']['alpha'], 
+                                          alpha = self.__defaulti['validanNOK']['alpha'],
                                           zorder = self.__defaulti['validanNOK']['zorder'])
                         self.__statusGlavniGraf = True
                         
@@ -1853,7 +1854,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         if self.__statusGlavniGraf:
             self.__testHighlight = False
             self.highlight_dot(self.__zadnjiHighlightx, self.__zadnjiHighlighty)
-
+        
         self.draw()
         
         

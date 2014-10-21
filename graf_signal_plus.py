@@ -1409,7 +1409,6 @@ class GrafSatniSrednjaci(MPLCanvas):
         MPLCanvas.__init__(self, *args, **kwargs)
         
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        #self.customContextMenuRequested.connect(self.showMenu)
 
         self.__defaulti = None
         self.__data = None
@@ -1860,6 +1859,44 @@ class GrafSatniSrednjaci(MPLCanvas):
         
 ###############################################################################
 ###############################################################################
+class GrafMinutni(MPLCanvas):
+    #TODO!
+    #minutni canvas, crtanje isl
+    #NOT IMPLEMENTED
+    """Canvas minutnog grafa"""
+    def __init__(self, *args, **kwargs):
+        """konstruktor"""
+        MPLCanvas.__init__(self, *args, **kwargs)
+
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+###############################################################################
+###############################################################################
+base3, form3 = uic.loadUiType('minutnigraf.ui')
+class MinutniGraf(base3, form3):
+    #TODO!
+    #NOT IMPLEMENTED
+    #minutni 'widget', canvas + kontrole
+    """Klasa za minutni graf sa dijelom kontrola"""
+    def __init__(self, parent = None, defaulti = None, frejmovi = None):
+        super(base3, self).__init__(parent)
+        self.setupUi(self)
+        
+        #defaultini izbor za grafove
+        self.__defaulti = defaulti
+        self.__minutniFrejmovi = frejmovi
+
+        #inicijalizacija ostalih grafickih elemenata
+        self.widget1 = QtGui.QWidget()
+        self.widget2 = QtGui.QWidget()
+        #inicijalizacija canvasa na mjesto self.grafWidget
+        self.canvasMinutni = GrafMinutni(parent = self.widget1)
+        #inicijalizacija Navigation bara
+        self.mplToolbar = NavigationToolbar(self.canvasMinutni, self.widget2)
+        self.canvasLayout.addWidget(self.canvasMinutni)
+        self.canvasLayout.addWidget(self.mplToolbar)
+
+
 ###############################################################################
 ###############################################################################
 ###############################################################################

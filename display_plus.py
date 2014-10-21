@@ -33,7 +33,7 @@ class Display(base, form):
         #inicijalizacija satnog canvasa
         self.satniCanvas = graf_signal_plus.SatniGraf(parent = None, defaulti = self.__defaulti, frejmovi = None)
         #inicijalizacija minutnog canvasa
-        self.minutniCanvas = QtGui.QLabel('plaecholder za minutni graf')
+        self.minutniCanvas = graf_signal_plus.MinutniGraf(parent = None, defaulti = self.__defaulti, frejmovi = None)
         
         self.dockWidget_satni.setWidget(self.satniCanvas)
         self.dockWidget_minutni.setWidget(self.minutniCanvas)
@@ -45,7 +45,7 @@ class Display(base, form):
         #dokument
         self.doc = dokument.Dokument()
         #kontroler
-        self.kontrola = kontroler.Kontrola(gui = self, dokument = self.doc)
+        #self.kontrola = kontroler.Kontrola(gui = self, dokument = self.doc)
 
 ###############################################################################
     def read_file_dijalog(self):

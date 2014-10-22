@@ -107,40 +107,8 @@ class GlavniKanalDetalji(base, form):
     """
     Klasa za "prikaz" izbora opcija za crtanje glavnog kanala.
     
-    Dict koji se mora prosljediti... postavke svih mogucih grafova
-    
-    validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    glavnikanal1 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'min', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':8}
-    glavnikanal2 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'max', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':9}
-    glavnikanal3 = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'median', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
-    glavnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'--', 'color':(73,189,191), 'alpha':0.9, 'zorder':11}
-    glavnikanalfill = {'crtaj':True, 'tip':'fill', 'kanal':None, 'stupac1':'q05', 'stupac2':'q95', 'marker':'None', 'line':'--', 'color':(31,117,229), 'alpha':0.4, 'zorder':7}
-    pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
-    pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
-    pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
-    pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
-    pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
-    pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}        
-    mapa2 = {'validanOK':validanOK, 
-             'validanNOK':validanNOK, 
-             'nevalidanOK':nevalidanOK, 
-             'nevalidanNOK':nevalidanNOK, 
-             'glavnikanal1':glavnikanal1, 
-             'glavnikanal2':glavnikanal2, 
-             'glavnikanal3':glavnikanal3, 
-             'glavnikanal4':glavnikanal4, 
-             'glavnikanalfill':glavnikanalfill, 
-             'pomocnikanal1':pomocnikanal1, 
-             'pomocnikanal2':pomocnikanal2, 
-             'pomocnikanal3':pomocnikanal3, 
-             'pomocnikanal4':pomocnikanal4, 
-             'pomocnikanal5':pomocnikanal5, 
-             'pomocnikanal6':pomocnikanal6, 
-             'opcenito':opcenito}
+    Dict defaulti je specifican. Mora prosljediti konsturktoru. 
+    Sadrzi postavke svih mogucih grafova (boja, da li se crtaju...)
     """
     def __init__(self, parent = None, defaulti = None):
         super(base, self).__init__(parent)
@@ -857,7 +825,7 @@ class SatniGraf(base2, form2):
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
         
-        #TODO! test toggle gumba
+        #toggle gumb za sakrivanje izbora grafa...
         self.toggleDetalji.toggled.connect(self.groupBox.setVisible)
         self.toggleDetalji.toggled.connect(self.groupBox_2.setVisible)
                 
@@ -882,9 +850,7 @@ class SatniGraf(base2, form2):
         self.canvasSatni.__testAnnotation = False
         self.canvasSatni.__zadnjiHighlightx = None
         self.canvasSatni.__zadnjiHighlighty = None
-        self.canvasSatni.__zadnjiAnnotationx = None
-        self.canvasSatni.__testAnnotation = False
-        
+        self.canvasSatni.__zadnjiAnnotationx = None        
 
         
         if self.__agregiraniFrejmovi != None:
@@ -1738,9 +1704,12 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.spanSelector = None
             self.__statusSpanSelector = False
         
-        
-        plotlista = list(self.__defaulti.keys()) #svi kljucevi
-        plotlista.remove('opcenito') #makni 'opcenito', ostaju samo grafovi
+        plotlista = ['validanOK', 'validanNOK', 'nevalidanOK', 
+                     'nevalidanNOK', 'glavnikanal1', 'glavnikanal2', 
+                     'glavnikanal3', 'glavnikanal4', 'glavnikanalfill', 
+                     'pomocnikanal1', 'pomocnikanal2', 'pomocnikanal3', 
+                     'pomocnikanal4', 'pomocnikanal5', 'pomocnikanal6']
+                
         specials = ['validanOK', 'validanNOK', 'nevalidanOK', 'nevalidanNOK']
         for graf in plotlista:
             #kreni graf po graf, provjeri da li je predvidjen za crtanje i crtaj
@@ -1873,6 +1842,9 @@ class GrafMinutni(MPLCanvas):
         MPLCanvas.__init__(self, *args, **kwargs)
 
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        
+    def crtaj(self, defaulti, frejmovi):
+        pass
 
 ###############################################################################
 ###############################################################################
@@ -1882,13 +1854,14 @@ class MinutniGraf(base3, form3):
     #NOT IMPLEMENTED
     #minutni 'widget', canvas + kontrole
     """Klasa za minutni graf sa dijelom kontrola"""
-    def __init__(self, parent = None, defaulti = None, frejmovi = None):
+    def __init__(self, parent = None, defaulti = None, frejmovi = None, sat = None):
         super(base3, self).__init__(parent)
         self.setupUi(self)
         
         #defaultini izbor za grafove
         self.__defaulti = defaulti
         self.__minutniFrejmovi = frejmovi
+        self.__sat = sat #timestamp indeksa satno agregiranog podatka
 
         #inicijalizacija ostalih grafickih elemenata
         self.widget1 = QtGui.QWidget()
@@ -1900,11 +1873,248 @@ class MinutniGraf(base3, form3):
         self.canvasLayout.addWidget(self.canvasMinutni)
         self.canvasLayout.addWidget(self.mplToolbar)
         
-        #TODO! test toggle gumba
+        #toggle gumb za skrivanje izbora grafa...
         self.toggleDetalji.toggled.connect(self.groupBox.setVisible)
         self.toggleDetalji.toggled.connect(self.groupBox_2.setVisible)
         
+        #inicijalni tekst
+        self.sliceLabel.setText('Prikazano vrijeme: ')
         
+        self.veze()
+        self.initial_setup(self.__sat)
+
+    def zamjeni_frejmove(self):
+        pass
+    
+    def veze(self):
+        pass
+
+    def initial_setup(self, izbor):
+        #TODO! pozvati prilikom poziva za crtanje
+        self.tmin = None
+        self.tmax = None
+        
+        self.canvasMinutni.__statusGlavniGraf = False
+        self.canvasMinutni.__testAnnotation = False
+        self.canvasMinutni.__zadnjiHighlightx = None
+        self.canvasMinutni.__zadnjiHighlighty = None
+        self.canvasMinutni.__zadnjiAnnotationx = None
+               
+        if self.__minutniFrejmovi != None:
+            self.tmin, self.tmax = self.plot_time_span(izbor)
+            naslov = 'Prikazano vrijeme od: '+str(self.tmin)+' do: '+str(self.tmax)
+            self.labelSlice.setText(naslov)
+            
+        #checkboxes
+        self.glavniCheck.setChecked(self.__defaulti['m_validanOK']['crtaj'])
+        self.pomocni1Check.setChecked(self.__defaulti['m_pomocnikanal1']['crtaj'])
+        self.pomocni2Check.setChecked(self.__defaulti['m_pomocnikanal2']['crtaj'])
+        self.pomocni3Check.setChecked(self.__defaulti['m_pomocnikanal3']['crtaj'])
+        self.pomocni4Check.setChecked(self.__defaulti['m_pomocnikanal4']['crtaj'])
+        self.pomocni5Check.setChecked(self.__defaulti['m_pomocnikanal5']['crtaj'])
+        self.pomocni6Check.setChecked(self.__defaulti['m_pomocnikanal6']['crtaj'])
+
+        #color buttons
+        self.change_boja_pomocni1Detalji()
+        self.change_boja_pomocni2Detalji()
+        self.change_boja_pomocni3Detalji()
+        self.change_boja_pomocni4Detalji()
+        self.change_boja_pomocni5Detalji()
+        self.change_boja_pomocni6Detalji()
+        
+        #comboboxes i label glavnog grafa
+        if self.__minutniFrejmovi != None:
+            kanali = sorted(list(self.__minutniFrejmovi.keys()))
+            
+            #glavni kanal mora odgovarati glavnom kanalu satnog grafa
+            #direktno se prepisuje (zato je label a ne combobox)
+            glavniKanal = self.__defaulti['validanOK']['kanal']
+            if glavniKanal == None:
+                self.glavniKanalLabel.setText('Glavni kanal')
+            else:
+                self.glavniKanalLabel.setText(glavniKanal)
+        
+            zadnjiKanal = self.__defaulti['m_pomocnikanal1']['kanal']
+            self.pomocni1Combo.blockSignals(True)
+            self.pomocni1Combo.clear()
+            self.pomocni1Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni1Combo.findText(zadnjiKanal)
+                self.pomocni1Combo.setCurrentIndex(ind)
+            self.pomocni1Combo.blockSignals(False)
+            noviKanal = self.pomocni1Combo.currentText()
+            self.__defaulti['m_pomocnikanal1']['kanal'] = noviKanal
+
+            zadnjiKanal = self.__defaulti['m_pomocnikanal2']['kanal']
+            self.pomocni2Combo.blockSignals(True)
+            self.pomocni2Combo.clear()
+            self.pomocni2Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni2Combo.findText(zadnjiKanal)
+                self.pomocni2Combo.setCurrentIndex(ind)
+            self.pomocni2Combo.blockSignals(False)
+            noviKanal = self.pomocni2Combo.currentText()
+            self.__defaulti['m_pomocnikanal2']['kanal'] = noviKanal
+
+            zadnjiKanal = self.__defaulti['m_pomocnikanal3']['kanal']
+            self.pomocni3Combo.blockSignals(True)
+            self.pomocni3Combo.clear()
+            self.pomocni3Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni3Combo.findText(zadnjiKanal)
+                self.pomocni3Combo.setCurrentIndex(ind)
+            self.pomocni3Combo.blockSignals(False)
+            noviKanal = self.pomocni3Combo.currentText()
+            self.__defaulti['m_pomocnikanal3']['kanal'] = noviKanal
+
+            zadnjiKanal = self.__defaulti['m_pomocnikanal4']['kanal']
+            self.pomocni4Combo.blockSignals(True)
+            self.pomocni4Combo.clear()
+            self.pomocni4Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni4Combo.findText(zadnjiKanal)
+                self.pomocni4Combo.setCurrentIndex(ind)
+            self.pomocni4Combo.blockSignals(False)
+            noviKanal = self.pomocni4Combo.currentText()
+            self.__defaulti['m_pomocnikanal4']['kanal'] = noviKanal
+
+            zadnjiKanal = self.__defaulti['m_pomocnikanal5']['kanal']
+            self.pomocni5Combo.blockSignals(True)
+            self.pomocni5Combo.clear()
+            self.pomocni5Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni5Combo.findText(zadnjiKanal)
+                self.pomocni5Combo.setCurrentIndex(ind)
+            self.pomocni5Combo.blockSignals(False)
+            noviKanal = self.pomocni5Combo.currentText()
+            self.__defaulti['m_pomocnikanal5']['kanal'] = noviKanal
+
+            zadnjiKanal = self.__defaulti['m_pomocnikanal6']['kanal']
+            self.pomocni6Combo.blockSignals(True)
+            self.pomocni6Combo.clear()
+            self.pomocni6Combo.addItems(kanali)
+            if zadnjiKanal != None:
+                ind = self.pomocni6Combo.findText(zadnjiKanal)
+                self.pomocni6Combo.setCurrentIndex(ind)
+            self.pomocni6Combo.blockSignals(False)
+            noviKanal = self.pomocni6Combo.currentText()
+            self.__defaulti['m_pomocnikanal6']['kanal'] = noviKanal
+            
+            #naredba za crtanje je zadnja kod inicijalizacije
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def change_boja_pomocni1Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal1']['color']
+        a = self.__defaulti['m_pomocnikanal1']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni1Detalji', boja)
+        self.pomocni1Detalji.setStyleSheet(stil)
+
+    
+    def change_boja_pomocni2Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal2']['color']
+        a = self.__defaulti['m_pomocnikanal2']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni2Detalji', boja)
+        self.pomocni2Detalji.setStyleSheet(stil)
+
+    def change_boja_pomocni3Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal3']['color']
+        a = self.__defaulti['m_pomocnikanal3']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni3Detalji', boja)
+        self.pomocni3Detalji.setStyleSheet(stil)
+
+    def change_boja_pomocni4Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal4']['color']
+        a = self.__defaulti['m_pomocnikanal4']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni4Detalji', boja)
+        self.pomocni4Detalji.setStyleSheet(stil)
+
+    def change_boja_pomocni5Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal5']['color']
+        a = self.__defaulti['m_pomocnikanal5']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni5Detalji', boja)
+        self.pomocni5Detalji.setStyleSheet(stil)
+
+    def change_boja_pomocni6Detalji(self):
+        """set boje gumba iz defaulta"""
+        rgb = self.__defaulti['m_pomocnikanal6']['color']
+        a = self.__defaulti['m_pomocnikanal6']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#pomocni6Detalji', boja)
+        self.pomocni6Detalji.setStyleSheet(stil)
+    
+    def plot_time_span(self, vrijeme):
+        """
+        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
+        minutnog slicea.
+        """
+        tmax =  vrijeme
+        tmin = vrijeme - timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        return tmin, tmax
+        
+    def default_color_to_qcolor(self, rgb, a):
+        """
+        helper funkcija za transformaciju boje u QColor
+        input:
+            rgb -> (r, g, b) tuple
+            a -> float izmedju [0:1]
+        output:
+            QtGui.QColor objekt
+        """
+        boja = QtGui.QColor()
+        #unpack tuple of rgb color
+        r, g, b = rgb
+        boja.setRed(r)
+        boja.setGreen(g)
+        boja.setBlue(b)
+        #alpha je izmedju 0-1, input treba biti int 0-255
+        a = int(a*255)
+        boja.setAlpha(a)
+        return boja
+        
+    def qcolor_to_default_color(self, color):
+        """
+        helper funkcija za transformacije qcolor u defaultnu boju
+        input:
+            color ->QtGui.QColor
+        output:
+            (r,g,b) tuple, i alpha
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = color.alpha()/255
+        return (r,g,b), a
+        
+    def color_to_style_string(self, target, color):
+        """
+        helper funkcija za izradu styleSheet stringa
+        input:
+            target -> string, target of background color change
+                npr. 'QLabel#label1'
+            color -> QtGui.QColor
+        output:
+            string - styleSheet 'css' style background for target element
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = int(100*color.alpha()/255)
+        stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+        return stil
+
+        
+    
     
     
 
@@ -1922,35 +2132,34 @@ class MinutniGraf(base3, form3):
             
 if __name__=='__main__':
     #NOVA konstrukcija ulaznog dicta svih mogucih grafova
-    #TODO! problem loop za satne ide i preko minutnih defaulta
-    validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    nevalidanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    glavnikanal1 = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'stupac1':'min', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':8}
-    glavnikanal2 = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'stupac1':'max', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':9}
-    glavnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'median', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
-    glavnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'--', 'color':(73,189,191), 'alpha':0.9, 'zorder':11}
-    glavnikanalfill = {'crtaj':False, 'tip':'fill', 'kanal':None, 'stupac1':'q05', 'stupac2':'q95', 'marker':'None', 'line':'--', 'color':(31,117,229), 'alpha':0.4, 'zorder':7}
+    validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    glavnikanal1 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'min', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':8}
+    glavnikanal2 = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'stupac1':'max', 'marker':'+', 'line':'None', 'color':(0,0,0), 'alpha':0.9, 'zorder':9}
+    glavnikanal3 = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'median', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    glavnikanal4 = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'--', 'color':(73,189,191), 'alpha':0.9, 'zorder':11}
+    glavnikanalfill = {'crtaj':True, 'tip':'fill', 'kanal':None, 'stupac1':'q05', 'stupac2':'q95', 'marker':'None', 'line':'--', 'color':(31,117,229), 'alpha':0.4, 'zorder':7}
     pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
     pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
     pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
     pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
     pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':False}
-    m_validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_nevalidanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_glavnikanal = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}
+    m_validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_glavnikanal = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
     m_pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
     m_pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
     m_pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
     m_pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
     m_pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     m_pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-    m_opcenito = {'grid':False, 'cursor':False, 'span':True, 'minorTicks':False}
+    m_opcenito = {'grid':False, 'cursor':False, 'span':True, 'minorTicks':True}
     mapa2 = {'validanOK':validanOK, 
              'validanNOK':validanNOK, 
              'nevalidanOK':nevalidanOK, 
@@ -1969,6 +2178,8 @@ if __name__=='__main__':
              'opcenito':opcenito, 
              'm_validanOK':m_validanOK, 
              'm_validanNOK':m_validanNOK, 
+             'm_nevalidanOK':m_nevalidanOK, 
+             'm_nevalidanNOK':m_nevalidanNOK, 
              'm_glavnikanal':m_glavnikanal, 
              'm_pomocnikanal1':m_pomocnikanal1, 
              'm_pomocnikanal2':m_pomocnikanal2, 

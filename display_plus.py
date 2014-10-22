@@ -90,7 +90,19 @@ class Display(base, form):
             pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
             pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
             pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-            opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}        
+            opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':False}
+            m_validanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+            m_validanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+            m_nevalidanOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+            m_nevalidanNOK = {'crtaj':False, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+            m_glavnikanal = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+            m_pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
+            m_pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
+            m_pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
+            m_pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
+            m_pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
+            m_pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
+            m_opcenito = {'grid':False, 'cursor':False, 'span':True, 'minorTicks':False}
             self.__defaulti = {'validanOK':validanOK, 
                                'validanNOK':validanNOK, 
                                'nevalidanOK':nevalidanOK, 
@@ -106,7 +118,19 @@ class Display(base, form):
                                'pomocnikanal4':pomocnikanal4, 
                                'pomocnikanal5':pomocnikanal5, 
                                'pomocnikanal6':pomocnikanal6, 
-                               'opcenito':opcenito}
+                               'opcenito':opcenito, 
+                               'm_validanOK':m_validanOK, 
+                               'm_validanNOK':m_validanNOK, 
+                               'm_nevalidanOK':m_nevalidanOK, 
+                               'm_nevalidanNOK':m_nevalidanNOK, 
+                               'm_glavnikanal':m_glavnikanal, 
+                               'm_pomocnikanal1':m_pomocnikanal1, 
+                               'm_pomocnikanal2':m_pomocnikanal2, 
+                               'm_pomocnikanal3':m_pomocnikanal3, 
+                               'm_pomocnikanal4':m_pomocnikanal4, 
+                               'm_pomocnikanal5':m_pomocnikanal5, 
+                               'm_pomocnikanal6':m_pomocnikanal6, 
+                               'm_opcenito':m_opcenito}
         else:
             self.__defaulti = defaulti
         #setup widgeta za opceniti dio grafa prilikom loadanja defaulta
@@ -114,6 +138,11 @@ class Display(base, form):
         self.action_SatniCursor.setChecked(self.__defaulti['opcenito']['cursor'])
         self.action_SatniSpan.setChecked(self.__defaulti['opcenito']['span'])
         self.action_SatniMinorTicks.setChecked(self.__defaulti['opcenito']['minorTicks'])
+        self.action_MinutniGrid.setChecked(self.__defaulti['m_opcenito']['grid'])
+        self.action_MinutniCursor.setChecked(self.__defaulti['m_opcenito']['cursor'])
+        self.action_MinutniSpan.setChecked(self.__defaulti['m_opcenito']['span'])
+        self.action_MinutniMinorTicks.setChecked(self.__defaulti['m_opcenito']['minorTicks'])
+
 ###############################################################################
     def setup_akcije(self):
         """

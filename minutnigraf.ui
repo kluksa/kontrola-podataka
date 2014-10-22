@@ -37,6 +37,9 @@
         </item>
         <item row="0" column="3">
          <widget class="QPushButton" name="glavniDetalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -228,6 +231,9 @@
         </item>
         <item row="0" column="2">
          <widget class="QPushButton" name="pomocni1Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -241,6 +247,9 @@
         </item>
         <item row="1" column="2">
          <widget class="QPushButton" name="pomocni2Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -254,6 +263,9 @@
         </item>
         <item row="2" column="2">
          <widget class="QPushButton" name="pomocni3Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -267,6 +279,9 @@
         </item>
         <item row="3" column="2">
          <widget class="QPushButton" name="pomocni4Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -280,6 +295,9 @@
         </item>
         <item row="4" column="2">
          <widget class="QPushButton" name="pomocni5Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>
@@ -293,6 +311,9 @@
         </item>
         <item row="5" column="2">
          <widget class="QPushButton" name="pomocni6Detalji">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>45</width>

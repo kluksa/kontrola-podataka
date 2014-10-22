@@ -721,6 +721,7 @@ class PomocniGrafDetalji(base1, form1):
     def popuni_izbornike(self):
         """inicijalizacija izbornika sa defaultinim postavkama"""
         naziv = 'Detalji pomocnog grafa, kanal: ' + str(self.__defaulti[self.__graf]['kanal'])
+        self.groupBox.setTitle(str(self.__defaulti[self.__graf]['kanal']))
         self.setWindowTitle(naziv)
         self.komponenta.clear()
         self.komponenta.addItems(self.__sviPodaci)
@@ -1851,7 +1852,7 @@ class GrafMinutni(MPLCanvas):
 base3, form3 = uic.loadUiType('minutnigraf.ui')
 class MinutniGraf(base3, form3):
     #TODO!
-    #NOT IMPLEMENTED
+    #NOT IMPLEMENTED do kraja
     #minutni 'widget', canvas + kontrole
     """Klasa za minutni graf sa dijelom kontrola"""
     def __init__(self, parent = None, defaulti = None, frejmovi = None, sat = None):
@@ -1887,10 +1888,186 @@ class MinutniGraf(base3, form3):
         pass
     
     def veze(self):
-        pass
+        #spajanje widgeta sa kontrolnim funkcijama
+        #izbor boje i stila grafa
+        self.glavniDetalji.clicked.connect(self.glavniDetalji_dijalog)
+        self.pomocni1Detalji.clicked.connect(self.pomocni1Detalji_dijalog)
+        self.pomocni2Detalji.clicked.connect(self.pomocni2Detalji_dijalog)
+        self.pomocni3Detalji.clicked.connect(self.pomocni3Detalji_dijalog)
+        self.pomocni4Detalji.clicked.connect(self.pomocni4Detalji_dijalog)
+        self.pomocni5Detalji.clicked.connect(self.pomocni5Detalji_dijalog)
+        self.pomocni6Detalji.clicked.connect(self.pomocni6Detalji_dijalog)
+        #comboboxes - izbor kanala za crtanje
+        self.pomocni1Combo.currentIndexChanged.connect(self.update_pomocni1Combo)
+        self.pomocni2Combo.currentIndexChanged.connect(self.update_pomocni2Combo)
+        self.pomocni3Combo.currentIndexChanged.connect(self.update_pomocni3Combo)
+        self.pomocni4Combo.currentIndexChanged.connect(self.update_pomocni4Combo)
+        self.pomocni5Combo.currentIndexChanged.connect(self.update_pomocni5Combo)
+        self.pomocni6Combo.currentIndexChanged.connect(self.update_pomocni6Combo)
+        #checkboxes - izbor da li se grafovi crtaju
+        self.glavniCheck.stateChanged.connect(self.enable_glavniCheck)
+        self.pomocni1Check.stateChanged.connect(self.enable_pomocni1Check)
+        self.pomocni2Check.stateChanged.connect(self.enable_pomocni2Check)
+        self.pomocni3Check.stateChanged.connect(self.enable_pomocni3Check)
+        self.pomocni4Check.stateChanged.connect(self.enable_pomocni4Check)
+        self.pomocni5Check.stateChanged.connect(self.enable_pomocni5Check)
+        self.pomocni6Check.stateChanged.connect(self.enable_pomocni6Check)
 
+    def enable_grid(self, x):
+        if x:
+            self.__defaulti['m_opcenito']['grid'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.__defaulti['m_opcenito']['grid'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+    
+    def enable_cursor(self, x):
+        if x:
+            self.__defaulti['m_opcenito']['cursor'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.__defaulti['m_opcenito']['cursor'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+    
+    def enable_spanSelector(self, x):
+        if x:
+            self.__defaulti['m_opcenito']['span'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.__defaulti['m_opcenito']['span'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+    
+    def enable_minorTicks(self, x):
+        if x:
+            self.__defaulti['m_opcenito']['minorTicks'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.__defaulti['m_opcenito']['minorTicks'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_glavniCheck(self):
+        if self.glavniCheck.isChecked() == True:
+            self.glavniDetalji.setEnabled(True)
+            self.__defaulti['m_validanOK']['crtaj'] = True
+            self.__defaulti['m_validanNOK']['crtaj'] = True
+            self.__defaulti['m_nevalidanOK']['crtaj'] = True
+            self.__defaulti['m_nevalidanNOK']['crtaj'] = True
+            self.__defaulti['m_glavnikanal']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.glavniDetalji.setEnabled(False)
+            self.__defaulti['m_validanOK']['crtaj'] = False
+            self.__defaulti['m_validanNOK']['crtaj'] = False
+            self.__defaulti['m_nevalidanOK']['crtaj'] = False
+            self.__defaulti['m_nevalidanNOK']['crtaj'] = False
+            self.__defaulti['m_glavnikanal']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+    
+    def enable_pomocni1Check(self):
+        if self.pomocni1Check.isChecked() == True:
+            self.pomocni1Combo.setEnabled(True)
+            self.pomocni1Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal1']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni1Combo.setEnabled(False)
+            self.pomocni1Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal1']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_pomocni2Check(self):
+        if self.pomocni2Check.isChecked() == True:
+            self.pomocni2Combo.setEnabled(True)
+            self.pomocni2Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal2']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni2Combo.setEnabled(False)
+            self.pomocni2Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal2']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_pomocni3Check(self):
+        if self.pomocni3Check.isChecked() == True:
+            self.pomocni3Combo.setEnabled(True)
+            self.pomocni3Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal3']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni3Combo.setEnabled(False)
+            self.pomocni3Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal3']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_pomocni4Check(self):
+        if self.pomocni4Check.isChecked() == True:
+            self.pomocni4Combo.setEnabled(True)
+            self.pomocni4Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal4']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni4Combo.setEnabled(False)
+            self.pomocni4Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal4']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_pomocni5Check(self):
+        if self.pomocni5Check.isChecked() == True:
+            self.pomocni5Combo.setEnabled(True)
+            self.pomocni5Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal5']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni5Combo.setEnabled(False)
+            self.pomocni5Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal5']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def enable_pomocni6Check(self):
+        if self.pomocni6Check.isChecked() == True:
+            self.pomocni6Combo.setEnabled(True)
+            self.pomocni6Detalji.setEnabled(True)
+            self.__defaulti['m_pomocnikanal6']['crtaj'] = True
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        else:
+            self.pomocni6Combo.setEnabled(False)
+            self.pomocni6Detalji.setEnabled(False)
+            self.__defaulti['m_pomocnikanal6']['crtaj'] = False
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni1Combo(self):
+        newValue = self.pomocni1Combo.currentText()
+        self.__defaulti['m_pomocnikanal1']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni2Combo(self):
+        newValue = self.pomocni2Combo.currentText()
+        self.__defaulti['m_pomocnikanal2']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni3Combo(self):
+        newValue = self.pomocni3Combo.currentText()
+        self.__defaulti['m_pomocnikanal3']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni4Combo(self):
+        newValue = self.pomocni4Combo.currentText()
+        self.__defaulti['m_pomocnikanal4']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni5Combo(self):
+        newValue = self.pomocni5Combo.currentText()
+        self.__defaulti['m_pomocnikanal5']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def update_pomocni6Combo(self):
+        newValue = self.pomocni6Combo.currentText()
+        self.__defaulti['m_pomocnikanal6']['kanal'] = newValue
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        
     def initial_setup(self, izbor):
-        #TODO! pozvati prilikom poziva za crtanje
+        #TODO! pozvati prilikom poziva za crtanje.. smisli kako narediti crtanje
+        #tj. update self.__minutniFrejmovi prilikom prebacivanja dana?
         self.tmin = None
         self.tmax = None
         
@@ -2002,6 +2179,82 @@ class MinutniGraf(base3, form3):
             
             #naredba za crtanje je zadnja kod inicijalizacije
             self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+    
+    #TODO! sredi color & options dijalog za glavni graf      
+    def glavniDetalji_dijalog(self):
+        pass
+    
+    def pomocni1Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 1"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal1')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni1Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def pomocni2Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 2"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal2')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni2Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def pomocni3Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 3"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal3')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni3Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def pomocni4Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 4"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal4')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni4Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def pomocni5Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 5"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal5')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni5Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+
+    def pomocni6Detalji_dijalog(self):
+        """dijalog za promjenu izgleda pomocnog minutnog grafa 6"""
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        pomocnigrafdijalog = PomocniGrafDetaljiM(defaulti = grafinfo, graf = 'm_pomocnikanal6')
+        if pomocnigrafdijalog.exec_():
+            grafinfo = pomocnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.change_boja_pomocni6Detalji()
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
 
     def change_boja_pomocni1Detalji(self):
         """set boje gumba iz defaulta"""
@@ -2011,7 +2264,6 @@ class MinutniGraf(base3, form3):
         stil = self.color_to_style_string('QPushButton#pomocni1Detalji', boja)
         self.pomocni1Detalji.setStyleSheet(stil)
 
-    
     def change_boja_pomocni2Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal2']['color']
@@ -2112,17 +2364,168 @@ class MinutniGraf(base3, form3):
         a = int(100*color.alpha()/255)
         stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
         return stil
+###############################################################################
+###############################################################################
+base4, form4 = uic.loadUiType('m_pomocnigrafdetalji.ui')
+class PomocniGrafDetaljiM(base4, form4):
+    """
+    Opcenita klasa za izbor detalja grafa
 
+    incijalizacija sa:
+        defaulti : dict, popis svih predvidjenih grafova
+        graf : string, kljuc mape pojedinog grafa
+    """
+    def __init__(self, parent = None, defaulti = None, graf = None):
+        super(base4, self).__init__(parent)
+        self.setupUi(self)
         
+        #defaultni izbor za grafove
+        self.__defaulti = defaulti #defaultni dict svih grafova
+        self.__graf = graf #string kljuca specificnog grafa
+        
+        self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
+        self.__sveLinije = ['None', '-', '--', '-.', ':']
+        self.__sviTipovi = ['scatter', 'plot']
+        
+        self.popuni_izbornike()
+        self.veze()
+        
+    def veze(self):
+        self.tip.currentIndexChanged.connect(self.change_tip)
+        self.marker.currentIndexChanged.connect(self.change_marker)
+        self.linija.currentIndexChanged.connect(self.change_linija)
+        self.boja.clicked.connect(self.change_boja)
     
+    def change_tip(self):
+        newValue = self.tip.currentText()
+        self.__defaulti[self.__graf]['tip'] = newValue
     
+    def change_marker(self):
+        newValue = self.marker.currentText()
+        self.__defaulti[self.__graf]['marker'] = newValue
     
+    def change_linija(self):
+        newValue = self.linija.currentText()
+        self.__defaulti[self.__graf]['line'] = newValue
+
+    def change_boja(self):
+        rgb = self.__defaulti[self.__graf]['color']
+        a = self.__defaulti[self.__graf]['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        #dijalog
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test za validnu boju
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = self.qcolor_to_default_color(color)
+            #update dict
+            self.__defaulti[self.__graf]['color'] = rgb
+            self.__defaulti[self.__graf]['alpha'] = a
+            #set new color
+            stil = self.color_to_style_string('QPushButton#boja', color)
+            self.boja.setStyleSheet(stil)
+
+    def popuni_izbornike(self):
+        """inicijalizacija izbornika sa defaultinim postavkama"""
+        naziv = 'Detalji pomocnog minutnog grafa, kanal: ' + str(self.__defaulti[self.__graf]['kanal'])
+        self.groupBox.setTitle(str(self.__defaulti[self.__graf]['kanal']))
+        self.setWindowTitle(naziv)
+        self.tip.clear()
+        self.tip.addItems(self.__sviTipovi)
+        ind = self.tip.findText(self.__defaulti[self.__graf]['tip'])
+        self.tip.setCurrentIndex(ind)
+        self.marker.clear()
+        self.marker.addItems(self.__sviMarkeri)
+        ind = self.marker.findText(self.__defaulti[self.__graf]['marker'])
+        self.marker.setCurrentIndex(ind)
+        self.linija.clear()
+        self.linija.addItems(self.__sveLinije)
+        ind = self.linija.findText(self.__defaulti[self.__graf]['line'])
+        self.linija.setCurrentIndex(ind)
+        
+        rgb = self.__defaulti[self.__graf]['color']
+        a = self.__defaulti[self.__graf]['alpha']
+        color = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#boja', color)
+        self.boja.setStyleSheet(stil)
+
+    def default_color_to_qcolor(self, rgb, a):
+        """
+        helper funkcija za transformaciju boje u QColor
+        input:
+            rgb -> (r, g, b) tuple
+            a -> float izmedju [0:1]
+        output:
+            QtGui.QColor objekt
+        """
+        boja = QtGui.QColor()
+        #unpack tuple of rgb color
+        r, g, b = rgb
+        boja.setRed(r)
+        boja.setGreen(g)
+        boja.setBlue(b)
+        #alpha je izmedju 0-1, input treba biti int 0-255
+        a = int(a*255)
+        boja.setAlpha(a)
+        return boja
+        
+    def qcolor_to_default_color(self, color):
+        """
+        helper funkcija za transformacije qcolor u defaultnu boju
+        input:
+            color ->QtGui.QColor
+        output:
+            (r,g,b) tuple, i alpha
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = color.alpha()/255
+        return (r,g,b), a
+        
+    def color_to_style_string(self, target, color):
+        """
+        helper funkcija za izradu styleSheet stringa
+        input:
+            target -> string, target of background color change
+                npr. 'QLabel#label1'
+            color -> QtGui.QColor
+        output:
+            string - styleSheet 'css' style background for target element
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = int(100*color.alpha()/255)
+        stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+        return stil
+        
+    def vrati_dict(self):
+        """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
+        return self.__defaulti
+###############################################################################
+###############################################################################
+base5, form5 = uic.loadUiType('m_glavnikanaldetalji.ui')
+class GlavniKanalDetaljiM(base5, form5):
+    #TODO!
+    #implememntiraj do kraja
+
+    """
+    Klasa za "prikaz" izbora opcija za crtanje glavnog kanala minutnog grafa.
+    
+    Dict defaulti je specifican. Mora prosljediti konsturktoru. 
+    Sadrzi postavke svih mogucih grafova (boja, da li se crtaju...)
+    """
+    def __init__(self, parent = None, defaulti = None):
+        super(base, self).__init__(parent)
+        self.setupUi(self)
+        
+        #sve opcije su sadrzane u dictu defaulti
+        self.__defaulti = defaulti
+        
+        self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
+        self.__sveLinije = ['None', '-', '--', '-.', ':']
 
 
-###############################################################################
-###############################################################################
-###############################################################################
-###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################

@@ -2182,7 +2182,14 @@ class MinutniGraf(base3, form3):
     
     #TODO! sredi color & options dijalog za glavni graf      
     def glavniDetalji_dijalog(self):
-        pass
+        #deep copy dicta za dijalog
+        grafinfo = copy.deepcopy(self.__defaulti)
+        #inicijalizacija dijaloga
+        glavnigrafdijalog = GlavniKanalDetaljiM(defaulti = grafinfo)
+        if glavnigrafdijalog.exec_():
+            grafinfo = glavnigrafdijalog.vrati_dict()
+            self.__defaulti = copy.deepcopy(grafinfo)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
     
     def pomocni1Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 1"""
@@ -2506,9 +2513,6 @@ class PomocniGrafDetaljiM(base4, form4):
 ###############################################################################
 base5, form5 = uic.loadUiType('m_glavnikanaldetalji.ui')
 class GlavniKanalDetaljiM(base5, form5):
-    #TODO!
-    #implememntiraj do kraja
-
     """
     Klasa za "prikaz" izbora opcija za crtanje glavnog kanala minutnog grafa.
     
@@ -2516,16 +2520,181 @@ class GlavniKanalDetaljiM(base5, form5):
     Sadrzi postavke svih mogucih grafova (boja, da li se crtaju...)
     """
     def __init__(self, parent = None, defaulti = None):
-        super(base, self).__init__(parent)
+        super(base5, self).__init__(parent)
         self.setupUi(self)
         
         #sve opcije su sadrzane u dictu defaulti
         self.__defaulti = defaulti
         
-        self.__sviMarkeri = ['None', 'o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
-        self.__sveLinije = ['None', '-', '--', '-.', ':']
+        self.__sviMarkeri = ['o', 'v', '^', '<', '>', 's', 'p', '*', 'h', '+', 'x', 'd', '_', '|']
+        self.__sveLinije = ['-', '--', '-.', ':']
+        
+        self.popuni_izbornike()
+        self.veze()
+        
+    def veze(self):
+        self.markerOK.currentIndexChanged.connect(self.update_markerOK)
+        self.markerNOK.currentIndexChanged.connect(self.update_markerNOK)
+        self.stilLinije.currentIndexChanged.connect(self.update_stilLinije)
+        self.colorOK.clicked.connect(self.promjena_boje_colorOK)
+        self.colorNOK.clicked.connect(self.promjena_boje_colorNOK)
+        self.bojaLinije.clicked.connect(self.promjena_boje_bojaLinije)
+    
+    def update_markerOK(self):
+        newValue = self.markerOK.currentText()
+        self.__defaulti['m_validanOK']['marker'] = newValue
+        self.__defaulti['m_validanNOK']['marker'] = newValue
+    
+    def update_markerNOK(self):
+        newValue = self.markerNOK.currentText()
+        self.__defaulti['m_nevalidanOK']['marker'] = newValue
+        self.__defaulti['m_nevalidanNOK']['marker'] = newValue
+    
+    def update_stilLinije(self):
+        newValue = self.stilLinije.currentText()
+        self.__defaulti['m_glavnikanal']['line'] = newValue
+    
+    def promjena_boje_colorOK(self):
+        rgb = self.__defaulti['m_validanOK']['color']
+        a = self.__defaulti['m_validanOK']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        #dijalog
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test za validnu boju
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = self.qcolor_to_default_color(color)
+            #update dict
+            self.__defaulti['m_validanOK']['color'] = rgb
+            self.__defaulti['m_validanOK']['alpha'] = a
+            self.__defaulti['m_nevalidanOK']['color'] = rgb
+            self.__defaulti['m_nevalidanOK']['alpha'] = a
+            #set new color
+            stil = self.color_to_style_string('QPushButton#colorOK', color)
+            self.colorOK.setStyleSheet(stil)
 
+    def promjena_boje_colorNOK(self):
+        rgb = self.__defaulti['m_validanNOK']['color']
+        a = self.__defaulti['m_validanNOK']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        #dijalog
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test za validnu boju
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = self.qcolor_to_default_color(color)
+            #update dict
+            self.__defaulti['m_validanNOK']['color'] = rgb
+            self.__defaulti['m_validanNOK']['alpha'] = a
+            self.__defaulti['m_nevalidanNOK']['color'] = rgb
+            self.__defaulti['m_nevalidanNOK']['alpha'] = a
+            #set new color
+            stil = self.color_to_style_string('QPushButton#colorNOK', color)
+            self.colorNOK.setStyleSheet(stil)
 
+    def promjena_boje_bojaLinije(self):
+        rgb = self.__defaulti['m_glavnikanal']['color']
+        a = self.__defaulti['m_glavnikanal']['alpha']
+        boja = self.default_color_to_qcolor(rgb, a)
+        #dijalog
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test za validnu boju
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = self.qcolor_to_default_color(color)
+            #update dict
+            self.__defaulti['m_glavnikanal']['color'] = rgb
+            self.__defaulti['m_glavnikanal']['alpha'] = a
+            #set new color
+            stil = self.color_to_style_string('QPushButton#bojaLinije', color)
+            self.bojaLinije.setStyleSheet(stil)
+    
+    def popuni_izbornike(self):
+        #comboboxes
+        self.markerOK.clear()
+        self.markerOK.addItems(self.__sviMarkeri)
+        ind = self.markerOK.findText(self.__defaulti['m_validanOK']['marker'])
+        self.markerOK.setCurrentIndex(ind)
+        
+        self.markerNOK.clear()
+        self.markerNOK.addItems(self.__sviMarkeri)
+        ind = self.markerNOK.findText(self.__defaulti['m_nevalidanOK']['marker'])
+        self.markerNOK.setCurrentIndex(ind)
+        
+        self.stilLinije.clear()
+        self.stilLinije.addItems(self.__sveLinije)
+        ind = self.stilLinije.findText(self.__defaulti['m_glavnikanal']['line'])
+        self.stilLinije.setCurrentIndex(ind)
+        #buttons
+        rgb = self.__defaulti['m_validanOK']['color']
+        a = self.__defaulti['m_validanOK']['alpha']
+        color = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#colorOK', color)
+        self.colorOK.setStyleSheet(stil)
+        
+        rgb = self.__defaulti['m_validanNOK']['color']
+        a = self.__defaulti['m_validanNOK']['alpha']
+        color = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#colorNOK', color)
+        self.colorNOK.setStyleSheet(stil)
+        
+        rgb = self.__defaulti['m_glavnikanal']['color']
+        a = self.__defaulti['m_glavnikanal']['alpha']
+        color = self.default_color_to_qcolor(rgb, a)
+        stil = self.color_to_style_string('QPushButton#bojaLinije', color)
+        self.bojaLinije.setStyleSheet(stil)        
+        
+    def default_color_to_qcolor(self, rgb, a):
+        """
+        helper funkcija za transformaciju boje u QColor
+        input:
+            rgb -> (r, g, b) tuple
+            a -> float izmedju [0:1]
+        output:
+            QtGui.QColor objekt
+        """
+        boja = QtGui.QColor()
+        #unpack tuple of rgb color
+        r, g, b = rgb
+        boja.setRed(r)
+        boja.setGreen(g)
+        boja.setBlue(b)
+        #alpha je izmedju 0-1, input treba biti int 0-255
+        a = int(a*255)
+        boja.setAlpha(a)
+        return boja
+        
+    def qcolor_to_default_color(self, color):
+        """
+        helper funkcija za transformacije qcolor u defaultnu boju
+        input:
+            color ->QtGui.QColor
+        output:
+            (r,g,b) tuple, i alpha
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = color.alpha()/255
+        return (r,g,b), a
+        
+    def color_to_style_string(self, target, color):
+        """
+        helper funkcija za izradu styleSheet stringa
+        input:
+            target -> string, target of background color change
+                npr. 'QLabel#label1'
+            color -> QtGui.QColor
+        output:
+            string - styleSheet 'css' style background for target element
+        """
+        r = color.red()
+        g = color.green()
+        b = color.blue()
+        a = int(100*color.alpha()/255)
+        stil = target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+        return stil
+        
+    def vrati_dict(self):
+        """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
+        return self.__defaulti        
 ###############################################################################
 ###############################################################################
 ###############################################################################

@@ -773,14 +773,12 @@ class SatniGraf(base2, form2):
         self.mplToolbar = NavigationToolbar(self.canvasSatni, self.widget2)
         self.graphLayout.addWidget(self.canvasSatni)
         self.graphLayout.addWidget(self.mplToolbar)
-        
         #toggle gumb za sakrivanje izbora grafa...
         self.toggleDetalji.toggled.connect(self.groupBox.setVisible)
         self.toggleDetalji.toggled.connect(self.groupBox_2.setVisible)
                 
         self.veze()
-        self.initial_setup()        
-        
+        self.initial_setup()
         #opis slicea : slice od: do:
         self.labelSlice.setText('Prikazano vrijeme:')
         
@@ -1331,7 +1329,30 @@ class GrafSatniSrednjaci(MPLCanvas):
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
-        if self.__statusGlavniGraf and event.inaxes == self.axes:
+
+        #TODO!        
+        """
+        UPOZORENJE!!!
+        
+        Ovaj dio koda rijesava konflikte prilikom zoom/pan akcija na
+        toolbaru. Jedini problem je velika mogucnost promjene nacina
+        na koji ._active radi.
+        
+        ._active nije namjenjen da ga se dohvati metodom i mogu ga 
+        nenajavljeno promjeniti u nekoj drugoj verziji matplotliba
+        
+        Radi na Matplotlib 1.3.1
+        
+        ._active == None ako su Pan i Zoom opcije iskljucene
+        ._active == 'PAN' ako je pan/zoom opcija ukljucena
+        ._active == 'ZOOM' ako je zoom rect opcija ukljucena
+        
+        P.S. parent mora imati member mplToolbar (NavigationToolbar2QT)
+        """
+        #od parenta dohvati toolbar, tj. njegovo stanje
+        stanje = self.parent().mplToolbar._active
+                
+        if self.__statusGlavniGraf and event.inaxes == self.axes and stanje == None:
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
             #problem.. rounding offset aware i offset naive datetimes..workaround
             xpoint = datetime.datetime(xpoint.year, 
@@ -1740,6 +1761,8 @@ class GrafMinutni(MPLCanvas):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         
     def crtaj(self, defaulti, frejmovi):
+        """ideja, nacrtati sve podatke, ali inicijalno ograniciti sliku
+        na raspon satnog podatka"""
         pass
 
 ###############################################################################

@@ -152,7 +152,7 @@ class Display(base, form):
         """
         #file i generalni actioni
         self.action_ReadFile.triggered.connect(self.gui_action_read_file)
-        self.action_Exit.triggered.connect(self.provjera)
+        self.action_Exit.triggered.connect(self.close)
         #satno agregirani graf
         self.connect(self.action_SatniGrid, 
                      QtCore.SIGNAL('triggered(bool)'), 

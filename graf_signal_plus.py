@@ -788,8 +788,6 @@ class SatniGraf(base2, form2):
         
     def initial_setup(self):
         """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
-        #TODO!
-        #reinicjalizacija dijela canvasa prilikom promjene kanala?
         self.tmin = None
         self.tmax = None
         
@@ -1330,24 +1328,26 @@ class GrafSatniSrednjaci(MPLCanvas):
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
 
-        #TODO!        
+        #XXX!
         """
         UPOZORENJE!!!
         
         Ovaj dio koda rijesava konflikte prilikom zoom/pan akcija na
-        toolbaru. Jedini problem je velika mogucnost promjene nacina
-        na koji ._active radi.
+        toolbaru. Postoje dva problema:
         
+        1.
         ._active nije namjenjen da ga se dohvati metodom i mogu ga 
         nenajavljeno promjeniti u nekoj drugoj verziji matplotliba
+        
+        2. 
+        parent mora imati member mplToolar tipa NavigationToolbar2QT, 
+        koji mora biti povezan sa ovim canvasom.
         
         Radi na Matplotlib 1.3.1
         
         ._active == None ako su Pan i Zoom opcije iskljucene
         ._active == 'PAN' ako je pan/zoom opcija ukljucena
         ._active == 'ZOOM' ako je zoom rect opcija ukljucena
-        
-        P.S. parent mora imati member mplToolbar (NavigationToolbar2QT)
         """
         #od parenta dohvati toolbar, tj. njegovo stanje
         stanje = self.parent().mplToolbar._active
@@ -1759,19 +1759,184 @@ class GrafMinutni(MPLCanvas):
         MPLCanvas.__init__(self, *args, **kwargs)
 
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.__defaulti = None
+        self.__frejmovi = None
+        self.__sat = None
         
-    def crtaj(self, defaulti, frejmovi):
+        self.__annotationx = None
+        self.__annotationTest = False
+        self.__statusSpanSelector = False
+        self.__statusGlavniGraf = False
+        
+    def veze(self):
+        self.mpl_connect('button_press_event', self.on_pick)
+
+    def plot_time_span(self, vrijeme):
+        """
+        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
+        minutnog slicea.
+        """
+        tmax =  vrijeme
+        tmin = vrijeme - timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        return tmin, tmax
+    
+    def refokusiraj(self, sat):
+        #TODO!
+        #probaj umjesto ponovnog iscrtavanja grafa refokusirati sa xlim veliki graf
+        pass
+    
+    def crtaj(self, defaulti, frejmovi, sat):
         """ideja, nacrtati sve podatke, ali inicijalno ograniciti sliku
         na raspon satnog podatka"""
-        pass
+        self.__defaulti = defaulti
+        self.__frejmovi = frejmovi
+        self.__sat = sat
+        
+        self.axes.clear()
+        self.__statusGlavniGraf = False
+        self.__annotationTest = False
+                                
+        specials = ['m_validanOK', 'm_validanNOK', 
+                    'm_nevalidanOK', 'm_nevalidanNOK']
+        pomocni = ['m_pomocnikanal1', 'm_pomocnikanal2', 
+                   'm_pomocnikanal3', 'm_pomocnikanal4', 
+                   'm_pomocnikanal5', 'm_pomocnikanal6', 
+                   'm_glavnikanal']
+        plotlista = specials + pomocni
+        
+        for graf in plotlista:
+            kanal = self.__defaulti[graf]['kanal']
+            test1 = (kanal != None)
+            if self.__frejmovi == None:
+                test2 = False
+            else:
+                test2 = (kanal in list(self.__frejmovi.keys()))
+            test3 = (self.__defaulti[graf]['crtaj'] == True)
+            
+            if (test1 and test2 and test3):
+                if graf in specials:
+                    #crtaj specificne scatter plotove
+                    if graf == 'm_validanOK':
+                        data = self.__frejmovi[kanal]
+                        data = data[data[u'flag'] == 1000]
+                        x = list(data.index)
+                        y = list(data[u'koncentracija'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['m_validanOK']['marker'], 
+                                          color = self.normalize_rgb(self.__defaulti['m_validanOK']['color']), 
+                                          alpha = self.__defaulti['m_validanOK']['alpha'], 
+                                          zorder = self.__defaulti['m_validanOK']['zorder'])
+                        
+                    if graf == 'm_validanNOK':
+                        data = self.__frejmovi[kanal]
+                        data = data[data[u'flag'] == -1000]
+                        x = list(data.index)
+                        y = list(data[u'koncentracija'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['m_validanNOK']['marker'], 
+                                          color = self.normalize_rgb(self.__defaulti['m_validanNOK']['color']), 
+                                          alpha = self.__defaulti['m_validanNOK']['alpha'], 
+                                          zorder = self.__defaulti['m_validanNOK']['zorder'])
+
+                    if graf == 'm_nevalidanOK':
+                        data = self.__frejmovi[kanal]
+                        data = data[data[u'flag'] >= 0]
+                        data = data[data[u'flag'] != 1000 ]
+                        x = list(data.index)
+                        y = list(data[u'koncentracija'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['m_nevalidanOK']['marker'], 
+                                          color = self.normalize_rgb(self.__defaulti['m_nevalidanOK']['color']), 
+                                          alpha = self.__defaulti['m_nevalidanOK']['alpha'], 
+                                          zorder = self.__defaulti['m_nevalidanOK']['zorder'])
+
+                    if graf == 'm_nevalidanNOK':
+                        data = self.__frejmovi[kanal]
+                        data = data[data[u'flag'] < 0 ]
+                        data = data[data[u'flag'] != -1000 ]
+                        x = list(data.index)
+                        y = list(data[u'koncentracija'])
+                        assert(len(x) == len(y))
+                        self.axes.scatter(x, 
+                                          y, 
+                                          marker = self.__defaulti['m_nevalidanNOK']['marker'], 
+                                          color = self.normalize_rgb(self.__defaulti['m_nevalidanNOK']['color']), 
+                                          alpha = self.__defaulti['m_nevalidanNOK']['alpha'], 
+                                          zorder = self.__defaulti['m_nevalidanNOK']['zorder'])
+                
+                else:
+                    #crtaj line plotove
+                    data = self.__frejmovi[kanal]
+                    x = list(data.index)
+                    y = list(data[u'koncentracija'])
+                    assert(len(x) == len(y))
+                    self.axes.plot(x,
+                                   y, 
+                                   marker = self.__defaulti[graf]['marker'], 
+                                   color = self.normalize_rgb(self.__defaulti[graf]['color']), 
+                                   alpha = self.__defaulti[graf]['alpha'],
+                                   linestyle = self.__defaulti[graf]['line'], 
+                                   zorder = self.__defaulti[graf]['zorder'])
+
+        #XXX! samo za testiranje
+        self.__sat = pd.to_datetime('2014-06-04 15:00:00')
+        if self.__sat != None:
+            self.xmin, self.xmax = self.plot_time_span(self.__sat)
+            self.axes.set_xlim(self.xmin, self.xmax)
+        
+        #format x kooridinate
+        xLabels = self.axes.get_xticklabels()
+        for label in xLabels:
+            label.set_rotation(20)
+            label.set_fontsize(8)
+        #finalna naredba za prikaz
+        self.draw()
+
+    def normalize_rgb(self, rgbTuple):
+        """konverter za plotanje, mpl kao color ima sequence vrijednosti 
+        izmedju [0-1]"""
+        r, g, b = rgbTuple
+        return (r/255, g/255, b/255)
+
+    def on_pick(self, event):
+        """definiranje ponasanja pick eventa na canvasu"""
+
+        #XXX!
+        """
+        UPOZORENJE!!!
+        
+        Ovaj dio koda rijesava konflikte prilikom zoom/pan akcija na
+        toolbaru. Postoje dva problema:
+        
+        1.
+        ._active nije namjenjen da ga se dohvati metodom i mogu ga 
+        nenajavljeno promjeniti u nekoj drugoj verziji matplotliba
+        
+        2. 
+        parent mora imati member mplToolar tipa NavigationToolbar2QT, 
+        koji mora biti povezan sa ovim canvasom.
+        
+        Radi na Matplotlib 1.3.1
+        
+        ._active == None ako su Pan i Zoom opcije iskljucene
+        ._active == 'PAN' ako je pan/zoom opcija ukljucena
+        ._active == 'ZOOM' ako je zoom rect opcija ukljucena
+        """
+        #od parenta dohvati toolbar, tj. njegovo stanje
+        stanje = self.parent().mplToolbar._active
+
 
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('minutnigraf.ui')
 class MinutniGraf(base3, form3):
-    #TODO!
-    #NOT IMPLEMENTED do kraja
-    #minutni 'widget', canvas + kontrole
     """Klasa za minutni graf sa dijelom kontrola"""
     def __init__(self, parent = None, defaulti = None, frejmovi = None, sat = None):
         super(base3, self).__init__(parent)
@@ -1802,8 +1967,10 @@ class MinutniGraf(base3, form3):
         self.veze()
         self.initial_setup(self.__sat)
 
-    def zamjeni_frejmove(self):
-        pass
+    def zamjeni_frejmove(self, defaulti, frejmovi):
+        self.__defaulti = defaulti
+        self.__minutniFrejmovi = frejmovi
+        self.initial_setup(None)
     
     def veze(self):
         #spajanje widgeta sa kontrolnim funkcijama
@@ -1834,34 +2001,34 @@ class MinutniGraf(base3, form3):
     def enable_grid(self, x):
         if x:
             self.__defaulti['m_opcenito']['grid'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.__defaulti['m_opcenito']['grid'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def enable_cursor(self, x):
         if x:
             self.__defaulti['m_opcenito']['cursor'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.__defaulti['m_opcenito']['cursor'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def enable_spanSelector(self, x):
         if x:
             self.__defaulti['m_opcenito']['span'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.__defaulti['m_opcenito']['span'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def enable_minorTicks(self, x):
         if x:
             self.__defaulti['m_opcenito']['minorTicks'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.__defaulti['m_opcenito']['minorTicks'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_glavniCheck(self):
         if self.glavniCheck.isChecked() == True:
@@ -1871,7 +2038,7 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_nevalidanOK']['crtaj'] = True
             self.__defaulti['m_nevalidanNOK']['crtaj'] = True
             self.__defaulti['m_glavnikanal']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.glavniDetalji.setEnabled(False)
             self.__defaulti['m_validanOK']['crtaj'] = False
@@ -1879,116 +2046,113 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_nevalidanOK']['crtaj'] = False
             self.__defaulti['m_nevalidanNOK']['crtaj'] = False
             self.__defaulti['m_glavnikanal']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def enable_pomocni1Check(self):
         if self.pomocni1Check.isChecked() == True:
             self.pomocni1Combo.setEnabled(True)
             self.pomocni1Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal1']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni1Combo.setEnabled(False)
             self.pomocni1Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal1']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_pomocni2Check(self):
         if self.pomocni2Check.isChecked() == True:
             self.pomocni2Combo.setEnabled(True)
             self.pomocni2Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal2']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni2Combo.setEnabled(False)
             self.pomocni2Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal2']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_pomocni3Check(self):
         if self.pomocni3Check.isChecked() == True:
             self.pomocni3Combo.setEnabled(True)
             self.pomocni3Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal3']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni3Combo.setEnabled(False)
             self.pomocni3Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal3']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_pomocni4Check(self):
         if self.pomocni4Check.isChecked() == True:
             self.pomocni4Combo.setEnabled(True)
             self.pomocni4Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal4']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni4Combo.setEnabled(False)
             self.pomocni4Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal4']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_pomocni5Check(self):
         if self.pomocni5Check.isChecked() == True:
             self.pomocni5Combo.setEnabled(True)
             self.pomocni5Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal5']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni5Combo.setEnabled(False)
             self.pomocni5Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal5']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def enable_pomocni6Check(self):
         if self.pomocni6Check.isChecked() == True:
             self.pomocni6Combo.setEnabled(True)
             self.pomocni6Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal6']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         else:
             self.pomocni6Combo.setEnabled(False)
             self.pomocni6Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal6']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni1Combo(self):
         newValue = self.pomocni1Combo.currentText()
         self.__defaulti['m_pomocnikanal1']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni2Combo(self):
         newValue = self.pomocni2Combo.currentText()
         self.__defaulti['m_pomocnikanal2']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni3Combo(self):
         newValue = self.pomocni3Combo.currentText()
         self.__defaulti['m_pomocnikanal3']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni4Combo(self):
         newValue = self.pomocni4Combo.currentText()
         self.__defaulti['m_pomocnikanal4']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni5Combo(self):
         newValue = self.pomocni5Combo.currentText()
         self.__defaulti['m_pomocnikanal5']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def update_pomocni6Combo(self):
         newValue = self.pomocni6Combo.currentText()
         self.__defaulti['m_pomocnikanal6']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
         
     def initial_setup(self, izbor):
-        #TODO! pozvati prilikom poziva za crtanje.. smisli kako narediti crtanje
-        #tj. update self.__minutniFrejmovi prilikom prebacivanja dana?
-        self.tmin = None
-        self.tmax = None
-        
+        self.__sat = izbor
+
         self.canvasMinutni.__statusGlavniGraf = False
         self.canvasMinutni.__testAnnotation = False
         self.canvasMinutni.__zadnjiHighlightx = None
@@ -1996,9 +2160,10 @@ class MinutniGraf(base3, form3):
         self.canvasMinutni.__zadnjiAnnotationx = None
                
         if self.__minutniFrejmovi != None:
-            self.tmin, self.tmax = self.plot_time_span(izbor)
-            naslov = 'Prikazano vrijeme od: '+str(self.tmin)+' do: '+str(self.tmax)
-            self.labelSlice.setText(naslov)
+            if self.__sat != None:
+                datum = str(self.__sat.date())
+                naslov = 'Prikazano vrijeme za '+datum
+                self.labelSlice.setText(naslov)
             
         #checkboxes
         self.glavniCheck.setChecked(self.__defaulti['m_validanOK']['crtaj'])
@@ -2096,7 +2261,7 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_pomocnikanal6']['kanal'] = noviKanal
             
             #naredba za crtanje je zadnja kod inicijalizacije
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def glavniDetalji_dijalog(self):
         #deep copy dicta za dijalog
@@ -2106,7 +2271,7 @@ class MinutniGraf(base3, form3):
         if glavnigrafdijalog.exec_():
             grafinfo = glavnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
     
     def pomocni1Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 1"""
@@ -2118,7 +2283,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni1Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def pomocni2Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 2"""
@@ -2130,7 +2295,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni2Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def pomocni3Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 3"""
@@ -2142,7 +2307,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni3Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def pomocni4Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 4"""
@@ -2154,7 +2319,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni4Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def pomocni5Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 5"""
@@ -2166,7 +2331,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni5Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def pomocni6Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 6"""
@@ -2178,7 +2343,7 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni6Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
 
     def change_boja_pomocni1Detalji(self):
         """set boje gumba iz defaulta"""
@@ -2227,17 +2392,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni6Detalji', boja)
         self.pomocni6Detalji.setStyleSheet(stil)
-    
-    def plot_time_span(self, vrijeme):
-        """
-        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
-        minutnog slicea.
-        """
-        tmax =  vrijeme
-        tmin = vrijeme - timedelta(minutes = 59)
-        tmin = pd.to_datetime(tmin)
-        return tmin, tmax
-        
+
 ###############################################################################
 ###############################################################################
 base4, form4 = uic.loadUiType('m_pomocnigrafdetalji.ui')
@@ -2489,11 +2644,11 @@ if __name__=='__main__':
     pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
     opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}
-    m_validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'p', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_glavnikanal = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    m_validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'d', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'d', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_glavnikanal = {'crtaj':True, 'tip':'plot', 'kanal':'1-SO2-ppb', 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
     m_pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
     m_pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
     m_pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}
@@ -2547,9 +2702,10 @@ if __name__=='__main__':
     agregirani = agregator.agregiraj(frejmovi)
     
     aplikacija = QtGui.QApplication(sys.argv)
-    app = SatniGraf(parent = None, defaulti = mapa2, frejmovi = None)
+    app = MinutniGraf(parent = None, defaulti = mapa2, frejmovi = frejmovi, sat = None)
+    #app = SatniGraf(parent = None, defaulti = mapa2, frejmovi = None)
     app.show()
     #dodaj frejmove
-    app.zamjeni_frejmove(agregirani)
+    #app.zamjeni_frejmove(agregirani)
     
     sys.exit(aplikacija.exec_())

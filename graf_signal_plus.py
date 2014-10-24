@@ -1768,6 +1768,8 @@ class GrafMinutni(MPLCanvas):
         self.__statusSpanSelector = False
         self.__statusGlavniGraf = False
         
+        self.veze()
+        
     def veze(self):
         self.mpl_connect('button_press_event', self.on_pick)
 
@@ -1781,10 +1783,17 @@ class GrafMinutni(MPLCanvas):
         tmin = pd.to_datetime(tmin)
         return tmin, tmax
     
-    def refokusiraj(self, sat):
-        #TODO!
-        #probaj umjesto ponovnog iscrtavanja grafa refokusirati sa xlim veliki graf
-        pass
+    #TODO!
+    def fokusiraj_interval(self, sat):
+        """
+        ideja je spojiti signal za izbor satno agregiranog podatka sa ovom
+        metodom. Nesto poput zooma na ciljani interval.
+        """
+        if sat != None:
+            self.__sat = sat
+            self.xmin, self.xmax = self.plot_time_span(self.__sat)
+            self.axes.set_xlim(self.xmin, self.xmax)
+
     
     def crtaj(self, defaulti, frejmovi, sat):
         """ideja, nacrtati sve podatke, ali inicijalno ograniciti sliku
@@ -1796,6 +1805,35 @@ class GrafMinutni(MPLCanvas):
         self.axes.clear()
         self.__statusGlavniGraf = False
         self.__annotationTest = False
+
+        #test opcenitih postavki priije crtanja : cursor, grid...
+        if self.__defaulti['m_opcenito']['cursor'] == True:
+            self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
+        else:
+            self.cursor = None
+
+        if self.__defaulti['m_opcenito']['grid'] == True:
+            self.axes.grid(True)
+        else:
+            self.axes.grid(False)
+            
+        if self.__defaulti['m_opcenito']['minorTicks'] == True:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        
+        if self.__defaulti['m_opcenito']['span'] == True:
+            self.__statusSpanSelector = True
+            self.spanSelector = SpanSelector(self.axes, 
+                                             self.minutni_span_flag, 
+                                             direction = 'horizontal', 
+                                             useblit = True, 
+                                             rectprops = dict(alpha = 0.3, facecolor = 'yellow'))
+        else:
+            self.spanSelector = None
+            self.__statusSpanSelector = False
+
+
                                 
         specials = ['m_validanOK', 'm_validanNOK', 
                     'm_nevalidanOK', 'm_nevalidanNOK']
@@ -1885,7 +1923,7 @@ class GrafMinutni(MPLCanvas):
                                    linestyle = self.__defaulti[graf]['line'], 
                                    zorder = self.__defaulti[graf]['zorder'])
 
-        #XXX! samo za testiranje
+        #XXX! samo za testiranje, izbaci kasnije
         self.__sat = pd.to_datetime('2014-06-04 15:00:00')
         if self.__sat != None:
             self.xmin, self.xmax = self.plot_time_span(self.__sat)
@@ -1897,6 +1935,7 @@ class GrafMinutni(MPLCanvas):
             label.set_rotation(20)
             label.set_fontsize(8)
         #finalna naredba za prikaz
+        self.__statusGlavniGraf = True
         self.draw()
 
     def normalize_rgb(self, rgbTuple):
@@ -1904,6 +1943,12 @@ class GrafMinutni(MPLCanvas):
         izmedju [0-1]"""
         r, g, b = rgbTuple
         return (r/255, g/255, b/255)
+        
+    def minutni_span_flag(self, xmin, xmax):
+        """
+        span selection minutnog grafa za promjenu flaga
+        """
+        pass
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
@@ -1931,8 +1976,124 @@ class GrafMinutni(MPLCanvas):
         """
         #od parenta dohvati toolbar, tj. njegovo stanje
         stanje = self.parent().mplToolbar._active
+        """
+        - glavni graf mora biti nacrtan
+        - klik mora biti unutar polja grafa
+        - toolbar ne smije biti u modu pan ili zoom
+        """
+        if self.__statusGlavniGraf and event.inaxes == self.axes and stanje == None:
+            xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
+            #problem.. rounding offset aware i offset naive datetimes..workaround
+            xpoint = datetime.datetime(xpoint.year, 
+                                       xpoint.month, 
+                                       xpoint.day, 
+                                       xpoint.hour, 
+                                       xpoint.minute, 
+                                       xpoint.second)
+            xpoint = zaokruzi_vrijeme(xpoint, 60)
+            xpoint = pd.to_datetime(xpoint)
+            #pobrini se da xpoint ne prelazi granice indeksa frejmova glavnog kanala
+            gkanal = self.__defaulti['m_validanOK']['kanal']
+            self.__tmin = self.__frejmovi[gkanal].index.min()
+            self.__tmax = self.__frejmovi[gkanal].index.max()
+            if xpoint >= self.__tmax:
+                xpoint = self.__tmax
+            if xpoint <= self.__tmin:
+                xpoint = self.__tmin
 
+            if xpoint in list(self.__frejmovi[gkanal].index):
+                ypoint = self.__frejmovi[gkanal].loc[xpoint, u'koncentracija']
+                if np.isnan(ypoint): #potencijalo za taj index konc = np.NaN
+                    miny = self.__frejmovi[gkanal][u'koncentracija'].min()
+                    maxy = self.__frejmovi[gkanal][u'koncentracija'].max()
+                    ypoint = (miny + maxy)/2                    
+            else:
+                miny = self.__frejmovi[gkanal][u'koncentracija'].min()
+                maxy = self.__frejmovi[gkanal][u'koncentracija'].max()
+                ypoint = (miny + maxy)/2
+                       
+            if event.button == 2:
+                #annotation
+                #dohvati tekst annotationa
+                if xpoint in list(self.__frejmovi[gkanal].index):
+                    konc = self.__frejmovi[gkanal].loc[xpoint, u'koncentracija']
+                    status = self.__frejmovi[gkanal].loc[xpoint, u'status']
+                    flag = self.__frejmovi[gkanal].loc[xpoint, u'flag']
+                    tekst = 'Vrijeme: '+str(xpoint)+'\nKonc.: '+str(konc)+'\nStatus: '+str(status)+'\nFlag: '+str(flag)
+                else:
+                    tekst = 'Vrijeme: '+str(xpoint)+'\nNema podatka'
+                
+                #annotation offset
+                size = self.frameSize()
+                x, y = size.width(), size.height()
+                x = x//2
+                y= y//2
+                clickedx = event.x
+                clickedy = event.y
+            
+                if clickedx >= x:
+                    clickedx = -80
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
+                else:
+                    clickedx = 30
+                    if clickedy >= y:
+                        clickedy = -30
+                    else:
+                        clickedy = 30
 
+                
+                if self.__annotationTest == False:
+                    #napravi annotation
+                    self.__zadnjiAnnotationx = xpoint
+                    self.__annotationTest = True
+                    #sami annotation
+                    self.annotation = self.axes.annotate(
+                        tekst, 
+                        xy = (xpoint, ypoint), 
+                        xytext = (clickedx, clickedy), 
+                        textcoords = 'offset points', 
+                        ha = 'left', 
+                        va = 'center', 
+                        fontsize = 7, 
+                        zorder = 22, 
+                        bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+                        arrowprops = dict(arrowstyle = '->'))
+                    self.draw()
+                else:
+                    if xpoint == self.__zadnjiAnnotationx:
+                        self.annotation.remove()
+                        self.__zadnjiAnnotationx = None
+                        self.__annotationTest = False
+                        self.draw()
+                    else:
+                        self.annotation.remove()
+                        self.__zadnjiAnnotationx = xpoint
+                        self.__annotationTest = True
+                        self.annotation = self.axes.annotate(
+                            tekst, 
+                            xy = (xpoint, ypoint), 
+                            xytext = (clickedx, clickedy), 
+                            textcoords = 'offset points', 
+                            ha = 'left', 
+                            va = 'center', 
+                            fontsize = 7, 
+                            zorder = 22, 
+                            bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+                            arrowprops = dict(arrowstyle = '->'))
+                        self.draw()
+            
+            if event.button == 3:
+                #promjeni flag
+                pass
+            
+            
+            
+            
+            
+            
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('minutnigraf.ui')
@@ -2154,9 +2315,7 @@ class MinutniGraf(base3, form3):
         self.__sat = izbor
 
         self.canvasMinutni.__statusGlavniGraf = False
-        self.canvasMinutni.__testAnnotation = False
-        self.canvasMinutni.__zadnjiHighlightx = None
-        self.canvasMinutni.__zadnjiHighlighty = None
+        self.canvasMinutni.__annotationTest = False
         self.canvasMinutni.__zadnjiAnnotationx = None
                
         if self.__minutniFrejmovi != None:

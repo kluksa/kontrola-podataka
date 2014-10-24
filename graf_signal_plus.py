@@ -1348,6 +1348,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         ._active == None ako su Pan i Zoom opcije iskljucene
         ._active == 'PAN' ako je pan/zoom opcija ukljucena
         ._active == 'ZOOM' ako je zoom rect opcija ukljucena
+        
+        P.S. slican pristup korisitm za span selection
         """
         #od parenta dohvati toolbar, tj. njegovo stanje
         stanje = self.parent().mplToolbar._active
@@ -1474,12 +1476,9 @@ class GrafSatniSrednjaci(MPLCanvas):
             
             if event.button == 3:
                 #flag change
-                
-                #test da li je span aktivan
-                if self.__statusSpanSelector == False:
-                    #poziva context menu sa informacijom o lokaciji i satu
-                    loc = QtGui.QCursor.pos()
-                    self.show_menu(loc, xpoint, xpoint)
+                #poziva context menu sa informacijom o lokaciji i satu
+                loc = QtGui.QCursor.pos()
+                self.show_menu(loc, xpoint, xpoint)
     
     def satni_span_flag(self, tmin, tmax):
         """satni span selector"""
@@ -1610,7 +1609,9 @@ class GrafSatniSrednjaci(MPLCanvas):
         else:
             self.axes.minorticks_off()
         
-        if self.__defaulti['opcenito']['span'] == True:
+        #provjeri da li su upaljeni alati zoom/pan
+        stanje = self.parent().mplToolbar._active
+        if self.__defaulti['opcenito']['span'] == True and stanje == None:
             self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.satni_span_flag, 
@@ -1750,9 +1751,6 @@ class GrafSatniSrednjaci(MPLCanvas):
 ###############################################################################
 ###############################################################################
 class GrafMinutni(MPLCanvas):
-    #TODO!
-    #minutni canvas, crtanje isl
-    #NOT IMPLEMENTED
     """Canvas minutnog grafa"""
     def __init__(self, *args, **kwargs):
         """konstruktor"""
@@ -1822,7 +1820,9 @@ class GrafMinutni(MPLCanvas):
         else:
             self.axes.minorticks_off()
         
-        if self.__defaulti['m_opcenito']['span'] == True:
+        #provjeri da li su upaljeni alati zoom/pan
+        stanje = self.parent().mplToolbar._active
+        if self.__defaulti['m_opcenito']['span'] == True and stanje == None:
             self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.minutni_span_flag, 
@@ -1944,11 +1944,59 @@ class GrafMinutni(MPLCanvas):
         r, g, b = rgbTuple
         return (r/255, g/255, b/255)
         
-    def minutni_span_flag(self, xmin, xmax):
-        """
-        span selection minutnog grafa za promjenu flaga
-        """
-        pass
+    def minutni_span_flag(self, tmin, tmax):
+        """minutni span selector"""
+        if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
+            tmin = matplotlib.dates.num2date(tmin)
+            tmax = matplotlib.dates.num2date(tmax)
+            tmin = datetime.datetime(tmin.year, tmin.month, tmin.day, tmin.hour, tmin.minute, tmin.second)
+            tmax = datetime.datetime(tmax.year, tmax.month, tmax.day, tmax.hour, tmax.minute, tmax.second)
+            tmin = zaokruzi_vrijeme(tmin, 60)
+            tmax = zaokruzi_vrijeme(tmax, 60)
+            tmin = pd.to_datetime(tmin)
+            tmax = pd.to_datetime(tmax)
+    
+            #osiguranje da se ne preskoce granice glavnog kanala
+            if tmin < self.__tmin:
+                tmin = self.__tmin
+            if tmin > self.__tmax:
+                tmin = self.__tmax
+            if tmax < self.__tmin:
+                tmax = self.__tmin
+            if tmax > self.__tmax:
+                tmax = self.__tmax
+                
+            if tmin != tmax: #tocke ne smiju biti iste
+                #pozovi dijalog za promjenu flaga
+                loc = QtGui.QCursor.pos()
+                self.show_menu(loc, tmin, tmax)
+
+    def show_menu(self, pos, tmin, tmax):
+        self.__lastTimeMin = tmin
+        self.__lastTimeMax = tmax
+        menu = QtGui.QMenu(self)
+        menu.setTitle('Promjeni flag')
+        action1 = QtGui.QAction("Flag: Dobar", menu) #pozitivan flag
+        action2 = QtGui.QAction("Flag: Los", menu) #negativan flag
+        menu.addAction(action1)
+        menu.addAction(action2)
+        action1.triggered.connect(self.dijalog_promjena_flaga_OK)
+        action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
+        menu.popup(pos)
+    
+    def dijalog_promjena_flaga_OK(self):
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+        arg = [tmin, tmax, 1000]
+        #sredi generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
+        
+    def dijalog_promjena_flaga_NOK(self):
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+        arg = [tmin, tmax, -1000]
+        #sredi generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu"""
@@ -1973,6 +2021,8 @@ class GrafMinutni(MPLCanvas):
         ._active == None ako su Pan i Zoom opcije iskljucene
         ._active == 'PAN' ako je pan/zoom opcija ukljucena
         ._active == 'ZOOM' ako je zoom rect opcija ukljucena
+        
+        P.S. slican pristup korisitm za span selection
         """
         #od parenta dohvati toolbar, tj. njegovo stanje
         stanje = self.parent().mplToolbar._active
@@ -2087,7 +2137,10 @@ class GrafMinutni(MPLCanvas):
             
             if event.button == 3:
                 #promjeni flag
-                pass
+                #poziva context menu sa informacijom o lokaciji i satu
+                loc = QtGui.QCursor.pos()
+                self.show_menu(loc, xpoint, xpoint)
+
             
             
             
@@ -2318,7 +2371,10 @@ class MinutniGraf(base3, form3):
         self.canvasMinutni.__annotationTest = False
         self.canvasMinutni.__zadnjiAnnotationx = None
                
-        if self.__minutniFrejmovi != None:
+        if self.__minutniFrejmovi != None and self.__defaulti != None:
+            glavniKanal = self.__defaulti['m_validanOK']['kanal']
+            self.__tmin = self.__minutniFrejmovi[glavniKanal].index.min()
+            self.__tmax = self.__minutniFrejmovi[glavniKanal].index.max()
             if self.__sat != None:
                 datum = str(self.__sat.date())
                 naslov = 'Prikazano vrijeme za '+datum

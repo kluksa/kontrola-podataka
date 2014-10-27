@@ -80,15 +80,28 @@ class Kontrola(QtGui.QWidget):
                      QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), 
                      self.priredi_vremenski_raspon)
                      
-#        #kontroler - canvasi , postavljanje frejmova
-#        self.connect(self, 
-#                     QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), 
-#                     gui.satniCanvas.zamjeni_frejmove)
-#                     
-#        self.connect(self, 
-#                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
-#                     gui.minutniCanvas.zamjeni_frejmove)
-#        
+        #kontroler - canvasi , postavljanje frejmova
+        self.connect(self, 
+                     QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), 
+                     gui.satniCanvas.zamjeni_frejmove)
+                     
+        self.connect(self, 
+                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
+                     gui.minutniCanvas.zamjeni_frejmove)
+                     
+        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
+        self.connect(gui.satniCanvas, 
+                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
+                     gui.minutniCanvas.postavi_glavni_kanal)
+                     
+        #ljevi klik na satnom grafu... zoom na minutni slice
+                     
+        self.connect(gui.satniCanvas.canvasSatni, 
+                     QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
+                     gui.minutniCanvas.canvasMinutni.fokusiraj_interval)
+                     
+        
+        
 #        #spajanje ljevog klika na satnom grafu sa fokusiranjem minutnog grafa
 #        self.connect(gui.satniCanvas.canvasSatni, 
 #                     QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
@@ -175,11 +188,14 @@ class Kontrola(QtGui.QWidget):
             self.__trenutnaStanica, 
             self.__tMin, 
             self.__tMax)
-#        
-#        self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__satni)
-#        self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__minutni)
+        
+        self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__satni)
+        self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__minutni)
         
 ###############################################################################
+        
+    def printaj(self, x):
+        print(x)
 #    def crtaj_satni(self, kanal):
 #        """
 #        Funkcija trazi od dokumenta slice satno agregiranih podataka zadanih

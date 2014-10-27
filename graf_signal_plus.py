@@ -842,6 +842,9 @@ class SatniGraf(base2, form2):
             self.__defaulti['glavnikanal4']['kanal'] = noviKanal
             self.__defaulti['glavnikanalfill']['kanal'] = noviKanal
 
+            #TODO! izabran novi glavni kanal - za minutni canvas
+            self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), noviKanal)
+
             zadnjiKanal = self.__defaulti['pomocnikanal1']['kanal']
             self.pGraf1Izbor.blockSignals(True)
             self.pGraf1Izbor.clear()
@@ -1084,6 +1087,10 @@ class SatniGraf(base2, form2):
         self.__defaulti['glavnikanal3']['kanal'] = newValue
         self.__defaulti['glavnikanal4']['kanal'] = newValue
         self.__defaulti['glavnikanalfill']['kanal'] = newValue
+        
+        #TODO! izabran novi glavni kanal - za minutni canvas
+        self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), newValue)
+        
         self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
     
     def update_pomocni_kanal1(self):
@@ -1790,6 +1797,7 @@ class GrafMinutni(MPLCanvas):
             self.__sat = sat
             self.xmin, self.xmax = self.plot_time_span(self.__sat)
             self.axes.set_xlim(self.xmin, self.xmax)
+            self.draw()
 
     
     def crtaj(self, defaulti, frejmovi, sat):
@@ -1802,7 +1810,7 @@ class GrafMinutni(MPLCanvas):
         self.axes.clear()
         self.__statusGlavniGraf = False
         self.__annotationTest = False
-
+        
         #test opcenitih postavki priije crtanja : cursor, grid...
         if self.__defaulti['m_opcenito']['cursor'] == True:
             self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
@@ -2182,6 +2190,15 @@ class MinutniGraf(base3, form3):
     def zamjeni_frejmove(self, frejmovi):
         self.__minutniFrejmovi = frejmovi
         self.initial_setup(None)
+    #TODO!        
+    def postavi_glavni_kanal(self, kanal):
+        self.glavniKanalLabel.setText(kanal)
+        self.__defaulti['m_validanOK']['kanal'] = kanal
+        self.__defaulti['m_validanNOK']['kanal'] = kanal
+        self.__defaulti['m_nevalidanOK']['kanal'] = kanal
+        self.__defaulti['m_nevalidanNOK']['kanal'] = kanal
+        self.__defaulti['m_glavnikanal']['kanal'] = kanal
+        self.initial_setup(None)
     
     def veze(self):
         #spajanje widgeta sa kontrolnim funkcijama
@@ -2370,8 +2387,10 @@ class MinutniGraf(base3, form3):
                
         if self.__minutniFrejmovi != None and self.__defaulti != None:
             glavniKanal = self.__defaulti['m_validanOK']['kanal']
-            self.__tmin = self.__minutniFrejmovi[glavniKanal].index.min()
-            self.__tmax = self.__minutniFrejmovi[glavniKanal].index.max()
+            #TODO! inicijalno javlja error jer je glavniKanal = None
+            if glavniKanal != None:
+                self.__tmin = self.__minutniFrejmovi[glavniKanal].index.min()
+                self.__tmax = self.__minutniFrejmovi[glavniKanal].index.max()
             if self.__sat != None:
                 datum = str(self.__sat.date())
                 naslov = 'Prikazano vrijeme za '+datum
@@ -2400,7 +2419,7 @@ class MinutniGraf(base3, form3):
             
             #glavni kanal mora odgovarati glavnom kanalu satnog grafa
             #direktno se prepisuje (zato je label a ne combobox)
-            glavniKanal = self.__defaulti['validanOK']['kanal']
+            glavniKanal = self.__defaulti['m_validanOK']['kanal']
             if glavniKanal == None:
                 self.glavniKanalLabel.setText('Glavni kanal')
             else:
@@ -2856,11 +2875,11 @@ if __name__=='__main__':
     pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
     pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'avg', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
     opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}
-    m_validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'d', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'d', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
-    m_nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':'1-SO2-ppb', 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
-    m_glavnikanal = {'crtaj':True, 'tip':'plot', 'kanal':'1-SO2-ppb', 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
+    m_validanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'d', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_validanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'d', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_nevalidanOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(0,255,0), 'alpha':1, 'zorder':20}
+    m_nevalidanNOK = {'crtaj':True, 'tip':'scatter', 'kanal':None, 'marker':'o', 'color':(255,0,0), 'alpha':1, 'zorder':20}
+    m_glavnikanal = {'crtaj':True, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(45,86,90), 'alpha':0.9, 'zorder':10}
     m_pomocnikanal1 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(186,113,123), 'alpha':0.9, 'zorder':1}
     m_pomocnikanal2 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(213,164,255), 'alpha':0.9, 'zorder':2}
     m_pomocnikanal3 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(111,118,255), 'alpha':0.9, 'zorder':3}

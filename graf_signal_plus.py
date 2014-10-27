@@ -1781,13 +1781,12 @@ class GrafMinutni(MPLCanvas):
         tmin = pd.to_datetime(tmin)
         return tmin, tmax
     
-    #TODO!
     def fokusiraj_interval(self, sat):
         """
         ideja je spojiti signal za izbor satno agregiranog podatka sa ovom
         metodom. Nesto poput zooma na ciljani interval.
         """
-        if sat != None:
+        if type(sat) == pd.tslib.Timestamp:
             self.__sat = sat
             self.xmin, self.xmax = self.plot_time_span(self.__sat)
             self.axes.set_xlim(self.xmin, self.xmax)
@@ -1798,7 +1797,7 @@ class GrafMinutni(MPLCanvas):
         na raspon satnog podatka"""
         self.__defaulti = defaulti
         self.__frejmovi = frejmovi
-        self.__sat = sat
+        #self.__sat = sat
         
         self.axes.clear()
         self.__statusGlavniGraf = False
@@ -1922,13 +1921,12 @@ class GrafMinutni(MPLCanvas):
                                    alpha = self.__defaulti[graf]['alpha'],
                                    linestyle = self.__defaulti[graf]['line'], 
                                    zorder = self.__defaulti[graf]['zorder'])
-
-        #XXX! samo za testiranje, izbaci kasnije
-        self.__sat = pd.to_datetime('2014-06-04 15:00:00')
+        
+        #xlimit grafa
         if self.__sat != None:
             self.xmin, self.xmax = self.plot_time_span(self.__sat)
             self.axes.set_xlim(self.xmin, self.xmax)
-        
+
         #format x kooridinate
         xLabels = self.axes.get_xticklabels()
         for label in xLabels:
@@ -2918,6 +2916,8 @@ if __name__=='__main__':
     
     aplikacija = QtGui.QApplication(sys.argv)
     app = MinutniGraf(parent = None, defaulti = mapa2, frejmovi = frejmovi, sat = None)
+    x = pd.to_datetime('2014-06-04 22:00:00')
+    app.canvasMinutni.fokusiraj_interval(x)
     #app = SatniGraf(parent = None, defaulti = mapa2, frejmovi = None)
     app.show()
     #dodaj frejmove

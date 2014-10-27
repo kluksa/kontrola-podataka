@@ -14,7 +14,6 @@ import citac
 from datetime import timedelta
 import pandas as pd
 from PyQt4 import QtCore, QtGui, uic
-
 ###############################################################################
 ###############################################################################
 class dateCalendar(QtGui.QCalendarWidget):
@@ -74,9 +73,7 @@ class WebloggerIzbornik(base, form):
         self.trenutniFolder = None
         self.trenutnaStanica = None
         self.datumi = None
-        self.kanali = None
         self.trenutniDatum = None
-        self.trenutniKanal = None
         self.tmin = None
         self.tmax = None
         
@@ -85,10 +82,8 @@ class WebloggerIzbornik(base, form):
         
         #connections
         self.uiLoadFolder.clicked.connect(self.load_folder)
-        self.uiStanicaCombo.currentIndexChanged.connect(self.combo_izbor_stanica)                
-        self.kalendar.clicked.connect(self.kalendar_izbor_datuma)
+        self.uiStanicaCombo.currentIndexChanged.connect(self.combo_izbor_stanica)
         self.kalendar.selectionChanged.connect(self.kalendar_izbor_datuma)
-        self.uiKanalCombo.currentIndexChanged.connect(self.promjena_mjerenja)
         self.uiPrethodni.clicked.connect(self.klik_prethodni)
         self.uiSljedeci.clicked.connect(self.klik_sljedeci)
 ###############################################################################        
@@ -147,39 +142,7 @@ class WebloggerIzbornik(base, form):
         #postavi boje dostupnih u kalendaru
         self.kalendar.selectDates(self.datumi)
         #pokusaj forsirati zadnji izbor datuma
-        if self.trenutniDatum in self.datumi:
-            dan = self.trenutniDatum.toPyDate()
-            dan = pd.to_datetime(dan)
-            #dan je timestamp "dan 00:00:00"
-            self.tmin = dan + timedelta(minutes = 1)
-            #tmiin je timestamp "dan 00:01:00"
-            self.tmax = dan + timedelta(days = 1)
-            #tmax je timestamp "dan+1 00:00:00"
-            data = [self.trenutnaStanica, self.tmin, self.tmax]
-            self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject'), data)
-###############################################################################
-    def set_kanali(self, kanali):
-        """
-        funkcija sluzi kao setter comboboxa sa kanalima
-        
-        -ceka dokument da javi ako ima promjena u popisu kanala
-        """
-        self.kanali = kanali
-        self.uiKanalCombo.blockSignals(True)
-        self.trenutniKanal = self.uiKanalCombo.currentText()
-        self.uiKanalCombo.clear()
-        self.uiKanalCombo.addItems(kanali)
-        if self.trenutniKanal in self.kanali:
-            i = self.uiKanalCombo.findText(self.trenutniKanal)
-            self.uiKanalCombo.setCurrentIndex(i)            
-            self.uiKanalCombo.blockSignals(False)
-            #shortcut trigger izbora kanala
-            self.promjena_mjerenja(1)
-        else:
-            self.uiKanalCombo.setCurrentIndex(0)
-            self.uiKanalCombo.blockSignals(False)
-            #shortcut trigger izbora kanala
-            self.promjena_mjerenja(1)
+        self.kalendar_izbor_datuma()
 ###############################################################################
     def combo_izbor_stanica(self, indeks):
         """
@@ -194,26 +157,27 @@ class WebloggerIzbornik(base, form):
 ###############################################################################
     def kalendar_izbor_datuma(self):
         """
-        Funkcija se poziva svaki puta kada se klikne na datum u kalendaru, ili
-        kada se izabrani datum promjeni
+        Funkcija se poziva svaki puta kada se izabrani datum promjeni
+        (klik na kalendar ili programski)
         
         Upit prema kontroleru za dostupne kanale
         """
         #provjeri navigacijske gumbe
         self.test_nav_gumbe()
         #priprema i emit izbora datuma kontroleru
-        if self.trenutniDatum in self.datumi:
-            dan = self.trenutniDatum.toPyDate()
-            dan = pd.to_datetime(dan)
-            #dan je timestamp "dan 00:00:00"
-            self.tmin = dan + timedelta(minutes = 1)
-            #tmiin je timestamp "dan 00:01:00"
-            self.tmax = dan + timedelta(days = 1)
-            #tmax je timestamp "dan+1 00:00:00"
-            data = [self.trenutnaStanica, self.tmin, self.tmax]
-            #TODO!
-            #treba clearati minutni graf OVDJE, kada se prebacuju datumi, minutni bi trebao biti prazan
-            self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), data)
+        if self.datumi != None:
+            if self.trenutniDatum in self.datumi:
+                dan = self.trenutniDatum.toPyDate()
+                dan = pd.to_datetime(dan)
+                #dan je timestamp "dan 00:00:00"
+                self.tmin = dan + timedelta(minutes = 1)
+                #tmiin je timestamp "dan 00:01:00"
+                self.tmax = dan + timedelta(days = 1)
+                #tmax je timestamp "dan+1 00:00:00"
+                data = [self.trenutnaStanica, self.tmin, self.tmax]
+                #TODO!
+                #treba clearati minutni graf OVDJE, kada se prebacuju datumi, minutni bi trebao biti prazan
+                self.emit(QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), data)
         
 ###############################################################################
     def test_nav_gumbe(self):
@@ -239,15 +203,6 @@ class WebloggerIzbornik(base, form):
                 #selected date is not valid, disable both buttons
                 self.uiPrethodni.setDisabled(True)
                 self.uiSljedeci.setDisabled(True)
-###############################################################################
-    def promjena_mjerenja(self, index):
-        """
-        Funkcija se poziva svaki put kada se promjeni aktivni kanal
-        """
-        self.trenutniKanal = self.uiKanalCombo.currentText()
-        #poziv za izdvajanje ciljanog frejma
-        self.emit(QtCore.SIGNAL('gui_crtaj_satni_graf(PyQt_PyObject)'), 
-                  self.trenutniKanal)
 ###############################################################################
     def klik_prethodni(self):
         """

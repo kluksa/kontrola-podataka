@@ -45,7 +45,7 @@ class Display(base, form):
         #dokument
         self.doc = dokument.Dokument()
         #kontroler
-        #self.kontrola = kontroler.Kontrola(gui = self, dokument = self.doc)
+        self.kontrola = kontroler.Kontrola(gui = self, dokument = self.doc)
 
 ###############################################################################
     def read_file_dijalog(self):

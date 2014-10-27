@@ -20,7 +20,7 @@ class Dokument(QtGui.QWidget):
     metode koje se "smiju" pozivati iz drugih modula:
     -self.dohvati_dostupne_podatke()
     -self.set_citac(citac)
-    -self.dohvati_podatke(stanica, kanal, tMin, tMax)
+    -self.dohvati_podatke(stanica, tMin, tMax)
     -self.update_frejm(stanica, kanal)
     """
 ###############################################################################
@@ -37,9 +37,8 @@ class Dokument(QtGui.QWidget):
         
         #memberi za pracenje stanja:
         self.__aktivnaStanica --> kljuc stanice
-        self.__aktivniKanal --> kljuc kanala
-        self.__trenutniMinutniSlice --> slice minutnih podataka za stanicu i kanal
-        self.__trenutniAgregiraniSlice -->slice satno agregiranih podataka za stanicu i kanal
+        self.__trenutniMinutniSlice --> dict minutnih podataka za stanicu
+        self.__trenutniAgregiraniSlice -->dict satno agregiranih podataka za stanicu
         self.__tMin -->donja granica slicea minutnih podataka, pandas datetime objekt
         self.__tMax -->gornja granica slicea satnih podataka, pandas datetime objekt
         self.__dostupniPodaci --> dictionary {'stanica':[lista datuma]} koji se mogu ucitati
@@ -55,8 +54,8 @@ class Dokument(QtGui.QWidget):
             -postavlja citac u dokument
             -upit prema citacu do kojih podataka moze doci (stanica/datum)
         
-        dohvati_podatke(self, stanica, kanal, tMin, tMax)
-            -vraca frejm podataka i agregiranih podataka
+        dohvati_podatke(self, stanica, tMin, tMax)
+            -vraca frejmove podataka i agregiranih podataka
             -po potrebi pokusava sa citacem ucitati podatke ako nedostaju
             
         dohvati_dostupne_podatke(self)
@@ -66,9 +65,8 @@ class Dokument(QtGui.QWidget):
         QtGui.QWidget.__init__(self,parent)
         self.__stanice = {}
         self.__aktivnaStanica = None
-        self.__aktivniKanal = None
-        self.__trenutniMinutniSlice = None
-        self.__trenutniAgregiraniSlice = None
+        self.__trenutniMinutniSlice = {}
+        self.__trenutniAgregiraniSlice = {}
         self.__tMin = None
         self.__tMax = None
         self.__dostupniPodaci = {}
@@ -135,7 +133,7 @@ class Dokument(QtGui.QWidget):
 
         #nadji raspon vremenskog intervala [tMin, tMax] izrazen kao lista dana
         raspon = []
-        temp = pd.date_range(start = tMin, end = tMax, freq = 'D')
+        temp = pd.date_range(start = tMin.date(), end = tMax.date(), freq = 'D')
         for ind in temp:
             raspon.append(ind.date())
         #raspon sada sadrzi listu datuma, datetime.date objekata
@@ -160,21 +158,22 @@ class Dokument(QtGui.QWidget):
                     self.__dodaj_nove_frejmove(stanica, frejmovi)
                     self.__ucitaniPodaci[stanica].append(datum)                
 ###############################################################################
-    def dohvati_podatke(self, stanica, kanal, tMin, tMax):                    
+    def dohvati_podatke(self, stanica, tMin, tMax):                    
         """
         metoda dohvaca slice, agregira
         """
         self.__aktivnaStanica = stanica
-        self.__aktivniKanal = kanal
         self.__tMin = tMin
         self.__tMax = tMax
-        
-        self.__trenutniMinutniSlice = self.__get_slice(stanica, kanal, tMin, tMax)
-        
-        #iskoristi agregator da dobijes agregirani frejm
-        self.__trenutniAgregiraniSlice = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice)
-                
-        #vrati minutni frejm i satno agregirani frejm
+        kanali = self.dohvati_ucitane_kanale(self.__aktivnaStanica)
+        self.__trenutniMinutniSlice = {}
+        self.__trenutniAgregiraniSlice = {}
+
+        for kanal in kanali:
+            self.__trenutniMinutniSlice[kanal] = self.__get_slice(stanica, kanal, tMin, tMax)
+            self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice[kanal])
+
+        #vrati minutne i satno agregirane frejmove
         return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice
                 
 ###############################################################################

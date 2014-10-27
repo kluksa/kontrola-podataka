@@ -41,6 +41,31 @@ class Agregator(object):
             return 1000 #slucaj kada su svi minutni validirani
         else:
             return 1 #slucaj kada postoje nevalidirani podaci
+            
+    def my_mean(self, x):
+        #mean, srednja vrjednost
+        if len(x) == 0:
+            return np.NaN
+        return np.mean(x)
+
+    def my_std(self, x):
+        #standardna devijacija
+        if len(x) == 0:
+            return np.NaN
+        return np.std(x)
+
+    def my_min(self, x):
+        #min
+        if len(x) == 0:
+            return np.NaN
+        return np.min(x)
+
+    def my_max(self, x):
+        #max
+        if len(x) == 0:
+            return np.NaN
+        return np.max(x)
+
     
     def h_q05(self, x):
         #5 percentil podataka
@@ -122,7 +147,8 @@ class Agregator(object):
         -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
         """
         listaFunkcijaIme = [u'avg', u'std', u'min', u'max', u'q05', u'median', u'q95', u'count']
-        listaFunkcija = [np.mean, np.std, np.min, np.max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
+        listaFunkcija = [self.my_mean, self.my_std, self.my_min, self.my_max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
+        
         """
         -kopija originalnog frejma
         -samo stupac koncentracije gdje je flag veci od 0
@@ -189,7 +215,7 @@ if __name__ == "__main__":
     datum = pd.to_datetime(datum)
     datum = datum.date()
     frejmovi = citac.citaj(stanica, datum)
-    #jedan frejm    
+    #jedan frejm
     frejm = frejmovi['1-SO2-ppb']
 #    frejm = frejmovi['49-O3-ug/m3']
 #    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
@@ -202,8 +228,11 @@ if __name__ == "__main__":
     #frejm = pd.DataFrame()
     #print(frejm)
     #agregiraj frejm
-    agregirani = agregator.agregiraj_kanal(frejm)
-    print(agregirani)
+#    agregirani = agregator.agregiraj_kanal(frejm)
+#    print(agregirani)
+    #agregiraj sve frejmove
+    agregirani = agregator.agregiraj(frejmovi)
+#    print(agregirani)
     
     #random sample da provjerim valjanost agregiranja
     #barem sto se tice slicea i rubova istih

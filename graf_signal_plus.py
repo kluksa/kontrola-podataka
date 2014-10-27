@@ -2178,9 +2178,8 @@ class MinutniGraf(base3, form3):
         
         self.veze()
         self.initial_setup(self.__sat)
-
-    def zamjeni_frejmove(self, defaulti, frejmovi):
-        self.__defaulti = defaulti
+    
+    def zamjeni_frejmove(self, frejmovi):
         self.__minutniFrejmovi = frejmovi
         self.initial_setup(None)
     

@@ -799,8 +799,7 @@ class SatniGraf(base2, form2):
 
         
         if self.__agregiraniFrejmovi != None:
-            self.tmin, self.tmax = self.plot_time_span()
-            naslov = 'Prikazano vrijeme od: '+str(self.tmin)+' do: '+str(self.tmax)
+            naslov = 'Glavni kanal : '+str(self.glavniGrafIzbor.currentText())
             self.labelSlice.setText(naslov)
         
         #checkboxes
@@ -842,7 +841,7 @@ class SatniGraf(base2, form2):
             self.__defaulti['glavnikanal4']['kanal'] = noviKanal
             self.__defaulti['glavnikanalfill']['kanal'] = noviKanal
 
-            #TODO! izabran novi glavni kanal - za minutni canvas
+            #izbor novog glavnog kanala se treba propagirati na minutni graf
             self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), noviKanal)
 
             zadnjiKanal = self.__defaulti['pomocnikanal1']['kanal']
@@ -1088,7 +1087,11 @@ class SatniGraf(base2, form2):
         self.__defaulti['glavnikanal4']['kanal'] = newValue
         self.__defaulti['glavnikanalfill']['kanal'] = newValue
         
-        #TODO! izabran novi glavni kanal - za minutni canvas
+        #promjeni naslov grafa
+        naslov = 'Glavni kanal : '+str(self.glavniGrafIzbor.currentText())
+        self.labelSlice.setText(naslov)
+        
+        #izbor novog glavnog kanala se treba propagirati u minutni graf
         self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), newValue)
         
         self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
@@ -1248,25 +1251,6 @@ class SatniGraf(base2, form2):
             self.change_boja_pGraf6Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__agregiraniFrejmovi)
             
-    def plot_time_span(self):
-        """Vraca granice plota, min i max prikazano vrijeme"""
-        duljina = 0
-        najveci = None
-        for frejm in self.__agregiraniFrejmovi:
-            l = len(self.__agregiraniFrejmovi[frejm])
-            if l > duljina:
-                najveci = frejm
-                duljina = l
-        
-        xmin = self.__agregiraniFrejmovi[najveci].index.min()
-        xmax = self.__agregiraniFrejmovi[najveci].index.max()
-        xmin = pd.to_datetime(xmin.date())
-        xmax = pd.to_datetime(xmax.date())
-        xmin = xmin - timedelta(hours = 1)
-        xmin = pd.to_datetime(xmin)
-        xmax = xmax + timedelta(hours = 1)
-        xmax = pd.to_datetime(xmax)
-        return xmin, xmax
 ###############################################################################
 ###############################################################################
 class GrafSatniSrednjaci(MPLCanvas):
@@ -1333,10 +1317,8 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.mpl_connect('button_press_event', self.on_pick)
 
     def on_pick(self, event):
-        """definiranje ponasanja pick eventa na canvasu"""
-
-        #XXX!
-        """
+        """definiranje ponasanja pick eventa na canvasu
+        
         UPOZORENJE!!!
         
         Ovaj dio koda rijesava konflikte prilikom zoom/pan akcija na
@@ -1358,9 +1340,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         
         P.S. slican pristup korisitm za span selection
         """
-        #od parenta dohvati toolbar, tj. njegovo stanje
         stanje = self.parent().mplToolbar._active
-                
         if self.__statusGlavniGraf and event.inaxes == self.axes and stanje == None:
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
             #problem.. rounding offset aware i offset naive datetimes..workaround
@@ -1508,8 +1488,11 @@ class GrafSatniSrednjaci(MPLCanvas):
                 tmax = self.__tmin
             if tmax > self.__tmax:
                 tmax = self.__tmax
-                
-            if tmin != tmax: #tocke ne smiju biti iste
+            
+            #toolbar opcije moraju biti iskljucene
+            stanje = self.parent().mplToolbar._active
+            
+            if tmin != tmax and stanje == None: #tocke ne smiju biti iste
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, tmin, tmax)
@@ -1574,7 +1557,6 @@ class GrafSatniSrednjaci(MPLCanvas):
             self.__zadnjiHighlighty = y
             self.__testHighlight = True
             self.draw()
-
     
     def crtaj(self, mapaGrafova, satniFrejmovi):
         """Eksplicitne naredbe za crtanje
@@ -1616,9 +1598,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         else:
             self.axes.minorticks_off()
         
-        #provjeri da li su upaljeni alati zoom/pan
-        stanje = self.parent().mplToolbar._active
-        if self.__defaulti['opcenito']['span'] == True and stanje == None:
+        if self.__defaulti['opcenito']['span'] == True:
             self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.satni_span_flag, 
@@ -1772,6 +1752,17 @@ class GrafMinutni(MPLCanvas):
         self.__annotationTest = False
         self.__statusSpanSelector = False
         self.__statusGlavniGraf = False
+
+        #TODO! imaj na umu granice podataka koji su u frejmu!!!        
+        if self.__defaulti != None:
+            gkanal = self.__defaulti['m_validanOK']['kanal']
+            if gkanal != None:
+                self.__tmin = self.__frejmovi[gkanal].index.min()
+                self.__tmax = self.__frejmovi[gkanal].index.max()
+            else:
+                self.__tmin = None
+                self.__tmax = None
+
         
         self.veze()
         
@@ -1827,9 +1818,7 @@ class GrafMinutni(MPLCanvas):
         else:
             self.axes.minorticks_off()
         
-        #provjeri da li su upaljeni alati zoom/pan
-        stanje = self.parent().mplToolbar._active
-        if self.__defaulti['m_opcenito']['span'] == True and stanje == None:
+        if self.__defaulti['m_opcenito']['span'] == True:
             self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.minutni_span_flag, 
@@ -1874,6 +1863,7 @@ class GrafMinutni(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['m_validanOK']['color']), 
                                           alpha = self.__defaulti['m_validanOK']['alpha'], 
                                           zorder = self.__defaulti['m_validanOK']['zorder'])
+                        self.__statusGlavniGraf = True
                         
                     if graf == 'm_validanNOK':
                         data = self.__frejmovi[kanal]
@@ -1887,6 +1877,7 @@ class GrafMinutni(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['m_validanNOK']['color']), 
                                           alpha = self.__defaulti['m_validanNOK']['alpha'], 
                                           zorder = self.__defaulti['m_validanNOK']['zorder'])
+                        self.__statusGlavniGraf = True
 
                     if graf == 'm_nevalidanOK':
                         data = self.__frejmovi[kanal]
@@ -1901,6 +1892,7 @@ class GrafMinutni(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['m_nevalidanOK']['color']), 
                                           alpha = self.__defaulti['m_nevalidanOK']['alpha'], 
                                           zorder = self.__defaulti['m_nevalidanOK']['zorder'])
+                        self.__statusGlavniGraf = True
 
                     if graf == 'm_nevalidanNOK':
                         data = self.__frejmovi[kanal]
@@ -1915,6 +1907,7 @@ class GrafMinutni(MPLCanvas):
                                           color = self.normalize_rgb(self.__defaulti['m_nevalidanNOK']['color']), 
                                           alpha = self.__defaulti['m_nevalidanNOK']['alpha'], 
                                           zorder = self.__defaulti['m_nevalidanNOK']['zorder'])
+                        self.__statusGlavniGraf = True
                 
                 else:
                     #crtaj line plotove
@@ -1941,7 +1934,6 @@ class GrafMinutni(MPLCanvas):
             label.set_rotation(20)
             label.set_fontsize(8)
         #finalna naredba za prikaz
-        self.__statusGlavniGraf = True
         self.draw()
 
     def normalize_rgb(self, rgbTuple):
@@ -1971,8 +1963,11 @@ class GrafMinutni(MPLCanvas):
                 tmax = self.__tmin
             if tmax > self.__tmax:
                 tmax = self.__tmax
+
+            #toolbar opcije moraju biti iskljucene
+            stanje = self.parent().mplToolbar._active
                 
-            if tmin != tmax: #tocke ne smiju biti iste
+            if tmin != tmax and stanje == None: #tocke ne smiju biti iste
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, tmin, tmax)
@@ -2005,10 +2000,8 @@ class GrafMinutni(MPLCanvas):
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 
     def on_pick(self, event):
-        """definiranje ponasanja pick eventa na canvasu"""
-
-        #XXX!
-        """
+        """definiranje ponasanja pick eventa na canvasu
+        
         UPOZORENJE!!!
         
         Ovaj dio koda rijesava konflikte prilikom zoom/pan akcija na
@@ -2048,6 +2041,7 @@ class GrafMinutni(MPLCanvas):
                                        xpoint.second)
             xpoint = zaokruzi_vrijeme(xpoint, 60)
             xpoint = pd.to_datetime(xpoint)
+            #TODO!
             #pobrini se da xpoint ne prelazi granice indeksa frejmova glavnog kanala
             gkanal = self.__defaulti['m_validanOK']['kanal']
             self.__tmin = self.__frejmovi[gkanal].index.min()
@@ -2190,7 +2184,7 @@ class MinutniGraf(base3, form3):
     def zamjeni_frejmove(self, frejmovi):
         self.__minutniFrejmovi = frejmovi
         self.initial_setup(None)
-    #TODO!        
+
     def postavi_glavni_kanal(self, kanal):
         self.glavniKanalLabel.setText(kanal)
         self.__defaulti['m_validanOK']['kanal'] = kanal
@@ -2387,13 +2381,12 @@ class MinutniGraf(base3, form3):
                
         if self.__minutniFrejmovi != None and self.__defaulti != None:
             glavniKanal = self.__defaulti['m_validanOK']['kanal']
-            #TODO! inicijalno javlja error jer je glavniKanal = None
             if glavniKanal != None:
                 self.__tmin = self.__minutniFrejmovi[glavniKanal].index.min()
                 self.__tmax = self.__minutniFrejmovi[glavniKanal].index.max()
             if self.__sat != None:
                 datum = str(self.__sat.date())
-                naslov = 'Prikazano vrijeme za '+datum
+                naslov = 'Prikazano vrijeme za '+datum #TODO! bolji opis grafa
                 self.labelSlice.setText(naslov)
             
         #checkboxes
@@ -2422,8 +2415,10 @@ class MinutniGraf(base3, form3):
             glavniKanal = self.__defaulti['m_validanOK']['kanal']
             if glavniKanal == None:
                 self.glavniKanalLabel.setText('Glavni kanal')
+                self.sliceLabel.setText('Glavni kanal: ')
             else:
                 self.glavniKanalLabel.setText(glavniKanal)
+                self.sliceLabel.setText('Glavni kanal: '+glavniKanal)
         
             zadnjiKanal = self.__defaulti['m_pomocnikanal1']['kanal']
             self.pomocni1Combo.blockSignals(True)

@@ -795,7 +795,7 @@ class SatniGraf(base2, form2):
         self.canvasSatni.__testAnnotation = False
         self.canvasSatni.__zadnjiHighlightx = None
         self.canvasSatni.__zadnjiHighlighty = None
-        self.canvasSatni.__zadnjiAnnotationx = None        
+        self.canvasSatni.__zadnjiAnnotationx = None
 
         
         if self.__agregiraniFrejmovi != None:
@@ -840,6 +840,11 @@ class SatniGraf(base2, form2):
             self.__defaulti['glavnikanal3']['kanal'] = noviKanal
             self.__defaulti['glavnikanal4']['kanal'] = noviKanal
             self.__defaulti['glavnikanalfill']['kanal'] = noviKanal
+            
+            #promjeni naslov grafa
+            naslov = 'Glavni kanal : '+str(noviKanal)
+            self.labelSlice.setText(naslov)
+
 
             #izbor novog glavnog kanala se treba propagirati na minutni graf
             self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), noviKanal)
@@ -1090,6 +1095,14 @@ class SatniGraf(base2, form2):
         #promjeni naslov grafa
         naslov = 'Glavni kanal : '+str(self.glavniGrafIzbor.currentText())
         self.labelSlice.setText(naslov)
+        
+        #TODO! PROBLEMI SA HIGHLIGHTOM NAKON PROMJENE KANALA
+        if self.canvasSatni.hdot != None:
+            self.canvasSatni.__zadnjiHighlightx = None
+            self.canvasSatni.__zadnjiHighlighty = None
+            self.canvasSatni.__testHighlight = False
+            self.canvasSatni.hdot.remove()
+            self.canvasSatni.draw()
         
         #izbor novog glavnog kanala se treba propagirati u minutni graf
         self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), newValue)
@@ -1384,6 +1397,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                             self.hdot.remove()
                             self.__testHighlight = False
                             self.highlight_dot(xpoint, ypoint)
+
             
             if event.button == 2:
                 #annotations
@@ -1507,9 +1521,12 @@ class GrafSatniSrednjaci(MPLCanvas):
         """FUnkcija vraca tmin i tmax, vremenski raspon glavnog kanala"""
         if self.__defaulti != None and self.__data != None:
             glavniKanal = self.__defaulti['validanOK']['kanal']
-            tmin = self.__data[glavniKanal].index.min()
-            tmax = self.__data[glavniKanal].index.max()
-            return tmin, tmax
+            if len(self.__data[glavniKanal]) != 0:
+                tmin = self.__data[glavniKanal].index.min()
+                tmax = self.__data[glavniKanal].index.max()
+                return tmin, tmax
+            else:
+                return None, None
         else:
             return None, None
         
@@ -1730,7 +1747,16 @@ class GrafSatniSrednjaci(MPLCanvas):
         #highlight dot
         if self.__statusGlavniGraf:
             self.__testHighlight = False
-            self.highlight_dot(self.__zadnjiHighlightx, self.__zadnjiHighlighty)
+            
+            trenutniGlavniKanal = self.__defaulti['validanOK']['kanal']
+            if self.__zadnjiHighlightx in list(self.__data[trenutniGlavniKanal].index):
+                ypoint = self.__data[trenutniGlavniKanal].loc[self.__zadnjiHighlightx, u'avg']
+            else:
+                miny = self.__data[trenutniGlavniKanal][u'min'].min()
+                maxy = self.__data[trenutniGlavniKanal][u'max'].max()
+                ypoint = (miny + maxy)/2
+            
+            self.highlight_dot(self.__zadnjiHighlightx, ypoint)
         
         self.draw()
         

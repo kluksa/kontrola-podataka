@@ -170,8 +170,18 @@ class Dokument(QtGui.QWidget):
         self.__trenutniAgregiraniSlice = {}
 
         for kanal in kanali:
-            self.__trenutniMinutniSlice[kanal] = self.__get_slice(stanica, kanal, tMin, tMax)
-            self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice[kanal])
+            minutni = self.__get_slice(stanica, kanal, tMin, tMax)
+            #pokusaj izbacivanja kanala gdje su svi podaci koncentracije NaN
+            #broj nan podataka
+            n1 = len(minutni[np.isnan(minutni[u'koncentracija']) == True])
+            #ukupni broj podataka
+            n2 = len(minutni)
+            if n2 > n1:
+                self.__trenutniMinutniSlice[kanal] = minutni
+                self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(minutni)
+            
+#            self.__trenutniMinutniSlice[kanal] = self.__get_slice(stanica, kanal, tMin, tMax)
+#            self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice[kanal])
 
         #vrati minutne i satno agregirane frejmove
         return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice

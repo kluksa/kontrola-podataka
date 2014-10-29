@@ -1096,7 +1096,7 @@ class SatniGraf(base2, form2):
         naslov = 'Glavni kanal : '+str(self.glavniGrafIzbor.currentText())
         self.labelSlice.setText(naslov)
         
-        #TODO! PROBLEMI SA HIGHLIGHTOM NAKON PROMJENE KANALA
+        #highlight tocke
         if self.canvasSatni.hdot != None:
             self.canvasSatni.__zadnjiHighlightx = None
             self.canvasSatni.__zadnjiHighlighty = None

@@ -102,7 +102,7 @@ class Display(base, form):
             m_pomocnikanal4 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(149,255,147), 'alpha':0.9, 'zorder':4}
             m_pomocnikanal5 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(214,255,137), 'alpha':0.9, 'zorder':5}
             m_pomocnikanal6 = {'crtaj':False, 'tip':'plot', 'kanal':None, 'stupac1':'koncentracija', 'marker':'None', 'line':'-', 'color':(255,64,47), 'alpha':0.9, 'zorder':6}
-            m_opcenito = {'grid':False, 'cursor':False, 'span':True, 'minorTicks':True}
+            m_opcenito = {'grid':False, 'cursor':False, 'span':False, 'minorTicks':True}
             self.__defaulti = {'validanOK':validanOK, 
                                'validanNOK':validanNOK, 
                                'nevalidanOK':nevalidanOK, 

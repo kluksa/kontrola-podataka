@@ -84,53 +84,46 @@ class Kontrola(QtGui.QWidget):
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), 
                      gui.satniCanvas.zamjeni_frejmove)
+        
+        #spajanje zahtjeva za dohvacanjem satno agregiranog slicea (crtanje grafa)
+        self.connect(gui.satniCanvas.canvasSatni,
+                     QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), 
+                     self.dohvati_agregirani_slajs)
                      
         self.connect(self, 
-                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
-                     gui.minutniCanvas.zamjeni_frejmove)
+                     QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), 
+                     gui.satniCanvas.canvasSatni.set_agregirani_kanal)
                      
-        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
-        self.connect(gui.satniCanvas, 
-                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
-                     gui.minutniCanvas.postavi_glavni_kanal)
-                     
-        #ljevi klik na satnom grafu... zoom na minutni slice
-                     
+        #ljevi klik na satnom grafu... zoom na minutni slice                     
         self.connect(gui.satniCanvas.canvasSatni, 
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
                      gui.minutniCanvas.canvasMinutni.fokusiraj_interval)
+        
+
+
+                     
+#        self.connect(self, 
+#                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
+#                     gui.minutniCanvas.zamjeni_frejmove)
+#                     
+#        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
+#        self.connect(gui.satniCanvas, 
+#                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
+#                     gui.minutniCanvas.postavi_glavni_kanal)
+#                             
+#
+#        #promjena flaga na satnom grafu
+#        self.connect(gui.satniCanvas.canvasSatni, 
+#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
+#                     self.printaj)
+#                     
+#        #promjena flaga na minutnom grafu
+#        self.connect(gui.minutniCanvas.canvasMinutni, 
+#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
+#                     self.printaj)
                      
         
         
-#        #spajanje ljevog klika na satnom grafu sa fokusiranjem minutnog grafa
-#        self.connect(gui.satniCanvas.canvasSatni, 
-#                     QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
-#                     gui.minutniCanvas.canvasMinutni.fokusiraj_interval)        
-#                     
-#        #gui - izbor na satnom grafu, naredba za crtanje minutnih podataka
-#        self.connect(gui.satniCanvas,
-#                     QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'),
-#                     self.crtaj_minutni)
-#                     
-#        #naredba gui dijelu za crtanje satnih podataka
-#        self.connect(self, 
-#                     QtCore.SIGNAL('kontrola_crtaj_satni_frejm(PyQt_PyObject)'), 
-#                     gui.satniCanvas.crtaj)
-#                     
-#        #naredba gui dijelu za crtanje minutnih podataka
-#        self.connect(self, 
-#                     QtCore.SIGNAL('kontrola_crtaj_minutni_frejm(PyQt_PyObject)'), 
-#                     gui.minutniCanvas.crtaj)
-#                     
-#        #gui - promjena flaga na satnom grafu
-#        self.connect(gui.satniCanvas, 
-#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
-#                     self.promjena_flaga)
-#
-#        #gui - promjena flaga na minutnom grafu
-#        self.connect(gui.minutniCanvas, 
-#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
-#                     self.promjena_flaga)
 ###############################################################################
     def set_citac(self, citac):
         """Postavljanje citaca u dokument"""
@@ -183,90 +176,27 @@ class Kontrola(QtGui.QWidget):
         self.__dokument.pripremi_podatke(self.__trenutnaStanica,
                                          self.__tMin, 
                                          self.__tMax)
-                
-        self.__minutni, self.__satni = self.__dokument.dohvati_podatke(
-            self.__trenutnaStanica, 
-            self.__tMin, 
-            self.__tMax)
         
-        self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__satni)
-        self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__minutni)
+        #dohvati informacije o "valjanim" frejmovima
+        self.__okFrejmovi = self.__dokument.dohvati_info_podataka(self.__trenutnaStanica, 
+                                                                  self.__tMin, 
+                                                                  self.__tMax)
+        #emit koji postavlja izbor frejmova u gui
+        self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__okFrejmovi)
+        self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__okFrejmovi)
         
 ###############################################################################
-        
+    def dohvati_agregirani_slajs(self, lista):
+        """
+        zahtjev od doumenta da vrati trazeni slajs podataka
+        lista = [stanica, tmin, tmax, kanal]
+        """
+        frejm = self.__dokument.dohvati_agregirani_frejm(lista[0], 
+                                                         lista[1], 
+                                                         lista[2], 
+                                                         lista[3])
+        kanal = lista[3]
+        self.emit(QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), [kanal, frejm])
+###############################################################################
     def printaj(self, x):
         print(x)
-#    def crtaj_satni(self, kanal):
-#        """
-#        Funkcija trazi od dokumenta slice satno agregiranih podataka zadanih
-#        ulaznim parametrima.
-#        
-#        stanica, kanal, min i max vrijeme slicea (ukljucujuci granice)
-#        """
-#        self.__trenutniKanal = kanal
-#        #dohvati trazene sliceove minutnih i agregiranih podataka
-#        self.__minutni, self.__satni = self.__dokument.dohvati_podatke(
-#            self.__trenutnaStanica, 
-#            self.__trenutniKanal, 
-#            self.__tMin, 
-#            self.__tMax)
-#            
-#        #emit crtanje satnog grafa
-#        self.emit(QtCore.SIGNAL('kontrola_crtaj_satni_frejm(PyQt_PyObject)'), self.__satni)
-#        #ako je bio nacrtani minutni graf, emit i za njegovo crtanje
-#        if self.__trenutniSat != None:
-#            self.crtaj_minutni(self.__trenutniSat)
-#        
-################################################################################
-#    def crtaj_minutni(self, sat):
-#        """
-#        Funkcija crta minutni niz podataka
-#        sat -> pandas datetime timestamp. Mora odgovarati indeksu u datafrejmu
-#        """
-#        self.__trenutniSat = sat #kraj intervala
-#        start = sat - timedelta(minutes=59)
-#        start = pd.to_datetime(start)
-#        #dohvati trazeni dio minutnog frejma
-#        frejm = self.__minutni.copy()
-#        frejm = frejm[frejm.index >= start]
-#        frejm = frejm[frejm.index <= self.__trenutniSat]
-#        
-#        self.emit(QtCore.SIGNAL('kontrola_crtaj_minutni_frejm(PyQt_PyObject)'), frejm)
-###############################################################################
-#    def promjena_flaga(self, data):
-#        """
-#        naredba za promjenu flagova na grafu
-#        data -> lista podataka -> [start, end, novi flag]
-#        flag se mjenja na minutnim podatcima, updatea se dokument, 
-#        ponovi se zahtjev za crtanjem.
-#        """
-#        start = data[0] #pandas timestamp
-#        end = data[1] #pandas timestamp
-#        noviFlag = data[2] #int? mozda float, da se razlikuju od automatskih??
-#        
-#        #start i end potencijalo ne postoje kao indeksi, workaround
-#        #dohvati slice
-#        frejm = self.__minutni.copy()
-#        frejm = frejm[frejm.index >= start]
-#        frejm = frejm[frejm.index <= end]
-#        #postavi flag
-#        frejm['flag'] = noviFlag
-#        print(frejm)
-#        #TODO!
-#        #update flaga u dokumentu
-#        self.__dokument.update_frejm(
-#            self.__trenutnaStanica, 
-#            self.__trenutniKanal, 
-#            frejm)
-#        #povlacenje novih podataka iz dokumenta
-#        self.__minutni, self.__satni = self.__dokument.dohvati_podatke(
-#                self.__trenutnaStanica, 
-#                self.__trenutniKanal, 
-#                self.__tMin, 
-#                self.__tMax)
-#        #zahtjevi za crtanjem, pozovi crtanje satnog, sa zadnjim kanalom
-#        #crtanje satnog ce povuci crtanje minutnog ako je prethodno bio nacrtan
-#        self.crtaj_satni(self.__trenutniKanal)
-
-###############################################################################
-###############################################################################

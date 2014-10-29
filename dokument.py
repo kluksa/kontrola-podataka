@@ -158,7 +158,50 @@ class Dokument(QtGui.QWidget):
                     self.__dodaj_nove_frejmove(stanica, frejmovi)
                     self.__ucitaniPodaci[stanica].append(datum)                
 ###############################################################################
-    def dohvati_podatke(self, stanica, tMin, tMax):                    
+    def dohvati_info_podataka(self, stanica, tMin, tMax):
+        """
+        metoda sluzi da se dohvate informacije o slajsu (primarno:valjani kanali)
+        """
+        kanali = self.dohvati_ucitane_kanale(stanica)
+        popis = []
+        for kanal in kanali:
+            frejm = self.__get_slice(stanica, kanal, tMin, tMax)
+            #broj np.NaN podataka u frejmu
+            n1 = len(frejm[np.isnan(frejm[u'koncentracija']) == True])
+            #ukupni broj podataka u frejmu
+            n2 = len(frejm)
+            if n2 != n1: #kreni dalje samo ako postoje koncentracije koji nisu np.NaN
+                popis.append(kanal)
+        #vrati info o stanici, granicama frejma, popisu "valjanih" kanala
+        return [stanica, tMin, tMax, popis]
+###############################################################################
+    def dohvati_minutni_frejm(self, stanica, tMin, tMax, kanal):
+        """
+        funkcija vraca trazeni slice minutnih podataka
+        tMin i tMax su granice slajsa (graniice su ukljucene)
+        """
+        frejm = self.__get_slice(stanica, kanal, tMin, tMax)
+        return frejm
+###############################################################################
+    def dohvati_agregirani_frejm(self, stanica, tMin, tMax, kanal):
+        """
+        funkcija vraca trazeni slice minutnih podataka
+        tMin i tMax su granice slajsa (graniice su ukljucene)
+        """
+        frejm = self.__get_slice(stanica, kanal, tMin, tMax)
+        frejm = self.__agregator.agregiraj_kanal(frejm)
+        return frejm
+###############################################################################
+
+
+
+
+
+
+
+
+    def dohvati_podatke(self, stanica, tMin, tMax):
+        #TODO! treba ga prepisati na nesto jasnije
         """
         metoda dohvaca slice, agregira
         """
@@ -252,6 +295,28 @@ class Dokument(QtGui.QWidget):
                 
 ###############################################################################
 ###############################################################################
+#    def promjeni_flag(self, args):
+#        """
+#        Promjena flaga, args je lista argumenata koja opisuje sto se mjenja
+#        """
+#        tmin = args[0] #vrijeme od (ukljucijuci)
+#        tmax = args[1] #vrijeme do (ukljucijuci)
+#        flag = args[2] #vrijednost flaga, (1000 ako je ok, -1000 ako nije)
+#        kanal = args[3] #informacija o kanalu
+#        stanica = self.__aktivnaStanica
+#        #TODO! test ispravnosti zahtjeva (visak??)
+#        if kanal in list(self.__stanice[stanica].keys()):
+#            t1 = tmin in self.__stanice[stanica][kanal].index
+#            t2 = tmax in self.__stanice[stanica][kanal].index
+#            if t1 and t2:
+#                self.__stanice[stanica][kanal].loc[tmin:tmax, u'flag'] = flag
+
+        
+        
+
+
+
+
 """
 Za sada sve ispod je tehnicki visak, izbrisi nakon sto app proradi kako spada
 """

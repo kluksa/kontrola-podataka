@@ -858,8 +858,6 @@ class SatniGraf(base2, form2):
             naslov = 'Glavni kanal : '+str(noviKanal)
             self.labelSlice.setText(naslov)
 
-            #XXX! provjeri signal...
-            #izbor novog glavnog kanala se treba propagirati na minutni graf
             self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), noviKanal)
 
             #populiranje ostalih comboboxeva na isti nacin
@@ -1119,8 +1117,6 @@ class SatniGraf(base2, form2):
             self.canvasSatni.hdot.remove()
             self.canvasSatni.draw()
         
-        #XXX! provjeri signal...
-        #izbor novog glavnog kanala se treba propagirati u minutni graf
         self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), newValue)
         
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
@@ -1383,7 +1379,6 @@ class GrafSatniSrednjaci(MPLCanvas):
                     #prije slanja zahtjeva da se podaci dohvate, provjeri da li su vec dohvaceni
                     if kanal not in list(self.__data.keys()):
                         msg = [self.__info[0], self.__info[1], self.__info[2], kanal]
-                        #TODO! provjeri signal
                         self.emit(QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), msg)
                         #gornji emit bi trebao populirati self.__data sa frejmovima koji se trebaju crtati
                 else:
@@ -1513,6 +1508,13 @@ class GrafSatniSrednjaci(MPLCanvas):
         
         #naredba za crtanje na canvas
         self.draw()
+###############################################################################
+    #TODO! crtanje nakon promjene flaga
+    def promjenjen_flag(self, lista):
+        """ponovo crtanje satnog grafa nakon sto je flag promjenjen"""
+        self.__info = lista
+        self.crtaj(self.__defaulti, self.__info)
+
 ###############################################################################        
     def set_agregirani_kanal(self, lista):
         """
@@ -1542,7 +1544,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         tmin = tmin - timedelta(minutes = 59)
         tmin = pd.to_datetime(tmin)
         glavniKanal = self.__defaulti['validanOK']['kanal']
-        arg = [tmin, tmax, 1000, glavniKanal]
+        arg = [tmin, tmax, 1000, glavniKanal, self.__info[0]]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################        
@@ -1553,7 +1555,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         tmin = tmin - timedelta(minutes = 59)
         tmin = pd.to_datetime(tmin)
         glavniKanal = self.__defaulti['validanOK']['kanal']
-        arg = [tmin, tmax, -1000, glavniKanal]
+        arg = [tmin, tmax, -1000, glavniKanal, self.__info[0]]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################        
@@ -1770,7 +1772,6 @@ class GrafMinutni(MPLCanvas):
         self.__statusSpanSelector = False #da li je span selector aktivan
         self.__zadnjiAnnotationx = None #vrijeme zadnjeg annotationa
         self.__testAnnotation = False #test da li je annotation prikazan
-        #TODO! mozda je nebitno..
         self.__sat = None #zadnji timestamp satnog koji je zoomiran
         
         self.veze()
@@ -1848,7 +1849,6 @@ class GrafMinutni(MPLCanvas):
                     #prije slanja zahtjeva da se podaci dohvate, provjeri da li su vec dohvaceni
                     if kanal not in list(self.__data.keys()):
                         msg = [self.__info[0], self.__info[1], self.__info[2], kanal]
-                        #TODO! provjeri signal
                         self.emit(QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), msg)
                         #gornji emit bi trebao populirati self.__data sa frejmovima koji se trebaju crtati
                 else:
@@ -1941,7 +1941,18 @@ class GrafMinutni(MPLCanvas):
 
         #naredba za crtanje
         self.draw()
-#TODO! sredi zoom ako je prije bilo zoomirano
+        
+        #provjera za fokusiranje na satni interval
+        if self.__sat != None:
+            if self.__sat >= self.__tmin and self.__sat <= self.__tmax:
+                self.fokusiraj_interval(self.__sat)
+
+###############################################################################
+    #TODO! crtanje nakon promjene flaga
+    def promjenjen_flag(self, lista):
+        """ponovo crtanje minutnog grafa nakon sto je flag promjenjen"""
+        self.__info = lista
+        self.crtaj(self.__defaulti, self.__info)
 ###############################################################################
     def set_minutni_kanal(self, lista):
         """
@@ -2023,7 +2034,7 @@ class GrafMinutni(MPLCanvas):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
         glavniKanal = self.__defaulti['m_validanOK']['kanal']
-        arg = [tmin, tmax, 1000, glavniKanal]
+        arg = [tmin, tmax, 1000, glavniKanal, self.__info[0]]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################        
@@ -2031,7 +2042,7 @@ class GrafMinutni(MPLCanvas):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
         glavniKanal = self.__defaulti['m_validanOK']['kanal']
-        arg = [tmin, tmax, -1000, glavniKanal]
+        arg = [tmin, tmax, -1000, glavniKanal, self.__info[0]]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################
@@ -2405,6 +2416,7 @@ class MinutniGraf(base3, form3):
         self.canvasMinutni.__statusGlavniGraf = False
         self.canvasMinutni.__testAnnotation = False
         self.canvasMinutni.__zadnjiAnnotationx = None
+        self.canvasMinutni.__sat = None
 
 
         naslov = 'Glavni kanal : '
@@ -2646,7 +2658,6 @@ class MinutniGraf(base3, form3):
 
 ###############################################################################
 ###############################################################################
-#XXX! dosao do tuda
 base4, form4 = uic.loadUiType('m_pomocnigrafdetalji.ui')
 class PomocniGrafDetaljiM(base4, form4):
     """

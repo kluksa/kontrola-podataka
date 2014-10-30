@@ -21,6 +21,7 @@ class Display(base, form):
         super(base, self).__init__(parent)
         self.setupUi(self)
         #load defaults #TODO! mora se srediti bolje, xml ili nesto u tom stilu
+        #mozda pickle? neka akcija save/load defaults
         self.load_defaults(None)
         """
         memberi

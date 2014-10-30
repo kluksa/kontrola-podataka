@@ -49,10 +49,6 @@ class Kontrola(QtGui.QWidget):
         self.__trenutniSat = None #sat za koji je nacrtan minutni graf
 
         #TODO!
-        #veze sa gui-em nisu podesene kako treba, provjeri objekte koji salju i
-        #primaju signale npr. gui.weblogger_izbornik
-        #popravi na kraju
-        #TODO!
         #sredi promjenu kursora tjekom ucitavanja isl...kao dekorator?
 
         #gui - set citac
@@ -84,7 +80,12 @@ class Kontrola(QtGui.QWidget):
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), 
                      gui.satniCanvas.zamjeni_frejmove)
-        
+
+                     
+        self.connect(self, 
+                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
+                     gui.minutniCanvas.zamjeni_frejmove)
+
         #spajanje zahtjeva za dohvacanjem satno agregiranog slicea (crtanje grafa)
         self.connect(gui.satniCanvas.canvasSatni,
                      QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), 
@@ -109,30 +110,30 @@ class Kontrola(QtGui.QWidget):
                      gui.minutniCanvas.canvasMinutni.set_minutni_kanal)
 
 
-#TODO!
-#promjena kanala na satnom i minutnom, promjena flaga
+        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
+        self.connect(gui.satniCanvas, 
+                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
+                     gui.minutniCanvas.postavi_glavni_kanal)
 
+        #promjena flaga na satnom grafu
+        self.connect(gui.satniCanvas.canvasSatni, 
+                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
+                     self.promjeni_flag)
                      
-#        self.connect(self, 
-#                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
-#                     gui.minutniCanvas.zamjeni_frejmove)
-#                     
-#        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
-#        self.connect(gui.satniCanvas, 
-#                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
-#                     gui.minutniCanvas.postavi_glavni_kanal)
-#                             
-#
-#        #promjena flaga na satnom grafu
-#        self.connect(gui.satniCanvas.canvasSatni, 
-#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
-#                     self.printaj)
-#                     
-#        #promjena flaga na minutnom grafu
-#        self.connect(gui.minutniCanvas.canvasMinutni, 
-#                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
-#                     self.printaj)
+        #promjena flaga na minutnom grafu
+        self.connect(gui.minutniCanvas.canvasMinutni, 
+                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
+                     self.promjeni_flag)
                      
+            #satni
+        self.connect(self, 
+                     QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), 
+                     gui.satniCanvas.canvasSatni.promjenjen_flag)
+                     
+            #minutni
+        self.connect(self, 
+                     QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), 
+                     gui.minutniCanvas.canvasMinutni.promjenjen_flag)
         
         
 ###############################################################################
@@ -176,9 +177,6 @@ class Kontrola(QtGui.QWidget):
         """
         Funkcija naredjuje dokumentu da pripremi trazene podatke
         """
-        #TODO!
-        #trebam doci do svih frejmova za tu kombinaciju stanice i vremena
-        
         #zapamti izbor
         self.__trenutnaStanica = data[0]
         self.__tMin = data[1]
@@ -220,6 +218,30 @@ class Kontrola(QtGui.QWidget):
                                                       lista[3])
         kanal = lista[3]
         self.emit(QtCore.SIGNAL('set_minutni_frejm(PyQt_PyObject)'), [kanal, frejm])
+###############################################################################
+    def promjeni_flag(self, lista):
+        """
+        zahtjev za promjenom flaga, lista tocne podatke sto se mora mjenjati
+        lista:
+        [0] -> min vremenski index, ukljucujuci
+        [1] -> max vremenski index, ukljucujuci
+        [2] -> vrijednost flaga , 1000 ako je tocka OK, -1000 ako nije
+        podatak se smatra validiranim ako mu je abs(flag) == 1000
+        [3] -> kanal, string
+        [4] -> stanica, string
+        """
+        tmin = lista[0]
+        tmax = lista[1]
+        flag = lista[2]
+        kanal = lista[3]
+        stanica = lista[4]
+        #reci dokumentu da prebaci flag na trazenom mjestu
+        #TODO!... ova linija zahebava sredi prebacivanje flaga
+        self.__dokument.__stanice[stanica][kanal].loc[tmin:tmax, u'flag'] = flag
+
+        #javi gui-u da ponovno nacrta graf bez inicijalizacije
+        self.emit(QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), self.__okFrejmovi)
+
 ###############################################################################
     def printaj(self, x):
         print(x)

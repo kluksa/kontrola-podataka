@@ -11,6 +11,8 @@ from PyQt4 import QtGui,QtCore
 
 import agregator
 
+###############################################################################
+###############################################################################
 class Dokument(QtGui.QWidget):
     """Sprema ucitane podatke, obradjuje ih te odgovara na zahtjeve kontrolora
     
@@ -192,45 +194,33 @@ class Dokument(QtGui.QWidget):
         frejm = self.__agregator.agregiraj_kanal(frejm)
         return frejm
 ###############################################################################
-#TODO... kada zavrsis restrukturiranje appa vidi sto je od ovih funckija visak
-
-
-
-
-
-
-
-
-
-
-    def dohvati_podatke(self, stanica, tMin, tMax):
-        #TODO! treba ga prepisati na nesto jasnije
-        """
-        metoda dohvaca slice, agregira
-        """
-        self.__aktivnaStanica = stanica
-        self.__tMin = tMin
-        self.__tMax = tMax
-        kanali = self.dohvati_ucitane_kanale(self.__aktivnaStanica)
-        self.__trenutniMinutniSlice = {}
-        self.__trenutniAgregiraniSlice = {}
-
-        for kanal in kanali:
-            minutni = self.__get_slice(stanica, kanal, tMin, tMax)
-            #pokusaj izbacivanja kanala gdje su svi podaci koncentracije NaN
-            #broj nan podataka
-            n1 = len(minutni[np.isnan(minutni[u'koncentracija']) == True])
-            #ukupni broj podataka
-            n2 = len(minutni)
-            if n2 > n1:
-                self.__trenutniMinutniSlice[kanal] = minutni
-                self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(minutni)
-            
-#            self.__trenutniMinutniSlice[kanal] = self.__get_slice(stanica, kanal, tMin, tMax)
-#            self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice[kanal])
-
-        #vrati minutne i satno agregirane frejmove
-        return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice
+#    def dohvati_podatke(self, stanica, tMin, tMax):
+#        """
+#        metoda dohvaca slice, agregira
+#        """
+#        self.__aktivnaStanica = stanica
+#        self.__tMin = tMin
+#        self.__tMax = tMax
+#        kanali = self.dohvati_ucitane_kanale(self.__aktivnaStanica)
+#        self.__trenutniMinutniSlice = {}
+#        self.__trenutniAgregiraniSlice = {}
+#
+#        for kanal in kanali:
+#            minutni = self.__get_slice(stanica, kanal, tMin, tMax)
+#            #pokusaj izbacivanja kanala gdje su svi podaci koncentracije NaN
+#            #broj nan podataka
+#            n1 = len(minutni[np.isnan(minutni[u'koncentracija']) == True])
+#            #ukupni broj podataka
+#            n2 = len(minutni)
+#            if n2 > n1:
+#                self.__trenutniMinutniSlice[kanal] = minutni
+#                self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(minutni)
+#            
+##            self.__trenutniMinutniSlice[kanal] = self.__get_slice(stanica, kanal, tMin, tMax)
+##            self.__trenutniAgregiraniSlice[kanal] = self.__agregator.agregiraj_kanal(self.__trenutniMinutniSlice[kanal])
+#
+#        #vrati minutne i satno agregirane frejmove
+#        return self.__trenutniMinutniSlice, self.__trenutniAgregiraniSlice
                 
 ###############################################################################
     def update_frejm(self, stanica, kanal, frejm):
@@ -295,26 +285,19 @@ class Dokument(QtGui.QWidget):
             #slucaj kada stanica ne postoji u dictu, dodaj sve frejmove
             self.__stanice[stanica] = frejmovi
                 
-                
-###############################################################################
-###############################################################################
-#    def promjeni_flag(self, args):
-#        """
-#        Promjena flaga, args je lista argumenata koja opisuje sto se mjenja
-#        """
-#        tmin = args[0] #vrijeme od (ukljucijuci)
-#        tmax = args[1] #vrijeme do (ukljucijuci)
-#        flag = args[2] #vrijednost flaga, (1000 ako je ok, -1000 ako nije)
-#        kanal = args[3] #informacija o kanalu
-#        stanica = self.__aktivnaStanica
-#        #TODO! test ispravnosti zahtjeva (visak??)
-#        if kanal in list(self.__stanice[stanica].keys()):
-#            t1 = tmin in self.__stanice[stanica][kanal].index
-#            t2 = tmax in self.__stanice[stanica][kanal].index
-#            if t1 and t2:
-#                self.__stanice[stanica][kanal].loc[tmin:tmax, u'flag'] = flag
 
-        
+###############################################################################
+    def promjeni_flag(self, lista):
+        """
+        Promjena flaga, args je lista argumenata koja opisuje sto se mjenja
+        """
+        tmin = lista[0] #vrijeme od (ukljucijuci)
+        tmax = lista[1] #vrijeme do (ukljucijuci)
+        flag = lista[2] #vrijednost flaga, (1000 ako je ok, -1000 ako nije)
+        kanal = lista[3] #informacija o kanalu
+        stanica = lista[4] #informacija o stanici
+        self.__stanice[stanica][kanal].loc[tmin:tmax, u'flag'] = flag
+###############################################################################
         
 
 

@@ -48,9 +48,6 @@ class Kontrola(QtGui.QWidget):
         self.__minutni = None #zadnje dohvaceni slice frejma minutnih
         self.__trenutniSat = None #sat za koji je nacrtan minutni graf
 
-        #TODO!
-        #sredi promjenu kursora tjekom ucitavanja isl...kao dekorator?
-
         #gui - set citac
         self.connect(gui.webLoggerIzbornik, 
                      QtCore.SIGNAL('gui_set_citac(PyQt_PyObject)'),
@@ -134,7 +131,7 @@ class Kontrola(QtGui.QWidget):
         self.connect(self, 
                      QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), 
                      gui.minutniCanvas.canvasMinutni.promjenjen_flag)
-        
+                     
         
 ###############################################################################
     def set_citac(self, citac):
@@ -177,6 +174,9 @@ class Kontrola(QtGui.QWidget):
         """
         Funkcija naredjuje dokumentu da pripremi trazene podatke
         """
+        #promjeni cursor u wait cursor
+        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        
         #zapamti izbor
         self.__trenutnaStanica = data[0]
         self.__tMin = data[1]
@@ -193,6 +193,9 @@ class Kontrola(QtGui.QWidget):
         #emit koji postavlja izbor frejmova u gui
         self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__okFrejmovi)
         self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__okFrejmovi)
+        
+        #vrati izgled cursora nazad na normalni
+        QtGui.QApplication.restoreOverrideCursor()
         
 ###############################################################################
     def dohvati_agregirani_slajs(self, lista):
@@ -230,18 +233,15 @@ class Kontrola(QtGui.QWidget):
         [3] -> kanal, string
         [4] -> stanica, string
         """
-        tmin = lista[0]
-        tmax = lista[1]
-        flag = lista[2]
-        kanal = lista[3]
-        stanica = lista[4]
+        #promjeni cursor u wait cursor
+        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        
         #reci dokumentu da prebaci flag na trazenom mjestu
-        #TODO!... ova linija zahebava sredi prebacivanje flaga
-        self.__dokument.__stanice[stanica][kanal].loc[tmin:tmax, u'flag'] = flag
+        self.__dokument.promjeni_flag(lista)
 
         #javi gui-u da ponovno nacrta graf bez inicijalizacije
         self.emit(QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), self.__okFrejmovi)
-
+        
+                #vrati izgled cursora nazad na normalni
+        QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
-    def printaj(self, x):
-        print(x)

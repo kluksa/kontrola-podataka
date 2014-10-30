@@ -28,10 +28,23 @@ import pandas as pd
 from matplotlib.widgets import SpanSelector, Cursor
 import numpy as np
 
-#pomocni...samo za lokalni test
-import citac
-from agregator import Agregator
 
+###############################################################################
+def normalize_rgb(rgbTuple):
+    """konverter za plotanje, mpl kao color ima sequence vrijednosti 
+    izmedju [0-1]"""
+    r, g, b = rgbTuple
+    return (r/255, g/255, b/255)
+###############################################################################
+def prosiri_granice_grafa(tmin, tmax, t):
+    """
+    metoda vraca granice odmaknute za t (broj minuta)
+    """
+    tmin = tmin - timedelta(minutes = t)
+    tmax = tmax + timedelta(minutes = t)
+    tmin = pd.to_datetime(tmin)
+    tmax = pd.to_datetime(tmax)
+    return tmin, tmax
 ###############################################################################
 def default_color_to_qcolor(rgb, a):
     """
@@ -52,7 +65,7 @@ def default_color_to_qcolor(rgb, a):
     a = int(a*255)
     boja.setAlpha(a)
     return boja
-    
+###############################################################################
 def qcolor_to_default_color(color):
     """
     helper funkcija za transformacije qcolor u defaultnu boju
@@ -66,7 +79,7 @@ def qcolor_to_default_color(color):
     b = color.blue()
     a = color.alpha()/255
     return (r,g,b), a
-    
+###############################################################################
 def color_to_style_string(target, color):
     """
     helper funkcija za izradu styleSheet stringa
@@ -186,7 +199,7 @@ class GlavniKanalDetalji(base, form):
         self.enable_fill()
                 
         self.poveznice()
-        
+###############################################################################        
     def poveznice(self):
         """
         Povezivanje kontrolnih elemenata sa funkcijama koje mjenjaju stanja
@@ -226,7 +239,7 @@ class GlavniKanalDetalji(base, form):
         self.kanal3Boja.clicked.connect(self.change_kanal3Boja)
         self.kanal4Boja.clicked.connect(self.change_kanal4Boja)
         self.fillBoja.clicked.connect(self.change_fillBoja)
-        
+###############################################################################        
     def setup_glavni(self):
         """glavni scatter plot agregiranih srednjaka"""
         #clear
@@ -249,7 +262,7 @@ class GlavniKanalDetalji(base, form):
         boja = default_color_to_qcolor(defaultBoja, defaultAlpha)
         stil = color_to_style_string('QPushButton#colorNOK', boja)
         self.colorNOK.setStyleSheet(stil)
-        
+###############################################################################        
     def setup_glavnikanal1(self):
         """glavni pomocni graf 1"""
         self.kanal1Marker.clear()
@@ -274,7 +287,7 @@ class GlavniKanalDetalji(base, form):
         stil = color_to_style_string('QPushButton#kanal1Boja', boja)
         self.kanal1Boja.setStyleSheet(stil)
         self.kanal1Check.setChecked(self.__defaulti['glavnikanal1']['crtaj'])
-
+###############################################################################
     def setup_glavnikanal2(self):
         """glavni pomocni graf 2"""
         self.kanal2Marker.clear()
@@ -299,7 +312,7 @@ class GlavniKanalDetalji(base, form):
         stil = color_to_style_string('QPushButton#kanal2Boja', boja)
         self.kanal2Boja.setStyleSheet(stil)
         self.kanal2Check.setChecked(self.__defaulti['glavnikanal2']['crtaj'])
-
+###############################################################################
     def setup_glavnikanal3(self):
         """glavni pomocni graf 3"""
         self.kanal3Marker.clear()
@@ -324,7 +337,7 @@ class GlavniKanalDetalji(base, form):
         stil = color_to_style_string('QPushButton#kanal3Boja', boja)
         self.kanal3Boja.setStyleSheet(stil)
         self.kanal3Check.setChecked(self.__defaulti['glavnikanal3']['crtaj'])
-
+###############################################################################
     def setup_glavnikanal4(self):
         """glavni pomocni graf 4"""
         self.kanal4Marker.clear()
@@ -349,7 +362,7 @@ class GlavniKanalDetalji(base, form):
         stil = color_to_style_string('QPushButton#kanal4Boja', boja)
         self.kanal4Boja.setStyleSheet(stil)
         self.kanal4Check.setChecked(self.__defaulti['glavnikanal4']['crtaj'])
-       
+###############################################################################       
     def setup_glavnikanalfill(self):
         """fill_between graf"""
         self.fillKomponenta1.clear()
@@ -366,7 +379,7 @@ class GlavniKanalDetalji(base, form):
         stil = color_to_style_string('QPushButton#fillBoja', boja)
         self.fillBoja.setStyleSheet(stil)
         self.fillCheck.setChecked(self.__defaulti['glavnikanalfill']['crtaj'])
-    
+###############################################################################    
     def enable_graf1(self):
         """toggle checkbox, enables or disables related controls"""
         if self.kanal1Check.isChecked() == True:
@@ -383,7 +396,7 @@ class GlavniKanalDetalji(base, form):
             self.kanal1Boja.setEnabled(False)
             self.kanal1Tip.setEnabled(False)
             self.__defaulti['glavnikanal1']['crtaj'] = False
-            
+###############################################################################            
     def enable_graf2(self):
         """toggle checkbox, enables or disables related controls"""
         if self.kanal2Check.isChecked() == True:
@@ -400,7 +413,7 @@ class GlavniKanalDetalji(base, form):
             self.kanal2Boja.setEnabled(False)
             self.kanal2Tip.setEnabled(False)
             self.__defaulti['glavnikanal2']['crtaj'] = False
-
+###############################################################################
     def enable_graf3(self):
         """toggle checkbox, enables or disables related controls"""
         if self.kanal3Check.isChecked() == True:
@@ -417,7 +430,7 @@ class GlavniKanalDetalji(base, form):
             self.kanal3Boja.setEnabled(False)
             self.kanal3Tip.setEnabled(False)
             self.__defaulti['glavnikanal3']['crtaj'] = False
-
+###############################################################################
     def enable_graf4(self):
         """toggle checkbox, enables or disables related controls"""
         if self.kanal4Check.isChecked() == True:
@@ -434,7 +447,7 @@ class GlavniKanalDetalji(base, form):
             self.kanal4Boja.setEnabled(False)
             self.kanal4Tip.setEnabled(False)
             self.__defaulti['glavnikanal4']['crtaj'] = False
-
+###############################################################################
     def enable_fill(self):
         """toggle checkbox, enables or disables related controls"""
         if self.fillCheck.isChecked() == True:
@@ -447,17 +460,17 @@ class GlavniKanalDetalji(base, form):
             self.fillKomponenta2.setEnabled(False)
             self.fillBoja.setEnabled(False)
             self.__defaulti['glavnikanalfill']['crtaj'] = False
-    
+###############################################################################    
     def change_markerOK(self):
         newValue = self.markerOK.currentText()
         self.__defaulti['validanOK']['marker'] = str(newValue)
         self.__defaulti['validanNOK']['marker'] = str(newValue)
-
+###############################################################################
     def change_markerNOK(self):
         newValue = self.markerNOK.currentText()
         self.__defaulti['nevalidanOK']['marker'] = str(newValue)
         self.__defaulti['nevalidanNOK']['marker'] = str(newValue)
-    
+###############################################################################    
     def change_colorOK(self):
         defaultBoja = self.__defaulti['validanOK']['color']
         defaultAlpha = self.__defaulti['validanOK']['alpha']
@@ -475,7 +488,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#colorOK', color)
             self.colorOK.setStyleSheet(stil)
-   
+###############################################################################   
     def change_colorNOK(self):
         defaultBoja = self.__defaulti['validanNOK']['color']
         defaultAlpha = self.__defaulti['validanNOK']['alpha']
@@ -493,79 +506,79 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#colorNOK', color)
             self.colorNOK.setStyleSheet(stil)
-    
+###############################################################################    
     def change_kanal1Komponenta(self):
         newValue = self.kanal1Komponenta.currentText()
         self.__defaulti['glavnikanal1']['stupac1'] = str(newValue)
-
+###############################################################################
     def change_kanal2Komponenta(self):
         newValue = self.kanal2Komponenta.currentText()
         self.__defaulti['glavnikanal2']['stupac1'] = str(newValue)
-    
+###############################################################################    
     def change_kanal3Komponenta(self):
         newValue = self.kanal3Komponenta.currentText()
         self.__defaulti['glavnikanal3']['stupac1'] = str(newValue)
-    
+###############################################################################    
     def change_kanal4Komponenta(self):
         newValue = self.kanal4Komponenta.currentText()
         self.__defaulti['glavnikanal4']['stupac1'] = str(newValue)
-    
+###############################################################################    
     def change_fillKomponenta1(self):
         newValue = self.fillKomponenta1.currentText()
         self.__defaulti['glavnikanalfill']['stupac1'] = str(newValue)
-    
+###############################################################################    
     def change_fillKomponenta2(self):
         newValue = self.fillKomponenta2.currentText()
         self.__defaulti['glavnikanalfill']['stupac2'] = str(newValue)
-    
+###############################################################################    
     def change_kanal1Marker(self):
         newValue = self.kanal1Marker.currentText()
         self.__defaulti['glavnikanal1']['marker'] = str(newValue)
-    
+###############################################################################    
     def change_kanal2Marker(self):
         newValue = self.kanal2Marker.currentText()
         self.__defaulti['glavnikanal2']['marker'] = str(newValue)
-    
+###############################################################################    
     def change_kanal3Marker(self):
         newValue = self.kanal3Marker.currentText()
         self.__defaulti['glavnikanal3']['marker'] = str(newValue)
-    
+###############################################################################    
     def change_kanal4Marker(self):
         newValue = self.kanal4Marker.currentText()
         self.__defaulti['glavnikanal4']['marker'] = str(newValue)
-    
+###############################################################################    
     def change_kanal1Linija(self):
         newValue = self.kanal1Linija.currentText()
         self.__defaulti['glavnikanal1']['line'] = str(newValue)
-    
+###############################################################################    
     def change_kanal2Linija(self):
         newValue = self.kanal2Linija.currentText()
         self.__defaulti['glavnikanal2']['line'] = str(newValue)
-    
+###############################################################################    
     def change_kanal3Linija(self):
         newValue = self.kanal3Linija.currentText()
         self.__defaulti['glavnikanal3']['line'] = str(newValue)
-    
+###############################################################################    
     def change_kanal4Linija(self):
         newValue = self.kanal4Linija.currentText()
         self.__defaulti['glavnikanal4']['line'] = str(newValue)
-    
+###############################################################################    
     def change_kanal1Tip(self):
         newValue = self.kanal1Tip.currentText()
         self.__defaulti['glavnikanal1']['tip'] = str(newValue)
-
+###############################################################################
     def change_kanal2Tip(self):
         newValue = self.kanal2Tip.currentText()
         self.__defaulti['glavnikanal2']['tip'] = str(newValue)
-    
+###############################################################################    
     def change_kanal3Tip(self):
         newValue = self.kanal3Tip.currentText()
         self.__defaulti['glavnikanal3']['tip'] = str(newValue)
-    
+###############################################################################    
     def change_kanal4Tip(self):
         newValue = self.kanal4Tip.currentText()
         self.__defaulti['glavnikanal4']['tip'] = str(newValue)
-    
+###############################################################################    
     def change_kanal1Boja(self):
         defaultBoja = self.__defaulti['glavnikanal1']['color']
         defaultAlpha = self.__defaulti['glavnikanal1']['alpha']
@@ -581,7 +594,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#kanal1Boja', color)
             self.kanal1Boja.setStyleSheet(stil)
-    
+###############################################################################    
     def change_kanal2Boja(self):
         defaultBoja = self.__defaulti['glavnikanal2']['color']
         defaultAlpha = self.__defaulti['glavnikanal2']['alpha']
@@ -597,7 +610,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#kanal2Boja', color)
             self.kanal2Boja.setStyleSheet(stil)
-    
+###############################################################################    
     def change_kanal3Boja(self):
         defaultBoja = self.__defaulti['glavnikanal3']['color']
         defaultAlpha = self.__defaulti['glavnikanal3']['alpha']
@@ -613,7 +626,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#kanal3Boja', color)
             self.kanal3Boja.setStyleSheet(stil)
-    
+###############################################################################    
     def change_kanal4Boja(self):
         defaultBoja = self.__defaulti['glavnikanal4']['color']
         defaultAlpha = self.__defaulti['glavnikanal4']['alpha']
@@ -629,7 +642,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#kanal4Boja', color)
             self.kanal4Boja.setStyleSheet(stil)
-    
+###############################################################################    
     def change_fillBoja(self):
         defaultBoja = self.__defaulti['glavnikanalfill']['color']
         defaultAlpha = self.__defaulti['glavnikanalfill']['alpha']
@@ -645,7 +658,7 @@ class GlavniKanalDetalji(base, form):
             #set new color
             stil = color_to_style_string('QPushButton#fillBoja', color)
             self.fillBoja.setStyleSheet(stil)
-        
+###############################################################################        
     def vrati_dict(self):
         """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
         return self.__defaulti
@@ -675,7 +688,7 @@ class PomocniGrafDetalji(base1, form1):
         
         self.popuni_izbornike()
         self.veze()
-        
+###############################################################################        
     def veze(self):
         """poveznice izmedju kontrolih elemenata i funkcija koje mjenjaju stanje
         objekta"""
@@ -684,23 +697,23 @@ class PomocniGrafDetalji(base1, form1):
         self.marker.currentIndexChanged.connect(self.change_marker)
         self.linija.currentIndexChanged.connect(self.change_linija)
         self.boja.clicked.connect(self.change_boja)
-    
+###############################################################################    
     def change_komponenta(self):
         newValue = self.komponenta.currentText()
         self.__defaulti[self.__graf]['stupac1'] = newValue
-    
+###############################################################################    
     def change_tip(self):
         newValue = self.tip.currentText()
         self.__defaulti[self.__graf]['tip'] = newValue
-    
+###############################################################################    
     def change_marker(self):
         newValue = self.marker.currentText()
         self.__defaulti[self.__graf]['marker'] = newValue
-    
+###############################################################################    
     def change_linija(self):
         newValue = self.linija.currentText()
         self.__defaulti[self.__graf]['line'] = newValue
-    
+###############################################################################    
     def change_boja(self):
         rgb = self.__defaulti[self.__graf]['color']
         a = self.__defaulti[self.__graf]['alpha']
@@ -716,7 +729,7 @@ class PomocniGrafDetalji(base1, form1):
             #set new color
             stil = color_to_style_string('QPushButton#boja', color)
             self.boja.setStyleSheet(stil)
-    
+###############################################################################    
     def popuni_izbornike(self):
         """inicijalizacija izbornika sa defaultinim postavkama"""
         naziv = 'Detalji pomocnog grafa, kanal: ' + str(self.__defaulti[self.__graf]['kanal'])
@@ -781,11 +794,11 @@ class SatniGraf(base2, form2):
         self.initial_setup()
         #opis slicea : slice od: do:
         self.labelSlice.setText('Prikazano vrijeme:')
-        
+###############################################################################        
     def zamjeni_frejmove(self, info):
         self.__infoFrejmovi = info
         self.initial_setup()
-        
+###############################################################################        
     def initial_setup(self):
         """inicijalne postavke izbornika (stanje comboboxeva, checkboxeva...)"""
         #reset postavki canvasa za annotatione, highlight...
@@ -816,7 +829,11 @@ class SatniGraf(base2, form2):
         self.change_boja_pGraf6Detalji()
                
         #popunjavanje comboboxeva sa podatcima
-        kanali = sorted(self.__infoFrejmovi[3])
+        if self.__infoFrejmovi != None:
+            kanali = sorted(self.__infoFrejmovi[3])
+        else:
+            kanali = []
+            
         if len(kanali) > 0: #mora biti barem jedan kanal na popisu
             zadnjiKanal = self.__defaulti['validanOK']['kanal']
             self.glavniGrafIzbor.blockSignals(True)            
@@ -914,7 +931,7 @@ class SatniGraf(base2, form2):
             
             #naredba za crtanje je zadnja kod inicijalizacije
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-            
+###############################################################################            
     def veze(self):
         """poveznice izmedju kontrolnih elemenata i funkcija koje mjenjaju stanja"""
         #BITNO... SVE FUNKCIJE KOJE MJENJAJU NEKE POSTAVKE GRAFA MORAJU POZIVATI
@@ -945,7 +962,7 @@ class SatniGraf(base2, form2):
         self.pGraf4Check.stateChanged.connect(self.enable_pomocni_kanal4)
         self.pGraf5Check.stateChanged.connect(self.enable_pomocni_kanal5)
         self.pGraf6Check.stateChanged.connect(self.enable_pomocni_kanal6)
-        
+###############################################################################        
     def enable_grid(self, x):
         if x:
             self.__defaulti['opcenito']['grid'] = True
@@ -953,7 +970,7 @@ class SatniGraf(base2, form2):
         else:
             self.__defaulti['opcenito']['grid'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def enable_cursor(self, x):
         if x:
             self.__defaulti['opcenito']['cursor'] = True
@@ -961,7 +978,7 @@ class SatniGraf(base2, form2):
         else:
             self.__defaulti['opcenito']['cursor'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def enable_spanSelector(self, x):
         if x:
             self.__defaulti['opcenito']['span'] = True
@@ -969,7 +986,7 @@ class SatniGraf(base2, form2):
         else:
             self.__defaulti['opcenito']['span'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def enable_minorTick(self, x):
         if x:
             self.__defaulti['opcenito']['minorTicks'] = True
@@ -977,7 +994,7 @@ class SatniGraf(base2, form2):
         else:
             self.__defaulti['opcenito']['minorTicks'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def enable_glavni_kanal(self):
         if self.glavniGrafCheck.isChecked() == True:
             self.glavniGrafIzbor.setEnabled(True)
@@ -1005,7 +1022,7 @@ class SatniGraf(base2, form2):
             self.__defaulti['glavnikanal4']['crtaj'] = False
             self.__defaulti['glavnikanalfill']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def enable_pomocni_kanal1(self):
         if self.pGraf1Check.isChecked() == True:
             self.pGraf1Izbor.setEnabled(True)
@@ -1017,7 +1034,7 @@ class SatniGraf(base2, form2):
             self.pGraf1Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal1']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-            
+###############################################################################            
     def enable_pomocni_kanal2(self):
         if self.pGraf2Check.isChecked() == True:
             self.pGraf2Izbor.setEnabled(True)
@@ -1029,7 +1046,7 @@ class SatniGraf(base2, form2):
             self.pGraf2Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal2']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def enable_pomocni_kanal3(self):
         if self.pGraf3Check.isChecked() == True:
             self.pGraf3Izbor.setEnabled(True)
@@ -1041,7 +1058,7 @@ class SatniGraf(base2, form2):
             self.pGraf3Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal3']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def enable_pomocni_kanal4(self):
         if self.pGraf4Check.isChecked() == True:
             self.pGraf4Izbor.setEnabled(True)
@@ -1053,7 +1070,7 @@ class SatniGraf(base2, form2):
             self.pGraf4Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal4']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def enable_pomocni_kanal5(self):
         if self.pGraf5Check.isChecked() == True:
             self.pGraf5Izbor.setEnabled(True)
@@ -1065,7 +1082,7 @@ class SatniGraf(base2, form2):
             self.pGraf5Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal5']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def enable_pomocni_kanal6(self):
         if self.pGraf6Check.isChecked() == True:
             self.pGraf6Izbor.setEnabled(True)
@@ -1077,7 +1094,7 @@ class SatniGraf(base2, form2):
             self.pGraf6Detalji.setEnabled(False)
             self.__defaulti['pomocnikanal6']['crtaj'] = False
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def update_glavni_kanal(self):
         newValue = self.glavniGrafIzbor.currentText()
         self.__defaulti['validanOK']['kanal'] = newValue
@@ -1107,79 +1124,79 @@ class SatniGraf(base2, form2):
         self.emit(QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), newValue)
         
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal1(self):
         newValue = self.pGraf1Izbor.currentText()
         self.__defaulti['pomocnikanal1']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal2(self):
         newValue = self.pGraf2Izbor.currentText()
         self.__defaulti['pomocnikanal2']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal3(self):
         newValue = self.pGraf3Izbor.currentText()
         self.__defaulti['pomocnikanal3']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal4(self):
         newValue = self.pGraf4Izbor.currentText()
         self.__defaulti['pomocnikanal4']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal5(self):
         newValue = self.pGraf5Izbor.currentText()
         self.__defaulti['pomocnikanal5']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-    
+###############################################################################    
     def update_pomocni_kanal6(self):
         newValue = self.pGraf6Izbor.currentText()
         self.__defaulti['pomocnikanal6']['kanal'] = newValue
         self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-        
+###############################################################################        
     def change_boja_pGraf1Detalji(self):
         rgb = self.__defaulti['pomocnikanal1']['color']
         a = self.__defaulti['pomocnikanal1']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf1Detalji', boja)
         self.pGraf1Detalji.setStyleSheet(stil)
-        
+###############################################################################        
     def change_boja_pGraf2Detalji(self):
         rgb = self.__defaulti['pomocnikanal2']['color']
         a = self.__defaulti['pomocnikanal2']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf2Detalji', boja)
         self.pGraf2Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pGraf3Detalji(self):
         rgb = self.__defaulti['pomocnikanal3']['color']
         a = self.__defaulti['pomocnikanal3']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf3Detalji', boja)
         self.pGraf3Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pGraf4Detalji(self):
         rgb = self.__defaulti['pomocnikanal4']['color']
         a = self.__defaulti['pomocnikanal4']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf4Detalji', boja)
         self.pGraf4Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pGraf5Detalji(self):
         rgb = self.__defaulti['pomocnikanal5']['color']
         a = self.__defaulti['pomocnikanal5']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf5Detalji', boja)
         self.pGraf5Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pGraf6Detalji(self):
         rgb = self.__defaulti['pomocnikanal6']['color']
         a = self.__defaulti['pomocnikanal6']['alpha']
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pGraf6Detalji', boja)
         self.pGraf6Detalji.setStyleSheet(stil)
-
+###############################################################################
     def dijalog_glavniGrafDetalji(self):
         """dijalog za promjenu izgleda glavnog grafa"""
         #deep copy dicta za dijalog
@@ -1190,7 +1207,7 @@ class SatniGraf(base2, form2):
             grafinfo = glavnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-        
+###############################################################################        
     def dijalog_pGraf1Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 1"""
         #deep copy dicta za dijalog
@@ -1202,7 +1219,7 @@ class SatniGraf(base2, form2):
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf1Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-            
+###############################################################################            
     def dijalog_pGraf2Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 2"""
         #deep copy dicta za dijalog
@@ -1214,7 +1231,7 @@ class SatniGraf(base2, form2):
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf2Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def dijalog_pGraf3Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 3"""
         #deep copy dicta za dijalog
@@ -1226,7 +1243,7 @@ class SatniGraf(base2, form2):
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf3Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def dijalog_pGraf4Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 4"""
         #deep copy dicta za dijalog
@@ -1238,7 +1255,7 @@ class SatniGraf(base2, form2):
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf4Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def dijalog_pGraf5Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 5"""
         #deep copy dicta za dijalog
@@ -1250,7 +1267,7 @@ class SatniGraf(base2, form2):
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pGraf5Detalji()
             self.canvasSatni.crtaj(self.__defaulti, self.__infoFrejmovi)
-
+###############################################################################
     def dijalog_pGraf6Detalji(self):
         """dijalog za promjenu izgleda pomocnog grafa 6"""
         #deep copy dicta za dijalog
@@ -1275,9 +1292,6 @@ class GrafSatniSrednjaci(MPLCanvas):
         
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         
-        #TODO! crtanje grafa treba preurediti da naredba za crtanje
-        #trazi slice!!
-
         self.__defaulti = None #dict opcija grafa
         self.__data = {} #spremnik za frejmove (ucitane)
         self.__info = None #info o dostupnim frejmovima
@@ -1292,7 +1306,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__testAnnotation = False
         
         self.veze()
-        
+###############################################################################        
     def crtaj(self, mapaGrafova, infoFrejmovi):
         """Eksplicitne naredbe za crtanje
         
@@ -1310,11 +1324,12 @@ class GrafSatniSrednjaci(MPLCanvas):
         self.__statusGlavniGraf = False
         self.__testAnnotation = False
         #podesi granice x osi da su malo sire od podataka da tocke nisu na rubu
-        self.xmin, self.xmax = self.prosiri_granice_grafa(
-            self.__info[1], 
-            self.__info[2], 
-            60)
-        self.axes.set_xlim(self.xmin, self.xmax)
+        if self.__info != None:
+            self.xmin, self.xmax = prosiri_granice_grafa(
+                self.__info[1], 
+                self.__info[2], 
+                60)
+            self.axes.set_xlim(self.xmin, self.xmax)
         
         #format x kooridinate
         xLabels = self.axes.get_xticklabels()
@@ -1391,7 +1406,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['validanOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['validanOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['validanOK']['color']), 
                                           alpha = self.__defaulti['validanOK']['alpha'], 
                                           zorder = self.__defaulti['validanOK']['zorder'])
                         self.__statusGlavniGraf = True
@@ -1406,7 +1421,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['validanNOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['validanNOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['validanNOK']['color']), 
                                           alpha = self.__defaulti['validanNOK']['alpha'],
                                           zorder = self.__defaulti['validanNOK']['zorder'])
                         self.__statusGlavniGraf = True
@@ -1421,7 +1436,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['nevalidanOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['nevalidanOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['nevalidanOK']['color']), 
                                           alpha = self.__defaulti['nevalidanOK']['alpha'], 
                                           zorder = self.__defaulti['nevalidanOK']['zorder'])
                         self.__statusGlavniGraf = True
@@ -1436,7 +1451,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['nevalidanNOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['nevalidanNOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['nevalidanNOK']['color']), 
                                           alpha = self.__defaulti['nevalidanNOK']['alpha'], 
                                           zorder = self.__defaulti['nevalidanNOK']['zorder'])
                         self.__statusGlavniGraf = True
@@ -1455,7 +1470,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.scatter(x,
                                           y,
                                           marker = self.__defaulti[graf]['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti[graf]['color']), 
+                                          color = normalize_rgb(self.__defaulti[graf]['color']), 
                                           alpha = self.__defaulti[graf]['alpha'], 
                                           zorder = self.__defaulti[graf]['zorder'])
                     #plot
@@ -1464,7 +1479,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                                        y, 
                                        marker = self.__defaulti[graf]['marker'], 
                                        linestyle = self.__defaulti[graf]['line'], 
-                                       color = self.normalize_rgb(self.__defaulti[graf]['color']), 
+                                       color = normalize_rgb(self.__defaulti[graf]['color']), 
                                        alpha = self.__defaulti[graf]['alpha'], 
                                        zorder = self.__defaulti[graf]['zorder'])
                     #fill_between
@@ -1474,7 +1489,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                         self.axes.fill_between(x, 
                                                y, 
                                                y2, 
-                                               facecolor = self.normalize_rgb(self.__defaulti[graf]['color']), 
+                                               facecolor = normalize_rgb(self.__defaulti[graf]['color']), 
                                                alpha = self.__defaulti[graf]['alpha'], 
                                                zorder = self.__defaulti[graf]['zorder'])
 
@@ -1498,7 +1513,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         
         #naredba za crtanje na canvas
         self.draw()
-        
+###############################################################################        
     def set_agregirani_kanal(self, lista):
         """
         BITNO!
@@ -1506,17 +1521,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         lista = [kanal, frejm]
         """
         self.__data[lista[0]] = lista[1]
-
-    def prosiri_granice_grafa(self, tmin, tmax, t):
-        """
-        metoda vraca granice odmaknute za t (broj minuta)
-        """
-        tmin = tmin - timedelta(minutes = t)
-        tmax = tmax + timedelta(minutes = t)
-        tmin = pd.to_datetime(tmin)
-        tmax = pd.to_datetime(tmax)
-        return tmin, tmax
-
+###############################################################################
     def show_menu(self, pos, tmin, tmax):
         self.__lastTimeMin = tmin
         self.__lastTimeMax = tmax
@@ -1529,7 +1534,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         action1.triggered.connect(self.dijalog_promjena_flaga_OK)
         action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
         menu.popup(pos)
-    
+###############################################################################    
     def dijalog_promjena_flaga_OK(self):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
@@ -1540,7 +1545,7 @@ class GrafSatniSrednjaci(MPLCanvas):
         arg = [tmin, tmax, 1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-        
+###############################################################################        
     def dijalog_promjena_flaga_NOK(self):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
@@ -1551,11 +1556,11 @@ class GrafSatniSrednjaci(MPLCanvas):
         arg = [tmin, tmax, -1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-        
+###############################################################################        
     def veze(self):
         """povezivanje mpl_eventa"""
         self.mpl_connect('button_press_event', self.on_pick)
-
+###############################################################################
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu
         
@@ -1705,7 +1710,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                 #poziva context menu sa informacijom o lokaciji i satu
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, xpoint, xpoint)
-    
+###############################################################################    
     def satni_span_flag(self, tmin, tmax):
         """satni span selector"""
         if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
@@ -1735,13 +1740,7 @@ class GrafSatniSrednjaci(MPLCanvas):
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, tmin, tmax)
-    
-    def normalize_rgb(self, rgbTuple):
-        """konverter za plotanje, mpl kao color ima sequence vrijednosti 
-        izmedju [0-1]"""
-        r, g, b = rgbTuple
-        return (r/255, g/255, b/255)
-            
+###############################################################################            
     def highlight_dot(self, x, y):
         """Highligt zuti dot kao vizualni marker za odabranu tocku"""
         if not self.__testHighlight and self.__statusGlavniGraf:
@@ -1764,64 +1763,43 @@ class GrafMinutni(MPLCanvas):
         MPLCanvas.__init__(self, *args, **kwargs)
 
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.__defaulti = None
-        self.__frejmovi = None
-        self.__sat = None
-        
-        self.__annotationx = None
-        self.__annotationTest = False
-        self.__statusSpanSelector = False
-        self.__statusGlavniGraf = False
-
-        #TODO! imaj na umu granice podataka koji su u frejmu!!!        
-        if self.__defaulti != None:
-            gkanal = self.__defaulti['m_validanOK']['kanal']
-            if gkanal != None:
-                self.__tmin = self.__frejmovi[gkanal].index.min()
-                self.__tmax = self.__frejmovi[gkanal].index.max()
-            else:
-                self.__tmin = None
-                self.__tmax = None
-
+        self.__defaulti = None #dict opcija grafa
+        self.__data = {} #spremnik za ucitane frejmove
+        self.__info = None #info o dostupnim frejmovima
+        self.__statusGlavniGraf = False #da li je nacrtan glavni graf
+        self.__statusSpanSelector = False #da li je span selector aktivan
+        self.__zadnjiAnnotationx = None #vrijeme zadnjeg annotationa
+        self.__testAnnotation = False #test da li je annotation prikazan
+        #TODO! mozda je nebitno..
+        self.__sat = None #zadnji timestamp satnog koji je zoomiran
         
         self.veze()
+###############################################################################
+    def crtaj(self, mapaGrafova, infoFrejmovi):
+        """crtanje minutnog grafa"""
+        self.__defaulti = mapaGrafova 
+        self.__info = infoFrejmovi #[stanica, tmin, tmax, [lista kanala]]
+        self.__data = {} #clear data
         
-    def veze(self):
-        self.mpl_connect('button_press_event', self.on_pick)
-
-    def plot_time_span(self, vrijeme):
-        """
-        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
-        minutnog slicea.
-        """
-        tmax =  vrijeme
-        tmin = vrijeme - timedelta(minutes = 59)
-        tmin = pd.to_datetime(tmin)
-        return tmin, tmax
-    
-    def fokusiraj_interval(self, sat):
-        """
-        ideja je spojiti signal za izbor satno agregiranog podatka sa ovom
-        metodom. Nesto poput zooma na ciljani interval.
-        """
-        if type(sat) == pd.tslib.Timestamp:
-            self.__sat = sat
-            self.xmin, self.xmax = self.plot_time_span(self.__sat)
-            self.axes.set_xlim(self.xmin, self.xmax)
-            self.draw()
-
-    
-    def crtaj(self, defaulti, frejmovi, sat):
-        """ideja, nacrtati sve podatke, ali inicijalno ograniciti sliku
-        na raspon satnog podatka"""
-        self.__defaulti = defaulti
-        self.__frejmovi = frejmovi
-        #self.__sat = sat
-        
+        #clear graf
         self.axes.clear()
         self.__statusGlavniGraf = False
-        self.__annotationTest = False
+        self.__testAnnotation = False
         
+        #pomicanje granica crtanja grafa, izbjegavanje tocaka na rubu
+        if self.__info != None:
+            self.xmin, self.xmax = prosiri_granice_grafa(
+                self.__info[1], 
+                self.__info[2], 
+                5)
+            self.axes.set_xlim(self.xmin, self.xmax)
+        
+        #format x kooridinate
+        xLabels = self.axes.get_xticklabels()
+        for label in xLabels:
+            label.set_rotation(20)
+            label.set_fontsize(8)
+            
         #test opcenitih postavki priije crtanja : cursor, grid...
         if self.__defaulti['m_opcenito']['cursor'] == True:
             self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
@@ -1848,11 +1826,11 @@ class GrafMinutni(MPLCanvas):
         else:
             self.spanSelector = None
             self.__statusSpanSelector = False
-
-
-                                
+        
+        #kljucevi, scatter plot glavnog kanala                  
         specials = ['m_validanOK', 'm_validanNOK', 
                     'm_nevalidanOK', 'm_nevalidanNOK']
+        #kljucevi, plot grafovi
         pomocni = ['m_pomocnikanal1', 'm_pomocnikanal2', 
                    'm_pomocnikanal3', 'm_pomocnikanal4', 
                    'm_pomocnikanal5', 'm_pomocnikanal6', 
@@ -1860,19 +1838,30 @@ class GrafMinutni(MPLCanvas):
         plotlista = specials + pomocni
         
         for graf in plotlista:
+            #kreni graf po graf, provjeri da li je predvidjen za crtanje i crtaj
             kanal = self.__defaulti[graf]['kanal']
-            test1 = (kanal != None)
-            if self.__frejmovi == None:
-                test2 = False
+            if kanal != None and self.__defaulti[graf]['crtaj'] == True:
+                #kanal postoji i predvidjen je za crtanje
+                if kanal in self.__info[3]:
+                    #kanal je dostupan dokumentu
+                    test = True
+                    #prije slanja zahtjeva da se podaci dohvate, provjeri da li su vec dohvaceni
+                    if kanal not in list(self.__data.keys()):
+                        msg = [self.__info[0], self.__info[1], self.__info[2], kanal]
+                        #TODO! provjeri signal
+                        self.emit(QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), msg)
+                        #gornji emit bi trebao populirati self.__data sa frejmovima koji se trebaju crtati
+                else:
+                    test = False
             else:
-                test2 = (kanal in list(self.__frejmovi.keys()))
-            test3 = (self.__defaulti[graf]['crtaj'] == True)
-            
-            if (test1 and test2 and test3):
+                test = False
+                
+            #podaci su u self.__data, ispod su specificne naredbe za crtanje
+            if test:
                 if graf in specials:
                     #crtaj specificne scatter plotove
                     if graf == 'm_validanOK':
-                        data = self.__frejmovi[kanal]
+                        data = self.__data[kanal]
                         data = data[data[u'flag'] == 1000]
                         x = list(data.index)
                         y = list(data[u'koncentracija'])
@@ -1880,13 +1869,13 @@ class GrafMinutni(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['m_validanOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['m_validanOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['m_validanOK']['color']), 
                                           alpha = self.__defaulti['m_validanOK']['alpha'], 
                                           zorder = self.__defaulti['m_validanOK']['zorder'])
                         self.__statusGlavniGraf = True
                         
                     if graf == 'm_validanNOK':
-                        data = self.__frejmovi[kanal]
+                        data = self.__data[kanal]
                         data = data[data[u'flag'] == -1000]
                         x = list(data.index)
                         y = list(data[u'koncentracija'])
@@ -1894,13 +1883,13 @@ class GrafMinutni(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['m_validanNOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['m_validanNOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['m_validanNOK']['color']), 
                                           alpha = self.__defaulti['m_validanNOK']['alpha'], 
                                           zorder = self.__defaulti['m_validanNOK']['zorder'])
                         self.__statusGlavniGraf = True
 
                     if graf == 'm_nevalidanOK':
-                        data = self.__frejmovi[kanal]
+                        data = self.__data[kanal]
                         data = data[data[u'flag'] >= 0]
                         data = data[data[u'flag'] != 1000 ]
                         x = list(data.index)
@@ -1909,13 +1898,13 @@ class GrafMinutni(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['m_nevalidanOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['m_nevalidanOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['m_nevalidanOK']['color']), 
                                           alpha = self.__defaulti['m_nevalidanOK']['alpha'], 
                                           zorder = self.__defaulti['m_nevalidanOK']['zorder'])
                         self.__statusGlavniGraf = True
 
                     if graf == 'm_nevalidanNOK':
-                        data = self.__frejmovi[kanal]
+                        data = self.__data[kanal]
                         data = data[data[u'flag'] < 0 ]
                         data = data[data[u'flag'] != -1000 ]
                         x = list(data.index)
@@ -1924,44 +1913,69 @@ class GrafMinutni(MPLCanvas):
                         self.axes.scatter(x, 
                                           y, 
                                           marker = self.__defaulti['m_nevalidanNOK']['marker'], 
-                                          color = self.normalize_rgb(self.__defaulti['m_nevalidanNOK']['color']), 
+                                          color = normalize_rgb(self.__defaulti['m_nevalidanNOK']['color']), 
                                           alpha = self.__defaulti['m_nevalidanNOK']['alpha'], 
                                           zorder = self.__defaulti['m_nevalidanNOK']['zorder'])
                         self.__statusGlavniGraf = True
                 
                 else:
                     #crtaj line plotove
-                    data = self.__frejmovi[kanal]
+                    data = self.__data[kanal]
                     x = list(data.index)
                     y = list(data[u'koncentracija'])
                     assert(len(x) == len(y))
                     self.axes.plot(x,
                                    y, 
                                    marker = self.__defaulti[graf]['marker'], 
-                                   color = self.normalize_rgb(self.__defaulti[graf]['color']), 
+                                   color = normalize_rgb(self.__defaulti[graf]['color']), 
                                    alpha = self.__defaulti[graf]['alpha'],
                                    linestyle = self.__defaulti[graf]['line'], 
                                    zorder = self.__defaulti[graf]['zorder'])
-        
-        #xlimit grafa
-        if self.__sat != None:
-            self.xmin, self.xmax = self.plot_time_span(self.__sat)
-            self.axes.set_xlim(self.xmin, self.xmax)
 
-        #format x kooridinate
-        xLabels = self.axes.get_xticklabels()
-        for label in xLabels:
-            label.set_rotation(20)
-            label.set_fontsize(8)
-        #finalna naredba za prikaz
+        #dozvoljeni rubovi za izbor
+        if self.__statusGlavniGraf:
+            trenutniGlavniKanal = self.__defaulti['m_validanOK']['kanal']
+            #rubovi indeksa glavnog kanala, treba za pick i span granice
+            self.__tmin = self.__data[trenutniGlavniKanal].index.min()
+            self.__tmax = self.__data[trenutniGlavniKanal].index.max()
+
+        #naredba za crtanje
         self.draw()
-
-    def normalize_rgb(self, rgbTuple):
-        """konverter za plotanje, mpl kao color ima sequence vrijednosti 
-        izmedju [0-1]"""
-        r, g, b = rgbTuple
-        return (r/255, g/255, b/255)
-        
+#TODO! sredi zoom ako je prije bilo zoomirano
+###############################################################################
+    def set_minutni_kanal(self, lista):
+        """
+        BITNO!
+        metoda postavlja agregirani frejm u self.__data
+        lista = [kanal, frejm]
+        """
+        self.__data[lista[0]] = lista[1]
+###############################################################################
+    def veze(self):
+        self.mpl_connect('button_press_event', self.on_pick)
+###############################################################################
+    def plot_time_span(self, vrijeme):
+        """
+        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
+        minutnog slicea.
+        """
+        tmax =  vrijeme
+        tmin = vrijeme - timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        return tmin, tmax
+###############################################################################
+    def fokusiraj_interval(self, sat):
+        """
+        ideja je spojiti signal za izbor satno agregiranog podatka sa ovom
+        metodom. Nesto poput zooma na ciljani interval.
+        """
+        if type(sat) == pd.tslib.Timestamp:
+            self.__sat = sat
+            self.tmin, self.tmax = self.plot_time_span(self.__sat)
+            #postavi nove granice crtanja grafa (zoom na sat)
+            self.axes.set_xlim(self.tmin, self.tmax)
+            self.draw()
+###############################################################################
     def minutni_span_flag(self, tmin, tmax):
         """minutni span selector"""
         if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
@@ -1991,7 +2005,7 @@ class GrafMinutni(MPLCanvas):
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, tmin, tmax)
-
+###############################################################################
     def show_menu(self, pos, tmin, tmax):
         self.__lastTimeMin = tmin
         self.__lastTimeMax = tmax
@@ -2004,7 +2018,7 @@ class GrafMinutni(MPLCanvas):
         action1.triggered.connect(self.dijalog_promjena_flaga_OK)
         action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
         menu.popup(pos)
-    
+###############################################################################    
     def dijalog_promjena_flaga_OK(self):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
@@ -2012,7 +2026,7 @@ class GrafMinutni(MPLCanvas):
         arg = [tmin, tmax, 1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-        
+###############################################################################        
     def dijalog_promjena_flaga_NOK(self):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
@@ -2020,7 +2034,7 @@ class GrafMinutni(MPLCanvas):
         arg = [tmin, tmax, -1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-
+###############################################################################
     def on_pick(self, event):
         """definiranje ponasanja pick eventa na canvasu
         
@@ -2063,34 +2077,33 @@ class GrafMinutni(MPLCanvas):
                                        xpoint.second)
             xpoint = zaokruzi_vrijeme(xpoint, 60)
             xpoint = pd.to_datetime(xpoint)
-            #TODO!
-            #pobrini se da xpoint ne prelazi granice indeksa frejmova glavnog kanala
+
+            #glavni kanal
             gkanal = self.__defaulti['m_validanOK']['kanal']
-            self.__tmin = self.__frejmovi[gkanal].index.min()
-            self.__tmax = self.__frejmovi[gkanal].index.max()
+            
             if xpoint >= self.__tmax:
                 xpoint = self.__tmax
             if xpoint <= self.__tmin:
                 xpoint = self.__tmin
 
-            if xpoint in list(self.__frejmovi[gkanal].index):
-                ypoint = self.__frejmovi[gkanal].loc[xpoint, u'koncentracija']
+            if xpoint in list(self.__data[gkanal].index):
+                ypoint = self.__data[gkanal].loc[xpoint, u'koncentracija']
                 if np.isnan(ypoint): #potencijalo za taj index konc = np.NaN
-                    miny = self.__frejmovi[gkanal][u'koncentracija'].min()
-                    maxy = self.__frejmovi[gkanal][u'koncentracija'].max()
+                    miny = self.__data[gkanal][u'koncentracija'].min()
+                    maxy = self.__data[gkanal][u'koncentracija'].max()
                     ypoint = (miny + maxy)/2                    
             else:
-                miny = self.__frejmovi[gkanal][u'koncentracija'].min()
-                maxy = self.__frejmovi[gkanal][u'koncentracija'].max()
+                miny = self.__data[gkanal][u'koncentracija'].min()
+                maxy = self.__data[gkanal][u'koncentracija'].max()
                 ypoint = (miny + maxy)/2
                        
             if event.button == 2:
                 #annotation
                 #dohvati tekst annotationa
-                if xpoint in list(self.__frejmovi[gkanal].index):
-                    konc = self.__frejmovi[gkanal].loc[xpoint, u'koncentracija']
-                    status = self.__frejmovi[gkanal].loc[xpoint, u'status']
-                    flag = self.__frejmovi[gkanal].loc[xpoint, u'flag']
+                if xpoint in list(self.__data[gkanal].index):
+                    konc = self.__data[gkanal].loc[xpoint, u'koncentracija']
+                    status = self.__data[gkanal].loc[xpoint, u'status']
+                    flag = self.__data[gkanal].loc[xpoint, u'flag']
                     tekst = 'Vrijeme: '+str(xpoint)+'\nKonc.: '+str(konc)+'\nStatus: '+str(status)+'\nFlag: '+str(flag)
                 else:
                     tekst = 'Vrijeme: '+str(xpoint)+'\nNema podatka'
@@ -2116,11 +2129,10 @@ class GrafMinutni(MPLCanvas):
                     else:
                         clickedy = 30
 
-                
-                if self.__annotationTest == False:
+                if self.__testAnnotation == False:
                     #napravi annotation
                     self.__zadnjiAnnotationx = xpoint
-                    self.__annotationTest = True
+                    self.__testAnnotation = True
                     #sami annotation
                     self.annotation = self.axes.annotate(
                         tekst, 
@@ -2138,12 +2150,12 @@ class GrafMinutni(MPLCanvas):
                     if xpoint == self.__zadnjiAnnotationx:
                         self.annotation.remove()
                         self.__zadnjiAnnotationx = None
-                        self.__annotationTest = False
+                        self.__testAnnotation = False
                         self.draw()
                     else:
                         self.annotation.remove()
                         self.__zadnjiAnnotationx = xpoint
-                        self.__annotationTest = True
+                        self.__testAnnotation = True
                         self.annotation = self.axes.annotate(
                             tekst, 
                             xy = (xpoint, ypoint), 
@@ -2162,26 +2174,18 @@ class GrafMinutni(MPLCanvas):
                 #poziva context menu sa informacijom o lokaciji i satu
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, xpoint, xpoint)
-
-            
-            
-            
-            
-            
-            
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('minutnigraf.ui')
 class MinutniGraf(base3, form3):
     """Klasa za minutni graf sa dijelom kontrola"""
-    def __init__(self, parent = None, defaulti = None, frejmovi = None, sat = None):
+    def __init__(self, parent = None, defaulti = None, infoFrejmovi = None):
         super(base3, self).__init__(parent)
         self.setupUi(self)
         
         #defaultini izbor za grafove
         self.__defaulti = defaulti
-        self.__minutniFrejmovi = frejmovi
-        self.__sat = sat #timestamp indeksa satno agregiranog podatka
+        self.__infoFrejmovi = infoFrejmovi
 
         #inicijalizacija ostalih grafickih elemenata
         self.widget1 = QtGui.QWidget()
@@ -2201,12 +2205,12 @@ class MinutniGraf(base3, form3):
         self.sliceLabel.setText('Prikazano vrijeme: ')
         
         self.veze()
-        self.initial_setup(self.__sat)
-    
-    def zamjeni_frejmove(self, frejmovi):
-        self.__minutniFrejmovi = frejmovi
-        self.initial_setup(None)
-
+        self.initial_setup()
+###############################################################################    
+    def zamjeni_frejmove(self, info):
+        self.__infoFrejmovi = info
+        self.initial_setup()
+###############################################################################
     def postavi_glavni_kanal(self, kanal):
         self.glavniKanalLabel.setText(kanal)
         self.__defaulti['m_validanOK']['kanal'] = kanal
@@ -2214,8 +2218,8 @@ class MinutniGraf(base3, form3):
         self.__defaulti['m_nevalidanOK']['kanal'] = kanal
         self.__defaulti['m_nevalidanNOK']['kanal'] = kanal
         self.__defaulti['m_glavnikanal']['kanal'] = kanal
-        self.initial_setup(None)
-    
+        self.initial_setup()
+###############################################################################    
     def veze(self):
         #spajanje widgeta sa kontrolnim funkcijama
         #izbor boje i stila grafa
@@ -2241,39 +2245,39 @@ class MinutniGraf(base3, form3):
         self.pomocni4Check.stateChanged.connect(self.enable_pomocni4Check)
         self.pomocni5Check.stateChanged.connect(self.enable_pomocni5Check)
         self.pomocni6Check.stateChanged.connect(self.enable_pomocni6Check)
-
+###############################################################################
     def enable_grid(self, x):
         if x:
             self.__defaulti['m_opcenito']['grid'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.__defaulti['m_opcenito']['grid'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def enable_cursor(self, x):
         if x:
             self.__defaulti['m_opcenito']['cursor'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.__defaulti['m_opcenito']['cursor'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def enable_spanSelector(self, x):
         if x:
             self.__defaulti['m_opcenito']['span'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.__defaulti['m_opcenito']['span'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def enable_minorTicks(self, x):
         if x:
             self.__defaulti['m_opcenito']['minorTicks'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.__defaulti['m_opcenito']['minorTicks'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_glavniCheck(self):
         if self.glavniCheck.isChecked() == True:
             self.glavniDetalji.setEnabled(True)
@@ -2282,7 +2286,7 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_nevalidanOK']['crtaj'] = True
             self.__defaulti['m_nevalidanNOK']['crtaj'] = True
             self.__defaulti['m_glavnikanal']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.glavniDetalji.setEnabled(False)
             self.__defaulti['m_validanOK']['crtaj'] = False
@@ -2290,126 +2294,121 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_nevalidanOK']['crtaj'] = False
             self.__defaulti['m_nevalidanNOK']['crtaj'] = False
             self.__defaulti['m_glavnikanal']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def enable_pomocni1Check(self):
         if self.pomocni1Check.isChecked() == True:
             self.pomocni1Combo.setEnabled(True)
             self.pomocni1Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal1']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni1Combo.setEnabled(False)
             self.pomocni1Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal1']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_pomocni2Check(self):
         if self.pomocni2Check.isChecked() == True:
             self.pomocni2Combo.setEnabled(True)
             self.pomocni2Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal2']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni2Combo.setEnabled(False)
             self.pomocni2Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal2']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_pomocni3Check(self):
         if self.pomocni3Check.isChecked() == True:
             self.pomocni3Combo.setEnabled(True)
             self.pomocni3Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal3']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni3Combo.setEnabled(False)
             self.pomocni3Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal3']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_pomocni4Check(self):
         if self.pomocni4Check.isChecked() == True:
             self.pomocni4Combo.setEnabled(True)
             self.pomocni4Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal4']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni4Combo.setEnabled(False)
             self.pomocni4Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal4']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_pomocni5Check(self):
         if self.pomocni5Check.isChecked() == True:
             self.pomocni5Combo.setEnabled(True)
             self.pomocni5Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal5']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni5Combo.setEnabled(False)
             self.pomocni5Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal5']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def enable_pomocni6Check(self):
         if self.pomocni6Check.isChecked() == True:
             self.pomocni6Combo.setEnabled(True)
             self.pomocni6Detalji.setEnabled(True)
             self.__defaulti['m_pomocnikanal6']['crtaj'] = True
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
         else:
             self.pomocni6Combo.setEnabled(False)
             self.pomocni6Detalji.setEnabled(False)
             self.__defaulti['m_pomocnikanal6']['crtaj'] = False
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni1Combo(self):
         newValue = self.pomocni1Combo.currentText()
         self.__defaulti['m_pomocnikanal1']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni2Combo(self):
         newValue = self.pomocni2Combo.currentText()
         self.__defaulti['m_pomocnikanal2']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni3Combo(self):
         newValue = self.pomocni3Combo.currentText()
         self.__defaulti['m_pomocnikanal3']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni4Combo(self):
         newValue = self.pomocni4Combo.currentText()
         self.__defaulti['m_pomocnikanal4']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni5Combo(self):
         newValue = self.pomocni5Combo.currentText()
         self.__defaulti['m_pomocnikanal5']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def update_pomocni6Combo(self):
         newValue = self.pomocni6Combo.currentText()
         self.__defaulti['m_pomocnikanal6']['kanal'] = newValue
-        self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-        
-    def initial_setup(self, izbor):
-        self.__sat = izbor
-
+        self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+############################################################################### 
+    def initial_setup(self):
+        """
+        metoda za reset/postavljanje novog grafa
+        """
         self.canvasMinutni.__statusGlavniGraf = False
-        self.canvasMinutni.__annotationTest = False
+        self.canvasMinutni.__testAnnotation = False
         self.canvasMinutni.__zadnjiAnnotationx = None
-               
-        if self.__minutniFrejmovi != None and self.__defaulti != None:
-            glavniKanal = self.__defaulti['m_validanOK']['kanal']
-            if glavniKanal != None:
-                self.__tmin = self.__minutniFrejmovi[glavniKanal].index.min()
-                self.__tmax = self.__minutniFrejmovi[glavniKanal].index.max()
-            if self.__sat != None:
-                datum = str(self.__sat.date())
-                naslov = 'Prikazano vrijeme za '+datum #TODO! bolji opis grafa
-                self.labelSlice.setText(naslov)
+
+
+        naslov = 'Glavni kanal : '
+        self.sliceLabel.setText(naslov)
             
         #checkboxes
         self.glavniCheck.setChecked(self.__defaulti['m_validanOK']['crtaj'])
@@ -2427,12 +2426,16 @@ class MinutniGraf(base3, form3):
         self.change_boja_pomocni4Detalji()
         self.change_boja_pomocni5Detalji()
         self.change_boja_pomocni6Detalji()
-        
+
         #comboboxes i label glavnog grafa
-        if self.__minutniFrejmovi != None:
-            kanali = sorted(list(self.__minutniFrejmovi.keys()))
+        if self.__infoFrejmovi != None:
+            kanali = sorted(self.__infoFrejmovi[3])
+        else:
+            kanali = []
             
+        if len(kanali) > 0:
             #glavni kanal mora odgovarati glavnom kanalu satnog grafa
+            #izbor kanala na satnom grafu mjenja i glavni kanal na minutnom
             #direktno se prepisuje (zato je label a ne combobox)
             glavniKanal = self.__defaulti['m_validanOK']['kanal']
             if glavniKanal == None:
@@ -2509,8 +2512,8 @@ class MinutniGraf(base3, form3):
             self.__defaulti['m_pomocnikanal6']['kanal'] = noviKanal
             
             #naredba za crtanje je zadnja kod inicijalizacije
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def glavniDetalji_dijalog(self):
         #deep copy dicta za dijalog
         grafinfo = copy.deepcopy(self.__defaulti)
@@ -2519,8 +2522,8 @@ class MinutniGraf(base3, form3):
         if glavnigrafdijalog.exec_():
             grafinfo = glavnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-    
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################    
     def pomocni1Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 1"""
         #deep copy dicta za dijalog
@@ -2531,8 +2534,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni1Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def pomocni2Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 2"""
         #deep copy dicta za dijalog
@@ -2543,8 +2546,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni2Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def pomocni3Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 3"""
         #deep copy dicta za dijalog
@@ -2555,8 +2558,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni3Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def pomocni4Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 4"""
         #deep copy dicta za dijalog
@@ -2567,8 +2570,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni4Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def pomocni5Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 5"""
         #deep copy dicta za dijalog
@@ -2579,8 +2582,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni5Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def pomocni6Detalji_dijalog(self):
         """dijalog za promjenu izgleda pomocnog minutnog grafa 6"""
         #deep copy dicta za dijalog
@@ -2591,8 +2594,8 @@ class MinutniGraf(base3, form3):
             grafinfo = pomocnigrafdijalog.vrati_dict()
             self.__defaulti = copy.deepcopy(grafinfo)
             self.change_boja_pomocni6Detalji()
-            self.canvasMinutni.crtaj(self.__defaulti, self.__minutniFrejmovi, self.__sat)
-
+            self.canvasMinutni.crtaj(self.__defaulti, self.__infoFrejmovi)
+###############################################################################
     def change_boja_pomocni1Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal1']['color']
@@ -2600,7 +2603,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni1Detalji', boja)
         self.pomocni1Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pomocni2Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal2']['color']
@@ -2608,7 +2611,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni2Detalji', boja)
         self.pomocni2Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pomocni3Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal3']['color']
@@ -2616,7 +2619,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni3Detalji', boja)
         self.pomocni3Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pomocni4Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal4']['color']
@@ -2624,7 +2627,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni4Detalji', boja)
         self.pomocni4Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pomocni5Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal5']['color']
@@ -2632,7 +2635,7 @@ class MinutniGraf(base3, form3):
         boja = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#pomocni5Detalji', boja)
         self.pomocni5Detalji.setStyleSheet(stil)
-
+###############################################################################
     def change_boja_pomocni6Detalji(self):
         """set boje gumba iz defaulta"""
         rgb = self.__defaulti['m_pomocnikanal6']['color']
@@ -2643,6 +2646,7 @@ class MinutniGraf(base3, form3):
 
 ###############################################################################
 ###############################################################################
+#XXX! dosao do tuda
 base4, form4 = uic.loadUiType('m_pomocnigrafdetalji.ui')
 class PomocniGrafDetaljiM(base4, form4):
     """
@@ -2666,25 +2670,25 @@ class PomocniGrafDetaljiM(base4, form4):
         
         self.popuni_izbornike()
         self.veze()
-        
+###############################################################################        
     def veze(self):
         self.tip.currentIndexChanged.connect(self.change_tip)
         self.marker.currentIndexChanged.connect(self.change_marker)
         self.linija.currentIndexChanged.connect(self.change_linija)
         self.boja.clicked.connect(self.change_boja)
-    
+###############################################################################    
     def change_tip(self):
         newValue = self.tip.currentText()
         self.__defaulti[self.__graf]['tip'] = newValue
-    
+###############################################################################    
     def change_marker(self):
         newValue = self.marker.currentText()
         self.__defaulti[self.__graf]['marker'] = newValue
-    
+###############################################################################    
     def change_linija(self):
         newValue = self.linija.currentText()
         self.__defaulti[self.__graf]['line'] = newValue
-
+###############################################################################
     def change_boja(self):
         rgb = self.__defaulti[self.__graf]['color']
         a = self.__defaulti[self.__graf]['alpha']
@@ -2700,7 +2704,7 @@ class PomocniGrafDetaljiM(base4, form4):
             #set new color
             stil = color_to_style_string('QPushButton#boja', color)
             self.boja.setStyleSheet(stil)
-
+###############################################################################
     def popuni_izbornike(self):
         """inicijalizacija izbornika sa defaultinim postavkama"""
         naziv = 'Detalji pomocnog minutnog grafa, kanal: ' + str(self.__defaulti[self.__graf]['kanal'])
@@ -2724,7 +2728,7 @@ class PomocniGrafDetaljiM(base4, form4):
         color = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#boja', color)
         self.boja.setStyleSheet(stil)
-
+###############################################################################
     def vrati_dict(self):
         """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
         return self.__defaulti
@@ -2750,7 +2754,7 @@ class GlavniKanalDetaljiM(base5, form5):
         
         self.popuni_izbornike()
         self.veze()
-        
+###############################################################################        
     def veze(self):
         self.markerOK.currentIndexChanged.connect(self.update_markerOK)
         self.markerNOK.currentIndexChanged.connect(self.update_markerNOK)
@@ -2758,21 +2762,21 @@ class GlavniKanalDetaljiM(base5, form5):
         self.colorOK.clicked.connect(self.promjena_boje_colorOK)
         self.colorNOK.clicked.connect(self.promjena_boje_colorNOK)
         self.bojaLinije.clicked.connect(self.promjena_boje_bojaLinije)
-    
+###############################################################################    
     def update_markerOK(self):
         newValue = self.markerOK.currentText()
         self.__defaulti['m_validanOK']['marker'] = newValue
         self.__defaulti['m_validanNOK']['marker'] = newValue
-    
+###############################################################################    
     def update_markerNOK(self):
         newValue = self.markerNOK.currentText()
         self.__defaulti['m_nevalidanOK']['marker'] = newValue
         self.__defaulti['m_nevalidanNOK']['marker'] = newValue
-    
+###############################################################################    
     def update_stilLinije(self):
         newValue = self.stilLinije.currentText()
         self.__defaulti['m_glavnikanal']['line'] = newValue
-    
+###############################################################################    
     def promjena_boje_colorOK(self):
         rgb = self.__defaulti['m_validanOK']['color']
         a = self.__defaulti['m_validanOK']['alpha']
@@ -2790,7 +2794,7 @@ class GlavniKanalDetaljiM(base5, form5):
             #set new color
             stil = color_to_style_string('QPushButton#colorOK', color)
             self.colorOK.setStyleSheet(stil)
-
+###############################################################################
     def promjena_boje_colorNOK(self):
         rgb = self.__defaulti['m_validanNOK']['color']
         a = self.__defaulti['m_validanNOK']['alpha']
@@ -2808,7 +2812,7 @@ class GlavniKanalDetaljiM(base5, form5):
             #set new color
             stil = color_to_style_string('QPushButton#colorNOK', color)
             self.colorNOK.setStyleSheet(stil)
-
+###############################################################################
     def promjena_boje_bojaLinije(self):
         rgb = self.__defaulti['m_glavnikanal']['color']
         a = self.__defaulti['m_glavnikanal']['alpha']
@@ -2824,7 +2828,7 @@ class GlavniKanalDetaljiM(base5, form5):
             #set new color
             stil = color_to_style_string('QPushButton#bojaLinije', color)
             self.bojaLinije.setStyleSheet(stil)
-    
+###############################################################################    
     def popuni_izbornike(self):
         #comboboxes
         self.markerOK.clear()
@@ -2859,7 +2863,7 @@ class GlavniKanalDetaljiM(base5, form5):
         color = default_color_to_qcolor(rgb, a)
         stil = color_to_style_string('QPushButton#bojaLinije', color)
         self.bojaLinije.setStyleSheet(stil)        
-
+###############################################################################
     def vrati_dict(self):
         """funkcija vraca izmjenjeni defaultni dictionary svih grafova"""
         return self.__defaulti        

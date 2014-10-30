@@ -99,7 +99,18 @@ class Kontrola(QtGui.QWidget):
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
                      gui.minutniCanvas.canvasMinutni.fokusiraj_interval)
         
+        #spajanje zahtjeva za dohvacanjem minutnog slicea (crtanje grafa)
+        self.connect(gui.minutniCanvas.canvasMinutni,
+                     QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), 
+                     self.dohvati_minutni_slajs)
+                     
+        self.connect(self, 
+                     QtCore.SIGNAL('set_minutni_frejm(PyQt_PyObject)'), 
+                     gui.minutniCanvas.canvasMinutni.set_minutni_kanal)
 
+
+#TODO!
+#promjena kanala na satnom i minutnom, promjena flaga
 
                      
 #        self.connect(self, 
@@ -188,7 +199,7 @@ class Kontrola(QtGui.QWidget):
 ###############################################################################
     def dohvati_agregirani_slajs(self, lista):
         """
-        zahtjev od doumenta da vrati trazeni slajs podataka
+        zahtjev od doumenta da vrati trazeni agregirani slajs podataka
         lista = [stanica, tmin, tmax, kanal]
         """
         frejm = self.__dokument.dohvati_agregirani_frejm(lista[0], 
@@ -197,6 +208,18 @@ class Kontrola(QtGui.QWidget):
                                                          lista[3])
         kanal = lista[3]
         self.emit(QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), [kanal, frejm])
+###############################################################################
+    def dohvati_minutni_slajs(self, lista):
+        """
+        zahtjev od doumenta da vrati trazeni slajs podataka
+        lista = [stanica, tmin, tmax, kanal]
+        """
+        frejm = self.__dokument.dohvati_minutni_frejm(lista[0], 
+                                                      lista[1], 
+                                                      lista[2], 
+                                                      lista[3])
+        kanal = lista[3]
+        self.emit(QtCore.SIGNAL('set_minutni_frejm(PyQt_PyObject)'), [kanal, frejm])
 ###############################################################################
     def printaj(self, x):
         print(x)

@@ -31,9 +31,9 @@ class Display(base, form):
         #inicjalizacija webLoggerIzbornika
         self.webLoggerIzbornik = weblogger_izbornik.WebloggerIzbornik()
         #inicijalizacija satnog canvasa
-        self.satniCanvas = graf_signal_plus.SatniGraf(parent = None, defaulti = self.__defaulti, frejmovi = None)
+        self.satniCanvas = graf_signal_plus.SatniGraf(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
         #inicijalizacija minutnog canvasa
-        self.minutniCanvas = graf_signal_plus.MinutniGraf(parent = None, defaulti = self.__defaulti, frejmovi = None)
+        self.minutniCanvas = graf_signal_plus.MinutniGraf(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
         
         self.dockWidget_satni.setWidget(self.satniCanvas)
         self.dockWidget_minutni.setWidget(self.minutniCanvas)

@@ -192,6 +192,9 @@ class Dokument(QtGui.QWidget):
         frejm = self.__agregator.agregiraj_kanal(frejm)
         return frejm
 ###############################################################################
+#TODO... kada zavrsis restrukturiranje appa vidi sto je od ovih funckija visak
+
+
 
 
 

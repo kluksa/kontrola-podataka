@@ -6,13 +6,14 @@ Created on Mon Oct 20 10:45:18 2014
 """
 
 import sys
+import pickle
+import copy
 from PyQt4 import QtCore, QtGui, uic
 
 import dokument
 import kontroler
 import graf_signal
 import weblogger_izbornik
-import time
 
 ###############################################################################
 ###############################################################################
@@ -158,6 +159,8 @@ class Display(base, form):
         #file i generalni actioni
         self.action_ReadFile.triggered.connect(self.gui_action_read_file)
         self.action_Exit.triggered.connect(self.close)
+        self.action_Save_preset.triggered.connect(self.save_preset)
+        self.action_Load_preset.triggered.connect(self.load_preset)
         #satno agregirani graf
         self.connect(self.action_SatniGrid, 
                      QtCore.SIGNAL('triggered(bool)'), 
@@ -186,11 +189,77 @@ class Display(base, form):
         
         self.connect(self.action_MinutniMinorTicks, 
                      QtCore.SIGNAL('triggered(bool)'), 
-                     self.minutniCanvas.enable_minorTicks)        
+                     self.minutniCanvas.enable_minorTicks)
 ###############################################################################    
-    def provjera(self):
-        """testni slot za provjeru signala"""
-        print('spojen')
+    def save_preset(self):
+        """zapamti stanje (izgled, geometriju, postavke) aplikaicje"""
+        #zapamti state toolbarove,dock widgeta....
+        preset = self.saveState()
+        #zapamti geometriju glavnog prozora
+        geometrija =self.geometry()
+        #informacija o defaultnim podatcima za crtanje grafova
+        satni = copy.deepcopy(self.dockWidget_satni.widget().get_defaulti())
+        minutni = copy.deepcopy(self.dockWidget_minutni.widget().get_defaulti())
+        satni['m_validanOK'] = minutni['m_validanOK']
+        satni['m_validanNOK'] = minutni['m_validanNOK']
+        satni['m_nevalidanOK'] = minutni['m_nevalidanOK']
+        satni['m_nevalidanNOK'] = minutni['m_nevalidanNOK']
+        satni['m_glavnikanal'] = minutni['m_glavnikanal']
+        satni['m_pomocnikanal1'] = minutni['m_pomocnikanal1']
+        satni['m_pomocnikanal2'] = minutni['m_pomocnikanal2']
+        satni['m_pomocnikanal3'] = minutni['m_pomocnikanal3']
+        satni['m_pomocnikanal4'] = minutni['m_pomocnikanal4']
+        satni['m_pomocnikanal5'] = minutni['m_pomocnikanal5']
+        satni['m_pomocnikanal6'] = minutni['m_pomocnikanal6']
+        satni['m_opcenito'] = minutni['m_opcenito']
+                
+        #konzistentno zapakiraj u dict        
+        data = {'preset':preset, 'geometrija':geometrija, 'ostalo':satni}
+        
+        #sredi ime i lokaciju filea u koji ces spremiti postavke
+        fileName = QtGui.QFileDialog.getSaveFileName(
+            self, 
+            caption = 'Spremi postavke u:', 
+            filter = "Dat Files(*.dat);;All Files(*)")
+        
+        #napisi sve u file u binarnom obliku
+        if fileName:
+            with open(fileName, 'wb') as fwrite:
+                pickle.dump(data, fwrite)
+
+###############################################################################
+    def load_preset(self):
+        """load stanje (izgled, geometriju, postavke) aplikaicje"""
+        data = None
+        #dohvati ime i lokaciju filea
+        fileName = QtGui.QFileDialog.getOpenFileName(
+            self, 
+            caption = 'Ucitaj spremljene postavke iz:', 
+            filter = "Dat Files(*.dat);;All Files(*)")
+        #loadaj podatke iz filea
+        if fileName:
+            print(fileName)
+            with open(fileName, 'rb') as fread:
+                data = pickle.load(fread)
+                if type(data) == dict: #provjera da li je data dict
+                    kljucevi = list(data.keys())
+                    if ('geometrija' in kljucevi) and ('preset' in kljucevi) and ('ostalo' in kljucevi):
+                        #svi bitni kljucevi postoje, provjeri tipove
+                        t1 = type(data['geometrija']) == QtCore.QRect
+                        t2 = type(data['preset']) == QtCore.QByteArray
+                        t3 = type(data['ostalo']) == dict
+                        test = t1 and t2 and t3
+        
+        if test:
+            #postavi geometriju glavnog prozora
+            self.setGeometry(data['geometrija'])
+            #postavi lokaciju dock widgeta, nihovu geometriju....
+            self.restoreState(data['preset'])
+            #postavi opcije za crtanje grafova
+            self.load_defaults(data['ostalo']) #bitno, medtoda updatea i check akcija
+            self.satniCanvas.zamjeni_defaulte(self.__defaulti)
+            self.minutniCanvas.zamjeni_defaulte(self.__defaulti)
+
 ###############################################################################
 #    def closeEvent(self, event):
 #        """Exit dialog for application. Additional confirmation"""

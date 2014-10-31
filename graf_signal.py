@@ -794,7 +794,14 @@ class SatniGraf(base2, form2):
         self.initial_setup()
         #opis slicea : slice od: do:
         self.labelSlice.setText('Prikazano vrijeme:')
-###############################################################################        
+###############################################################################
+    def get_defaulti(self):
+        return self.__defaulti
+###############################################################################
+    def zamjeni_defaulte(self, defaulti):
+        self.__defaulti = defaulti
+        self.initial_setup()
+###############################################################################
     def zamjeni_frejmove(self, info):
         self.__infoFrejmovi = info
         self.initial_setup()
@@ -2229,6 +2236,13 @@ class MinutniGraf(base3, form3):
         self.sliceLabel.setText('Prikazano vrijeme: ')
         
         self.veze()
+        self.initial_setup()
+###############################################################################
+    def get_defaulti(self):
+        return self.__defaulti
+###############################################################################
+    def zamjeni_defaulte(self, defaulti):
+        self.__defaulti = defaulti
         self.initial_setup()
 ###############################################################################    
     def zamjeni_frejmove(self, info):

@@ -23,13 +23,10 @@ class Display(base, form):
     def __init__(self, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
-        #load defaults #TODO! mora se srediti bolje, xml ili nesto u tom stilu
-        #mozda pickle? neka akcija save/load defaults
         self.load_defaults(None)
         """
         memberi
         """        
-        self.wlReaderLoaded = False
         
         """inicijalizacija kontrolnih / display objekata na gui"""
         #inicjalizacija webLoggerIzbornika
@@ -39,8 +36,11 @@ class Display(base, form):
         #inicijalizacija minutnog canvasa
         self.minutniCanvas = graf_signal.MinutniGraf(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
         
+        self.wlReaderLoaded = True
+        self.dockWidget_kontrola.setWidget(self.webLoggerIzbornik)
         self.dockWidget_satni.setWidget(self.satniCanvas)
         self.dockWidget_minutni.setWidget(self.minutniCanvas)
+        
 
         """povezivanje akcija"""
         self.setup_akcije()

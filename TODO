@@ -1,0 +1,35 @@
+1. trazio sam da poradis i na dokumentiranju (komentarima), ali commit poruke su sve samo ne jasne. Zelim iz povijesti commit poruka vidjeti sto si radio, sto si napravio, sto si izmijenio i zasto
+
+2. aplikacija mi ne radi AttributeError: 'GlavniProzor' object has no attribute 'satniCanvas'.
+Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja radi, moze imati bugove, ali zelim da radi. Ako imas nekih svojih dodatnih fajlova u kojima nesto testiras, to me ne zanima, to drzi u nekoj drugoj grani. To jest razvojna grana, ali treba raditi, a ne se rusiti sa takvim porukama.
+
+3. ja vise ne znam koja je glavna izvrsna datoteka, je li to display, display_plus ili sto vec. Molim te napravi datoteku koja se zove kontrola_podataka iz koje ce se UVIJEK pokretati aplikacija.
+
+4. nemam pojma sto radi graf_signal_plus.py i iskreno nemam nikakvu namjeru pokusati desifrirati sto radi fajl od  skoro 3000 linija koda. Toliko koda u jednoj datoteci je nekih 10 puta previse linija da bih uopce uzeo u obzir pokusati vidjeti o cemu se tu radi (nemoj mi niti pokusati objasniti, ako to nije neka "tvoja" probna datoteka nego nesto sto se koristi, a izgleda da nije, onda ju razbij na dijelove koji nisu dulji od 100-200 linija i u kojoj je svakoj jedna jedina klasa).
+
+5. koliko mi se cini, a mozda nisam u pravu, vise se ne koriste datoteke display.py i graf_signal.py, ne zelim imati leseve po kodu. Ako ne trebaju brisi ih, u stvari si trebao (a to sam ti bio i rekao za graf_signali ) izmijeniti display.py i graf_signal.py, i to commitati, a ne stvarati nove datoteke sa slicnim ali malo drugacijim imenom, to nikako nije dobro.
+
+6. Ipak sam bacio oko na graf_signal_plus i vidim da tamo ima klasa GrafMinutni i MinutniGraf. ToJeNeprihvatljivo, NeptihvatljivoJeTo. Ime klase mora biti specificno za svrhu. Dakle ako je jedno kanvas, onda nek se zove MinutniCanvas, a ako je drugo graf onda MinutniGraf. Iz imena klase mora biti kristalno jasno cemu klasa sluzi.
+
+7 U dokumentacijskim stringovima mora pisati objasnjenje. "Klasa za minutni graf sa dijelom kontrola" ne znaci apsolutno nista, da se radi o klasi to znamo iz kljucne rijeci class, da se radi o minutnom grafu to znamo iz imena, dakle jedina sto ne znam je dio  "sa dijelom kontrola", ali to ne govori nista.
+
+8. Razdvajanje minutnog od satnog grafa nije dobar dizajn jer smo rekli da su oni dvoje povezani, dakle logicno bi ih bilo spojiti u jedan canvas koji se instancira u glavnoj aplikaciji, a ne u dva razlicita canvasa. Mozda oni mogu biti zasebni canvasi koji se spajaju u jedan, ali u glavnoj aplikaciji se poziva jedan canvas koji drzi i satne i minutne grafove i eventualno neke gumbe.
+
+9. Satni i minutni panel moraju biti povezani, dakle canvas (ili kako god da se to zove u QT-u mora biti zajednicki, a ne ovako, odvojeno
+
+10. vec sam ti to bio rekao, kada se otvori aplikacija zelim imati meni za citanje weblogger datoteka. Tek odabirom u meniju "odaberi izvor podataka" ili nesto slicno, neka se pokaze meni na kojem mozes bitari weblogger i ostalo, ali po defaultu cim se podigne aplikacija - weblogger sucelje
+
+11. Ovo sa ukljucivanjem "Opcije grafa" mi se nikako ne svidja. Ne zelim da se mijenja graf (prosiruje/skuplja). Ostavi button opcije, ali onda izbaci modalni dijalog na kojem ce biti opcije.
+
+12. Ne svidja mi se sto imas staticki definirane pomocne kanale. Napravi to dinamicki. Gumbovi "dodaj kanal" koji izbacuje modalni dijalog, "iskljuci kanal" je puno bolje rjesenje.
+
+13. Pomocni kanali se moraju paralelno prikazivati i na satnim i na minutnim, boje kanala su iste i na satnim i na minutnim
+
+14. Ako flagam satni podatak kao los, on nestane sa grafa. Zasto? Prijasnje rjesenje je bilo sasvim zadovoljavajuce - promijeni boju.
+
+15. Sto se dogodilo sa selekcijom niza? Zasto ne mogu selektirati n minutnih ili satnihh i flaggirati ih? To je vec bila implementirana funkcionalnost. Zasto je nestala? 
+
+16. Zasto se ne oznacava minutni podatak kada kliknem na njega? Koliko se sjecam i ta je funkcionalnost postojala.
+
+17. Zasto je iz glavnog navigacijskog dijela nestala mogucnost izbora kanala? Pa to je osnovno!
+

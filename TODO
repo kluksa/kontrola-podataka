@@ -2,34 +2,61 @@
 
 2. aplikacija mi ne radi AttributeError: 'GlavniProzor' object has no attribute 'satniCanvas'.
 Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja radi, moze imati bugove, ali zelim da radi. Ako imas nekih svojih dodatnih fajlova u kojima nesto testiras, to me ne zanima, to drzi u nekoj drugoj grani. To jest razvojna grana, ali treba raditi, a ne se rusiti sa takvim porukama.
+-Uzeto na znanje, krenuti cu brisati sve "orphan" fileove.
+-Nakon koje akcije se tako aplikacija slomila? Inicijalno paljenje? Neka specificna akcija?
 
 3. ja vise ne znam koja je glavna izvrsna datoteka, je li to display, display_plus ili sto vec. Molim te napravi datoteku koja se zove kontrola_podataka iz koje ce se UVIJEK pokretati aplikacija.
+-DONE. glavni file za pokretanje je kontrola_podataka.py
 
 4. nemam pojma sto radi graf_signal_plus.py i iskreno nemam nikakvu namjeru pokusati desifrirati sto radi fajl od  skoro 3000 linija koda. Toliko koda u jednoj datoteci je nekih 10 puta previse linija da bih uopce uzeo u obzir pokusati vidjeti o cemu se tu radi (nemoj mi niti pokusati objasniti, ako to nije neka "tvoja" probna datoteka nego nesto sto se koristi, a izgleda da nije, onda ju razbij na dijelove koji nisu dulji od 100-200 linija i u kojoj je svakoj jedna jedina klasa).
+-taj file je malo nezgrapan, treba ga razlomiti na manje funkcionalne dijelove.
+-u biti file sadrzi hrpu klasa:generalni canvas kojeg subclassam u satni i minutni canvas, "kontenjer" klase koje sadrze kontrole za grafove i sami canvas, klase za dijaloge....
 
 5. koliko mi se cini, a mozda nisam u pravu, vise se ne koriste datoteke display.py i graf_signal.py, ne zelim imati leseve po kodu. Ako ne trebaju brisi ih, u stvari si trebao (a to sam ti bio i rekao za graf_signali ) izmijeniti display.py i graf_signal.py, i to commitati, a ne stvarati nove datoteke sa slicnim ali malo drugacijim imenom, to nikako nije dobro.
+-nisam 100% siguran koji si commit uhvatio, ali trenutno postoje display.py i graf_signal.py (rename, maknuo stare)
+-vise necu stvarati fileove sa slicinim i ili zbunjujucim imenima.
 
 6. Ipak sam bacio oko na graf_signal_plus i vidim da tamo ima klasa GrafMinutni i MinutniGraf. ToJeNeprihvatljivo, NeptihvatljivoJeTo. Ime klase mora biti specificno za svrhu. Dakle ako je jedno kanvas, onda nek se zove MinutniCanvas, a ako je drugo graf onda MinutniGraf. Iz imena klase mora biti kristalno jasno cemu klasa sluzi.
 
 7 U dokumentacijskim stringovima mora pisati objasnjenje. "Klasa za minutni graf sa dijelom kontrola" ne znaci apsolutno nista, da se radi o klasi to znamo iz kljucne rijeci class, da se radi o minutnom grafu to znamo iz imena, dakle jedina sto ne znam je dio  "sa dijelom kontrola", ali to ne govori nista.
 
 8. Razdvajanje minutnog od satnog grafa nije dobar dizajn jer smo rekli da su oni dvoje povezani, dakle logicno bi ih bilo spojiti u jedan canvas koji se instancira u glavnoj aplikaciji, a ne u dva razlicita canvasa. Mozda oni mogu biti zasebni canvasi koji se spajaju u jedan, ali u glavnoj aplikaciji se poziva jedan canvas koji drzi i satne i minutne grafove i eventualno neke gumbe.
+-malo da pojasnim sto sam htio da budem 100% siguran da se razumijemo.
+-canvas je samo onaj dio zaduzen za prikaz grafa i njegovo crtanje.
+-display dio "kutija" od sada zvana PANEL sa satnim (ili minutnim) grafom se trenutno sastoji od: satnog (ili minutnog) canvasa, hrpe statickih kontrola za crtanje, polja na kojem se ispisuje naziv kanala
+-trenutna implementacija ne forsira da satni i minutni panel budu staticki povezani u istoj geometriji. svaki panel je "omotan" sa qdockwidgetom koji mu dozvoljava da se resizea, dokca na drugo mjesto, floata, postavi jedan na drugi u tab strukturu isl.
+-podaci koji se prikazuju su sinhronizirani(donekle, tocka 13. znatno pojednostavnjuje problem. trenutno jedino sto ih povezuje je source data i glavni kanal. grafovi mogu biti druge boje, tipa...)
+-trenutna implementacija dozvoljava vecu fleksibilnost uz minimalnu kolicinu koda. krajnji korisnik si sam moze posloziti display po volji(polozaj i velicinu panela). npr. mozda netko hoce da mu je satni panel ispod minutnog, ili da su jedan pored drugog...
 
 9. Satni i minutni panel moraju biti povezani, dakle canvas (ili kako god da se to zove u QT-u mora biti zajednicki, a ne ovako, odvojeno
+-Satni i minutni panel se mogu spojiti
 
 10. vec sam ti to bio rekao, kada se otvori aplikacija zelim imati meni za citanje weblogger datoteka. Tek odabirom u meniju "odaberi izvor podataka" ili nesto slicno, neka se pokaze meni na kojem mozes bitari weblogger i ostalo, ali po defaultu cim se podigne aplikacija - weblogger sucelje
+-DONE, promjenjen __init__ displaya da to uzima u obzir
 
 11. Ovo sa ukljucivanjem "Opcije grafa" mi se nikako ne svidja. Ne zelim da se mijenja graf (prosiruje/skuplja). Ostavi button opcije, ali onda izbaci modalni dijalog na kojem ce biti opcije.
+-u izradi, tocke 11, 12 i 13 bi se trebali rijesiti parelelno. trebam napraviti smisleni modalni dijalog za izbor grafova
 
 12. Ne svidja mi se sto imas staticki definirane pomocne kanale. Napravi to dinamicki. Gumbovi "dodaj kanal" koji izbacuje modalni dijalog, "iskljuci kanal" je puno bolje rjesenje.
+- Ok, to je glavni razlog zasot je graf_signal.py preko 2000 linija koda.
+-trenutno se time bavim, usko povezano sa tockom 11
 
 13. Pomocni kanali se moraju paralelno prikazivati i na satnim i na minutnim, boje kanala su iste i na satnim i na minutnim
+-super, ovo znatno olaksava stvar (trenutna implementacija je hrpa LOC jer dozvoljava da boje isl. budu razlicite)
 
 14. Ako flagam satni podatak kao los, on nestane sa grafa. Zasto? Prijasnje rjesenje je bilo sasvim zadovoljavajuce - promijeni boju.
+-problem je u agregatoru. nestaju samo satni :), agregator uzima samo podatke koji nisu NaN u racunicu i koji imaju pozitivan flag. dakle ako su svi flagani krivo tretira slucaj kao kada nema podataka
+-ideja za fix, u izlaznom frejmu postoji stupac 'broj_podataka' ili nesto u tom stilu koji prati broj podataka koji nisu np.nan. na temelju toga postaviti defaultne vrijenosti za ostale stupce ('avg', 'q05'...)
 
 15. Sto se dogodilo sa selekcijom niza? Zasto ne mogu selektirati n minutnih ili satnihh i flaggirati ih? To je vec bila implementirana funkcionalnost. Zasto je nestala? 
+-funkcionalnost postoji, na zahtjev prebacena u edit na glavnom izborniku aplikacije
 
 16. Zasto se ne oznacava minutni podatak kada kliknem na njega? Koliko se sjecam i ta je funkcionalnost postojala.
+-ta je funkcionalnost postojala samo na satnom grafu, cisto simetrije radi moze se implementirati na minutni graf, ali ja ne vidim smisao.
+-highlight tocke na satnom sluzi kao vizualni indikator gdje smo na minutnom grafu
+-ljevi klik na minutnom grafu nije spojen sa nicim (samo span selector ako je aktivan)
+-middle gumb na minutnom prikazuje annotation, desni mjenja flag "najblize tocke"
 
 17. Zasto je iz glavnog navigacijskog dijela nestala mogucnost izbora kanala? Pa to je osnovno!
-
+-zato jer sam je prebacio u satni i minutni panel (hrpa staticko definiranih grafova)
+-radi ispravaka tocaka vezanih za satni i minutni panel, plan ju je vratiti nazad skupa sa gumbom koji ce pokretati dijalog za dinamicko crtanje grafova

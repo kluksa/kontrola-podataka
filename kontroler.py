@@ -4,10 +4,6 @@ Created on Fri May  9 13:19:45 2014
 
 @author: velimir
 
-Problemi:
-status:
--Kontroler dobro incijalizira i model i view, link na test output funkciju radi ok
--Iz nekog razloga, model.citaj_csv ne radi
 """
 
 from PyQt4 import QtGui,QtCore
@@ -73,69 +69,83 @@ class Kontrola(QtGui.QWidget):
                      QtCore.SIGNAL('gui_vremenski_raspon(PyQt_PyObject)'), 
                      self.priredi_vremenski_raspon)
                      
-        #kontroler - canvasi , postavljanje frejmova
+        #setter kanala za gui
         self.connect(self, 
-                     QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), 
-                     gui.satniCanvas.zamjeni_frejmove)
-
+                     QtCore.SIGNAL('kontrola_set_kanali(PyQt_PyObject)'), 
+                     gui.webLoggerIzbornik.postavi_kanale)
+                     
+        #nakon izabranog datuma tj. promjene datuma kontroler je zaduzen
+        #da informira i panele o izboru, paneli imaju specificnu metodu za to
+        #slotovi zamjeni_frejmove povlace ponovno crtanje
+        self.connect(self, 
+                     QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), 
+                     gui.agregiraniPanel.zamjeni_frejmove)
                      
         self.connect(self, 
-                     QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), 
-                     gui.minutniCanvas.zamjeni_frejmove)
+                     QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), 
+                     gui.normalniPanel.zamjeni_frejmove)
+                     
+        
+        #spajanje projmene defaulta od webloggera sa slotom u displayu - load_defaults
+        self.connect(gui.webLoggerIzbornik, 
+                     QtCore.SIGNAL('wl_promjena_defaulta(PyQt_PyObject)'), 
+                     gui.load_defaults)
+        
+        #signal da su defaulti u gui promjenjeni
+        self.connect(gui, 
+                     QtCore.SIGNAL('promjena_defaulta(PyQt_PyObject)'), 
+                     self.promjena_defaulta)
+                     
+        #kontroler -> razni elementi guia, update defaultnih postavki grafova
+        #slotovi zamjeni_defaulte povlace ponovno crtanje grafa
+        self.connect(self, 
+                     QtCore.SIGNAL('update_defaulti(PyQt_PyObject)'), 
+                     gui.agregiraniPanel.zamjeni_defaulte)
 
+        self.connect(self, 
+                     QtCore.SIGNAL('update_defaulti(PyQt_PyObject)'), 
+                     gui.normalniPanel.zamjeni_defaulte)
+                     
         #spajanje zahtjeva za dohvacanjem satno agregiranog slicea (crtanje grafa)
-        self.connect(gui.satniCanvas.canvasSatni,
+        self.connect(gui.agregiraniPanel.canvas,
                      QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), 
                      self.dohvati_agregirani_slajs)
-                     
+        #dohvaceni frejm sa kanalom se prosljedjuje canvasu
         self.connect(self, 
                      QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), 
-                     gui.satniCanvas.canvasSatni.set_agregirani_kanal)
+                     gui.agregiraniPanel.canvas.set_agregirani_kanal)
                      
         #ljevi klik na satnom grafu... zoom na minutni slice                     
-        self.connect(gui.satniCanvas.canvasSatni, 
+        self.connect(gui.agregiraniPanel.canvas, 
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
-                     gui.minutniCanvas.canvasMinutni.fokusiraj_interval)
+                     gui.normalniPanel.canvas.fokusiraj_interval)
         
         #spajanje zahtjeva za dohvacanjem minutnog slicea (crtanje grafa)
-        self.connect(gui.minutniCanvas.canvasMinutni,
+        self.connect(gui.normalniPanel.canvas,
                      QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), 
                      self.dohvati_minutni_slajs)
                      
         self.connect(self, 
                      QtCore.SIGNAL('set_minutni_frejm(PyQt_PyObject)'), 
-                     gui.minutniCanvas.canvasMinutni.set_minutni_kanal)
-
-
-        #promjena glavnog kanala na satnom grafu uvjetuje promjenu na minutnom                     
-        self.connect(gui.satniCanvas, 
-                     QtCore.SIGNAL('glavni_satni_kanal(PyQt_PyObject)'), 
-                     gui.minutniCanvas.postavi_glavni_kanal)
+                     gui.normalniPanel.canvas.set_minutni_kanal)
 
         #promjena flaga na satnom grafu
-        self.connect(gui.satniCanvas.canvasSatni, 
+        self.connect(gui.agregiraniPanel.canvas, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjeni_flag)
                      
         #promjena flaga na minutnom grafu
-        self.connect(gui.minutniCanvas.canvasMinutni, 
+        self.connect(gui.normalniPanel.canvas, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjeni_flag)
-                     
-            #satni
-        self.connect(self, 
-                     QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), 
-                     gui.satniCanvas.canvasSatni.promjenjen_flag)
-                     
-            #minutni
-        self.connect(self, 
-                     QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), 
-                     gui.minutniCanvas.canvasMinutni.promjenjen_flag)
-                     
-        
+
 ###############################################################################
     def set_citac(self, citac):
-        """Postavljanje citaca u dokument"""
+        """
+        Postavljanje citaca u dokument
+        
+        Gui ocekuje odgovor koje su stanice dostupne citacu
+        """
         self.__citac = citac
         #poziv metode dokumenta da postavi citac
         self.__dokument.set_citac(self.__citac)
@@ -145,14 +155,11 @@ class Kontrola(QtGui.QWidget):
         stanice = sorted(list(self.__dostupni.keys()))
         if stanice != []:
             self.emit(QtCore.SIGNAL('kontrola_set_stanice(PyQt_PyObject)'), stanice)
-        else:
-            #TODO!
-            #neki info da nema dostupnih stanica, popup il nesto u tom stilu
-            pass
 ###############################################################################
     def postavi_datume(self, stanica):
         """
-        Metoda signalizira gui-u koji su datumi dostupni za stanicu
+        Metoda preuzima zahtjev za datumima (za danu stanicu).
+        Signalizira gui-u koji su datumi dostupni za stanicu.
         """
         def string_to_date(x):
             return QtCore.QDate.fromString(x, 'yyyy-MM-dd')
@@ -173,6 +180,13 @@ class Kontrola(QtGui.QWidget):
     def priredi_vremenski_raspon(self, data):
         """
         Funkcija naredjuje dokumentu da pripremi trazene podatke
+        ucitavanje podataka....
+        nakon ucitavanja sastavlja listu koja sluzi kao vodic do dostupnih podataka
+        [stainca, tmin, tmax, [lista dobrih kanala]] (u panelima je to self.__info)
+        
+        Ova metoda se primarno pokrece kada se promjeni datum u izborniku.
+        Osim sto se treba updateati izbor za glavni kanal, moramo siglalizirati panelima
+        da im se promjenio izvor podataka.
         """
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
@@ -191,12 +205,22 @@ class Kontrola(QtGui.QWidget):
                                                                   self.__tMin, 
                                                                   self.__tMax)
         #emit koji postavlja izbor frejmova u gui
-        self.emit(QtCore.SIGNAL('kontrola_set_satni(PyQt_PyObject)'), self.__okFrejmovi)
-        self.emit(QtCore.SIGNAL('kontrola_set_minutni(PyQt_PyObject)'), self.__okFrejmovi)
+        self.emit(QtCore.SIGNAL('kontrola_set_kanali(PyQt_PyObject)'), self.__okFrejmovi)
+        #emiti koji mjenjaju izvor podataka u panelima za grafove
+        self.emit(QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), self.__okFrejmovi)
         
         #vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
+###############################################################################
+    def promjena_defaulta(self, defaulti):
+        """
+        Metoda zaprima promjenjeni dict u kojem se nalaze informacije sto i kako
+        se treba crtati. Posao ove metode je tu informaciju prosljediti panelima
+        (i drugim klasama koje prate stanje) da bi znali sto prikazati na grafu.
         
+        """
+        #reemit podataka
+        self.emit(QtCore.SIGNAL('update_defaulti(PyQt_PyObject)'), defaulti)
 ###############################################################################
     def dohvati_agregirani_slajs(self, lista):
         """
@@ -238,10 +262,18 @@ class Kontrola(QtGui.QWidget):
         
         #reci dokumentu da prebaci flag na trazenom mjestu
         self.__dokument.promjeni_flag(lista)
-
-        #javi gui-u da ponovno nacrta graf bez inicijalizacije
-        self.emit(QtCore.SIGNAL('flag_promjenjen(PyQt_PyObject)'), self.__okFrejmovi)
         
-                #vrati izgled cursora nazad na normalni
+        #XXX!
+        #mali workaround, treba javiti panelima da ponovno potegnu nove podatke
+        #umjesto izmisljana tople vode, iskoritimo postojeci signal
+        
+        #dohvati informacije o "valjanim" frejmovima
+        self.__okFrejmovi = self.__dokument.dohvati_info_podataka(self.__trenutnaStanica, 
+                                                                  self.__tMin, 
+                                                                  self.__tMax)
+
+        self.emit(QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), self.__okFrejmovi)
+        
+        #vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################

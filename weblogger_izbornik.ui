@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>218</width>
-    <height>330</height>
+    <height>360</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>218</width>
-    <height>330</height>
+    <height>360</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -62,12 +62,12 @@
       <widget class="QLabel" name="label_3">
        <property name="maximumSize">
         <size>
-         <width>16777215</width>
+         <width>70</width>
          <height>16777215</height>
         </size>
        </property>
        <property name="text">
-        <string>Izbor stanice :</string>
+        <string>Izbor stanice:</string>
        </property>
       </widget>
      </item>
@@ -108,18 +108,45 @@
     </widget>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_4">
+       <property name="maximumSize">
+        <size>
+         <width>70</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Glavni kanal:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="uiKanalCombo"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="uiOpcije">
+     <property name="text">
+      <string>Postavke grafa</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QPushButton" name="uiPrethodni">
        <property name="text">
-        <string>Prethodni</string>
+        <string>Prethodni dan</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="uiSljedeci">
        <property name="text">
-        <string>Sljedeci</string>
+        <string>Sljedeci dan</string>
        </property>
       </widget>
      </item>

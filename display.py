@@ -90,6 +90,10 @@ class Display(base, form):
         self.connect(self.action_SatniMinorTicks, 
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.update_satni_ticks)
+        self.connect(self.action_SatniLegenda, 
+                     QtCore.SIGNAL('triggered(bool)'), 
+                     self.update_satni_legenda)
+
         #minutni graf
         self.connect(self.action_MinutniGrid, 
                      QtCore.SIGNAL('triggered(bool)'), 
@@ -103,6 +107,28 @@ class Display(base, form):
         self.connect(self.action_MinutniMinorTicks, 
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.update_minutni_ticks)
+        self.connect(self.action_MinutniLegenda, 
+                     QtCore.SIGNAL('triggered(bool)'), 
+                     self.update_minutni_legenda)
+
+###############################################################################
+    def update_satni_legenda(self, x):
+        """
+        Metoda odradjuje promjenu stanja legende na satnom grafu.
+        Mjenja ciljanu varijablu u self.__defaulti te poziva na ponovno
+        iscrtavanje grafa. Ulazni parametar je tipa boolean
+        """
+        self.__defaulti['ostalo']['opcijesatni']['legend'] = x
+        self.emit(QtCore.SIGNAL('promjena_defaulta(PyQt_PyObject)'), self.__defaulti)
+###############################################################################
+    def update_minutni_legenda(self, x):
+        """
+        Metoda odradjuje promjenu stanja legende na minutnom grafu.
+        Mjenja ciljanu varijablu u self.__defaulti te poziva na ponovno
+        iscrtavanje grafa. Ulazni parametar je tipa boolean
+        """
+        self.__defaulti['ostalo']['opcijeminutni']['legend'] = x
+        self.emit(QtCore.SIGNAL('promjena_defaulta(PyQt_PyObject)'), self.__defaulti)
 ###############################################################################
     def update_satni_grid(self, x):
         """
@@ -339,10 +365,12 @@ class Display(base, form):
         self.action_SatniCursor.setChecked(self.__defaulti['ostalo']['opcijesatni']['cursor'])
         self.action_SatniSpan.setChecked(self.__defaulti['ostalo']['opcijesatni']['span'])
         self.action_SatniMinorTicks.setChecked(self.__defaulti['ostalo']['opcijesatni']['ticks'])
+        self.action_SatniLegenda.setChecked(self.__defaulti['ostalo']['opcijesatni']['legend'])
         self.action_MinutniGrid.setChecked(self.__defaulti['ostalo']['opcijeminutni']['grid'])
         self.action_MinutniCursor.setChecked(self.__defaulti['ostalo']['opcijeminutni']['cursor'])
         self.action_MinutniSpan.setChecked(self.__defaulti['ostalo']['opcijeminutni']['span'])
         self.action_MinutniMinorTicks.setChecked(self.__defaulti['ostalo']['opcijeminutni']['ticks'])
+        self.action_MinutniLegenda.setChecked(self.__defaulti['ostalo']['opcijeminutni']['legend'])
         self.webLoggerIzbornik.set_defaulti(self.__defaulti)
         self.blockSignals(False) #ODBLOKIRAJ SIGNALE
         #reemit signal da su defaulti promjenjeni

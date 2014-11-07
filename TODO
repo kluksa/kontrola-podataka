@@ -64,4 +64,5 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141105:::VM:::Pri kraju sa refaktoriranjem, promjenama imena varijabli, promjenama u kontrolim elementima. Promjene se odnose na tocke 4, 5, 6, 7, 11, 12, 13, 15 i 17 (problematika je usko povezana i sve ce se rijesiti simultano).Jos nije spojeno kako treba (zato samo commitam TODO), ali biti ce vrlo brzo (jos samo trebam prebaciti izbor glavnog kanala u weblogger izbornik i tamo ubaciti gumb za odredjivanje opcija grafova te podesiti kontrolu da prepoznaje nove varijable).:::
 20141106:::VM:::Kraj grubog refaktoriranja i komentiranja koda. nadam se da je cijela stvar smislenija. Nema vise monolitskih fileova od 3000 linija koda. Bacam se na problem nestajucih tocki kada se podatci flagaju krivo.P.S. koja je tvoja verzija matplotliba???:::
 20141107:::VM:::Ispravljen bug sa tockama koje nestaju na satnom grafu kada se flagaju kao krive. (tocka 14.):::
+20141107:::VM:::Dodao support za prikaz legende sto je na grafu, nalazi se medju drugim toggle gumbima pod edit.:::
 

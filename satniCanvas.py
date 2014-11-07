@@ -394,6 +394,13 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #nacrtaj highlight
             self.highlight_dot(self.__zadnjiHighlightx, ypoint)
         
+        #TODO! pikaz legende
+        #prikaz legende na zahtjev
+        if self.__opcije['ostalo']['opcijesatni']['legend'] == True:
+            self.leg = self.axes.legend(loc = 1, fontsize =8, fancybox  = True)
+            self.leg.get_frame().set_alpha(0.9)                    
+
+        
         #naredba za crtanje na canvas
         self.draw()
         

@@ -76,6 +76,7 @@
      <addaction name="action_SatniCursor"/>
      <addaction name="action_SatniSpan"/>
      <addaction name="action_SatniMinorTicks"/>
+     <addaction name="action_SatniLegenda"/>
     </widget>
     <widget class="QMenu" name="menuMinutni_graf">
      <property name="title">
@@ -85,6 +86,7 @@
      <addaction name="action_MinutniCursor"/>
      <addaction name="action_MinutniSpan"/>
      <addaction name="action_MinutniMinorTicks"/>
+     <addaction name="action_MinutniLegenda"/>
     </widget>
     <addaction name="menuSatni_graf"/>
     <addaction name="separator"/>
@@ -296,6 +298,28 @@
   <action name="action_Save_preset">
    <property name="text">
     <string>Save preset as...</string>
+   </property>
+  </action>
+  <action name="action_SatniLegenda">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Legenda toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Prikaz legende na agregiranom grafu</string>
+   </property>
+  </action>
+  <action name="action_MinutniLegenda">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Legenda toggle</string>
+   </property>
+   <property name="toolTip">
+    <string>Prikaz legende na minutnom grafu</string>
    </property>
   </action>
  </widget>

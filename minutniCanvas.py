@@ -316,7 +316,13 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #rubovi indeksa glavnog kanala, treba za pick i span granice
             self.__tmin = self.__data[trenutniGlavniKanal].index.min()
             self.__tmax = self.__data[trenutniGlavniKanal].index.max()
-                    
+
+        #TODO! pikaz legende
+        #prikaz legende na zahtjev
+        if self.__opcije['ostalo']['opcijeminutni']['legend'] == True:
+            self.leg = self.axes.legend(loc = 1, fontsize =8, fancybox  = True)
+            self.leg.get_frame().set_alpha(0.9)                    
+
         #naredba za crtanje na canvas
         self.draw()
         

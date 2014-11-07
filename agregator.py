@@ -176,7 +176,7 @@ class Agregator(object):
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
 
         
-        #TODO!
+        #XXX!
         #treba testirati kako prati status validiranih
         #validirani i OK - flag=1000
         #validirani i prekratak niz valjanih - flag=-1000
@@ -192,6 +192,28 @@ class Agregator(object):
                     agregirani.loc[i, u'flag'] = -1000
                 else:
                     agregirani.loc[i,u'flag'] = -1
+                    
+        #XXX!
+        """
+        Problem prilikom agregiranja. ako sve indekse unutar jednog sata prebacimo
+        da su lose, funkcije koje racunaju srednje vrijednosti isl. ne reazlikuju
+        taj slucaj od nepostojecih podataka te uvijek vrate np.NaN (not a number).
+        Potrebno je postaviti te intervale na neku vrijednost (recimo 0) da bi se
+        prikazali na grafu.
+        """
+        for i in agregirani.index:
+            if np.isnan(agregirani.loc[i, u'avg']) and agregirani.loc[i, u'broj podataka'] > 0:
+                #ako je average np.nan i ako je broj podataka u intevalu veci od 0 (ima podataka)
+                #postavi vrijenosti na 0 da se mogu prikazati
+                agregirani.loc[i, u'avg'] = 0
+                agregirani.loc[i, u'min'] = 0
+                agregirani.loc[i, u'max'] = 0
+                agregirani.loc[i, u'q05'] = 0
+                agregirani.loc[i, u'q95'] = 0
+                agregirani.loc[i, u'count'] = 0
+                agregirani.loc[i, u'median'] = 0
+                agregirani.loc[i, u'std'] = 0
+                
                
         return agregirani
         
@@ -220,7 +242,7 @@ if __name__ == "__main__":
 #    frejm = frejmovi['49-O3-ug/m3']
 #    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
 #    frejm.loc['2014-06-04 20:00:00':'2014-06-04 22:00:00','flag'] = -15
-#    frejm.loc['2014-06-04 08:00:00':'2014-06-04 13:00:00','flag'] = -1000
+    frejm.loc['2014-06-04 08:00:00':'2014-06-04 18:00:00','flag'] = -1000
     #frejm = frejmovi['49-O3-ug/m3']
     
     #Inicijaliziraj agregator
@@ -228,11 +250,11 @@ if __name__ == "__main__":
     #frejm = pd.DataFrame()
     #print(frejm)
     #agregiraj frejm
-#    agregirani = agregator.agregiraj_kanal(frejm)
-#    print(agregirani)
+    agregirani = agregator.agregiraj_kanal(frejm)
+    print(agregirani)
     #agregiraj sve frejmove
-    agregirani = agregator.agregiraj(frejmovi)
-#    print(agregirani)
+    #agregirani = agregator.agregiraj(frejmovi)
+    #print(agregirani)
     
     #random sample da provjerim valjanost agregiranja
     #barem sto se tice slicea i rubova istih

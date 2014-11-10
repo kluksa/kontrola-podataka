@@ -52,6 +52,10 @@ class GrafPanel(base3, form3):
         
     self.minutniGraf
         -instanca minutnog canvasa
+        
+    self.izabraniSat
+        -timestamp zadnjeg izabranog sata
+        -potreban za crtanje minutnog grafa
     """
     def __init__(self, parent = None, defaulti = None, infoFrejmovi = None):
         super(base3, self).__init__(parent)
@@ -63,6 +67,7 @@ class GrafPanel(base3, form3):
         #defaultini izbor za grafove
         self.__defaulti = defaulti #dictionary sa "opisom" grafova
         self.__infoFrejmovi = infoFrejmovi #[stanica, tMin, tMax, [lista kanala]]
+        self.__sat = None
        
         #inicijalizacija canvasa
         self.satniGraf = satniCanvas.Graf(parent = None)
@@ -83,25 +88,30 @@ class GrafPanel(base3, form3):
         To je posao ove metode i poziva se svaki puta kada se postavi novi
         self.__defaulti ili self.__infoFrejmovi.
         """
-        #placeholderi za stringove rubove vremenskog niza
-        tmin = ''
-        tmax = ''
+        
         #postavi label da prikazuje koji je trenutni glavni kanal
         if self.__defaulti != None:
             glavniKanal = self.__defaulti['glavniKanal']['validanOK']['kanal']
             
         if self.__infoFrejmovi != None:
             tmin = self.__infoFrejmovi[1]
-            tmax = self.__infoFrejmovi[2]
+            tmax = self.__infoFrejmovi[2]        
+            #ako je zadnje izabrani sat izvan novog intervala, 
+            #resetriaj sat (slucaj kada netko promjeni datum)
+            if self.__sat != None:
+                if self.__sat >= tmax or self.__sat<= tmin:
+                    self.__sat = None
             
-        opis = 'Glavni kanal: '+str(glavniKanal)+' od: '+str(tmin)+' do:'+str(tmax)
-        self.label.setText(opis)
         
         #naredi crtanje grafa canvasu ako su ulazni paremetri razliciti od None
         if self.__defaulti != None and self.__infoFrejmovi != None:
             self.satniGraf.crtaj(self.__defaulti, self.__infoFrejmovi)
-            self.minutniGraf.crtaj(self.__defaulti, self.__infoFrejmovi)
-            
+            self.minutniGraf.crtaj(self.__defaulti, self.__infoFrejmovi, self.__sat)
+
+            opis = 'Glavni kanal: '+str(glavniKanal)+' od: '+str(tmin)+' do:'+str(tmax)
+            self.label.setText(opis)
+        else:
+            opis = 'Glavni kanal: '+str(glavniKanal)+' nema podataka...'
 ###############################################################################
     def zamjeni_defaulte(self, defaulti):
         """
@@ -109,6 +119,14 @@ class GrafPanel(base3, form3):
         Import postavki.
         """
         self.__defaulti = defaulti
+        self.initial_setup()
+###############################################################################
+    def zamjeni_sat(self, sat):
+        """
+        Kratka funkcija koja sluzi za elegantnu zamjenu postavki grafova.
+        Import postavki.
+        """
+        self.__sat = sat
         self.initial_setup()
 ###############################################################################
     def zamjeni_frejmove(self, info):

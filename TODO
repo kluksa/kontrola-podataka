@@ -75,4 +75,6 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141106:::VM:::Kraj grubog refaktoriranja i komentiranja koda. nadam se da je cijela stvar smislenija. Nema vise monolitskih fileova od 3000 linija koda. Bacam se na problem nestajucih tocki kada se podatci flagaju krivo.P.S. koja je tvoja verzija matplotliba???:::
 20141107:::VM:::Ispravljen bug sa tockama koje nestaju na satnom grafu kada se flagaju kao krive. (tocka 14.):::
 20141107:::VM:::Dodao support za prikaz legende sto je na grafu, nalazi se medju drugim toggle gumbima pod edit.:::
+20141110:::VM:::Fix raspona minutnog grafa. Minutni graf sada sadrzi samo 60 tocaka, nakon sto je izabrana tocka na satnom grafu. Pamti se zadnji izbor tocke, te se smatra da je ista tocka izabrana prilikom promjene kanala:::
+
 

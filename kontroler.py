@@ -110,11 +110,12 @@ class Kontrola(QtGui.QWidget):
                      QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), 
                      gui.panel.satniGraf.set_agregirani_kanal)
                      
-        #ljevi klik na satnom grafu... zoom na minutni slice                     
+        #ljevi klik na satnom grafu... zoom na minutni slice
+        #TODO! ovo treba malo raspisati
         self.connect(gui.panel.satniGraf, 
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
-                     gui.panel.minutniGraf.fokusiraj_interval)
-        
+                     gui.panel.zamjeni_sat)
+                             
         #spajanje zahtjeva za dohvacanjem minutnog slicea (crtanje grafa)
         self.connect(gui.panel.minutniGraf,
                      QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), 

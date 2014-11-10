@@ -12,8 +12,9 @@ from PyQt4 import QtCore, QtGui, uic
 import dokument
 import kontroler
 import weblogger_izbornik
-import minutniPanel
-import satniPanel
+#import minutniPanel
+#import satniPanel
+import grafoviPanel
 
 ###############################################################################
 ###############################################################################
@@ -35,21 +36,16 @@ class Display(base, form):
         memberi
         """
         self.__grafInfo = None #informacija o dostupnim podatcima za crtanje
-                
-        #inicijalizacija satnog panela
-        self.agregiraniPanel = satniPanel.SatniPanel(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
-        #inicijalizacija minutnog canvasa
-        self.normalniPanel = minutniPanel.MinutniPanel(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
         
+        #panel sa grafovima (panel je u osnovi QWidget)
+        self.panel = grafoviPanel.GrafPanel(parent = None, defaulti = self.__defaulti, infoFrejmovi = None)
+        #postavljanje panela u dockable widget self.dockWidget_grafovi
+        self.dockWidget_grafovi.setWidget(self.panel)
+
         #neka se defaultno prikazuje weblogger izbornik        
         self.wlReaderLoaded = True
         #postavi self.webLoggerIzbornik u kontrolni dock widget
         self.dockWidget_kontrola.setWidget(self.webLoggerIzbornik)
-        
-        #postavi panel sa satno agregiranim grafom u "satni" dock widget
-        self.dockWidget_satni.setWidget(self.agregiraniPanel)
-        #postavi panel sa minutnim grafom u "minutno" dock widget
-        self.dockWidget_minutni.setWidget(self.normalniPanel)
 
 
         """povezivanje akcija"""
@@ -221,7 +217,7 @@ class Display(base, form):
         geometrija =self.geometry()
         #informacija o defaultnim podatcima za crtanje grafova, ista je kopija
         #u oba canvasa pa dohvati bilo koji
-        info = copy.deepcopy(self.dockWidget_satni.widget().get_defaulti())
+        info = copy.deepcopy(self.panel.get_defaulti())
                 
         #konzistentno zapakiraj u dict        
         data = {'preset':preset, 'geometrija':geometrija, 'ostalo':info}
@@ -277,8 +273,7 @@ class Display(base, form):
             #postavi opcije za crtanje grafova
             self.load_defaults(data['ostalo'])
             #informaciju o novim defaultnim vrijednostima treba prosljediti grafovima
-            self.agregiraniPanel.zamjeni_defaulte(self.__defaulti)
-            self.normalniPanel.zamjeni_defaulte(self.__defaulti)
+            self.panel.zamjeni_defaulte(self.__defaulti)
             #TODO!informaciju treba prosljediti i webloggeru
 ###############################################################################
     def gui_action_read_file(self):

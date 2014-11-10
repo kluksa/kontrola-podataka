@@ -407,17 +407,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 tmax = self.__tmin
             if tmax > self.__tmax:
                 tmax = self.__tmax
-
-            """
-            Linija koda ispod potencijalno rusi aplikaciju, za detalje pogledaj
-            docstring od metode on_pick
-            toolbar opcije moraju biti iskljucene
-            """
-            stanje = self.parent().mplToolbar._active
             
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
             #zoom, pan opcije na toolbaru moraju biti "off"
-            if tmin != tmax and stanje == None:
+            if tmin != tmax:
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_menu(loc, tmin, tmax)
@@ -484,43 +477,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
         Metoda odradjuje interakciju sa canvasom. Preuzima event (mouseclick), 
         te ovisno o infomaciji sadrzanom u eventu mjenja flag, stavlja annotation.
         
-        WARNING!
-        Ovdje se potencijalo nalazi bug koji potencijalno lomi aplikaciju. 
-        Sve radi u matplotlib verziji 1.3.1
-        
-        Definicija problema:
-        Probelm je kod konfilkta kontrola. Matplotlib toolbar koji ce biti povezan
-        sa ovim canvasom ima opcije poput zoom, pan isl. Cilj je iskljuciti
-        funkcionalnost klikova dok su te opcije aktivne (npr. da prilikom zooma, 
-        ova funkcija ignorira event ljevog klika na graf).
-        
-        Razlog potencijalog sloma:
-        1.
-        Ne mogu naci neki pametan nacin da uhvatim stanje toolbara, pa sam 
-        prisiljen dohvacati private member toolbara (_active).
-        
-        _active == None ako su Pan i Zoom opcije iskljucene
-        _active == 'PAN' ako je pan/zoom opcija ukljucena
-        _active == 'ZOOM' ako je zoom rect opcija ukljucena
-        
-        Developeri matplotliba mogu taj member maknuti, preimenovati, promjeniti
-        bez upozorenja (jer je private i ne bi se trebao dohvacati)
-        
-        2. 
-        Vezano za definiciju samog toolbara, parent ovog canvasa mora imati 
-        member mplToolar (self.mplToolar) tipa NavigationToolbar2QT, koji mora 
-        biti povezan sa ovim canvasom.
-        
-        Ovaj problem je samo vezan za "arhitekturu", te se na to mora paziti
-        prilikom instanciranja ove klase i panela u kojem se nalazi
-        """
-        stanje = self.parent().mplToolbar._active #stanje toolbara, vidi docstring za detalje 
-        """
         -glavni graf mora biti nacrtan
         -event mora biti unutar axesa (prostora za crtanje)
-        -stanje toolbara mora biti None (zoom i pan moraju biti "off")
         """
-        if self.__statusGlavniGraf and event.inaxes == self.axes and stanje == None:
+        if self.__statusGlavniGraf and event.inaxes == self.axes:
             #nuzna konverzija x tocke eventa u pandas timestamp
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
             #problem.. rounding offset aware i offset naive datetimes..workaround

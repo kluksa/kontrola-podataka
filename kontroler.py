@@ -7,8 +7,8 @@ Created on Fri May  9 13:19:45 2014
 """
 
 from PyQt4 import QtGui,QtCore
-import pandas as pd
-from datetime import timedelta
+#import pandas as pd
+#from datetime import timedelta
 
 
 class Kontrola(QtGui.QWidget):
@@ -79,12 +79,7 @@ class Kontrola(QtGui.QWidget):
         #slotovi zamjeni_frejmove povlace ponovno crtanje
         self.connect(self, 
                      QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), 
-                     gui.agregiraniPanel.zamjeni_frejmove)
-                     
-        self.connect(self, 
-                     QtCore.SIGNAL('kontrola_datum_promjenjen(PyQt_PyObject)'), 
-                     gui.normalniPanel.zamjeni_frejmove)
-                     
+                     gui.panel.zamjeni_frejmove)                    
         
         #spajanje projmene defaulta od webloggera sa slotom u displayu - load_defaults
         self.connect(gui.webLoggerIzbornik, 
@@ -100,42 +95,42 @@ class Kontrola(QtGui.QWidget):
         #slotovi zamjeni_defaulte povlace ponovno crtanje grafa
         self.connect(self, 
                      QtCore.SIGNAL('update_defaulti(PyQt_PyObject)'), 
-                     gui.agregiraniPanel.zamjeni_defaulte)
+                     gui.panel.zamjeni_defaulte)
 
         self.connect(self, 
                      QtCore.SIGNAL('update_defaulti(PyQt_PyObject)'), 
-                     gui.normalniPanel.zamjeni_defaulte)
+                     gui.panel.zamjeni_defaulte)
                      
         #spajanje zahtjeva za dohvacanjem satno agregiranog slicea (crtanje grafa)
-        self.connect(gui.agregiraniPanel.canvas,
+        self.connect(gui.panel.satniGraf,
                      QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), 
                      self.dohvati_agregirani_slajs)
         #dohvaceni frejm sa kanalom se prosljedjuje canvasu
         self.connect(self, 
                      QtCore.SIGNAL('set_agregirani_frejm(PyQt_PyObject)'), 
-                     gui.agregiraniPanel.canvas.set_agregirani_kanal)
+                     gui.panel.satniGraf.set_agregirani_kanal)
                      
         #ljevi klik na satnom grafu... zoom na minutni slice                     
-        self.connect(gui.agregiraniPanel.canvas, 
+        self.connect(gui.panel.satniGraf, 
                      QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'), 
-                     gui.normalniPanel.canvas.fokusiraj_interval)
+                     gui.panel.minutniGraf.fokusiraj_interval)
         
         #spajanje zahtjeva za dohvacanjem minutnog slicea (crtanje grafa)
-        self.connect(gui.normalniPanel.canvas,
+        self.connect(gui.panel.minutniGraf,
                      QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), 
                      self.dohvati_minutni_slajs)
                      
         self.connect(self, 
                      QtCore.SIGNAL('set_minutni_frejm(PyQt_PyObject)'), 
-                     gui.normalniPanel.canvas.set_minutni_kanal)
+                     gui.panel.minutniGraf.set_minutni_kanal)
 
         #promjena flaga na satnom grafu
-        self.connect(gui.agregiraniPanel.canvas, 
+        self.connect(gui.panel.satniGraf, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjeni_flag)
                      
         #promjena flaga na minutnom grafu
-        self.connect(gui.normalniPanel.canvas, 
+        self.connect(gui.panel.minutniGraf, 
                      QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), 
                      self.promjeni_flag)
 

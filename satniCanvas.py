@@ -258,7 +258,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                               color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanOK']['rgb']), 
                               alpha = self.__opcije['glavniKanal']['validanOK']['alpha'], 
                               zorder = self.__opcije['glavniKanal']['validanOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['validanOK']['label'])
+                              label = self.__opcije['glavniKanal']['validanOK']['label'], 
+                              s = self.__opcije['glavniKanal']['validanOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #3. validanNOK
@@ -274,7 +275,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                               color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanNOK']['rgb']), 
                               alpha = self.__opcije['glavniKanal']['validanNOK']['alpha'], 
                               zorder = self.__opcije['glavniKanal']['validanNOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['validanNOK']['label'])
+                              label = self.__opcije['glavniKanal']['validanNOK']['label'], 
+                              s = self.__opcije['glavniKanal']['validanNOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #4. nevalidanOK
@@ -290,7 +292,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                               color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanOK']['rgb']), 
                               alpha = self.__opcije['glavniKanal']['nevalidanOK']['alpha'], 
                               zorder = self.__opcije['glavniKanal']['nevalidanOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['nevalidanOK']['label'])
+                              label = self.__opcije['glavniKanal']['nevalidanOK']['label'], 
+                              s = self.__opcije['glavniKanal']['nevalidanOK']['markersize'])
             self.__statusGlavniGraf = True
         
         #5 nevalidanNOK
@@ -306,7 +309,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                               color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanNOK']['rgb']), 
                               alpha = self.__opcije['glavniKanal']['nevalidanNOK']['alpha'], 
                               zorder = self.__opcije['glavniKanal']['nevalidanNOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['nevalidanNOK']['label'])
+                              label = self.__opcije['glavniKanal']['nevalidanNOK']['label'], 
+                              s = self.__opcije['glavniKanal']['nevalidanNOK']['markersize'])
             self.__statusGlavniGraf = True
             
         #6. fillsatni
@@ -338,7 +342,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                                   color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['ekstremimin']['rgb']), 
                                   alpha = self.__opcije['glavniKanal']['ekstremimin']['alpha'], 
                                   zorder = self.__opcije['glavniKanal']['ekstremimin']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['ekstremimin']['label'])
+                                  label = self.__opcije['glavniKanal']['ekstremimin']['label'], 
+                                  s = self.__opcije['glavniKanal']['ekstremimin']['markersize'])
                 self.__statusGlavniGraf = True
 
         #8. ekstremimax
@@ -354,7 +359,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
                                   color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['ekstremimax']['rgb']), 
                                   alpha = self.__opcije['glavniKanal']['ekstremimax']['alpha'], 
                                   zorder = self.__opcije['glavniKanal']['ekstremimax']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['ekstremimax']['label'])
+                                  label = self.__opcije['glavniKanal']['ekstremimax']['label'], 
+                                  s = self.__opcije['glavniKanal']['ekstremimax']['markersize'])
                 self.__statusGlavniGraf = True
         #kraj crtanja glavnog kanala
         
@@ -372,7 +378,9 @@ class Graf(opcenitiCanvas.MPLCanvas):
                                color = pomocneFunkcije.normalize_rgb(self.__opcije['pomocniKanali'][graf]['rgb']), 
                                alpha = self.__opcije['pomocniKanali'][graf]['alpha'],
                                zorder = self.__opcije['pomocniKanali'][graf]['zorder'],
-                               label = self.__opcije['pomocniKanali'][graf]['label'])
+                               label = self.__opcije['pomocniKanali'][graf]['label'], 
+                               markersize = self.__opcije['pomocniKanali'][graf]['markersize'], 
+                               linewidth = self.__opcije['pomocniKanali'][graf]['linewidth'])
                               
         #highlight dot
         if self.__statusGlavniGraf:

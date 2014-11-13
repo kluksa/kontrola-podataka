@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>533</width>
-    <height>550</height>
+    <height>609</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,6 +45,23 @@
          </item>
          <item row="1" column="1">
           <widget class="QComboBox" name="comboValidan"/>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Velicina markera: </string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="spinBoxMarker">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -198,21 +215,18 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QTableView" name="tableView"/>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QVBoxLayout" name="tableViewLayout">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+         </layout>
+        </item>
         <item>
          <widget class="QPushButton" name="dodajGraf">
           <property name="text">
            <string>Dodaj graf</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="makniGraf">
-          <property name="text">
-           <string>Makni Graf</string>
           </property>
          </widget>
         </item>

@@ -82,4 +82,6 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141112:::LK:::Grid, tick markeri svako 1 sat (na satnom), na minutnom svako 5 minuta tick, a 1 minuti thin
 20141112:::LK:::Konstante sa granicama koje se crtaju horiz linija za svaki kanal (u kasnijoj iteraciji)
 20141112:::LK:::Zero/span drugi tab (u kasnijoj iteraciji)
+20141113:::VM:::Donekle sredio tablicu za dodavanje grafova, kasnije mozda se zafrkavati sa ikonama isl. ali funkcionalnost je tu. Dodao marker size za glavni i pomocne grafove. Pomocni grafovi imaju i dodatnu opciju za sirinu linije. Javi da li je sucelje ok:::
+
 

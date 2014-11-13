@@ -4,10 +4,9 @@ Created on Tue Nov  4 15:49:31 2014
 
 @author: User
 """
-from PyQt4 import QtGui, uic
+from PyQt4 import QtGui, QtCore, uic
 
 import pomocneFunkcije #cesto koristene funkcije, adapteri...
-import dijalog2 #dijalog za izbor opcija pomocnog grafa
 import tableModel #specificna implementacija modela za dinamicko dodavanje pomocnih grafova
 
 base1, form1 = uic.loadUiType('kontrola_crtanja_grafova.ui')
@@ -55,9 +54,60 @@ class IzborStoSeCrta(base1, form1):
         super(base1, self).__init__(parent)
         self.setupUi(self)
         
-        self.__dostupniKanali = kanali #popis kanala (lista stringova)
         self.__glavniKanal = glavniKanal #glavni kanal (string)
         self.__info = info #nested dict sa informacijom o postavkama grafova
+        #TODO! srediti inicijalizaciju 
+        #garant neki fale...
+        self.__sviKanali = ['1-SO2-ppb', '10-NO-ppb', '11-NOx-ppb', '12-NO2-ppb', 
+                            '13-NO-ug/m3', '14-NOx-ug/m3', '15-NO2-ug/m3', 
+                            '3-SO2-ug/m3', '30-CO-ppm', '31-CO-mg/m3', 
+                            '40-O3-ppb', '49-O3-ug/m3', '50-PM1-ug/m3', 
+                            '51-PM2.5-ug/m3', '52-PM10-ug/m3', '53-AT-°C', 
+                            '54-RH-%', '80-Enc.Temp-°C']
+        #helper mape, za pretvaranje mpl vrijednosti u teskt i nazad
+        self.__marker_to_opis = {'None':'Bez markera', 
+                                 'o':'Krug', 
+                                 'v':'Trokut, dolje', 
+                                 '^':'Trokut, gore', 
+                                 '<':'Trokut, lijevo', 
+                                 '>':'Trokut, desno', 
+                                 's':'Kvadrat', 
+                                 'p':'Pentagon', 
+                                 '*':'Zvijezda', 
+                                 'h':'Heksagon', 
+                                 '+':'Plus', 
+                                 'x':'X', 
+                                 'd':'Dijamant', 
+                                 '_':'Horizontalna linija', 
+                                 '|':'Vertikalna linija'}
+                                 
+        self.__line_to_opis = {'None':'Bez linije', 
+                               '-':'Puna linija',
+                               '--':'Dash - Dash', 
+                               '-.':'Dash - Dot', 
+                               ':':'Dot'}
+
+        self.__opis_to_marker = {'Bez markera':'None', 
+                                 'Krug':'o', 
+                                 'Trokut, dolje':'v', 
+                                 'Trokut, gore':'^', 
+                                 'Trokut, lijevo':'<', 
+                                 'Trokut, desno':'>', 
+                                 'Kvadrat':'s', 
+                                 'Pentagon':'p', 
+                                 'Zvijezda':'*', 
+                                 'Heksagon':'h', 
+                                 'Plus':'+', 
+                                 'X':'x', 
+                                 'Dijamant':'d', 
+                                 'Horizontalna linija':'_', 
+                                 'Vertikalna linija':'|'}
+        
+        self.__opis_to_line = {'Bez linije':'None', 
+                               'Puna linija':'-',
+                               'Dash - Dash':'--', 
+                               'Dash - Dot':'-.', 
+                               'Dot':':'}
         
         self.initial_setup()
         self.veze()
@@ -78,63 +128,46 @@ class IzborStoSeCrta(base1, form1):
              for key in pomocni:
                 """
                 !!!redosljed je jako bitan da model zna gdje su elementi!!!
-                slaganje liste, u zagradi je broj indeksa: 
-                kanal(0), marker(1), line(2), rgb(3), alpha(4), zorder(5), label(6)
-                """
-                temp = [pomocni[key]['kanal'], 
-                        pomocni[key]['marker'], 
-                        pomocni[key]['line'], 
-                        pomocni[key]['rgb'], 
-                        pomocni[key]['alpha'], 
-                        pomocni[key]['zorder'], 
-                        pomocni[key]['label']]
-                nLista.append(temp)
+                slaganje liste, u zagradi je broj indeksa:
                 
+                kanal(0), marker(1), markersize(2), line(3), linewidth(4), 
+                rgb(5), alpha(6), zorder(7), label(8)            
+                """
+                temp =[pomocni[key]['kanal'], 
+                       self.__marker_to_opis[pomocni[key]['marker']], 
+                       pomocni[key]['markersize'], 
+                       self.__line_to_opis[pomocni[key]['line']], 
+                       pomocni[key]['linewidth'], 
+                       pomocni[key]['rgb'], 
+                       pomocni[key]['alpha'], 
+                       pomocni[key]['zorder'], 
+                       pomocni[key]['label']]
+                nLista.append(temp)
+        #popis stilova markera i stilova linija
+        markeri = sorted(list(self.__opis_to_marker.keys()))
+        linije = sorted(list(self.__opis_to_line.keys()))
         #instanciranje modela i povezivanje sa QTableView-om
-        self.model = tableModel.PomocniGrafovi(grafInfo = nLista)
+        #inicjalizacija modela
+        self.model = tableModel.PomocniGrafovi(grafInfo = nLista, kanali = self.__sviKanali, markeri = markeri, linije = linije)
+        #inicjalizacija tablice
+        self.tableView = Tablica()
+        #postavljanje tablice u layout dijaloga
+        self.tableViewLayout.addWidget(self.tableView)
+        #settanje modela u view
         self.tableView.setModel(self.model)
 
+        #TODO! vidi popunjavanje comboboxeva sto i kako se pise
         """2. popunjavanje comboboxeva"""
-        #pomocni dict za tip markera
-        self.__markeri = {'Bez markera':'None', 
-                          'Krug':'o', 
-                          'Trokut, dolje':'v', 
-                          'Trokut, gore':'^', 
-                          'Trokut, lijevo':'<', 
-                          'Trokut, desno':'>', 
-                          'Kvadrat':'s', 
-                          'Pentagon':'p', 
-                          'Zvijezda':'*', 
-                          'Heksagon':'h', 
-                          'Plus':'+', 
-                          'X':'x', 
-                          'Dijamant':'d', 
-                          'Horizontalna linija':'_', 
-                          'Vertikalna linija':'|'}
-                          
-        #reverse dict markera, samo za potrebe inicijalizacije
-        initmarkeri = {'None':'Bez markera', 
-                       'o':'Krug', 
-                       'v':'Trokut, dolje', 
-                       '^':'Trokut, gore', 
-                       '<':'Trokut, lijevo', 
-                       '>':'Trokut, desno', 
-                       's':'Kvadrat', 
-                       'p':'Pentagon', 
-                       '*':'Zvijezda', 
-                       'h':'Heksagon', 
-                       '+':'Plus', 
-                       'x':'X', 
-                       'd':'Dijamant', 
-                       '_':'Horizontalna linija', 
-                       '|':'Vertikalna linija'}
         
         #nadji definirane vrijednosti markera
-        validan = initmarkeri[self.__info['glavniKanal']['validanOK']['marker']]
-        nevalidan = initmarkeri[self.__info['glavniKanal']['nevalidanOK']['marker']]
-        ekstrem = initmarkeri[self.__info['glavniKanal']['ekstremimin']['marker']]
+        validan = self.__marker_to_opis[self.__info['glavniKanal']['validanOK']['marker']]
+        nevalidan = self.__marker_to_opis[self.__info['glavniKanal']['nevalidanOK']['marker']]
+        ekstrem = self.__marker_to_opis[self.__info['glavniKanal']['ekstremimin']['marker']]
+        msize = self.__info['glavniKanal']['validanOK']['markersize']
         
-        markeri = sorted(list(self.__markeri.keys()))
+        self.spinBoxMarker.setValue(msize)
+        
+        markeri = sorted(list(self.__opis_to_marker.keys()))
         self.comboValidan.addItems(markeri)
         self.comboValidan.setCurrentIndex(self.comboValidan.findText(validan))
         self.comboNeValidan.addItems(markeri)
@@ -228,7 +261,7 @@ class IzborStoSeCrta(base1, form1):
         validiranih vrijednosti
         """
         #dohvati trenutnu vrijednost comboboxa
-        marker = self.__markeri[self.comboValidan.currentText()]
+        marker = self.__opis_to_marker[self.comboValidan.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
         self.__info['glavniKanal']['validanOK']['marker'] = marker
         self.__info['glavniKanal']['validanNOK']['marker'] = marker
@@ -238,7 +271,7 @@ class IzborStoSeCrta(base1, form1):
         Funkcija odradjuje promjenu vrijednosti comboboxa za markere
         ne-validiranih vrijednosti
         """
-        marker = self.__markeri[self.comboNeValidan.currentText()]
+        marker = self.__opis_to_marker[self.comboNeValidan.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
         self.__info['glavniKanal']['nevalidanOK']['marker'] = marker
         self.__info['glavniKanal']['nevalidanNOK']['marker'] = marker
@@ -248,7 +281,7 @@ class IzborStoSeCrta(base1, form1):
         Funkcija odradjuje promjenu vrijednosti comboboxa za markere ekstremnih
         vrijednosti
         """
-        marker = self.__markeri[self.comboEkstrem.currentText()]
+        marker = self.__opis_to_marker[self.comboEkstrem.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
         self.__info['glavniKanal']['ekstremimin']['marker'] = marker
         self.__info['glavniKanal']['ekstremimax']['marker'] = marker
@@ -372,6 +405,20 @@ class IzborStoSeCrta(base1, form1):
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaNOK', boja)
             self.gumbBojaNOK.setStyleSheet(stil)
+            
+    def promjeni_velicinu_markera(self):
+        """
+        funkcija mjenja promjenu velicine svih markera za glavni graf.
+        """
+        #dohvati trenutnu vrijednost spinboxa
+        msize = self.spinBoxMarker.value()
+        #postavi vrijednost u self.__info na odgovarajuce mjesto
+        self.__info['glavniKanal']['validanOK']['markersize'] = msize
+        self.__info['glavniKanal']['validanNOK']['markersize'] = msize
+        self.__info['glavniKanal']['nevalidanOK']['markersize'] = msize
+        self.__info['glavniKanal']['nevalidanNOK']['markersize'] = msize
+        self.__info['glavniKanal']['ekstremimin']['markersize'] = msize
+        self.__info['glavniKanal']['ekstremimax']['markersize'] = msize
 
     def dohvati_postavke(self):
         """
@@ -384,14 +431,18 @@ class IzborStoSeCrta(base1, form1):
         pomocni = {}
         #upisivanje u pomocni dict
         for i in range(len(nLista)):
-            pomocni[nLista[i][6]] = {
+            pomocni[nLista[i][0]] = {
                 'kanal':nLista[i][0], 
-                'marker':nLista[i][1], 
-                'line':nLista[i][2], 
-                'rgb':nLista[i][3], 
-                'alpha':nLista[i][4], 
-                'zorder':nLista[i][5], 
-                'label':nLista[i][6]}
+                'marker':self.__opis_to_marker[nLista[i][1]], 
+                'markersize':nLista[i][2], 
+                'line':self.__opis_to_line[nLista[i][3]], 
+                'linewidth':nLista[i][4], 
+                'rgb':nLista[i][5], 
+                'alpha':nLista[i][6], 
+                'zorder':nLista[i][7], 
+                'label':nLista[i][8]
+            }
+            
         #zamjeni dict u self.__info
         self.__info['pomocniKanali'] = pomocni
         #vrati cijeli dict sa postavkama
@@ -403,7 +454,6 @@ class IzborStoSeCrta(base1, form1):
         signala i slotova budu na jendnom mjestu
         """
         self.dodajGraf.clicked.connect(self.dodaj_graf) #gumb za dodavanje pomocnog grafa
-        self.makniGraf.clicked.connect(self.makni_graf) #gumb za brisanje pomocnog grafa
         self.checkFill.clicked.connect(self.promjeni_status_fill) #checkbox za fill
         self.checkEkstrem.clicked.connect(self.promjeni_status_ekstrem) #checkbox za min/max
         self.gumbBojaOK.clicked.connect(self.promjeni_boju_ok) #gumb za boju ako je flag dobar
@@ -415,6 +465,7 @@ class IzborStoSeCrta(base1, form1):
         self.comboEkstrem.currentIndexChanged.connect(self.promjeni_marker_ekstrem) #combobox za ekstremne markere
         self.comboData1.currentIndexChanged.connect(self.promjeni_fill_komponenta1) #izbor podataka za fill
         self.comboData2.currentIndexChanged.connect(self.promjeni_fill_komponenta2) #izbor podataka za fill
+        self.spinBoxMarker.valueChanged.connect(self.promjeni_velicinu_markera) #izbor velicine markera za satni graf
     
     def dodaj_graf(self, lista):
         """
@@ -422,69 +473,233 @@ class IzborStoSeCrta(base1, form1):
         graf je zadan kao lista parametara koji se kao cjelina upisuju u model
         uz pomoc funkcije modela insertRows
         """
-        dijalog = dijalog2.IzborPojedinacnogGrafa(kanali = self.__dostupniKanali)
-        if dijalog.exec_():
-            lista = dijalog.vrati_listu_grafa()
-            self.model.insertRows(0,1,sto=[lista])
+        #TODO! samo treba insertati defaultni index u tablicu
+        defaultGraf = ['1-SO2-ppb','Bez markera',12,'Puna linija',2,(0,0,255),1.0,4,'1-SO2-ppb']
+        self.model.insertRows(0, 1, sto=[defaultGraf])
+#        dijalog = dijalog2.IzborPojedinacnogGrafa(kanali = self.__dostupniKanali)
+#        if dijalog.exec_():
+#            lista = dijalog.vrati_listu_grafa()
+#            self.model.insertRows(0,1,sto=[lista])
+###############################################################################
+###############################################################################
+class Tablica(QtGui.QTableView):
+    """
+    Ova klasa je zaduzena za prikaz modela pomocnih grafova.
+    Subklasani QTableView, ciljano zahtjevamo da se odredjeni stupci
+    ponasaju drugacije. Delegiramo editiranje modela drugim klasama (
+    inace je line edit, cilj je dozvoliti comboBoxeve, spinBoxeve, 
+    ponasanje slicno gumbima...)
+    
+    incijalizacija sa kanalima
+    kwd kanali = kanali
+    """
+    def __init__(self, parent = None):
+        QtGui.QTableView.__init__(self, parent)
+        
+        # postavi delegate
+        self.setItemDelegateForColumn(0, KanalComboBoxDelegate(self))
+        self.setItemDelegateForColumn(1, MarkerComboBoxDelegate(self))
+        self.setItemDelegateForColumn(2, SpinBoxDelegate(self))
+        self.setItemDelegateForColumn(3, LinijaComboBoxDelegate(self))
+        self.setItemDelegateForColumn(4, SpinBoxDelegate(self))
+        self.setItemDelegateForColumn(5, ColorDialogDelegate(self))
+        self.setItemDelegateForColumn(6, RemoveButtonDelegate(self))
+
+###############################################################################
+###############################################################################
+class KanalComboBoxDelegate(QtGui.QItemDelegate):
+    """
+    Delegira editor za promjenu kanala u tablici u combobox.
+    PARENT ARGUMENT JE OBAVEZAN KOD INICIJALIZACIJE. parent je tablica
+    tj. subklasani QTableView.
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        """
+        ova funkcija stvara editor, tu definiramo combobox
+        """
+        editor = QtGui.QComboBox(parent) #definiramo combobox (parent je bitan)
+        kanali = index.model().kanali #iz tablice dohvacamo kanale
+        editor.clear() #clearamo combobox
+        editor.addItems(kanali) #postavljamo kanale iz tablice u combobox
+        return editor #vrati instancu editora
+
+    def setEditorData(self, editor, index):
+        """
+        Ova metoda postavlja vrijednosti u editor (prilikom inicjalizacije)
+        npr. trenutni izbor u comboboxu.
+        """
+        editor.blockSignals(True) #blokirajmo signale izbjegnemo akcije dok namjestamo combobox
+        """
+        treba dohvatiti trenutni kanal da ga postavimo kao trenutni
+        izbor. index prati koji je redak i stupac u tablici kliknut ,
+        takodjer index zna na koji se model referencira...
+        index.model() -> vraca instancu modela
+        index.model().data(index) -> vraca vrijednost koja je u modelu
+        na tom indeksu.
+        """
+        kstring = index.model().data(index, QtCore.Qt.EditRole)
+        ind = editor.findText(kstring) #nadjimo indeks pod kojim je kanal spremljen u combobox
+        editor.setCurrentIndex(int(ind)) #postavimo index comboboxa da prikazuje gore dohvaceni indeks
+        editor.blockSignals(False) #odblokiramo signale
+
+    def setModelData(self, editor, model, index):
+        """
+        metoda je setter podataka iz editora u model
+        """
+        value = editor.currentText() #dohvati trenutni izbor comboboxa
+        model.setData(index, value, QtCore.Qt.EditRole) #poziv metode setData modela
+###############################################################################
+###############################################################################
+class MarkerComboBoxDelegate(QtGui.QItemDelegate):
+    """
+    Delegira editor za promjenu markera u tablici u combobox.
+    vidi klasu KanalComboxDelegate za detalje rada
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        editor = QtGui.QComboBox(parent)
+        markeri = index.model().markeri
+        editor.clear()
+        editor.addItems(markeri)
+        return editor
+
+    def setEditorData(self, editor, index):
+        editor.blockSignals(True)
+        mstring = index.model().data(index, QtCore.Qt.EditRole)
+        ind = editor.findText(mstring)
+        editor.setCurrentIndex(int(ind))
+        editor.blockSignals(False)
+
+    def setModelData(self, editor, model, index):
+        value = editor.currentText()
+        model.setData(index, value, QtCore.Qt.EditRole)
+###############################################################################
+###############################################################################
+class SpinBoxDelegate(QtGui.QItemDelegate):
+    """
+    Delegira editor za promjenu velicine markera u tablici
+    Delegira editor za promjenu sirine linije u tablici
+    Editor je QSpinBox
+    vidi klasu KanalComboDelegate za detalje rada
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        editor = QtGui.QSpinBox(parent)
+        #granice spinboxa
+        editor.setMinimum(1)
+        editor.setMaximum(100)
+        return editor
+
+    def setEditorData(self, spinBox, index):
+        value = index.model().data(index, QtCore.Qt.EditRole)
+        spinBox.setValue(value)
+
+    def setModelData(self, spinBox, model, index):
+        spinBox.interpretText() #vraca uvijek string, adapter na int vrijednost
+        value = spinBox.value()
+        model.setData(index, value, QtCore.Qt.EditRole)
+###############################################################################
+###############################################################################
+class LinijaComboBoxDelegate(QtGui.QItemDelegate):
+    """
+    Delegira editor za promjenu stila linije u tablici, combobox
+    vidi klasu KanalComboDelegate za detalje rada
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        editor = QtGui.QComboBox(parent)
+        linije = index.model().linije
+        editor.clear()
+        editor.addItems(linije)
+        return editor
+
+    def setEditorData(self, editor, index):
+        editor.blockSignals(True)
+        lstring = index.model().data(index, QtCore.Qt.EditRole)
+        ind = editor.findText(lstring)
+        editor.setCurrentIndex(int(ind))
+        editor.blockSignals(False)
+
+    def setModelData(self, editor, model, index):
+        value = editor.currentText()
+        model.setData(index, value, QtCore.Qt.EditRole)    
+###############################################################################
+###############################################################################
+class ColorDialogDelegate(QtGui.QItemDelegate):
+    """
+    Mali hack, u biti ne delegira nista, direktno poziva promjenu boje
+    preko dijaloga i direktno mjenja model.
+    Dupli klik na celiju u stupcu umjesto otvaranja editora otvara color
+    dijalog.
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        """
+        hack dio...inicijalizacija dijaloga za izbor boje
+        """
+        self.indeks = index
+        rgb = index.model().grafInfo[index.row()][5]
+        a = index.model().grafInfo[index.row()][6]
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        #poziv dijaloga (modalni dijalog)
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba())
+        if test:
+            color = QtGui.QColor.fromRgba(color) #bitni adapter izlaza dijaloga
+            rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
             
-    def makni_graf(self, ind):
-        """
-        Funkcija mice graf iz modela na indeksu ind
-        """
-        if self.model.rowCount() > 0:
-            i, ok = QtGui.QInputDialog.getInteger(self, 
-                                                  'Brisanje grafova.', 
-                                                  'Odabari redni broj grafa za brisanje:', 
-                                                  0,
-                                                  0,
-                                                  self.model.rowCount()-1, 
-                                                  1)
-            if ok:
-                self.model.removeRows(i,1)
+            #direktni setter na model mimo setData
+            index.model().grafInfo[index.row()][5] = rgb
+            index.model().grafInfo[index.row()][6] = a
 ###############################################################################
 ###############################################################################
+class RemoveButtonDelegate(QtGui.QItemDelegate):
+    """
+    Mali hack, u biti ne delegira nista, direktno poziva removeRows metodu
+    modela i brise cijeli redak pod tim indeksom.
+    Dupli klik ne celiju u stupcu umjesto otvaranja editora u toj celiji
+    brise cijeli taj redak
+    """
+    def __init__(self, parent):
+        QtGui.QItemDelegate.__init__(self, parent)
+        
+    def createEditor(self, parent, option, index):
+        """hack dio, umjsto stvaranja editora, 
+        direktni remove reda"""
+        index.model().removeRows(index.row(), 1)        
+###############################################################################
+###############################################################################
+
 #test ispravnosti dijaloga
 if __name__ == '__main__':
     import sys
-    defaulti = {
-    'glavniKanal':{
-        'midline':{'kanal':None, 'line':'-', 'rgb':(0,0,0), 'alpha':1.0, 'zorder':100, 'label':'average'},
-        'validanOK':{'kanal':None, 'marker':'d', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, dobar'}, 
-        'validanNOK':{'kanal':None, 'marker':'d', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, los'}, 
-        'nevalidanOK':{'kanal':None, 'marker':'o', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, dobar'}, 
-        'nevalidanNOK':{'kanal':None, 'marker':'o', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, los'},
-        'fillsatni':{'kanal':None, 'crtaj':True, 'data1':'q05', 'data2':'q95', 'rgb':(0,0,255), 'alpha':0.5, 'zorder':1}, 
-        'ekstremimin':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'min'}, 
-        'ekstremimax':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'max'}
-                    },
-    'pomocniKanali':{
-        'graf1':{'kanal':'1-SO2-ppb', 'marker':'+', 'line':'-', 'rgb':(100, 0, 0), 'alpha':0.7, 'zorder':12, 'label':'graf1'}
-                    }, 
-    'ostalo':{
-        'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
-        'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
-            }
-                    }
 
-    #TODO! model umire kod inicijalizacije ako pomocni kanali ne posotje
-    #hrpa index errora
     defaulti1 = {
-    'glavniKanal':{
-        'midline':{'kanal':None, 'line':'-', 'rgb':(0,0,0), 'alpha':1.0, 'zorder':100, 'label':'average'},
-        'validanOK':{'kanal':None, 'marker':'d', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, dobar'}, 
-        'validanNOK':{'kanal':None, 'marker':'d', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, los'}, 
-        'nevalidanOK':{'kanal':None, 'marker':'o', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, dobar'}, 
-        'nevalidanNOK':{'kanal':None, 'marker':'o', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, los'},
-        'fillsatni':{'kanal':None, 'crtaj':True, 'data1':'q05', 'data2':'q95', 'rgb':(0,0,255), 'alpha':0.5, 'zorder':1}, 
-        'ekstremimin':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'min'}, 
-        'ekstremimax':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'max'}
-                    },
-    'pomocniKanali':{}, 
-    'ostalo':{
-        'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
-        'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
-            }
-                    }
+        'glavniKanal':{
+            'midline':{'kanal':None, 'line':'-', 'rgb':(0,0,0), 'alpha':1.0, 'zorder':100, 'label':'average'},
+            'validanOK':{'kanal':None, 'marker':'d', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, dobar', 'markersize':12}, 
+            'validanNOK':{'kanal':None, 'marker':'d', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, los', 'markersize':12}, 
+            'nevalidanOK':{'kanal':None, 'marker':'o', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, dobar', 'markersize':12}, 
+            'nevalidanNOK':{'kanal':None, 'marker':'o', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, los', 'markersize':12},
+            'fillsatni':{'kanal':None, 'crtaj':True, 'data1':'q05', 'data2':'q95', 'rgb':(0,0,255), 'alpha':0.5, 'zorder':1}, 
+            'ekstremimin':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'min', 'markersize':12}, 
+            'ekstremimax':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'max', 'markersize':12}
+                        },
+        'pomocniKanali':{}, 
+        'ostalo':{
+            'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
+            'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
+                }}
 
 
     app = QtGui.QApplication(sys.argv)

@@ -83,5 +83,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141112:::LK:::Konstante sa granicama koje se crtaju horiz linija za svaki kanal (u kasnijoj iteraciji)
 20141112:::LK:::Zero/span drugi tab (u kasnijoj iteraciji)
 20141113:::VM:::Donekle sredio tablicu za dodavanje grafova, kasnije mozda se zafrkavati sa ikonama isl. ali funkcionalnost je tu. Dodao marker size za glavni i pomocne grafove. Pomocni grafovi imaju i dodatnu opciju za sirinu linije. Javi da li je sucelje ok:::
+20141113:::VM:::Sredio bug sa grafovima kod dodavanja cursora. Vertikala granica grafova je po defaultu raspon [-3, 3], ali se dinamicki moze prosiriti ovisno o ekstremnim vrijedostima koje se crtaju [min -1, max +1].:::
+
 
 

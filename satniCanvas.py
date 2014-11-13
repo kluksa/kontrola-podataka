@@ -117,6 +117,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #iz modela. Cilj je dohvatiti zadnje azurne podatke.
         self.__data = {}
         
+        #y granice pomocnih kanala, defaulti
+        self.dGranica = -2
+        self.gGranica = 2        
+        
         #clear graf
         self.axes.clear()
         #prebaci privatne membere koji prate stanje
@@ -371,6 +375,16 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 data = self.__data[kanal]
                 x = list(data.index)
                 y = list(data[u'avg']) #samo crtamo srednje vrijednosti
+                """
+                y granice pomocnih kanala, ekstremi
+                """
+                najmanji = min(y)
+                najveci = max(y)
+                if najmanji < self.dGranica:
+                    self.dGranica = najmanji
+                if najveci > self.gGranica:
+                    self.gGranica = najveci
+                
                 self.axes.plot(x, 
                                y, 
                                marker = self.__opcije['pomocniKanali'][graf]['marker'], 
@@ -401,6 +415,17 @@ class Graf(opcenitiCanvas.MPLCanvas):
             
             #nacrtaj highlight
             self.highlight_dot(self.__zadnjiHighlightx, ypoint)
+        
+        #odredjivanje vertikalnog raspona grafa
+        #glavni kanal
+        miny = self.__data[trenutniGlavniKanal][u'min'].min()
+        maxy = self.__data[trenutniGlavniKanal][u'max'].max()
+        if miny < self.dGranica:
+            self.dGranica = miny
+        if maxy > self.gGranica:
+            self.gGranica = maxy
+            
+        self.axes.set_ylim(self.dGranica - 1, self.gGranica + 1)
         
         #TODO! pikaz legende
         #prikaz legende na zahtjev

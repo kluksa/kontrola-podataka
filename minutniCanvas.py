@@ -101,6 +101,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #iz modela. Cilj je dohvatiti zadnje azurne podatke.
         self.__data = {}
         
+        #y granice pomocnih kanala, defaulti
+        self.dGranica = -2
+        self.gGranica = 2        
+
         #clear graf
         self.axes.clear()
         #prebaci privatne membere koji prate stanje
@@ -217,6 +221,16 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 x = list(data.index)
                 #za y vrijednosti postavi specificni kanal, 'avg', srednje vrijednosti
                 y = list(data[u'koncentracija'])
+                """
+                y granice glavnog kanala, ekstremi
+                """
+                najmanji = min(y)
+                najveci = max(y)
+                if najmanji < self.dGranica:
+                    self.dGranica = najmanji
+                if najveci > self.gGranica:
+                    self.gGranica = najveci
+
                 #naredba za plot
                 self.axes.plot(x, 
                                y, 
@@ -311,6 +325,16 @@ class Graf(opcenitiCanvas.MPLCanvas):
                     #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
                     x = list(data.index)
                     y = list(data[u'koncentracija']) #samo crtamo srednje vrijednosti
+                    """
+                    y granice pomocnih kanala, ekstremi
+                    """
+                    najmanji = min(y)
+                    najveci = max(y)
+                    if najmanji < self.dGranica:
+                        self.dGranica = najmanji
+                    if najveci > self.gGranica:
+                        self.gGranica = najveci
+
                     self.axes.plot(x, 
                                    y, 
                                    marker = self.__opcije['pomocniKanali'][graf]['marker'], 
@@ -328,6 +352,11 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 #rubovi indeksa glavnog kanala, treba za pick i span granice
                 self.__tmin = self.__data[trenutniGlavniKanal].index.min()
                 self.__tmax = self.__data[trenutniGlavniKanal].index.max()
+
+            #odredjivanje vertikalnog raspona grafa
+            #glavni kanal                
+            self.axes.set_ylim(self.dGranica - 1, self.gGranica + 1)
+
     
             #TODO! pikaz legende
             #prikaz legende na zahtjev

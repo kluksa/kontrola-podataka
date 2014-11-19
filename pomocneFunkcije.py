@@ -13,6 +13,42 @@ import datetime
 from datetime import timedelta
 import pandas as pd
 
+def pronadji_tickove_minutni(tmin, tmax):
+    """
+    funkcija vraca liste tickmarkera (minor i major) i listu tick labela
+    za minutni graf(samo major tickovi)
+    """
+    tmin = tmin - timedelta(minutes = 1)
+    tmin = pd.to_datetime(tmin)
+    listaMajorTickova = list(pd.date_range(start = tmin, end= tmax, freq = '5Min'))
+    listaMinorTickova = list(pd.date_range(start = tmin, end= tmax, freq = 'Min'))
+    listaMajorTickLabela = []
+    for ind in listaMajorTickova:
+        #format major labela
+        zeit = str(ind.hour)+':'+str(ind.minute)+'h'
+        listaMajorTickLabela.append(zeit)
+        #makni major label iz popisa minor tickova
+        listaMinorTickova.remove(ind)
+    
+    return listaMajorTickova, listaMajorTickLabela, listaMinorTickova
+
+###############################################################################
+def pronadji_tickove_satni(tmin, tmax):
+    """
+    funkcija vraca listu tickmarkera i listu tick labela za satni graf.
+    -vremenski raspon je tmin, tmax
+    -tickovi su razmaknuti 1 sat
+    """
+    tmin = tmin - timedelta(minutes = 1)
+    tmin = pd.to_datetime(tmin)
+    listaTickova = list(pd.date_range(start = tmin, end= tmax, freq = 'H'))
+    listaTickLabela = []
+    for ind in listaTickova:
+        #formatiraj vrijeme u sat+h npr. 12:00:00 -> 12h
+        ftime = str(ind.hour)+'h'
+        listaTickLabela.append(ftime)
+    
+    return listaTickova, listaTickLabela
 
 ###############################################################################
 def prosiri_granice_grafa(tmin, tmax, t):

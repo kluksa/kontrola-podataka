@@ -136,12 +136,18 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 60)
             #naredba za postavljanje horizontalne granice canvasa
             self.axes.set_xlim(self.xmin, self.xmax)
+            
+            #TODO! definiraj raspon tickova i format x labela
+            self.xTickLoc, self.xTickLab = pomocneFunkcije.pronadji_tickove_satni(self.xmin, self.xmax)
+            #postavi tickove
+            self.axes.set_xticks(self.xTickLoc)
+            self.axes.set_xticklabels(self.xTickLab)
         
         #format x kooridinate
         xLabels = self.axes.get_xticklabels()
         for label in xLabels:
             #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
-            label.set_rotation(20)
+            label.set_rotation(30)
             label.set_fontsize(8)
 
         #test opcenitih postavki priije crtanja:
@@ -150,16 +156,17 @@ class Graf(opcenitiCanvas.MPLCanvas):
             self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
         else:
             self.cursor = None
-        #GRID
-        if self.__opcije['ostalo']['opcijesatni']['grid'] == True:
-            self.axes.grid(True)
-        else:
-            self.axes.grid(False)
         #MINOR TICKS
         if self.__opcije['ostalo']['opcijesatni']['ticks'] == True:
             self.axes.minorticks_on()
         else:
             self.axes.minorticks_off()
+        #GRID
+        if self.__opcije['ostalo']['opcijesatni']['grid'] == True:
+            #modificiraj stil grida
+            self.axes.grid(True, which = 'major')
+        else:
+            self.axes.grid(False)
         #SPAN SELECTOR
         if self.__opcije['ostalo']['opcijesatni']['span'] == True:
             self.__statusSpanSelector = True

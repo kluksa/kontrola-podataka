@@ -127,12 +127,17 @@ class Graf(opcenitiCanvas.MPLCanvas):
                     5)
                 #naredba za postavljanje horizontalne granice canvasa
                 self.axes.set_xlim(self.xmin, self.xmax)
+                
+                #TODO! tickovi (M je vezan za major tick)
+                self.xMTickLoc, self.xMTickLab, self.xTickLoc = pomocneFunkcije.pronadji_tickove_minutni(self.xmin, self.xmax)
+                self.axes.set_xticks(self.xMTickLoc)
+                self.axes.set_xticklabels(self.xMTickLab)
             
             #format x kooridinate
             xLabels = self.axes.get_xticklabels()
             for label in xLabels:
                 #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
-                label.set_rotation(20)
+                label.set_rotation(30)
                 label.set_fontsize(8)
     
             #test opcenitih postavki priije crtanja:
@@ -141,16 +146,18 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
             else:
                 self.cursor = None
-            #GRID
-            if self.__opcije['ostalo']['opcijeminutni']['grid'] == True:
-                self.axes.grid(True)
-            else:
-                self.axes.grid(False)
             #MINOR TICKS
             if self.__opcije['ostalo']['opcijeminutni']['ticks'] == True:
-                self.axes.minorticks_on()
+                self.axes.set_xticks(self.xTickLoc, minor = True)
+                #self.axes.minorticks_on()
             else:
                 self.axes.minorticks_off()
+            #GRID
+            if self.__opcije['ostalo']['opcijeminutni']['grid'] == True:
+                self.axes.grid(True, which = 'major', linewidth = 0.5, linestyle = '-')
+                self.axes.grid(True, which = 'minor', linewidth = 0.5)
+            else:
+                self.axes.grid(False)
             #SPAN SELECTOR
             if self.__opcije['ostalo']['opcijeminutni']['span'] == True:
                 self.__statusSpanSelector = True

@@ -22,91 +22,81 @@ class WebZahtjev():
     """
     def __init__(self, base, resursi):
         """
-        inicijalizacija sa baznim url-om i dictom resursa
+        inicijalizacija sa baznim url-om i dictom resursa, jer zelim izbjeci
+        hardcodiranje zahtjeva
         """
         self._base = base
         self._resursi = resursi
-        
-    def get_broj_postaja(self):
+                          
+    def get_sve_programe_mjerenja(self):
         """
-        Funkcija vraca broj postaja
-        """
-        #url resursa
-        url = self._base + self._resursi['postaja'] + "/count"
-        #get request web servisu
-        r = requests.get(url, timeout = 9.1)
-        if r.ok:
-            return r.text
-        else:
-            print('get_broj_postaja ', r.status_code, r.reason)
+        funkcija vraca response od servera.
+        cilj je response analizirati i prepakirati u nested dict "bitnih" 
+        podataka.
+        Kljuc vanjskog dicta je id programa mjerenja.
+                
+        npr.
+        {'1':{'postajaNaziv':'Zagreb', 'komponentaNaziv':'Ozon'}, ...},...}
 
-    def get_postaja_id(self, id):
-        """
-        Dohvati samo jednu postaju preko njenog id, vraca body zahtjeva, 
-        xml string
-        """
-        #url resursa
-        url = self._base + self._resursi['postaja'] + '/' + str(id)
-        r = requests.get(url, timeout = 9.1)
-        if r.ok:
-            return r.text
-
-        else:
-            print('get_postaja_id ', r.status_code, r.reason)
         
-            
-    def get_sve_postaje(self):
+        TODO:
+        -bolja komunikacija sa korisnikom prilikom failova, trenutno je
+        print na output konzole
+        -implementirati json slucaj
         """
-        Funkcija vraca nested dict sa informacijom o svim postajama
-        {'ime postaje': {xml tag elementa: vrijednost elementa}}
-        """
-        #url resursa
-        url = self._base + self._resursi['postaja']
-        #payload za poziv metode
+        #pointaj url prema trazenom podatku iz wadl filea
+        url = self._base + self._resursi['programMjerenja']
+        #pripremi zahtjev metode
         payload = {"id":"findAll", "name":"GET"}
-        #get request web servisu
-        r = requests.get(url, params = payload, timeout = 9.1)
-        if r.ok:
-            if r.headers['Content-Type'] == 'application/xml':
-                drvo = ET.fromstring(r.text) #xml parser, stvaranje tree objekta
-                output = {} #plan je napraviti nested dict {nazivPostaje:{xml tag : vrijednost}}
-                for postaja in drvo:
-                    ind = postaja.find('nazivPostaje').text
-                    output[ind] = {}
-                    for element in postaja:
-                        output[ind][element.tag] = element.text
-
-                return output
+        try:
+            r = requests.get(url, params = payload, timeout = 9.1)
+            if r.ok:
+                #xml response
+                if r.headers['Content-Type'] == 'application/xml':
+                    #inicijaliziraj output dictionary
+                    rezultat = {}
+                    #parsiraj xml
+                    root = ET.fromstring(r.text)
+                    #popuni dictionary sa ciljanim podacima
+                    for programMjerenja in root:
+                        i = programMjerenja.find('id').text
+                        postajaId = programMjerenja.find('.postajaId/id').text
+                        postajaNaziv = programMjerenja.find('.postajaId/nazivPostaje').text
+                        komponentaId = programMjerenja.find('.komponentaId/id').text
+                        komponentaNaziv = programMjerenja.find('.komponentaId/naziv').text
+                        komponentaMjernaJedinica = programMjerenja.find('.komponentaId/mjerneJediniceId/oznaka').text
+                        #dodavanje mjerenja u dictionary
+                        rezultat[i] = {
+                            'postajaId':postajaId, 
+                            'postajaNaziv':postajaNaziv, 
+                            'komponentaId':komponentaId, 
+                            'komponentaNaziv':komponentaNaziv, 
+                            'komponentaMjernaJedinica':komponentaMjernaJedinica}
+                            
+                    return rezultat
+                #json response
+                elif r.headers['Content-Type'] == 'application/json':
+                    return r
+                #response kada nije ni xml ili json
+                else:
+                    print('get_sve_programa_mjerenja nije xml ili json')
             else:
-                print('get_sve_postaje Content-Type nije application/xml')
+                #odradi slucajeve bad responseva
+                print('get_sve_programe_mjerenja ', r.status_code, r.reason)
+        except requests.exceptions.RequestException as e:
+            #Ako se stvari stvarno raspadnu, printaj cijeli tracebak errora
+            print(e)
 
-        else:
-            print('get_sve_postaje ', r.status_code, r.reason)
-    
+
+        
 if __name__ == '__main__':
     #niicijalna definicija baze i resursa definiranih u wadl
-    baza = "http://172.20.1.166:9090/TestWeb/webresources/"
-    resursi = {
-        "postaja":"dhz.skz.aqdb.entity.postaja", 
-        "korisnik":"dhz.skz.aqdb.entity.korisnik", 
-        "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
-        "komponente":"dhz.skz.aqdb.entity.komponenta"}
+    baza = "http://172.20.1.166:9090/WebApplication1/webresources/"
+    resursi = {"programMjerenja":"test.entity.programmjerenja"}
     
+    wz = WebZahtjev(baza, resursi)        
+    r = wz.get_sve_programe_mjerenja()    
     
-    wz = WebZahtjev(baza, resursi)
-    r = wz.get_sve_postaje()
-    #pretty print izlaza za test
-    for key in r.keys():
-        print('postaja: ', key)
-        for element in r[key].keys():
-            print('    ', element, ' : ', r[key][element])
-
-
-
-        
-    
-    
-    
-    
-    
-
+#    #response to xml
+#    with open('C:/Documents and Settings/User/Desktop/programmjerenja.xml','w',encoding='utf-8') as fajl:
+#        fajl.write(r.text)

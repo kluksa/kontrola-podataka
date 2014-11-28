@@ -85,6 +85,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141113:::VM:::Donekle sredio tablicu za dodavanje grafova, kasnije mozda se zafrkavati sa ikonama isl. ali funkcionalnost je tu. Dodao marker size za glavni i pomocne grafove. Pomocni grafovi imaju i dodatnu opciju za sirinu linije. Javi da li je sucelje ok:::
 20141113:::VM:::Sredio bug sa grafovima kod dodavanja cursora. Vertikala granica grafova je po defaultu raspon [-3, 3], ali se dinamicki moze prosiriti ovisno o ekstremnim vrijedostima koje se crtaju [min -1, max +1].:::
 20141119:::VM:::Sredio tick i grid markere, prema zahtjevu. Sto se tice izgleda grida na satnom je standardni grid, na minutnom se svakih 5 minuta oznacava punom crtom, minutni su ozbaceni isprekidanom. Moguce je neovisno promjeniti izgled svakog grida (boja, prozirnost, stil linije , debljina linije...), pa ako trenutna iteracija ne odgovara, primam zelje :):::
+20141128:::VM:::Dodao file networking_funkcije.py. Preko tog modula bi trebali ici svi zahtjevi na web servis. Spajanje na rest servis radi ok.:::
 
 
 

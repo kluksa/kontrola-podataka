@@ -15,6 +15,8 @@ https://pypi.python.org/pypi/requests/2.4.3
 
 import requests
 import xml.etree.ElementTree as ET
+import pandas as pd
+import numpy as np
 
 class WebZahtjev():
     """
@@ -88,6 +90,54 @@ class WebZahtjev():
             print(e)
 
 
+    def get_sirovi(self, programMjerenja, datum):
+        """
+        Novi REST servis, za zadani program mjerenja (int) i datum (string, 
+        u formatu YYYY-DD-MM) dohvati sirove podatke
+        """
+        url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
+        payload = {"id":"getJson", "name":"GET"}
+        try:
+            r = requests.get(url, params = payload, timeout = 9.1)
+            if r.ok:
+                if r.headers['Content-Type'] == 'application/xml':
+                    return r
+                elif r.headers['Content-Type'] == 'application/json':
+                    #return r.text #ako treba samo cisti json string
+                    x = pd.read_json(r.text)
+                    #napravi prazan dataframe (izlazni)
+                    df = pd.DataFrame(columns = ('koncentracija', 'status', 'flag'))
+                    #adaptiraj frejm u izlazni, OVO TRAJE...pristupanje pojedinim elementima
+                    for i in range(len(x)):
+                        #buduci index, timestamp
+                        vrijeme = pd.to_datetime(x.loc[i,'vrijeme'], format = '%Y-%d-%mT%H:%M:%S')
+                        #koncentracija, zamjeniti sa np.NaN ako je ispod -900
+                        koncentracija = x.loc[i,'vrijednost']
+                        if koncentracija < -900:
+                            koncentracija = np.NaN
+                        #TODO! nisam 100% siguran kako adaptirati ovu vrijednost, prije je bila int
+                        status = x.loc[i,'statusString']
+                        #valjanost konvertiram u +1/-1, adaptiranje sa ostatkom
+                        flag = x.loc[i, 'valjan']
+                        if flag:
+                            flag = 1
+                        else:
+                            flag = -1    
+                        #upis u izlazni datafrejm
+                        df.loc[vrijeme] = [koncentracija, status, flag]
+                    #sorting, json nije nuzno poredan po redu
+                    df.sort_index()
+                    #vrati dataframe
+                    return df
+                else:
+                    print('get_sirovi() response nije xml ili json')
+            else:
+                print('get_sirovi() bad response', r.status_code, r.reason)
+                return r
+        except requests.exceptions.RequestException as e:
+            #Ako se nesto stvarno raspadne, trackeback errora
+            print(e)
+
         
 if __name__ == '__main__':
     #niicijalna definicija baze i resursa definiranih u wadl
@@ -95,8 +145,19 @@ if __name__ == '__main__':
     resursi = {"programMjerenja":"test.entity.programmjerenja"}
     
     wz = WebZahtjev(baza, resursi)        
-    r = wz.get_sve_programe_mjerenja()    
+#    r = wz.get_sve_programe_mjerenja()    
+
+    baza2 = "http://172.20.1.166:9090/SKZ-war/webresources/"
+    resursi2 = {"siroviPodaci":"dhz.skz.rs.sirovipodaci"}    
+
+    wz2 = WebZahtjev(baza2, resursi2)
+    #primjer poziva funkcije    
+    r = wz2.get_sirovi(161,'2014-09-12')
+    """
+    izlazni frejm ima datum formatiran YYYY-MM-DD HH:MM:SS
+    """    
+    #TODO! nesto ne radi kako spada sa datumima
+    print(r.head())
+    print(r.tail())
+
     
-#    #response to xml
-#    with open('C:/Documents and Settings/User/Desktop/programmjerenja.xml','w',encoding='utf-8') as fajl:
-#        fajl.write(r.text)

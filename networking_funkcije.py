@@ -93,7 +93,7 @@ class WebZahtjev():
     def get_sirovi(self, programMjerenja, datum):
         """
         Novi REST servis, za zadani program mjerenja (int) i datum (string, 
-        u formatu YYYY-DD-MM) dohvati sirove podatke
+        u formatu YYYY-MM-DD) dohvati sirove podatke
         """
         url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
         payload = {"id":"getJson", "name":"GET"}
@@ -102,22 +102,23 @@ class WebZahtjev():
             if r.ok:
                 if r.headers['Content-Type'] == 'application/xml':
                     return r
+                    print('NOT IMPLEMENTED')
                 elif r.headers['Content-Type'] == 'application/json':
                     #return r.text #ako treba samo cisti json string
-                    x = pd.read_json(r.text)
+                    x = pd.read_json(r.text, orient = 'records')
                     #napravi prazan dataframe (izlazni)
                     df = pd.DataFrame(columns = ('koncentracija', 'status', 'flag'))
                     #adaptiraj frejm u izlazni, OVO TRAJE...pristupanje pojedinim elementima
                     for i in range(len(x)):
                         #buduci index, timestamp
-                        vrijeme = pd.to_datetime(x.loc[i,'vrijeme'], format = '%Y-%d-%mT%H:%M:%S')
+                        vrijeme = pd.to_datetime(x.loc[i,'vrijeme'])
                         #koncentracija, zamjeniti sa np.NaN ako je ispod -900
                         koncentracija = x.loc[i,'vrijednost']
                         if koncentracija < -900:
                             koncentracija = np.NaN
                         #TODO! nisam 100% siguran kako adaptirati ovu vrijednost, prije je bila int
                         status = x.loc[i,'statusString']
-                        #valjanost konvertiram u +1/-1, adaptiranje sa ostatkom
+                        #valjanost konvertiram u +1/-1
                         flag = x.loc[i, 'valjan']
                         if flag:
                             flag = 1
@@ -137,27 +138,18 @@ class WebZahtjev():
         except requests.exceptions.RequestException as e:
             #Ako se nesto stvarno raspadne, trackeback errora
             print(e)
+            
 
         
 if __name__ == '__main__':
-    #niicijalna definicija baze i resursa definiranih u wadl
-    baza = "http://172.20.1.166:9090/WebApplication1/webresources/"
-    resursi = {"programMjerenja":"test.entity.programmjerenja"}
-    
+    baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
+    resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
+                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
+
     wz = WebZahtjev(baza, resursi)        
-#    r = wz.get_sve_programe_mjerenja()    
+    #r = wz.get_sve_programe_mjerenja()    
 
-    baza2 = "http://172.20.1.166:9090/SKZ-war/webresources/"
-    resursi2 = {"siroviPodaci":"dhz.skz.rs.sirovipodaci"}    
-
-    wz2 = WebZahtjev(baza2, resursi2)
-    #primjer poziva funkcije    
-    r = wz2.get_sirovi(161,'2014-09-12')
-    """
-    izlazni frejm ima datum formatiran YYYY-MM-DD HH:MM:SS
-    """    
-    #TODO! nesto ne radi kako spada sa datumima
-    print(r.head())
-    print(r.tail())
+    #primjer poziva funkcije
+    r = wz.get_sirovi(162,'2014-12-15') #15 dan 12 mjeseca 2014 godine
 
     

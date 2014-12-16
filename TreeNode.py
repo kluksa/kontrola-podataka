@@ -8,6 +8,7 @@ Created on Tue Nov 18 09:59:51 2014
 import sys
 from PyQt4 import QtGui, QtCore, uic
 import networking_funkcije
+import agregator
 
 ###############################################################################
 ###############################################################################
@@ -184,7 +185,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         headeri
         """
-        headeri = ['Stanica/komponenta', 'Mjerna Jedinica', 'Id mjerenja']
+        headeri = ['Stanica/komponenta', 'Mjerna Jedinica', 'Program mjerenja']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 
@@ -202,23 +203,61 @@ class TreeTest(base5, form5):
         super(base5, self).__init__(parent)
         self.setupUi(self)
         
-    def postavi_model(self, model):
-        self.treeView.setModel(model)
+        baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
+        resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
+                   "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
+                   
+        self.wz = networking_funkcije.WebZahtjev(baza, resursi)
+                
+        self.model = self.napravi_model(baza, resursi)
+        self.treeView.setModel(self.model)
         
+        
+        self.calendarWidget.activated.connect(self.get_mjerenje_datum) #doubleclick/enter
+        self.treeView.activated.connect(self.get_mjerenje_datum) #doubleclick/enter
+        
+        #agregator        
+        self.agreg = agregator.Agregator()
+        
+        #frejmovi
+        self.frejm = None
+        self.agFrejm = None
+        
+        
+    def get_mjerenje_datum(self, x):
+        """funkcija se poziva prilikom doubleclicka na valjani program mjerenja
+        ili na datum u kalendaru"""
+
+        #dohvacanje trenutno aktivnog datuma u kalendaru        
+        qdan = self.calendarWidget.selectedDate() #dohvaca QDate objekt
+        pdan = qdan.toPyDate() #convert u datetime.datetime python objekt
+        dan = pdan.strftime('%Y-%m-%d') #transformacija u zadani string format
+        
+        #dohvacanje programa mjerenja
+        ind = self.treeView.currentIndex() #dohvati trenutni aktivni indeks
+        item = self.model.getItem(ind) #dohvati specificni objekt pod tim indeksom
+        prog = item._data[2] #dohvati program mjerenja iz liste podataka
+        
+        if prog != None:
+            output = (int(prog), dan)
+            print('izabrana kombinacija: ', output)
+            #poziv za dohvacanje frejma
+            self.frejm = self.wz.get_sirovi(int(prog), dan)
+            print(self.frejm.head())
+        else:
+            print('izaberi neki program mjerenja')
+                        
     def napravi_model(self, baza, resursi):
         """
         komplicirana funkcija.. radi redom:
-        1. instanciraj WebZahtjev objekt
         2. posalji request REST servisu da dohvati sve programe mjerenja te
         prihvati dict sa informacijom stanica, mjerenje....
         3.prepisi tako dobiveni dict u tree strukturu baziranu na TreeItem
         objektima
         4. postavi tree strukturu u treeView widget
         """
-        #web zahtjev
-        wz = networking_funkcije.WebZahtjev(baza, resursi)
         #dohvati sva mjerenja
-        programMjerenja = wz.get_sve_programe_mjerenja()
+        programMjerenja = self.wz.get_sve_programe_mjerenja()
 
         #ovisno o "grani", drugacije instanciramo objekt
         #[stanica/naziv mjerenja, None/mjerna jedinica, None/id mjerenja]
@@ -236,8 +275,8 @@ class TreeTest(base5, form5):
             stanica = programMjerenja[i]['postajaNaziv'] #parent = stanice[stanica]
             komponenta = programMjerenja[i]['komponentaNaziv']
             mjernaJedinica = programMjerenja[i]['komponentaMjernaJedinica']
-            komponentaId = programMjerenja[i]['komponentaId']
-            data = [komponenta, mjernaJedinica, komponentaId]            
+            #komponentaId = programMjerenja[i]['komponentaId']
+            data = [komponenta, mjernaJedinica, i]
             TreeItem(data, parent = stanice[stanica]) #kreacija TreeItem objekta
         
         mod = ModelDrva(tree) #napravi model
@@ -248,15 +287,15 @@ class TreeTest(base5, form5):
 
 if __name__ == '__main__':
     #bitno za web zahtjev (networking_funkcije.py)
-    baza = "http://172.20.1.166:9090/WebApplication1/webresources/"
-    resursi = {"programMjerenja":"test.entity.programmjerenja"}
-        
-        
+    baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
+    resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
+                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
+    
     app = QtGui.QApplication(sys.argv)
      
     tt = TreeTest()
-    mod = tt.napravi_model(baza, resursi)
-    tt.postavi_model(mod)
+#    mod = tt.napravi_model(baza, resursi)
+#    tt.postavi_model(mod)
     tt.show()
     
     sys.exit(app.exec_())

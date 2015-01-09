@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov 18 09:59:51 2014
@@ -7,8 +8,8 @@ Created on Tue Nov 18 09:59:51 2014
 """
 import sys
 from PyQt4 import QtGui, QtCore, uic
+
 import networking_funkcije
-import agregator
 
 ###############################################################################
 ###############################################################################
@@ -30,19 +31,19 @@ class TreeItem(object):
         if self._parent != None:
             #sutomatski dodaj sebe u popis child objekata svog parenta
             self._parent._childItems.append(self)
-
+###############################################################################
     def child(self, row):
         """
         vrati child za pozicije row
         """
         return self._childItems[row]
-
+###############################################################################
     def childCount(self):
         """
         ukupan broj child itema
         """
         return len(self._childItems)
-
+###############################################################################
     def childNumber(self):
         """
         vrati indeks pod kojim se ovaj objekt nalazi u listi djece
@@ -51,14 +52,14 @@ class TreeItem(object):
         if self._parent != None:
             return self._parent._childItems.index(self)
         return 0
-
+###############################################################################
     def columnCount(self):
         """
         TreeItem objekt se inicijalizira sa "spremnikom" podataka
         ova funkcija vraca broj podataka u spremniku
         """
         return len(self._data)
-
+###############################################################################
     def data(self, column):
         """
         funkcija koja dohvaca element iz "spremnika" podataka
@@ -66,13 +67,13 @@ class TreeItem(object):
         npr. ako je spremnik integer vrijednost ovo nece raditi
         """
         return self._data[column]
-
+###############################################################################
     def parent(self):
         """
         vrati instancu parent objekta
         """
         return self._parent
-    
+###############################################################################
     def __repr__(self):
         """
         print() reprezentacija objekta
@@ -94,7 +95,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         QtCore.QAbstractItemModel.__init__(self, parent)
         
         self.rootItem = data
-    
+###############################################################################
     def index(self, row, column, parent = QtCore.QModelIndex()):
         """
         funkcija vraca indeks u modelu za zadani red, stupac i parent
@@ -110,7 +111,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         else:
             #vrati prazan QModelIndex
             return QtCore.QModelIndex()
-    
+###############################################################################
     def getItem(self, index):
         """
         funckija vraca objekt pod indeksom index, ili rootItem ako indeks 
@@ -122,7 +123,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
                 return item
 
         return self.rootItem
-        
+###############################################################################
     def data(self, index, role = QtCore.Qt.DisplayRole):
         """
         primarni getter za vrijednost objekta
@@ -141,14 +142,14 @@ class ModelDrva(QtCore.QAbstractItemModel):
                 return item.data(2)
         else:
             return None
-
+###############################################################################
     def rowCount(self, parent = QtCore.QModelIndex()):
         """
         vrati broj redaka (children objekata) za parent
         """
         parentItem = self.getItem(parent)
         return parentItem.childCount()
-        
+###############################################################################
     def columnCount(self, parent = QtCore.QModelIndex()):
         """
         vrati broj stupaca rootItema
@@ -163,7 +164,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         TODO! pitanje je koliko informacija nam treba u view-u
         """
         return self.rootItem.columnCount()
-        
+###############################################################################
     def parent(self, index):
         """
         vrati parent od TreeItem objekta pod datim indeksom.
@@ -180,7 +181,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         else:
             return self.createIndex(parentItem.childNumber(), 0, parentItem)
             
-            
+###############################################################################
     def headerData(self, section, orientation, role):
         """
         headeri
@@ -197,7 +198,24 @@ class TreeTest(base5, form5):
     """
     Nazovimo ovo prototipom REST izbornika (gumbi?, treeView, kalendar, ??).
     
-    Smisao je testiranje treeView - ModelDrva funkcionalnosti
+    TODO! Problem kod implementacije:
+    OPIS PROBLEMA
+    Kalendar je podesen da "pokrece crtanje" preko 2 signala.
+
+    activated:
+        -okidaci su : doubleclick, enter, programsko prebacivanje (setSelectedDate)
+        -koristan zbog programskog prebacivanja (gumbi sljedeci i prethodni dan)
+        
+    clicked:
+        -okidac je single click (selekcija nekog dana)
+        -koristan zbog jednostavnosti izbora i zbog "sinhronizacije" djelova gui-a
+        
+    Nacin programskog prebacivanja dana provjerava koji je datum selektiran, te 
+    prebacuje dan od trenutno selektiranog (naprijed ili nazad)
+        
+    Problem nastaje kada netko napravi doubleclick na datum. Nije nista kriticno, 
+    ali okinuti ce isti zahtijev 2 puta! Prvi puta signal clicked, zatim signal
+    activated.
     """
     def __init__(self, parent = None):
         super(base5, self).__init__(parent)
@@ -208,22 +226,26 @@ class TreeTest(base5, form5):
                    "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
                    
         self.wz = networking_funkcije.WebZahtjev(baza, resursi)
-                
+
         self.model = self.napravi_model(baza, resursi)
         self.treeView.setModel(self.model)
+        self.postavkeGrafova.clicked.connect(self.prikazi_dijalog_postavki)
         
         
         self.calendarWidget.activated.connect(self.get_mjerenje_datum) #doubleclick/enter
+        self.calendarWidget.clicked.connect(self.get_mjerenje_datum) #single click/select
         self.treeView.activated.connect(self.get_mjerenje_datum) #doubleclick/enter
         
-        #agregator        
-        self.agreg = agregator.Agregator()
-        
         #frejmovi
-        self.frejm = None
-        self.agFrejm = None
-        
-        
+        self.frejm = None        
+###############################################################################
+    def prikazi_dijalog_postavki(self):
+        """
+        Zahtjev kontoloru za promjenom postavki grafova. Kontroler treba odraditi
+        prikaz dijaloga.
+        """
+        self.emit(QtCore.SIGNAL('promjeni_postavke_grafova'))
+###############################################################################
     def get_mjerenje_datum(self, x):
         """funkcija se poziva prilikom doubleclicka na valjani program mjerenja
         ili na datum u kalendaru"""
@@ -239,14 +261,12 @@ class TreeTest(base5, form5):
         prog = item._data[2] #dohvati program mjerenja iz liste podataka
         
         if prog != None:
-            output = (int(prog), dan)
+            output = [int(prog), dan]
             print('izabrana kombinacija: ', output)
-            #poziv za dohvacanje frejma
-            self.frejm = self.wz.get_sirovi(int(prog), dan)
-            print(self.frejm.head())
+            self.emit(QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'), output)
         else:
             print('izaberi neki program mjerenja')
-                        
+###############################################################################
     def napravi_model(self, baza, resursi):
         """
         komplicirana funkcija.. radi redom:
@@ -283,6 +303,62 @@ class TreeTest(base5, form5):
         
         return mod
 ###############################################################################
+    def sljedeci_dan(self):
+        """
+        Metoda "pomice dan" u kalendaru naprijed za 1 dan od trenutno izabranog
+        """
+        #dohvati dan
+        dan = self.calendarWidget.selectedDate()
+        #uvecaj za 1
+        dan2 = dan.addDays(1)
+        #postavi dan
+        self.calendarWidget.setSelectedDate(dan2)
+        #informiraj kontroler o promjeni, pokreni crtanje/izbor
+        self.get_mjerenje_datum(True)                        
+###############################################################################
+    def prethodni_dan(self):
+        """
+        Metoda "pomice dan" u kalendaru nazad za 1 dan od trenutno izabranog
+        """
+        #dohvati dan
+        dan = self.calendarWidget.selectedDate()
+        #uvecaj za 1
+        dan2 = dan.addDays(-1)
+        #postavi dan
+        self.calendarWidget.setSelectedDate(dan2)
+        #informiraj kontroler o promjeni, pokreni crtanje/izbor
+        self.get_mjerenje_datum(True)                        
+###############################################################################
+    def postavi_novi_glavni_kanal(self, kanal):
+        """
+        Metoda postavlja zadani kanal kao selektirani u treeView. Takodjer, 
+        javlja kontroloru da je doslo do promjene u izabranom kanalu.
+        """
+        noviIndex = self.pronadji_index_od_kanala(kanal)
+        if noviIndex != None:
+            #postavi novi indeks
+            self.treeView.setCurrentIndex(noviIndex)
+            #informiraj kontroler o promjeni, pokreni crtanje/izbor
+            self.get_mjerenje_datum(True)                        
+###############################################################################
+    def pronadji_index_od_kanala(self, kanal):
+        """
+        Za zadani kanal (mjerenjeId) pronadji odgovarajuci QModelIndex
+        ulaz je trazeni kanal, izlaz je QModelIndex ili None
+        """
+        #"proseci" stablom u potrazi za indeksom
+        for i in range(self.model.rowCount()):
+            ind = self.model.index(i, 0) #index stanice, (parent)
+            otac = self.model.getItem(ind)
+            for j in range(otac.childCount()):
+                ind2 = self.model.index(j, 0, parent = ind) #indeks djeteta
+                komponenta = self.model.getItem(ind2)
+                #provjera da li kanal u modelu odgovara zadanom kanalu
+                if int(komponenta.data(2)) == kanal:
+                    return ind2
+        #ako ne nadjes match, vrati None
+        return None
+###############################################################################
 ###############################################################################
 
 if __name__ == '__main__':
@@ -297,5 +373,10 @@ if __name__ == '__main__':
 #    mod = tt.napravi_model(baza, resursi)
 #    tt.postavi_model(mod)
     tt.show()
+    
+    #test manualno prebacivanje kanala
+    tt.postavi_novi_glavni_kanal(160)
+    tt.postavi_novi_glavni_kanal(162)
+    tt.postavi_novi_glavni_kanal(163)
     
     sys.exit(app.exec_())

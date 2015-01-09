@@ -8,15 +8,12 @@ Klasa (canvas) za prikaz minutnih vrijednosti.
 """
 
 from PyQt4 import QtGui, QtCore
-
+import datetime
 import matplotlib
 from matplotlib.widgets import SpanSelector, Cursor
 
 import pandas as pd
 import numpy as np
-
-import datetime
-from datetime import timedelta
 
 import pomocneFunkcije #import pomocnih funkcija
 import opcenitiCanvas #import opcenitog (abstract) canvasa
@@ -30,14 +27,9 @@ class Graf(opcenitiCanvas.MPLCanvas):
     - pamti se samo nekoliko "priavte" membera (stanje grafa, trenutne postavke...)
     
     Bitne metode:
-    
-    1. crtaj(self, mapaGrafova, infoFrejmovi) : glavna naredba za crtanje.
-        - mapaGrafova -> mapa (dict) sa opcijama grafova (dict sa 
-        informacijom o glavnom kanalu, pomocnim kanalima, opcijama).
-        Tu je sadrzana informacija kako graf treba izgledati te sto ce biti nacrtano.
-        
-        -infoFrejmovi -> izvor podataka, lista. [stanica, tMin, tMax, [lista kanala]]
-        Tu je sadrzana informacija s kojom se moze pristupiti podacima.
+    1. crtaj(self, lista) : glavna naredba za crtanje
+        - glavna metoda za crtanje grafa
+        - lista = [nested dict opcija i kanala, tmin, tmax]
         
     2. on_pick(self, event): odradjuje interakciju sa grafom
         -event je mouseclick.
@@ -50,18 +42,14 @@ class Graf(opcenitiCanvas.MPLCanvas):
         opcenitiCanvas.MPLCanvas.__init__(self, *args, **kwargs)
         
         #podrska za kontekstni meni za promjenu flaga
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        
-        self.__opcije = None #dict opcija grafa
-        self.__data = {} #spremnik za frejmove (ucitane)
-        self.__info = None #info o dostupnim frejmovima
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)      
+
+        self.data = {} #spremnik za frejmove (ucitane)
         self.__statusGlavniGraf = False #da li je nacrtan glavni graf
         self.__statusSpanSelector = False #da li je span selector aktivan
         #annotation
         self.__zadnjiAnnotationx = None
         self.__testAnnotation = False
-        #zadnji timestamp satnog koji je zoomiran
-        self.__sat = None
 
         self.veze()        
 ###############################################################################
@@ -78,32 +66,39 @@ class Graf(opcenitiCanvas.MPLCanvas):
         
         metoda postavlja frejm minutnih podataka u self.__data
         lista -> [kanal, frejm]
-        kanal -> string, ime kanala
-        frejm -> pandas dataframe, agregirani podaci
+        kanal -> int, ime kanala
+        frejm -> pandas dataframe, minutni podaci
         """
-        self.__data[lista[0]] = lista[1]
+        self.data[lista[0]] = lista[1]
 ###############################################################################
-    def crtaj(self, mapaGrafova, infoFrejmovi, sat):
-        """Eksplicitne naredbe za crtanje
+    def crtaj(self, lista):
+        """Eksplicitne naredbe za crtanje zadane sa popisom grafova i vremenskim
+        intervalom.
         
-        ulaz:
-        mapaGrafova -> defaultni dict sa opcijama grafova
-        infoFrejmovi -> izvor podataka [stanica, tMin, tMax, [lista kanala]]
-        sat -> None ili tocka na satnom grafu (ako je None ne crtaj)
+        ulaz je lista
+        lista[0] - nested dict grafova za crtanje sa postavkama
+        lista[1] - donja granica vremenskog intervala
+        lista[2] - gornja granica vremenskog intervala
         """
+        #TODO!
+        #nije testirano do kraja, potencijali problemi sa praznim frejmovima ili
+        #nedostatkom frejma
+
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
-        #spremi ulazne parametre u privatne membere
-        self.__opcije = mapaGrafova
-        self.__info = infoFrejmovi
         #clear data, svaki poziv ove metode uvjetuje ponovno povlacenje podataka
         #iz modela. Cilj je dohvatiti zadnje azurne podatke.
-        self.__data = {}
+        self.data = {}
         
+        #informacije za crtanje, vremenski span i informacije o grafovima
+        self.popisGrafova = lista[0]
+        self.minVrijeme = lista[1]
+        self.maxVrijeme = lista[2]
+
         #y granice pomocnih kanala, defaulti
-        self.dGranica = -2
-        self.gGranica = 2        
+        self.dGranica = 0
+        self.gGranica = 1        
 
         #clear graf
         self.axes.clear()
@@ -111,125 +106,216 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.__statusGlavniGraf = False #trenutno glavni graf nije nacrtan
         self.__testAnnotation = False #clear ce maknuti i annotatione sa grafa
         
+        #definiraj x granice canvasa, prosiri lagano interval da tocke nisu na rubu
+        self.xmin, self.xmax = pomocneFunkcije.prosiri_granice_grafa(
+            self.minVrijeme, 
+            self.maxVrijeme, 
+            5)
+
+        self.axes.set_xlim(self.xmin, self.xmax)
         
-        #ako je sat zadan
-        if sat != None:
-            self.__sat = sat
-            #trebamo rubove intervala da znamo traziti slajs
-            tmin, tmax = self.plot_time_span(self.__sat)
+        #sredi tick labele i tick positioning
+        self.xMtickLoc, self.xMTickLab, self.xTickLoc = pomocneFunkcije.pronadji_tickove_minutni(self.xmin, self.xmax)
+        self.axes.set_xticks(self.xMtickLoc)
+        self.axes.set_xticklabels(self.xMTickLab)
+        
+        #format x kooridinate
+        xLabels = self.axes.get_xticklabels()
+        for label in xLabels:
+            #lagana rotacija i promjena fonta
+            label.set_rotation(30)
+            label.set_fontsize(8)
+
+        #test opcenitih postavki priije crtanja:
+        #CURSOR
+        if self.popisGrafova['ostalo']['opcijeminutni']['cursor'] == True:
+            self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
+        else:
+            self.cursor = None
+        #MINOR TICKS
+        if self.popisGrafova['ostalo']['opcijeminutni']['ticks'] == True:
+            self.axes.set_xticks(self.xTickLoc, minor = True)
+            #self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        #GRID
+        if self.popisGrafova['ostalo']['opcijeminutni']['grid'] == True:
+            self.axes.grid(True, which = 'major', linewidth = 0.5, linestyle = '-')
+            self.axes.grid(True, which = 'minor', linewidth = 0.5)
+        else:
+            self.axes.grid(False)
+        #SPAN SELECTOR
+        if self.popisGrafova['ostalo']['opcijeminutni']['span'] == True:
+            self.__statusSpanSelector = True
+            self.spanSelector = SpanSelector(self.axes, 
+                                             self.minutni_span_flag, 
+                                             direction = 'horizontal', 
+                                             useblit = True, 
+                                             rectprops = dict(alpha = 0.3, facecolor = 'yellow'))
+        else:
+            self.spanSelector = None
+            self.__statusSpanSelector = False
+
+        #pronadji sve kanale predvidjene za crtanje te ucitaj podatke u self.data
+        kanali = []
+        #glavni kanal je jednak za sve u self.__opcije['glavniKanal'], uzmi bilo koji graf
+        kanali.append(self.popisGrafova['glavniKanal']['validanOK']['kanal'])
+        #kreni pretrazivati za kanale po pomocnim kanalima
+        for graf in list(self.popisGrafova['pomocniKanali'].keys()):
+            kanal = self.popisGrafova['pomocniKanali'][graf]['kanal']
+            if kanal not in kanali:
+                #izbjegni ponovno upisivanje istog kanala
+                kanali.append(kanal)
+        #lista kanali sada sadrzi sve kanale koji se trebaju crtati
+        #kreni ucitavati podatke u self.data
+        for kanal in kanali:
+            #zatrazi ciljani frejm od kontrolera
+            self.emit(QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), [kanal, self.minVrijeme, self.maxVrijeme])
+        
+        #podaci su u self.data, ispod su specificne naredbe za crtanje
+        """
+        glavniKanal sastoji se od 8 razlicitih grafova, ali samo treba
+        nacrtati 5. Ekstremi i fill ne postoje kao opcija. Crta se samo
+        koncentracija. detaljnije:
+        
+        1. midline 
+            -> line plot kroz koncentracije
+            -> samo radi lakseg pracenja vremenskog sljeda podataka
+        
+        2. validanOK
+            -> scatter plot koji prikazuje validirane podatke koji imaju dobar flag
             
-            #podesi granice x osi da su malo sire od podataka da tocke nisu na rubu
-            if self.__info != None:
-                #definiraj granice canvasa, prisiri interval podataka za 60 minuta
-                self.xmin, self.xmax = pomocneFunkcije.prosiri_granice_grafa(
-                    tmin, 
-                    tmax, 
-                    5)
-                #naredba za postavljanje horizontalne granice canvasa
-                self.axes.set_xlim(self.xmin, self.xmax)
-                
-                #TODO! tickovi (M je vezan za major tick)
-                self.xMTickLoc, self.xMTickLab, self.xTickLoc = pomocneFunkcije.pronadji_tickove_minutni(self.xmin, self.xmax)
-                self.axes.set_xticks(self.xMTickLoc)
-                self.axes.set_xticklabels(self.xMTickLab)
+        3. validanNOK
+            -> scatter plot koji prikazuje validirane podatke koji imaju los flag
             
-            #format x kooridinate
-            xLabels = self.axes.get_xticklabels()
-            for label in xLabels:
-                #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
-                label.set_rotation(30)
-                label.set_fontsize(8)
-    
-            #test opcenitih postavki priije crtanja:
-            #CURSOR
-            if self.__opcije['ostalo']['opcijeminutni']['cursor'] == True:
-                self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
-            else:
-                self.cursor = None
-            #MINOR TICKS
-            if self.__opcije['ostalo']['opcijeminutni']['ticks'] == True:
-                self.axes.set_xticks(self.xTickLoc, minor = True)
-                #self.axes.minorticks_on()
-            else:
-                self.axes.minorticks_off()
-            #GRID
-            if self.__opcije['ostalo']['opcijeminutni']['grid'] == True:
-                self.axes.grid(True, which = 'major', linewidth = 0.5, linestyle = '-')
-                self.axes.grid(True, which = 'minor', linewidth = 0.5)
-            else:
-                self.axes.grid(False)
-            #SPAN SELECTOR
-            if self.__opcije['ostalo']['opcijeminutni']['span'] == True:
-                self.__statusSpanSelector = True
-                self.spanSelector = SpanSelector(self.axes, 
-                                                 self.minutni_span_flag, 
-                                                 direction = 'horizontal', 
-                                                 useblit = True, 
-                                                 rectprops = dict(alpha = 0.3, facecolor = 'yellow'))
-            else:
-                self.spanSelector = None
-                self.__statusSpanSelector = False
+        4. nevalidanOK
+            -> scatter plot koji prikazuje podatke koji su validirani i imaju dobar flag
             
-            #pronadji sve kanale predvidjene za crtanje te ucitaj podatke u self.__data
-            kanali = []
-            #glavni kanal je jednak za sve u self.__opcije['glavniKanal'], uzmi bilo koji graf
-            kanali.append(self.__opcije['glavniKanal']['validanOK']['kanal'])
-            #kreni pretrazivati za kanale po self.__info['pomocnimKanali']
-            for graf in list(self.__opcije['pomocniKanali'].keys()):
-                kanal = self.__opcije['pomocniKanali'][graf]['kanal']
-                if kanal not in kanali:
-                    #izbjegni ponovno upisivanje istog kanala
-                    kanali.append(kanal)
-            #lista kanali sada sadrzi sve kanale koji se trebaju crtati
-            #kreni ucitavati podatke u self.__data
-            for kanal in kanali:
-                if kanal in self.__info[3]: #ako je kanal dostupan dokumentu
-                    #pripremi zahtjev za dohvacanje podataka [stanica, tmin, tmax, kanal]
-                    msg = [self.__info[0], tmin, tmax, kanal]
-                    #zatrazi ciljani frejm od kontrolera
-                    self.emit(QtCore.SIGNAL('dohvati_minutni_frejm_kanal(PyQt_PyObject)'), msg)
-            
-            #podaci su u self.__data, ispod su specificne naredbe za crtanje
-            
+        5. nevalidanNOK
+            -> scatter plot koji prikazuje podatke koji nisu validirani i imaju los flag
+        """
+        #redefiniramo kanali, zanima nas sto je stvarno ucitano
+        kanali = list(self.data.keys())
+        #plot naredbe, detaljno cu komentirati prvu, ostale su na slican nacin:        
+        #1. midline
+        #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
+        kanal = self.popisGrafova['glavniKanal']['midline']['kanal']
+        #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
+        if kanal in kanali:
+            #dohvati frejm
+            frejm = self.data[kanal]
+            #izbaci sve nan koncentracije
+            #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)]
+            #za x vrijednosti postavi indekse frejma, pandas timestampove
+            x = list(frejm.index)
+            #za y vrijednosti postavi specificni kanal, 'avg', srednje vrijednosti
+            y = list(frejm[u'koncentracija'])
             """
-            glavniKanal sastoji se od 8 razlicitih grafova, ali samo treba
-            nacrtati 5. Ekstremi i fill ne postoje kao opcija. Crta se samo
-            koncentracija. detaljnije:
-            
-            1. midline 
-                -> line plot kroz koncentracije
-                -> samo radi lakseg pracenja vremenskog sljeda podataka
-            
-            2. validanOK
-                -> scatter plot koji prikazuje validirane podatke koji imaju dobar flag
-                
-            3. validanNOK
-                -> scatter plot koji prikazuje validirane podatke koji imaju los flag
-                
-            4. nevalidanOK
-                -> scatter plot koji prikazuje podatke koji su validirani i imaju dobar flag
-                
-            5. nevalidanNOK
-                -> scatter plot koji prikazuje podatke koji nisu validirani i imaju los flag
+            y granice glavnog kanala, ekstremi
             """
-            #redefinicija kanala, zanima nas sto je stvarno ucitano
-            kanali = list(self.__data.keys())
-            #plot naredbe, detaljno cu komentirati prvu, ostale su na slican nacin:        
-            #1. midline
-            #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
-            kanal = self.__opcije['glavniKanal']['midline']['kanal']
-            #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
+            najmanji = min(y)
+            najveci = max(y)
+            if najmanji < self.dGranica:
+                self.dGranica = najmanji
+            if najveci > self.gGranica:
+                self.gGranica = najveci
+
+            #naredba za plot
+            self.axes.plot(x, 
+                           y, 
+                           linestyle = self.popisGrafova['glavniKanal']['midline']['line'],
+                           color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['midline']['rgb']), 
+                           alpha = self.popisGrafova['glavniKanal']['midline']['alpha'],
+                           zorder = self.popisGrafova['glavniKanal']['midline']['zorder'],
+                           label = self.popisGrafova['glavniKanal']['midline']['label'])
+            #zapamti da je glavni graf nacrtan
+            self.__statusGlavniGraf = True
+            
+        #2. validanOK
+        kanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+        if kanal in kanali:
+            frejm = self.data[kanal]
+            #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)] #izbaci sve nan koncentracije
+            frejm = frejm[frejm[u'flag'] == 1000] #samo dobri flagovi, validirani
+            x = list(frejm.index)
+            y = list(frejm[u'koncentracija'])
+            self.axes.scatter(x, 
+                              y, 
+                              marker = self.popisGrafova['glavniKanal']['validanOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['validanOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['validanOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['validanOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'])
+            self.__statusGlavniGraf = True
+
+        #3. validanNOK
+        kanal = self.popisGrafova['glavniKanal']['validanNOK']['kanal']
+        if kanal in kanali:
+            frejm= self.data[kanal]
+            #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)] #izbaci sve nan koncentracije
+            frejm = frejm[frejm[u'flag'] == -1000] #samo losi flagovi, validirani
+            x = list(frejm.index)
+            y = list(frejm[u'koncentracija'])
+            self.axes.scatter(x, 
+                              y, 
+                              marker = self.popisGrafova['glavniKanal']['validanNOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanNOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['validanNOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['validanNOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['validanNOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'])
+            self.__statusGlavniGraf = True
+
+        #4. nevalidanOK
+        kanal = self.popisGrafova['glavniKanal']['nevalidanOK']['kanal']
+        if kanal in kanali:
+            frejm = self.data[kanal]
+            #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)] #izbaci sve nan koncentracije
+            frejm = frejm[frejm[u'flag'] >= 0] #samo dobri flagovi
+            frejm = frejm[frejm[u'flag'] != 1000] #uzmi sve nevalidirane
+            x = list(frejm.index)
+            y = list(frejm[u'koncentracija'])
+            self.axes.scatter(x, 
+                              y, 
+                              marker = self.popisGrafova['glavniKanal']['nevalidanOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['nevalidanOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['nevalidanOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['nevalidanOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'])
+            self.__statusGlavniGraf = True
+        
+        #5 nevalidanNOK
+        kanal = self.popisGrafova['glavniKanal']['nevalidanNOK']['kanal']
+        if kanal in kanali:
+            frejm = self.data[kanal]
+            #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)] #izbaci sve nan koncentracije
+            frejm = frejm[frejm[u'flag'] < 0] #samo losi flagovi
+            frejm = frejm[frejm[u'flag'] != -1000] #uzmi sve nevalidirane
+            x = list(frejm.index)
+            y = list(frejm[u'koncentracija'])
+            self.axes.scatter(x, 
+                              y, 
+                              marker = self.popisGrafova['glavniKanal']['nevalidanNOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanNOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['nevalidanNOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['nevalidanNOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['nevalidanNOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'])
+            self.__statusGlavniGraf = True
+        #kraj crtanja glavnog kanala
+        
+        #crtanje pomocnih kanala:
+        for graf in list(self.popisGrafova['pomocniKanali'].keys()):
+            kanal = self.popisGrafova['pomocniKanali'][graf]['kanal']
             if kanal in kanali:
-                #dohvati frejm
-                data = self.__data[kanal]
-                #izbaci sve nan koncentracije
-                #data = data[np.isnan(data[u'koncentracija'] != True)]
-                #za x vrijednosti postavi indekse frejma, pandas timestampove
-                x = list(data.index)
-                #za y vrijednosti postavi specificni kanal, 'avg', srednje vrijednosti
-                y = list(data[u'koncentracija'])
+                frejm = self.data[kanal]
+                #frejm = frejm[np.isnan(frejm[u'koncentracija'] != True)] #izbaci sve nan koncentracije
+                x = list(frejm.index)
+                y = list(frejm[u'koncentracija']) #samo crtamo srednje vrijednosti
                 """
-                y granice glavnog kanala, ekstremi
+                y granice pomocnih kanala, ekstremi
                 """
                 najmanji = min(y)
                 najveci = max(y)
@@ -238,198 +324,61 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 if najveci > self.gGranica:
                     self.gGranica = najveci
 
-                #naredba za plot
                 self.axes.plot(x, 
                                y, 
-                               linestyle = self.__opcije['glavniKanal']['midline']['line'],
-                               color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['midline']['rgb']), 
-                               alpha = self.__opcije['glavniKanal']['midline']['alpha'],
-                               zorder = self.__opcije['glavniKanal']['midline']['zorder'],
-                               label = self.__opcije['glavniKanal']['midline']['label'])
-                #zapamti da je glavni graf nacrtan
-                self.__statusGlavniGraf = True
-                
-            #2. validanOK
-            kanal = self.__opcije['glavniKanal']['validanOK']['kanal']
-            if kanal in kanali:
-                data = self.__data[kanal]
-                #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
-                data = data[data[u'flag'] == 1000] #samo dobri flagovi, validirani
-                x = list(data.index)
-                y = list(data[u'koncentracija'])
-                self.axes.scatter(x, 
-                                  y, 
-                                  marker = self.__opcije['glavniKanal']['validanOK']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanOK']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['validanOK']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['validanOK']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['validanOK']['label'], 
-                                  s = self.__opcije['glavniKanal']['validanOK']['markersize'])
-                self.__statusGlavniGraf = True
-    
-            #3. validanNOK
-            kanal = self.__opcije['glavniKanal']['validanNOK']['kanal']
-            if kanal in kanali:
-                data = self.__data[kanal]
-                #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
-                data = data[data[u'flag'] == -1000] #samo losi flagovi, validirani
-                x = list(data.index)
-                y = list(data[u'koncentracija'])
-                self.axes.scatter(x, 
-                                  y, 
-                                  marker = self.__opcije['glavniKanal']['validanNOK']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanNOK']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['validanNOK']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['validanNOK']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['validanNOK']['label'], 
-                                  s = self.__opcije['glavniKanal']['validanNOK']['markersize'])
-                self.__statusGlavniGraf = True
-    
-            #4. nevalidanOK
-            kanal = self.__opcije['glavniKanal']['nevalidanOK']['kanal']
-            if kanal in kanali:
-                data = self.__data[kanal]
-                #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
-                data = data[data[u'flag'] >= 0] #samo dobri flagovi
-                data = data[data[u'flag'] != 1000] #uzmi sve nevalidirane
-                x = list(data.index)
-                y = list(data[u'koncentracija'])
-                self.axes.scatter(x, 
-                                  y, 
-                                  marker = self.__opcije['glavniKanal']['nevalidanOK']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanOK']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['nevalidanOK']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['nevalidanOK']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['nevalidanOK']['label'], 
-                                  s = self.__opcije['glavniKanal']['nevalidanOK']['markersize'])
-                self.__statusGlavniGraf = True
-            
-            #5 nevalidanNOK
-            kanal = self.__opcije['glavniKanal']['nevalidanNOK']['kanal']
-            if kanal in kanali:
-                data = self.__data[kanal]
-                #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
-                data = data[data[u'flag'] < 0] #samo losi flagovi
-                data = data[data[u'flag'] != -1000] #uzmi sve nevalidirane
-                x = list(data.index)
-                y = list(data[u'koncentracija'])
-                self.axes.scatter(x, 
-                                  y, 
-                                  marker = self.__opcije['glavniKanal']['nevalidanNOK']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanNOK']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['nevalidanNOK']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['nevalidanNOK']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['nevalidanNOK']['label'], 
-                                  s = self.__opcije['glavniKanal']['nevalidanNOK']['markersize'])
-                self.__statusGlavniGraf = True
-            #kraj crtanja glavnog kanala
-            
-            #crtanje pomocnih kanala:
-            for graf in list(self.__opcije['pomocniKanali'].keys()):
-                kanal = self.__opcije['pomocniKanali'][graf]['kanal']
-                if kanal in kanali:
-                    data = self.__data[kanal]
-                    #data = data[np.isnan(data[u'koncentracija'] != True)] #izbaci sve nan koncentracije
-                    x = list(data.index)
-                    y = list(data[u'koncentracija']) #samo crtamo srednje vrijednosti
-                    """
-                    y granice pomocnih kanala, ekstremi
-                    """
-                    najmanji = min(y)
-                    najveci = max(y)
-                    if najmanji < self.dGranica:
-                        self.dGranica = najmanji
-                    if najveci > self.gGranica:
-                        self.gGranica = najveci
+                               marker = self.popisGrafova['pomocniKanali'][graf]['marker'], 
+                               linestyle = self.popisGrafova['pomocniKanali'][graf]['line'],
+                               color = pomocneFunkcije.normalize_rgb(self.popisGrafova['pomocniKanali'][graf]['rgb']), 
+                               alpha = self.popisGrafova['pomocniKanali'][graf]['alpha'],
+                               zorder = self.popisGrafova['pomocniKanali'][graf]['zorder'],
+                               label = self.popisGrafova['pomocniKanali'][graf]['label'], 
+                               markersize = self.popisGrafova['pomocniKanali'][graf]['markersize'], 
+                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'])
 
-                    self.axes.plot(x, 
-                                   y, 
-                                   marker = self.__opcije['pomocniKanali'][graf]['marker'], 
-                                   linestyle = self.__opcije['pomocniKanali'][graf]['line'],
-                                   color = pomocneFunkcije.normalize_rgb(self.__opcije['pomocniKanali'][graf]['rgb']), 
-                                   alpha = self.__opcije['pomocniKanali'][graf]['alpha'],
-                                   zorder = self.__opcije['pomocniKanali'][graf]['zorder'],
-                                   label = self.__opcije['pomocniKanali'][graf]['label'], 
-                                   markersize = self.__opcije['pomocniKanali'][graf]['markersize'], 
-                                   linewidth = self.__opcije['pomocniKanali'][graf]['linewidth'])
-   
-                                  
-            if self.__statusGlavniGraf:
-                trenutniGlavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']            
-                #rubovi indeksa glavnog kanala, treba za pick i span granice
-                self.__tmin = self.__data[trenutniGlavniKanal].index.min()
-                self.__tmax = self.__data[trenutniGlavniKanal].index.max()
+                              
+        if self.__statusGlavniGraf:
+            trenutniGlavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+            #rubovi indeksa glavnog kanala, treba za pick i span granice
+            self.__tmin = self.data[trenutniGlavniKanal].index.min()
+            self.__tmax = self.data[trenutniGlavniKanal].index.max()
 
+        """
+        provjera da li je glavni graf uspjesno nacrtan prije odredjivanja
+        vertikalnog raspona i legende
+        """
+        if self.__statusGlavniGraf:            
             #odredjivanje vertikalnog raspona grafa
-            #glavni kanal                
+            miny = self.data[trenutniGlavniKanal][u'koncentracija'].min()
+            maxy = self.data[trenutniGlavniKanal][u'koncentracija'].max()
+    
+            if miny < self.dGranica:
+                self.dGranica = miny
+            if maxy > self.gGranica:
+                self.gGranica = maxy
+            
             self.axes.set_ylim(self.dGranica - 1, self.gGranica + 1)
-
     
-            #TODO! pikaz legende
             #prikaz legende na zahtjev
-            if self.__opcije['ostalo']['opcijeminutni']['legend'] == True:
+            if self.popisGrafova['ostalo']['opcijeminutni']['legend'] == True:
                 self.leg = self.axes.legend(loc = 1, fontsize =8, fancybox  = True)
-                self.leg.get_frame().set_alpha(0.9)                    
-    
-            #naredba za crtanje na canvas
-            self.draw()
+                self.leg.get_frame().set_alpha(0.9)
+            
         else:
-            #naredba za crtanje na canvas
-            self.__sat = None
-            self.draw()
+            self.axes.clear()
+            self.axes.text(0.5, 
+                           0.5, 
+                           'Nemoguce pristupiti podacima', 
+                           horizontalalignment='center', 
+                           verticalalignment='center', 
+                           fontsize = 8, 
+                           transform = self.axes.transAxes)
+
+
+        #naredba za crtanje na canvas
+        self.draw()
         
         #promjeni cursor u normalan cursor
         QtGui.QApplication.restoreOverrideCursor()
-###############################################################################
-    def promjenjen_flag(self, lista):
-        #TODO! mozda je lista visak
-        """
-        Metoda sluzi kao slot preko kojega kontroler daje do znanja canvasu
-        da su podaci promjenjeni (flag). Zahtjev za ponovnim crtanjem (refresh)
-        grafa.
-        """
-        self.__info = lista
-        self.crtaj(self.__opcije, self.__info, self.__sat)
-###############################################################################
-    def plot_time_span(self, vrijeme):
-        """
-        Za zadano vrijeme (pd.timestamp) vraca rubne vrijednosti indeksa 
-        minutnog slicea.
-        
-        pomocna metoda. Izbor tocke na satnom grafu salje zahtjev za crtanjem
-        minutnog grafa kontroloru. Preciznije, minutni graf se uvijek crta za
-        cijeli dan, izbor tocke ga "zoomira".
-        
-        primjer:
-        -netko na satnom grafu klikne sat 12:00:00
-        -dakle... trebam zoomirati na set minutnih podataka koji su usli u 
-        racunicu agregirane vrijednosti. Od 11:01:00 do 12:00:00
-        -ova funkcija racuna te dvije vrijednosti timestampa.
-        """
-        tmax =  vrijeme
-        tmin = vrijeme - timedelta(minutes = 59)
-        tmin = pd.to_datetime(tmin)
-        return tmin, tmax
-###############################################################################
-    def fokusiraj_interval(self, sat):
-        #TODO! potencijalno nebitno... reworkam draw
-        """
-        ideja je spojiti signal za izbor satno agregiranog podatka sa ovom
-        metodom. Nesto poput zooma na ciljani interval.
-        
-        Ova metoda je slot preko kojega kontrolor informira na koji dio grafa
-        valja zoomirati.
-        
-        ulazni parametar sat mora biti tipa pandas timestamp
-        """
-        if type(sat) == pd.tslib.Timestamp:
-            self.__sat = sat #zapamti zadnji sat koji je bio zoomiran
-            #pronadji nove granice x osi grafa
-            self.tmin, self.tmax = self.plot_time_span(self.__sat)
-            #postavi nove granice crtanja grafa (zoom na sat)
-            self.axes.set_xlim(self.tmin, self.tmax)
-            #naredba za crtanje
-            self.draw()
 ###############################################################################
     def minutni_span_flag(self, tmin, tmax):
         """
@@ -445,7 +394,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
             tmax = matplotlib.dates.num2date(tmax)
             tmin = datetime.datetime(tmin.year, tmin.month, tmin.day, tmin.hour, tmin.minute, tmin.second)
             tmax = datetime.datetime(tmax.year, tmax.month, tmax.day, tmax.hour, tmax.minute, tmax.second)
-            #vremena se zaokruzuju na najblizi sat
+            #vremena se zaokruzuju na najblizu minutu (60 sekundi)
             tmin = pomocneFunkcije.zaokruzi_vrijeme(tmin, 60)
             tmax = pomocneFunkcije.zaokruzi_vrijeme(tmax, 60)
             tmin = pd.to_datetime(tmin)
@@ -462,7 +411,6 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 tmax = self.__tmax
             
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
-            #zoom, pan opcije na toolbaru moraju biti "off"
             if tmin != tmax:
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
@@ -471,7 +419,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
     def show_menu(self, pos, tmin, tmax):
         """
         Metoda iscrtava kontekstualni meni tjekom desnog klika (ili
-        prilikom selektiranja sa spanom)
+        prilikom selektiranja sa spanom) na poziciji pos.
         """
         #zapamti rubna vremena intervala, trebati ce za druge metode
         self.__lastTimeMin = tmin
@@ -488,7 +436,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
-###############################################################################    
+################################################################################    
     def dijalog_promjena_flaga_OK(self):
         """
         Metoda sluzi za promjenu flaga na pozitivnu vrijednost i 
@@ -501,12 +449,12 @@ class Graf(opcenitiCanvas.MPLCanvas):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
         #dohvati glavni kanal
-        glavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [min, max, flag, kanal, stanica]
-        arg = [tmin, tmax, 1000, glavniKanal, self.__info[0]]
+        glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+        #pakiranje zahtjeva u listu [min, max, flag, kanal]
+        arg = [tmin, tmax, 1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-###############################################################################        
+################################################################################        
     def dijalog_promjena_flaga_NOK(self):
         """
         Metoda sluzi za promjenu flaga na negativnu vrijednost i 
@@ -519,12 +467,12 @@ class Graf(opcenitiCanvas.MPLCanvas):
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
         #dohvati glavni kanal
-        glavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [min, max, flag, kanal, stanica]
-        arg = [tmin, tmax, -1000, glavniKanal, self.__info[0]]
+        glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+        #pakiranje zahtjeva u listu [min, max, flag, kanal]
+        arg = [tmin, tmax, -1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-###############################################################################
+################################################################################
     def on_pick(self, event):
         """
         Metoda odradjuje interakciju sa canvasom. Preuzima event (mouseclick), 
@@ -532,7 +480,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
         
         -glavni graf mora biti nacrtan
         -event mora biti unutar axesa (prostora za crtanje)
+        -desni klik pokrece context manager za promjenu flaga
+        -middle mouse klik pokazuje tj. brise annotation
         """
+        #picker za podatke, annotations etc...
         if self.__statusGlavniGraf and event.inaxes == self.axes:
             #nuzna konverzija x tocke eventa u pandas timestamp
             xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
@@ -554,26 +505,26 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 xpoint = self.__tmin
 
             #glavni kanal
-            gkanal = self.__opcije['glavniKanal']['validanOK']['kanal']
+            gkanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
 
-            if xpoint in list(self.__data[gkanal].index):
-                ypoint = self.__data[gkanal].loc[xpoint, u'koncentracija']
+            if xpoint in list(self.data[gkanal].index):
+                ypoint = self.data[gkanal].loc[xpoint, u'koncentracija']
                 if np.isnan(ypoint): #potencijalo za taj index konc = np.NaN
-                    miny = self.__data[gkanal][u'koncentracija'].min()
-                    maxy = self.__data[gkanal][u'koncentracija'].max()
+                    miny = self.data[gkanal][u'koncentracija'].min()
+                    maxy = self.data[gkanal][u'koncentracija'].max()
                     ypoint = (miny + maxy)/2                    
             else:
-                miny = self.__data[gkanal][u'koncentracija'].min()
-                maxy = self.__data[gkanal][u'koncentracija'].max()
+                miny = self.data[gkanal][u'koncentracija'].min()
+                maxy = self.data[gkanal][u'koncentracija'].max()
                 ypoint = (miny + maxy)/2
 
             if event.button == 2:
                 #annotations
                 #dohvati tekst annotationa
-                if xpoint in list(self.__data[gkanal].index):
-                    konc = self.__data[gkanal].loc[xpoint, u'koncentracija']
-                    status = self.__data[gkanal].loc[xpoint, u'status']
-                    flag = self.__data[gkanal].loc[xpoint, u'flag']
+                if xpoint in list(self.data[gkanal].index):
+                    konc = self.data[gkanal].loc[xpoint, u'koncentracija']
+                    status = self.data[gkanal].loc[xpoint, u'status']
+                    flag = self.data[gkanal].loc[xpoint, u'flag']
                     tekst = 'Vrijeme: '+str(xpoint)+'\nKonc.: '+str(konc)+'\nStatus: '+str(status)+'\nFlag: '+str(flag)
                 else:
                     tekst = 'Vrijeme: '+str(xpoint)+'\nNema podatka'
@@ -645,5 +596,22 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 #poziva context menu sa informacijom o lokaciji i satu
                 loc = QtGui.QCursor.pos() #lokacija klika
                 self.show_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
+###############################################################################
+    def clear_minutni(self):
+        """
+        clear minutnog grafa, reset na defaultne postavke
+        """
+        #podrska za kontekstni meni za promjenu flaga
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)      
+
+        self.data = {} #spremnik za frejmove (ucitane)
+        self.__statusGlavniGraf = False #da li je nacrtan glavni graf
+        self.__statusSpanSelector = False #da li je span selector aktivan
+        #annotation
+        self.__zadnjiAnnotationx = None
+        self.__testAnnotation = False
+        
+        self.axes.clear()
+        self.draw()
 ###############################################################################
 ###############################################################################

@@ -20,7 +20,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
     P.S. imenovanje funkcija odskace od nacina na koji su pisane drugdje, ali
     Qt frejmwork inszistira da se funkcije zovu rowCount,  a ne row_count
     
-    P.P.S. za inicijalizaciju su bitne 2 stvari
+    P.P.S. za inicijalizaciju su bitne 4 stvari
     1. grafInfo -> treba dati nested listu pomocnih grafova (inace je nested dictionary)
     2. kanali -> lista svih kanala koje je moguce izabrati (SO2, NO2...). Bitno za izbor kanala
     3. markeri ->lista svih markera koji ulaze u izbor, opisni ('Krug'...)

@@ -29,14 +29,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
     
     Bitne metode:
     
-    1. crtaj(self, mapaGrafova, infoFrejmovi) : glavna naredba za crtanje.
-        - mapaGrafova -> mapa (dict) sa opcijama grafova (dict sa 
-        informacijom o glavnom kanalu, pomocnim kanalima, opcijama).
-        Tu je sadrzana informacija kako graf treba izgledati te sto ce biti nacrtano.
-        
-        -infoFrejmovi -> izvor podataka, lista. [stanica, tMin, tMax, [lista kanala]]
-        Tu je sadrzana informacija s kojom se moze pristupiti podacima.
-        
+    1.crtaj(self, lista)
+        - glavna metoda za crtanje grafa
+        - lista = [nested dict opcija i kanala, tmin, tmax]
+            
     2. on_pick(self, event): odradjuje interakciju sa grafom
         -event je mouseclick.
         -lijevi klik misem prosljedjuje naredbu za crtanje minutnog grafa
@@ -47,12 +43,11 @@ class Graf(opcenitiCanvas.MPLCanvas):
         """konstruktor"""
         opcenitiCanvas.MPLCanvas.__init__(self, *args, **kwargs)
         
-        #podrska za kontekstni meni za promjenu flaga
+        #podrska za kontekstni meni za promjenu flaga (desni klik misem na canvas)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         
-        self.__opcije = None #dict opcija grafa
-        self.__data = {} #spremnik za frejmove (ucitane)
-        self.__info = None #info o dostupnim frejmovima
+        self.data = {} #privremeni spremnik za frejmove (ucitane)
+
         self.__statusGlavniGraf = False #da li je nacrtan glavni graf
         self.__statusSpanSelector = False #da li je span selector aktivan
         #highlight
@@ -76,12 +71,12 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -metoda crtaj trazi od kontrolera podatke
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
         
-        metoda postavlja agregirani frejm u self.__data
+        metoda postavlja agregirani frejm u self.data
         lista -> [kanal, frejm]
-        kanal -> string, ime kanala
+        kanal -> int, ime kanala
         frejm -> pandas dataframe, agregirani podaci
         """
-        self.__data[lista[0]] = lista[1]        
+        self.data[lista[0]] = lista[1] 
 ###############################################################################            
     def highlight_dot(self, x, y):
         """
@@ -101,25 +96,28 @@ class Graf(opcenitiCanvas.MPLCanvas):
             self.__testHighlight = True
             self.draw()
 ###############################################################################
-    def crtaj(self, mapaGrafova, infoFrejmovi):
+    def crtaj(self, lista):
         """Eksplicitne naredbe za crtanje
         
-        ulaz:
-        mapaGrafova -> defaultni dict sa opcijama grafova
-        infoFrejmovi -> izvor podataka [stanica, tMin, tMax, [lista kanala]]
+        ulaz --> lista [dict grafova i opcija, tmin, tmax]
         """
+        #TODO!
+        #nije testirano do kraja, potencijali problemi sa praznim frejmovima ili
+        #nedostatkom frejma
+        
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        #spremi ulazne parametre u privatne membere
-        self.__opcije = mapaGrafova
-        self.__info = infoFrejmovi
+        self.popisGrafova = lista[0]
+        self.minVrijeme = lista[1]
+        self.maxVrijeme = lista[2]
+        
         #clear data, svaki poziv ove metode uvjetuje ponovno povlacenje podataka
         #iz modela. Cilj je dohvatiti zadnje azurne podatke.
-        self.__data = {}
+        self.data = {}
         
         #y granice pomocnih kanala, defaulti
-        self.dGranica = -2
-        self.gGranica = 2        
+        self.dGranica = 0
+        self.gGranica = 1        
         
         #clear graf
         self.axes.clear()
@@ -128,20 +126,19 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.__testAnnotation = False #clear ce maknuti i annotatione sa grafa
         
         #podesi granice x osi da su malo sire od podataka da tocke nisu na rubu
-        if self.__info != None:
-            #definiraj granice canvasa, prisiri interval podataka za 60 minuta
-            self.xmin, self.xmax = pomocneFunkcije.prosiri_granice_grafa(
-                self.__info[1], 
-                self.__info[2], 
-                60)
-            #naredba za postavljanje horizontalne granice canvasa
-            self.axes.set_xlim(self.xmin, self.xmax)
-            
-            #TODO! definiraj raspon tickova i format x labela
-            self.xTickLoc, self.xTickLab = pomocneFunkcije.pronadji_tickove_satni(self.xmin, self.xmax)
-            #postavi tickove
-            self.axes.set_xticks(self.xTickLoc)
-            self.axes.set_xticklabels(self.xTickLab)
+        #definiraj granice canvasa, prisiri interval podataka za 60 minuta
+        self.xmin, self.xmax = pomocneFunkcije.prosiri_granice_grafa(
+            self.minVrijeme, 
+            self.maxVrijeme, 
+            60)
+        #naredba za postavljanje horizontalne granice canvasa
+        self.axes.set_xlim(self.xmin, self.xmax)
+        
+        #definiraj raspon tickova i format x labela
+        self.xTickLoc, self.xTickLab = pomocneFunkcije.pronadji_tickove_satni(self.xmin, self.xmax)
+        #postavi tickove
+        self.axes.set_xticks(self.xTickLoc)
+        self.axes.set_xticklabels(self.xTickLab)
         
         #format x kooridinate
         xLabels = self.axes.get_xticklabels()
@@ -152,23 +149,23 @@ class Graf(opcenitiCanvas.MPLCanvas):
 
         #test opcenitih postavki priije crtanja:
         #CURSOR
-        if self.__opcije['ostalo']['opcijesatni']['cursor'] == True:
+        if self.popisGrafova['ostalo']['opcijesatni']['cursor'] == True:
             self.cursor = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
         else:
             self.cursor = None
         #MINOR TICKS
-        if self.__opcije['ostalo']['opcijesatni']['ticks'] == True:
+        if self.popisGrafova['ostalo']['opcijesatni']['ticks'] == True:
             self.axes.minorticks_on()
         else:
             self.axes.minorticks_off()
         #GRID
-        if self.__opcije['ostalo']['opcijesatni']['grid'] == True:
+        if self.popisGrafova['ostalo']['opcijesatni']['grid'] == True:
             #modificiraj stil grida
             self.axes.grid(True, which = 'major')
         else:
             self.axes.grid(False)
         #SPAN SELECTOR
-        if self.__opcije['ostalo']['opcijesatni']['span'] == True:
+        if self.popisGrafova['ostalo']['opcijesatni']['span'] == True:
             self.__statusSpanSelector = True
             self.spanSelector = SpanSelector(self.axes, 
                                              self.satni_span_flag, 
@@ -180,27 +177,24 @@ class Graf(opcenitiCanvas.MPLCanvas):
             self.__statusSpanSelector = False
         
         
-        #pronadji sve kanale predvidjene za crtanje te ucitaj podatke u self.__data
+        #pronadji sve kanale predvidjene za crtanje te ucitaj podatke u self.data
         kanali = []
-        #glavni kanal je jednak za sve u self.__opcije['glavniKanal'], uzmi bilo koji graf
-        kanali.append(self.__opcije['glavniKanal']['validanOK']['kanal'])
-        #kreni pretrazivati za kanale po self.__info['pomocnimKanali']
-        for graf in list(self.__opcije['pomocniKanali'].keys()):
-            kanal = self.__opcije['pomocniKanali'][graf]['kanal']
+        #glavni kanal je jednak za sve u self.popisGrafova['glavniKanal'], uzmi bilo koji graf
+        kanali.append(self.popisGrafova['glavniKanal']['validanOK']['kanal'])
+        #kreni pretrazivati za kanale po self.popisGrafova['pomocnimKanali']
+        for graf in list(self.popisGrafova['pomocniKanali'].keys()):
+            kanal = self.popisGrafova['pomocniKanali'][graf]['kanal']
             if kanal not in kanali:
                 #izbjegni ponovno upisivanje istog kanala
                 kanali.append(kanal)
         #lista kanali sada sadrzi sve kanale koji se trebaju crtati
-        #kreni ucitavati podatke u self.__data
+
+        #kreni ucitavati podatke u self.data
         for kanal in kanali:
-            if kanal in self.__info[3]: #ako je kanal dostupan dokumentu
-                #pripremi zahtjev za dohvacanje podataka [stanica, tmin, tmax, kanal]
-                msg = [self.__info[0], self.__info[1], self.__info[2], kanal]
-                #zatrazi ciljani frejm od kontrolera
-                self.emit(QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), msg)
+            #zatrazi ciljani frejm od kontrolera
+            self.emit(QtCore.SIGNAL('dohvati_agregirani_frejm_kanal(PyQt_PyObject)'), kanal)
         
-        #podaci su u self.__data, ispod su specificne naredbe za crtanje
-        
+        #podaci (ciljani frejmovi) su u self.data, ispod su specificne naredbe za crtanje
         """
         glavniKanal sastoji se od 8 razlicitih grafova, detaljnije:
         1. midline 
@@ -231,157 +225,159 @@ class Graf(opcenitiCanvas.MPLCanvas):
             -> scatter plot maksimalnih vrijednosti podataka
         """
         #redefinicija kanala, zanima nas sto je stvarno ucitano
-        kanali = list(self.__data.keys())
+        kanali = list(self.data.keys())
+        #glavni kanal
+        trenutniGlavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
         #plot naredbe, detaljno cu komentirati prvu, ostale su na slican nacin:
         
         #1. midline
         #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
-        kanal = self.__opcije['glavniKanal']['midline']['kanal']
+        kanal = self.popisGrafova['glavniKanal']['midline']['kanal']
         #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
         if kanal in kanali:
             #dohvati frejm
-            data = self.__data[kanal]
+            frejm = self.data[kanal]
             #za x vrijednosti postavi indekse frejma, pandas timestampove
-            x = list(data.index)
+            x = list(frejm.index)
             #za y vrijednosti postavi specificni kanal, 'avg', srednje vrijednosti
-            y = list(data[u'avg'])
+            y = list(frejm[u'avg'])
             #naredba za plot
             self.axes.plot(x, 
                            y, 
-                           linestyle = self.__opcije['glavniKanal']['midline']['line'],
-                           color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['midline']['rgb']), 
-                           alpha = self.__opcije['glavniKanal']['midline']['alpha'],
-                           zorder = self.__opcije['glavniKanal']['midline']['zorder'],
-                           label = self.__opcije['glavniKanal']['midline']['label'])
+                           linestyle = self.popisGrafova['glavniKanal']['midline']['line'],
+                           color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['midline']['rgb']), 
+                           alpha = self.popisGrafova['glavniKanal']['midline']['alpha'],
+                           zorder = self.popisGrafova['glavniKanal']['midline']['zorder'],
+                           label = self.popisGrafova['glavniKanal']['midline']['label'])
             #zapamti da je glavni graf nacrtan
             self.__statusGlavniGraf = True
             
         #2. validanOK
-        kanal = self.__opcije['glavniKanal']['validanOK']['kanal']
+        kanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
         if kanal in kanali:
-            data = self.__data[kanal]
-            data = data[data[u'flag'] == 1000] #samo dobri flagovi, validirani
-            x = list(data.index)
-            y = list(data[u'avg'])
+            frejm = self.data[kanal]
+            frejm = frejm[frejm[u'flag'] == 1000] #samo dobri flagovi, validirani
+            x = list(frejm.index)
+            y = list(frejm[u'avg'])
             self.axes.scatter(x, 
                               y, 
-                              marker = self.__opcije['glavniKanal']['validanOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanOK']['rgb']), 
-                              alpha = self.__opcije['glavniKanal']['validanOK']['alpha'], 
-                              zorder = self.__opcije['glavniKanal']['validanOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['validanOK']['label'], 
-                              s = self.__opcije['glavniKanal']['validanOK']['markersize'])
+                              marker = self.popisGrafova['glavniKanal']['validanOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['validanOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['validanOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['validanOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #3. validanNOK
-        kanal = self.__opcije['glavniKanal']['validanNOK']['kanal']
+        kanal = self.popisGrafova['glavniKanal']['validanNOK']['kanal']
         if kanal in kanali:
-            data = self.__data[kanal]
-            data = data[data[u'flag'] == -1000] #samo losi flagovi, validirani
-            x = list(data.index)
-            y = list(data[u'avg'])
+            frejm = self.data[kanal]
+            frejm = frejm[frejm[u'flag'] == -1000] #samo losi flagovi, validirani
+            x = list(frejm.index)
+            y = list(frejm[u'avg'])
             self.axes.scatter(x, 
                               y, 
-                              marker = self.__opcije['glavniKanal']['validanNOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['validanNOK']['rgb']), 
-                              alpha = self.__opcije['glavniKanal']['validanNOK']['alpha'], 
-                              zorder = self.__opcije['glavniKanal']['validanNOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['validanNOK']['label'], 
-                              s = self.__opcije['glavniKanal']['validanNOK']['markersize'])
+                              marker = self.popisGrafova['glavniKanal']['validanNOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanNOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['validanNOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['validanNOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['validanNOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #4. nevalidanOK
-        kanal = self.__opcije['glavniKanal']['nevalidanOK']['kanal']
+        kanal = self.popisGrafova['glavniKanal']['nevalidanOK']['kanal']
         if kanal in kanali:
-            data = self.__data[kanal]
-            data = data[data[u'flag'] == 1] #samo dobri flagovi, nevalidirani
-            x = list(data.index)
-            y = list(data[u'avg'])
+            frejm = self.data[kanal]
+            frejm = frejm[frejm[u'flag'] == 1] #samo dobri flagovi, nevalidirani
+            x = list(frejm.index)
+            y = list(frejm[u'avg'])
             self.axes.scatter(x, 
                               y, 
-                              marker = self.__opcije['glavniKanal']['nevalidanOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanOK']['rgb']), 
-                              alpha = self.__opcije['glavniKanal']['nevalidanOK']['alpha'], 
-                              zorder = self.__opcije['glavniKanal']['nevalidanOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['nevalidanOK']['label'], 
-                              s = self.__opcije['glavniKanal']['nevalidanOK']['markersize'])
+                              marker = self.popisGrafova['glavniKanal']['nevalidanOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['nevalidanOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['nevalidanOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['nevalidanOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'])
             self.__statusGlavniGraf = True
         
         #5 nevalidanNOK
-        kanal = self.__opcije['glavniKanal']['nevalidanNOK']['kanal']
+        kanal = self.popisGrafova['glavniKanal']['nevalidanNOK']['kanal']
         if kanal in kanali:
-            data = self.__data[kanal]
-            data = data[data[u'flag'] == -1] #samo losi flagovi, nevalidirani
-            x = list(data.index)
-            y = list(data[u'avg'])
+            frejm = self.data[kanal]
+            frejm = frejm[frejm[u'flag'] == -1] #samo losi flagovi, nevalidirani
+            x = list(frejm.index)
+            y = list(frejm[u'avg'])
             self.axes.scatter(x, 
                               y, 
-                              marker = self.__opcije['glavniKanal']['nevalidanNOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['nevalidanNOK']['rgb']), 
-                              alpha = self.__opcije['glavniKanal']['nevalidanNOK']['alpha'], 
-                              zorder = self.__opcije['glavniKanal']['nevalidanNOK']['zorder'], 
-                              label = self.__opcije['glavniKanal']['nevalidanNOK']['label'], 
-                              s = self.__opcije['glavniKanal']['nevalidanNOK']['markersize'])
+                              marker = self.popisGrafova['glavniKanal']['nevalidanNOK']['marker'], 
+                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanNOK']['rgb']), 
+                              alpha = self.popisGrafova['glavniKanal']['nevalidanNOK']['alpha'], 
+                              zorder = self.popisGrafova['glavniKanal']['nevalidanNOK']['zorder'], 
+                              label = self.popisGrafova['glavniKanal']['nevalidanNOK']['label'], 
+                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'])
             self.__statusGlavniGraf = True
             
         #6. fillsatni
-        kanal = self.__opcije['glavniKanal']['fillsatni']['kanal']
-        if self.__opcije['glavniKanal']['fillsatni']['crtaj'] == True:
+        kanal = self.popisGrafova['glavniKanal']['fillsatni']['kanal']
+        if self.popisGrafova['glavniKanal']['fillsatni']['crtaj'] == True:
             if kanal in kanali:
-                data = self.__data[kanal]
-                x = list(data.index)
-                y1 = list(data[self.__opcije['glavniKanal']['fillsatni']['data1']])
-                y2 = list(data[self.__opcije['glavniKanal']['fillsatni']['data2']])
+                frejm = self.data[kanal]
+                x = list(frejm.index)
+                y1 = list(frejm[self.popisGrafova['glavniKanal']['fillsatni']['data1']])
+                y2 = list(frejm[self.popisGrafova['glavniKanal']['fillsatni']['data2']])
                 self.axes.fill_between(x, 
                                        y1, 
                                        y2, 
-                                       facecolor = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['fillsatni']['rgb']), 
-                                       alpha = self.__opcije['glavniKanal']['fillsatni']['alpha'], 
-                                       zorder = self.__opcije['glavniKanal']['fillsatni']['zorder'])
+                                       facecolor = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['fillsatni']['rgb']), 
+                                       alpha = self.popisGrafova['glavniKanal']['fillsatni']['alpha'], 
+                                       zorder = self.popisGrafova['glavniKanal']['fillsatni']['zorder'])
                 self.__statusGlavniGraf = True
         
         #7. ekstremimin
-        kanal = self.__opcije['glavniKanal']['ekstremimin']['kanal']
-        if self.__opcije['glavniKanal']['ekstremimin']['crtaj'] == True:
+        kanal = self.popisGrafova['glavniKanal']['ekstremimin']['kanal']
+        if self.popisGrafova['glavniKanal']['ekstremimin']['crtaj'] == True:
             if kanal in kanali:
-                data = self.__data[kanal]
-                x = list(data.index)
-                y = list(data[u'min'])
+                frejm = self.data[kanal]
+                x = list(frejm.index)
+                y = list(frejm[u'min'])
                 self.axes.scatter(x, 
                                   y, 
-                                  marker = self.__opcije['glavniKanal']['ekstremimin']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['ekstremimin']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['ekstremimin']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['ekstremimin']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['ekstremimin']['label'], 
-                                  s = self.__opcije['glavniKanal']['ekstremimin']['markersize'])
+                                  marker = self.popisGrafova['glavniKanal']['ekstremimin']['marker'], 
+                                  color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['ekstremimin']['rgb']), 
+                                  alpha = self.popisGrafova['glavniKanal']['ekstremimin']['alpha'], 
+                                  zorder = self.popisGrafova['glavniKanal']['ekstremimin']['zorder'], 
+                                  label = self.popisGrafova['glavniKanal']['ekstremimin']['label'], 
+                                  s = self.popisGrafova['glavniKanal']['ekstremimin']['markersize'])
                 self.__statusGlavniGraf = True
 
         #8. ekstremimax
-        kanal = self.__opcije['glavniKanal']['ekstremimax']['kanal']
-        if self.__opcije['glavniKanal']['ekstremimax']['crtaj'] == True:
+        kanal = self.popisGrafova['glavniKanal']['ekstremimax']['kanal']
+        if self.popisGrafova['glavniKanal']['ekstremimax']['crtaj'] == True:
             if kanal in kanali:
-                data = self.__data[kanal]
-                x = list(data.index)
-                y = list(data[u'max'])
+                frejm = self.data[kanal]
+                x = list(frejm.index)
+                y = list(frejm[u'max'])
                 self.axes.scatter(x, 
                                   y, 
-                                  marker = self.__opcije['glavniKanal']['ekstremimax']['marker'], 
-                                  color = pomocneFunkcije.normalize_rgb(self.__opcije['glavniKanal']['ekstremimax']['rgb']), 
-                                  alpha = self.__opcije['glavniKanal']['ekstremimax']['alpha'], 
-                                  zorder = self.__opcije['glavniKanal']['ekstremimax']['zorder'], 
-                                  label = self.__opcije['glavniKanal']['ekstremimax']['label'], 
-                                  s = self.__opcije['glavniKanal']['ekstremimax']['markersize'])
+                                  marker = self.popisGrafova['glavniKanal']['ekstremimax']['marker'], 
+                                  color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['ekstremimax']['rgb']), 
+                                  alpha = self.popisGrafova['glavniKanal']['ekstremimax']['alpha'], 
+                                  zorder = self.popisGrafova['glavniKanal']['ekstremimax']['zorder'], 
+                                  label = self.popisGrafova['glavniKanal']['ekstremimax']['label'], 
+                                  s = self.popisGrafova['glavniKanal']['ekstremimax']['markersize'])
                 self.__statusGlavniGraf = True
         #kraj crtanja glavnog kanala
         
         #crtanje pomocnih kanala:
-        for graf in list(self.__opcije['pomocniKanali'].keys()):
-            kanal = self.__opcije['pomocniKanali'][graf]['kanal']
+        for graf in list(self.popisGrafova['pomocniKanali'].keys()):
+            kanal = self.popisGrafova['pomocniKanali'][graf]['kanal']
             if kanal in kanali:
-                data = self.__data[kanal]
-                x = list(data.index)
-                y = list(data[u'avg']) #samo crtamo srednje vrijednosti
+                frejm = self.data[kanal]
+                x = list(frejm.index)
+                y = list(frejm[u'avg']) #samo crtamo srednje vrijednosti
                 """
                 y granice pomocnih kanala, ekstremi
                 """
@@ -394,52 +390,63 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 
                 self.axes.plot(x, 
                                y, 
-                               marker = self.__opcije['pomocniKanali'][graf]['marker'], 
-                               linestyle = self.__opcije['pomocniKanali'][graf]['line'],
-                               color = pomocneFunkcije.normalize_rgb(self.__opcije['pomocniKanali'][graf]['rgb']), 
-                               alpha = self.__opcije['pomocniKanali'][graf]['alpha'],
-                               zorder = self.__opcije['pomocniKanali'][graf]['zorder'],
-                               label = self.__opcije['pomocniKanali'][graf]['label'], 
-                               markersize = self.__opcije['pomocniKanali'][graf]['markersize'], 
-                               linewidth = self.__opcije['pomocniKanali'][graf]['linewidth'])
+                               marker = self.popisGrafova['pomocniKanali'][graf]['marker'], 
+                               linestyle = self.popisGrafova['pomocniKanali'][graf]['line'],
+                               color = pomocneFunkcije.normalize_rgb(self.popisGrafova['pomocniKanali'][graf]['rgb']), 
+                               alpha = self.popisGrafova['pomocniKanali'][graf]['alpha'],
+                               zorder = self.popisGrafova['pomocniKanali'][graf]['zorder'],
+                               label = self.popisGrafova['pomocniKanali'][graf]['label'], 
+                               markersize = self.popisGrafova['pomocniKanali'][graf]['markersize'], 
+                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'])
                               
         #highlight dot
         if self.__statusGlavniGraf:
             self.__testHighlight = False
-            trenutniGlavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
+            trenutniGlavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
             
             #rubovi indeksa glavnog kanala, treba za pick i span granice
-            self.__tmin = self.__data[trenutniGlavniKanal].index.min()
-            self.__tmax = self.__data[trenutniGlavniKanal].index.max()
+            self.__tmin = self.data[trenutniGlavniKanal].index.min()
+            self.__tmax = self.data[trenutniGlavniKanal].index.max()
             
             #odredjivanje x, y granica highlight trocke
-            if self.__zadnjiHighlightx in list(self.__data[trenutniGlavniKanal].index):
-                ypoint = self.__data[trenutniGlavniKanal].loc[self.__zadnjiHighlightx, u'avg']
+            if self.__zadnjiHighlightx in list(self.data[trenutniGlavniKanal].index):
+                ypoint = self.data[trenutniGlavniKanal].loc[self.__zadnjiHighlightx, u'avg']
             else:
-                miny = self.__data[trenutniGlavniKanal][u'min'].min()
-                maxy = self.__data[trenutniGlavniKanal][u'max'].max()
+                miny = self.data[trenutniGlavniKanal][u'min'].min()
+                maxy = self.data[trenutniGlavniKanal][u'max'].max()
                 ypoint = (miny + maxy)/2
             
             #nacrtaj highlight
             self.highlight_dot(self.__zadnjiHighlightx, ypoint)
-        
-        #odredjivanje vertikalnog raspona grafa
-        #glavni kanal
-        miny = self.__data[trenutniGlavniKanal][u'min'].min()
-        maxy = self.__data[trenutniGlavniKanal][u'max'].max()
-        if miny < self.dGranica:
-            self.dGranica = miny
-        if maxy > self.gGranica:
-            self.gGranica = maxy
+        """
+        provjera da li je glavni graf uspjesno nacrtan prije odredjivanja
+        vertikalnog raspona i legende
+        """
+        if self.__statusGlavniGraf:
+            #odredjivanje vertikalnog raspona grafa
+            #glavni kanal
+            miny = self.data[trenutniGlavniKanal][u'min'].min()
+            maxy = self.data[trenutniGlavniKanal][u'max'].max()
+            if miny < self.dGranica:
+                self.dGranica = miny
+            if maxy > self.gGranica:
+                self.gGranica = maxy
+                
+            self.axes.set_ylim(self.dGranica - 1, self.gGranica + 1)
             
-        self.axes.set_ylim(self.dGranica - 1, self.gGranica + 1)
-        
-        #TODO! pikaz legende
-        #prikaz legende na zahtjev
-        if self.__opcije['ostalo']['opcijesatni']['legend'] == True:
-            self.leg = self.axes.legend(loc = 1, fontsize =8, fancybox  = True)
-            self.leg.get_frame().set_alpha(0.9)                    
-
+            #prikaz legende na zahtjev
+            if self.popisGrafova['ostalo']['opcijesatni']['legend'] == True:
+                self.leg = self.axes.legend(loc = 1, fontsize =8, fancybox  = True)
+                self.leg.get_frame().set_alpha(0.9)
+        else:
+            self.axes.clear()
+            self.axes.text(0.5, 
+                           0.5, 
+                           'Nemoguce pristupiti podacima', 
+                           horizontalalignment='center', 
+                           verticalalignment='center', 
+                           fontsize = 8, 
+                           transform = self.axes.transAxes)
         
         #naredba za crtanje na canvas
         self.draw()
@@ -477,14 +484,14 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 xpoint = self.__tmin
 
             #glavni kanal, za sve grafove u 'glavniKanal' kanali su isti, uzmi bilo koji
-            trenutniGlavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
+            trenutniGlavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
             
             #highlight selected point - kooridinate ako nedostaju podaci
-            if xpoint in list(self.__data[trenutniGlavniKanal].index):
-                ypoint = self.__data[trenutniGlavniKanal].loc[xpoint, u'avg']
+            if xpoint in list(self.data[trenutniGlavniKanal].index):
+                ypoint = self.data[trenutniGlavniKanal].loc[xpoint, u'avg']
             else:
-                miny = self.__data[trenutniGlavniKanal][u'min'].min()
-                maxy = self.__data[trenutniGlavniKanal][u'max'].max()
+                miny = self.data[trenutniGlavniKanal][u'min'].min()
+                maxy = self.data[trenutniGlavniKanal][u'max'].max()
                 ypoint = (miny + maxy)/2
             
             if event.button == 1:
@@ -506,12 +513,12 @@ class Graf(opcenitiCanvas.MPLCanvas):
             if event.button == 2:
                 #annotations
                 #dohvati tekst annotationa
-                if xpoint in list(self.__data[trenutniGlavniKanal].index):
-                    yavg = self.__data[trenutniGlavniKanal].loc[xpoint, u'avg']
-                    ymin = self.__data[trenutniGlavniKanal].loc[xpoint, u'min']
-                    ymax = self.__data[trenutniGlavniKanal].loc[xpoint, u'max']
-                    ystatus = self.__data[trenutniGlavniKanal].loc[xpoint, u'status']
-                    ycount = self.__data[trenutniGlavniKanal].loc[xpoint, u'count']
+                if xpoint in list(self.data[trenutniGlavniKanal].index):
+                    yavg = self.data[trenutniGlavniKanal].loc[xpoint, u'avg']
+                    ymin = self.data[trenutniGlavniKanal].loc[xpoint, u'min']
+                    ymax = self.data[trenutniGlavniKanal].loc[xpoint, u'max']
+                    ystatus = self.data[trenutniGlavniKanal].loc[xpoint, u'status']
+                    ycount = self.data[trenutniGlavniKanal].loc[xpoint, u'count']
                 
                     tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
                 else:
@@ -621,9 +628,9 @@ class Graf(opcenitiCanvas.MPLCanvas):
         tmin = tmin - timedelta(minutes = 59)
         tmin = pd.to_datetime(tmin)
         #dohvati glavni kanal
-        glavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [min, max, flag, kanal, stanica]
-        arg = [tmin, tmax, 1000, glavniKanal, self.__info[0]]
+        glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+        #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal]
+        arg = [tmin, tmax, 1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################        
@@ -642,21 +649,11 @@ class Graf(opcenitiCanvas.MPLCanvas):
         tmin = tmin - timedelta(minutes = 59)
         tmin = pd.to_datetime(tmin)
         #dohvati glavni kanal
-        glavniKanal = self.__opcije['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [min, max, flag, kanal, stanica]
-        arg = [tmin, tmax, -1000, glavniKanal, self.__info[0]]
+        glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+        #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal]
+        arg = [tmin, tmax, -1000, glavniKanal]
         #sredi generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-###############################################################################
-    def promjenjen_flag(self, lista):
-        #TODO! mozda je lista visak
-        """
-        Metoda sluzi kao slot preko kojega kontroler daje do znanja canvasu
-        da su podaci promjenjeni (flag). Zahtjev za ponovnim crtanjem (refresh)
-        grafa.
-        """
-        self.__info = lista
-        self.crtaj(self.__opcije, self.__info)
 ###############################################################################
     def satni_span_flag(self, tmin, tmax):
         """

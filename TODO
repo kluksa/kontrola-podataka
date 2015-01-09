@@ -29,7 +29,6 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 -trenutna implementacija dozvoljava vecu fleksibilnost uz minimalnu kolicinu koda. krajnji korisnik si sam moze posloziti display po volji(polozaj i velicinu panela). npr. mozda netko hoce da mu je satni panel ispod minutnog, ili da su jedan pored drugog...
 20141110:::VM:::Spojio satni i minutni panel u jedan jednistveni panel.:::
 
-
 9. Satni i minutni panel moraju biti povezani, dakle canvas (ili kako god da se to zove u QT-u mora biti zajednicki, a ne ovako, odvojeno
 -Satni i minutni panel se mogu spojiti
 20141110:::VM:::Spojio satni i minutni panel u jedan jednistveni panel. Geometrijski su uvijek jednako rasporedjeni, samo se nalaze u dockable widgetu, pa se mogu pomicati po ekranu (ali kao jedinstvena cjelina):::
@@ -87,6 +86,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141119:::VM:::Sredio tick i grid markere, prema zahtjevu. Sto se tice izgleda grida na satnom je standardni grid, na minutnom se svakih 5 minuta oznacava punom crtom, minutni su ozbaceni isprekidanom. Moguce je neovisno promjeniti izgled svakog grida (boja, prozirnost, stil linije , debljina linije...), pa ako trenutna iteracija ne odgovara, primam zelje :):::
 20141128:::VM:::Dodao file networking_funkcije.py. Preko tog modula bi trebali ici svi zahtjevi na web servis. Spajanje na rest servis radi ok.:::
 20141210:::VM:::Dodao sam funkciju get_sirovi u networking_funkcije.py. Dohvaca json bez problema, ali postoji problem sa datumima. Mozda sam ja promasio format izlaznog datuma (pretpostavka je da je YYYY-DD-MM), ali rubovi vremenskog slicea ne odgovaraju zadanom danu.:::
+20150109:::VM:::Generalni overhaul aplikacije za rad sa REST servisom. I dalje se pokrece sa kontrola_podataka.py:::
 
 
 

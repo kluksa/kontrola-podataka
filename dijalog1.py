@@ -17,17 +17,11 @@ class IzborStoSeCrta(base1, form1):
     -izbori boje i markera za glavni kanal
     -izbor fill opcije i crtanja ekstremnih vrijednosti glavnog kanala
     
-    KOD INSTANCIRANJA DIJALOGA BITNO JE PROSLIJEDITI 3 KEYWORDA:
+    KOD INSTANCIRANJA DIJALOGA BITNO JE PROSLIJEDITI 2 KEYWORDA:
     kanali:
-        -lista stringova dostupnih kanala (preferecijalno sortirana)
-        -potrebna je za inicijalizaciju drugih dijaloga (prilikom dinamickog
-        dodavanja drugih kanala)
+        -dict koji povezuje kanal sa njegovim ID programom mjerenja.
     
-    glavniKanal:
-        -string
-        -sadrzi informaciju koji je glavni kanal
-        
-    info:
+    defaulti:
         -dict koji sadrzi informacije o grafovima i postavkama vezanim za grafove
         -vanjski kljucevi : 'glavniKanal', 'pomocniKanali', 'ostalo'
         
@@ -50,20 +44,17 @@ class IzborStoSeCrta(base1, form1):
             -'opcijesatni' -> dict, generalne postavke (span, cursor, grid, ticks...)
             
     """
-    def __init__(self, parent = None, kanali = [], glavniKanal = None, info = None):
+    def __init__(self, parent = None, mapaKanali = {}, rMapaKanali = {}, defaulti = {}):
         super(base1, self).__init__(parent)
         self.setupUi(self)
         
-        self.__glavniKanal = glavniKanal #glavni kanal (string)
-        self.__info = info #nested dict sa informacijom o postavkama grafova
-        #TODO! srediti inicijalizaciju 
+        self.defaulti = defaulti #nested dict sa informacijom o postavkama grafova
+        self.mapaKanali = mapaKanali #dict -> kanal:programMjerenja
+        self.rMapaKanali = rMapaKanali #dict -> programMjerenja:kanal
+        
         #garant neki fale...
-        self.__sviKanali = ['1-SO2-ppb', '10-NO-ppb', '11-NOx-ppb', '12-NO2-ppb', 
-                            '13-NO-ug/m3', '14-NOx-ug/m3', '15-NO2-ug/m3', 
-                            '3-SO2-ug/m3', '30-CO-ppm', '31-CO-mg/m3', 
-                            '40-O3-ppb', '49-O3-ug/m3', '50-PM1-ug/m3', 
-                            '51-PM2.5-ug/m3', '52-PM10-ug/m3', '53-AT-°C', 
-                            '54-RH-%', '80-Enc.Temp-°C']
+        self.__sviKanali = sorted(list(self.mapaKanali.keys()))
+        
         #helper mape, za pretvaranje mpl vrijednosti u teskt i nazad
         self.__marker_to_opis = {'None':'Bez markera', 
                                  'o':'Krug', 
@@ -118,10 +109,10 @@ class IzborStoSeCrta(base1, form1):
         """
 
         """1. inicijalizacija modela, povezivanje sa QTableView"""
-        #moramo iz dicta self.__info izvuci i konstruirati nested listu
+        #moramo iz dicta self.defaulti izvuci i konstruirati nested listu
         #informacija o pomocnim grafovima za inicijalizaciju modela
         nLista = []
-        pomocni = self.__info['pomocniKanali']
+        pomocni = self.defaulti['pomocniKanali']
         if len(pomocni) == 0:
             nLista = []
         else:
@@ -133,7 +124,7 @@ class IzborStoSeCrta(base1, form1):
                 kanal(0), marker(1), markersize(2), line(3), linewidth(4), 
                 rgb(5), alpha(6), zorder(7), label(8)            
                 """
-                temp =[pomocni[key]['kanal'], 
+                temp =[self.rMapaKanali[pomocni[key]['kanal']], 
                        self.__marker_to_opis[pomocni[key]['marker']], 
                        pomocni[key]['markersize'], 
                        self.__line_to_opis[pomocni[key]['line']], 
@@ -147,7 +138,7 @@ class IzborStoSeCrta(base1, form1):
         markeri = sorted(list(self.__opis_to_marker.keys()))
         linije = sorted(list(self.__opis_to_line.keys()))
         #instanciranje modela i povezivanje sa QTableView-om
-        #inicjalizacija modela
+        #inicjalizacija modela       
         self.model = tableModel.PomocniGrafovi(grafInfo = nLista, kanali = self.__sviKanali, markeri = markeri, linije = linije)
         #inicjalizacija tablice
         self.tableView = Tablica()
@@ -156,14 +147,13 @@ class IzborStoSeCrta(base1, form1):
         #settanje modela u view
         self.tableView.setModel(self.model)
 
-        #TODO! vidi popunjavanje comboboxeva sto i kako se pise
         """2. popunjavanje comboboxeva"""
         
         #nadji definirane vrijednosti markera
-        validan = self.__marker_to_opis[self.__info['glavniKanal']['validanOK']['marker']]
-        nevalidan = self.__marker_to_opis[self.__info['glavniKanal']['nevalidanOK']['marker']]
-        ekstrem = self.__marker_to_opis[self.__info['glavniKanal']['ekstremimin']['marker']]
-        msize = self.__info['glavniKanal']['validanOK']['markersize']
+        validan = self.__marker_to_opis[self.defaulti['glavniKanal']['validanOK']['marker']]
+        nevalidan = self.__marker_to_opis[self.defaulti['glavniKanal']['nevalidanOK']['marker']]
+        ekstrem = self.__marker_to_opis[self.defaulti['glavniKanal']['ekstremimin']['marker']]
+        msize = self.defaulti['glavniKanal']['validanOK']['markersize']
         
         self.spinBoxMarker.setValue(msize)
         
@@ -183,35 +173,35 @@ class IzborStoSeCrta(base1, form1):
         
         """3. postavke boje, promjena boje QPushButtona"""
         #boja za ako je podatak flagan kao dobar (OK)
-        rgb = self.__info['glavniKanal']['validanOK']['rgb']
-        a = self.__info['glavniKanal']['validanOK']['alpha']
+        rgb = self.defaulti['glavniKanal']['validanOK']['rgb']
+        a = self.defaulti['glavniKanal']['validanOK']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaOK', boja)
         self.gumbBojaOK.setStyleSheet(stil)
         #boja ako je podatak flagan kao los (Not OK)
-        rgb = self.__info['glavniKanal']['validanNOK']['rgb']
-        a = self.__info['glavniKanal']['validanNOK']['alpha']
+        rgb = self.defaulti['glavniKanal']['validanNOK']['rgb']
+        a = self.defaulti['glavniKanal']['validanNOK']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaNOK', boja)
         self.gumbBojaNOK.setStyleSheet(stil)
         #boja ekstremnih vrijednosti (minimum i maksimum na satnom grafu)
-        rgb = self.__info['glavniKanal']['ekstremimin']['rgb']
-        a = self.__info['glavniKanal']['ekstremimin']['alpha']
+        rgb = self.defaulti['glavniKanal']['ekstremimin']['rgb']
+        a = self.defaulti['glavniKanal']['ekstremimin']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaEkstrem', boja)
         self.gumbBojaEkstrem.setStyleSheet(stil)
         #boja sjencanog podrucja na satnom grafu (fill_between)
-        rgb = self.__info['glavniKanal']['fillsatni']['rgb']
-        a = self.__info['glavniKanal']['fillsatni']['alpha']
+        rgb = self.defaulti['glavniKanal']['fillsatni']['rgb']
+        a = self.defaulti['glavniKanal']['fillsatni']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaFill', boja)
         self.gumbBojaFill.setStyleSheet(stil)
         
         """4. postavljanje checkboxeva te, disbleanje i enableanje opcija"""
-        check1 = self.__info['glavniKanal']['ekstremimin']['crtaj']
+        check1 = self.defaulti['glavniKanal']['ekstremimin']['crtaj']
         self.checkEkstrem.setChecked(check1)
         self.promjeni_status_ekstrem(check1)
-        check2 = self.__info['glavniKanal']['fillsatni']['crtaj']
+        check2 = self.defaulti['glavniKanal']['fillsatni']['crtaj']
         self.checkFill.setChecked(check2)
         self.promjeni_status_fill(check2)
                
@@ -225,12 +215,12 @@ class IzborStoSeCrta(base1, form1):
         je izabrano
         """
         if x:
-            self.__info['glavniKanal']['fillsatni']['crtaj'] = True
+            self.defaulti['glavniKanal']['fillsatni']['crtaj'] = True
             self.comboData1.setEnabled(True)
             self.comboData2.setEnabled(True)
             self.gumbBojaFill.setEnabled(True)
         else:
-            self.__info['glavniKanal']['fillsatni']['crtaj'] = False
+            self.defaulti['glavniKanal']['fillsatni']['crtaj'] = False
             self.comboData1.setEnabled(False)
             self.comboData2.setEnabled(False)
             self.gumbBojaFill.setEnabled(False)
@@ -245,13 +235,13 @@ class IzborStoSeCrta(base1, form1):
         je izabrano
         """
         if x:
-            self.__info['glavniKanal']['ekstremimin']['crtaj'] = True
-            self.__info['glavniKanal']['ekstremimax']['crtaj'] = True
+            self.defaulti['glavniKanal']['ekstremimin']['crtaj'] = True
+            self.defaulti['glavniKanal']['ekstremimax']['crtaj'] = True
             self.comboEkstrem.setEnabled(True)
             self.gumbBojaEkstrem.setEnabled(True)
         else:
-            self.__info['glavniKanal']['ekstremimin']['crtaj'] = False
-            self.__info['glavniKanal']['ekstremimax']['crtaj'] = False
+            self.defaulti['glavniKanal']['ekstremimin']['crtaj'] = False
+            self.defaulti['glavniKanal']['ekstremimax']['crtaj'] = False
             self.comboEkstrem.setEnabled(False)
             self.gumbBojaEkstrem.setEnabled(False)
             
@@ -263,8 +253,8 @@ class IzborStoSeCrta(base1, form1):
         #dohvati trenutnu vrijednost comboboxa
         marker = self.__opis_to_marker[self.comboValidan.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['validanOK']['marker'] = marker
-        self.__info['glavniKanal']['validanNOK']['marker'] = marker
+        self.defaulti['glavniKanal']['validanOK']['marker'] = marker
+        self.defaulti['glavniKanal']['validanNOK']['marker'] = marker
     
     def promjeni_marker_nevalidan(self):
         """
@@ -273,8 +263,8 @@ class IzborStoSeCrta(base1, form1):
         """
         marker = self.__opis_to_marker[self.comboNeValidan.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['nevalidanOK']['marker'] = marker
-        self.__info['glavniKanal']['nevalidanNOK']['marker'] = marker
+        self.defaulti['glavniKanal']['nevalidanOK']['marker'] = marker
+        self.defaulti['glavniKanal']['nevalidanNOK']['marker'] = marker
 
     def promjeni_marker_ekstrem(self):
         """
@@ -283,8 +273,8 @@ class IzborStoSeCrta(base1, form1):
         """
         marker = self.__opis_to_marker[self.comboEkstrem.currentText()]
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['ekstremimin']['marker'] = marker
-        self.__info['glavniKanal']['ekstremimax']['marker'] = marker
+        self.defaulti['glavniKanal']['ekstremimin']['marker'] = marker
+        self.defaulti['glavniKanal']['ekstremimax']['marker'] = marker
 
     def promjeni_fill_komponenta1(self):
         """
@@ -293,7 +283,7 @@ class IzborStoSeCrta(base1, form1):
         """
         data = self.comboData1.currentText()
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['fillsatni']['data1'] = data
+        self.defaulti['glavniKanal']['fillsatni']['data1'] = data
     
     def promjeni_fill_komponenta2(self):
         """
@@ -302,7 +292,7 @@ class IzborStoSeCrta(base1, form1):
         """
         data = self.comboData2.currentText()
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['fillsatni']['data2'] = data
+        self.defaulti['glavniKanal']['fillsatni']['data2'] = data
 
     def promjeni_boju_fill(self):
         """
@@ -310,8 +300,8 @@ class IzborStoSeCrta(base1, form1):
         Dodatno, zaduzena je za update boje gumba s kojim se poziva.
         """
         #dohvati postojecu boju
-        rgb = self.__info['glavniKanal']['fillsatni']['rgb']
-        a = self.__info['glavniKanal']['fillsatni']['alpha']
+        rgb = self.defaulti['glavniKanal']['fillsatni']['rgb']
+        a = self.defaulti['glavniKanal']['fillsatni']['alpha']
         #convert u QColor
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -321,8 +311,8 @@ class IzborStoSeCrta(base1, form1):
             rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
             
             #zapamti novu boju, upisi u self.__info
-            self.__info['glavniKanal']['fillsatni']['rgb'] = rgb
-            self.__info['glavniKanal']['fillsatni']['alpha'] = a
+            self.defaulti['glavniKanal']['fillsatni']['rgb'] = rgb
+            self.defaulti['glavniKanal']['fillsatni']['alpha'] = a
             #promjeni boju gumba
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaFill', boja)
@@ -334,8 +324,8 @@ class IzborStoSeCrta(base1, form1):
         Dodatno, zaduzena je za update boje gumba s kojim se poziva
         """
         #dohvati postojecu boju
-        rgb = self.__info['glavniKanal']['ekstremimin']['rgb']
-        a = self.__info['glavniKanal']['ekstremimin']['alpha']
+        rgb = self.defaulti['glavniKanal']['ekstremimin']['rgb']
+        a = self.defaulti['glavniKanal']['ekstremimin']['alpha']
         #convert u QColor
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -345,10 +335,10 @@ class IzborStoSeCrta(base1, form1):
             rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
             
             #zapamti novu boju, upisi u self.__info
-            self.__info['glavniKanal']['ekstremimin']['rgb'] = rgb
-            self.__info['glavniKanal']['ekstremimin']['alpha'] = a
-            self.__info['glavniKanal']['ekstremimax']['rgb'] = rgb
-            self.__info['glavniKanal']['ekstremimax']['alpha'] = a
+            self.defaulti['glavniKanal']['ekstremimin']['rgb'] = rgb
+            self.defaulti['glavniKanal']['ekstremimin']['alpha'] = a
+            self.defaulti['glavniKanal']['ekstremimax']['rgb'] = rgb
+            self.defaulti['glavniKanal']['ekstremimax']['alpha'] = a
             #promjeni boju gumba
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaEkstrem', boja)
@@ -361,8 +351,8 @@ class IzborStoSeCrta(base1, form1):
         Dodatno, zaduzena je za update boje gumba s kojim se poziva
         """
         #dohvati postojecu boju
-        rgb = self.__info['glavniKanal']['validanOK']['rgb']
-        a = self.__info['glavniKanal']['validanOK']['alpha']
+        rgb = self.defaulti['glavniKanal']['validanOK']['rgb']
+        a = self.defaulti['glavniKanal']['validanOK']['alpha']
         #convert u QColor
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -372,10 +362,10 @@ class IzborStoSeCrta(base1, form1):
             rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
             
             #zapamti novu boju, upisi u self.__info
-            self.__info['glavniKanal']['validanOK']['rgb'] = rgb
-            self.__info['glavniKanal']['validanOK']['alpha'] = a
-            self.__info['glavniKanal']['nevalidanOK']['rgb'] = rgb
-            self.__info['glavniKanal']['nevalidanOK']['alpha'] = a
+            self.defaulti['glavniKanal']['validanOK']['rgb'] = rgb
+            self.defaulti['glavniKanal']['validanOK']['alpha'] = a
+            self.defaulti['glavniKanal']['nevalidanOK']['rgb'] = rgb
+            self.defaulti['glavniKanal']['nevalidanOK']['alpha'] = a
             #promjeni boju gumba
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaOK', boja)
@@ -386,8 +376,8 @@ class IzborStoSeCrta(base1, form1):
         Funkcija odradjuje promjenu boje lose flaganih podataka na satnom grafu.
         Dodatno, zaduzena je za update boje gumba s kojim se poziva
         """
-        rgb = self.__info['glavniKanal']['validanNOK']['rgb']
-        a = self.__info['glavniKanal']['validanNOK']['alpha']
+        rgb = self.defaulti['glavniKanal']['validanNOK']['rgb']
+        a = self.defaulti['glavniKanal']['validanNOK']['alpha']
         #convert u QColor
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -397,10 +387,10 @@ class IzborStoSeCrta(base1, form1):
             rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
             
             #zapamti novu boju, upisi u self.__info
-            self.__info['glavniKanal']['validanNOK']['rgb'] = rgb
-            self.__info['glavniKanal']['validanNOK']['alpha'] = a
-            self.__info['glavniKanal']['nevalidanNOK']['rgb'] = rgb
-            self.__info['glavniKanal']['nevalidanNOK']['alpha'] = a
+            self.defaulti['glavniKanal']['validanNOK']['rgb'] = rgb
+            self.defaulti['glavniKanal']['validanNOK']['alpha'] = a
+            self.defaulti['glavniKanal']['nevalidanNOK']['rgb'] = rgb
+            self.defaulti['glavniKanal']['nevalidanNOK']['alpha'] = a
             #promjeni boju gumba
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#gumbBojaNOK', boja)
@@ -413,12 +403,12 @@ class IzborStoSeCrta(base1, form1):
         #dohvati trenutnu vrijednost spinboxa
         msize = self.spinBoxMarker.value()
         #postavi vrijednost u self.__info na odgovarajuce mjesto
-        self.__info['glavniKanal']['validanOK']['markersize'] = msize
-        self.__info['glavniKanal']['validanNOK']['markersize'] = msize
-        self.__info['glavniKanal']['nevalidanOK']['markersize'] = msize
-        self.__info['glavniKanal']['nevalidanNOK']['markersize'] = msize
-        self.__info['glavniKanal']['ekstremimin']['markersize'] = msize
-        self.__info['glavniKanal']['ekstremimax']['markersize'] = msize
+        self.defaulti['glavniKanal']['validanOK']['markersize'] = msize
+        self.defaulti['glavniKanal']['validanNOK']['markersize'] = msize
+        self.defaulti['glavniKanal']['nevalidanOK']['markersize'] = msize
+        self.defaulti['glavniKanal']['nevalidanNOK']['markersize'] = msize
+        self.defaulti['glavniKanal']['ekstremimin']['markersize'] = msize
+        self.defaulti['glavniKanal']['ekstremimax']['markersize'] = msize
 
     def dohvati_postavke(self):
         """
@@ -431,8 +421,8 @@ class IzborStoSeCrta(base1, form1):
         pomocni = {}
         #upisivanje u pomocni dict
         for i in range(len(nLista)):
-            pomocni[nLista[i][0]] = {
-                'kanal':nLista[i][0], 
+            pomocni[self.mapaKanali[nLista[i][0]]] = {
+                'kanal':self.mapaKanali[nLista[i][0]], 
                 'marker':self.__opis_to_marker[nLista[i][1]], 
                 'markersize':nLista[i][2], 
                 'line':self.__opis_to_line[nLista[i][3]], 
@@ -443,10 +433,10 @@ class IzborStoSeCrta(base1, form1):
                 'label':nLista[i][8]
             }
             
-        #zamjeni dict u self.__info
-        self.__info['pomocniKanali'] = pomocni
+        #zamjeni dict u self.defaulti
+        self.defaulti['pomocniKanali'] = pomocni
         #vrati cijeli dict sa postavkama
-        return self.__info
+        return self.defaulti
     
     def veze(self):
         """
@@ -473,13 +463,11 @@ class IzborStoSeCrta(base1, form1):
         graf je zadan kao lista parametara koji se kao cjelina upisuju u model
         uz pomoc funkcije modela insertRows
         """
-        #TODO! samo treba insertati defaultni index u tablicu
-        defaultGraf = ['1-SO2-ppb','Bez markera',12,'Puna linija',2,(0,0,255),1.0,4,'1-SO2-ppb']
-        self.model.insertRows(0, 1, sto=[defaultGraf])
-#        dijalog = dijalog2.IzborPojedinacnogGrafa(kanali = self.__dostupniKanali)
-#        if dijalog.exec_():
-#            lista = dijalog.vrati_listu_grafa()
-#            self.model.insertRows(0,1,sto=[lista])
+        if len(self.mapaKanali.keys()) > 0:
+            #defaultni kanal neka bude prvi sa liste kljuceva
+            defkanal = list(self.mapaKanali.keys())[0]
+            defaultGraf = [defkanal,'Bez markera',12,'Puna linija',1,(0,0,255),1.0,4,str(defkanal)]
+            self.model.insertRows(0, 1, sto=[defaultGraf])
 ###############################################################################
 ###############################################################################
 class Tablica(QtGui.QTableView):
@@ -678,32 +666,4 @@ class RemoveButtonDelegate(QtGui.QItemDelegate):
         direktni remove reda"""
         index.model().removeRows(index.row(), 1)        
 ###############################################################################
-###############################################################################
-
-#test ispravnosti dijaloga
-if __name__ == '__main__':
-    import sys
-
-    defaulti1 = {
-        'glavniKanal':{
-            'midline':{'kanal':None, 'line':'-', 'rgb':(0,0,0), 'alpha':1.0, 'zorder':100, 'label':'average'},
-            'validanOK':{'kanal':None, 'marker':'d', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, dobar', 'markersize':12}, 
-            'validanNOK':{'kanal':None, 'marker':'d', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, los', 'markersize':12}, 
-            'nevalidanOK':{'kanal':None, 'marker':'o', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, dobar', 'markersize':12}, 
-            'nevalidanNOK':{'kanal':None, 'marker':'o', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, los', 'markersize':12},
-            'fillsatni':{'kanal':None, 'crtaj':True, 'data1':'q05', 'data2':'q95', 'rgb':(0,0,255), 'alpha':0.5, 'zorder':1}, 
-            'ekstremimin':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'min', 'markersize':12}, 
-            'ekstremimax':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'max', 'markersize':12}
-                        },
-        'pomocniKanali':{}, 
-        'ostalo':{
-            'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
-            'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
-                }}
-
-
-    app = QtGui.QApplication(sys.argv)
-    x = IzborStoSeCrta(kanali = ['1-SO2-ppb','kanal2','kanal3'], glavniKanal = '1-SO2-ppb', info = defaulti1)
-    x.show()
-    sys.exit(app.exec_())
-    
+###############################################################################    

@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Agregator dio
-
-
 """
 import pandas as pd
 import numpy as np
-
-#sluzi samo za lokalnu provjeru modula
-import citac
-
 
 class Agregator(object):
     def __init__(self):
@@ -175,8 +169,6 @@ class Agregator(object):
         
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
 
-        
-        #XXX!
         #treba testirati kako prati status validiranih
         #validirani i OK - flag=1000
         #validirani i prekratak niz valjanih - flag=-1000
@@ -193,7 +185,6 @@ class Agregator(object):
                 else:
                     agregirani.loc[i,u'flag'] = -1
                     
-        #XXX!
         """
         Problem prilikom agregiranja. ako sve indekse unutar jednog sata prebacimo
         da su lose, funkcije koje racunaju srednje vrijednosti isl. ne reazlikuju
@@ -214,6 +205,7 @@ class Agregator(object):
                 agregirani.loc[i, u'median'] = 0
                 agregirani.loc[i, u'std'] = 0
                 
+                
                
         return agregirani
         
@@ -227,47 +219,3 @@ class Agregator(object):
             rezultat[i] = self.agregiraj_kanal(frejm)
             
         return rezultat
-
-
-if __name__ == "__main__":
-    citac = citac.WlReader('./data/')
-    citac.dohvati_sve_dostupne()
-    stanica = 'plitvicka jezera'
-    datum = '20140604'
-    datum = pd.to_datetime(datum)
-    datum = datum.date()
-    frejmovi = citac.citaj(stanica, datum)
-    #jedan frejm
-    frejm = frejmovi['1-SO2-ppb']
-#    frejm = frejmovi['49-O3-ug/m3']
-#    frejm.loc['2014-06-04 16:00:00':'2014-06-04 19:00:00','flag'] = 1000
-#    frejm.loc['2014-06-04 20:00:00':'2014-06-04 22:00:00','flag'] = -15
-    frejm.loc['2014-06-04 08:00:00':'2014-06-04 18:00:00','flag'] = -1000
-    #frejm = frejmovi['49-O3-ug/m3']
-    
-    #Inicijaliziraj agregator
-    agregator = Agregator()
-    #frejm = pd.DataFrame()
-    #print(frejm)
-    #agregiraj frejm
-    agregirani = agregator.agregiraj_kanal(frejm)
-    print(agregirani)
-    #agregiraj sve frejmove
-    #agregirani = agregator.agregiraj(frejmovi)
-    #print(agregirani)
-    
-    #random sample da provjerim valjanost agregiranja
-    #barem sto se tice slicea i rubova istih
-#    test = frejm.loc['2014-06-04 04:01:00':'2014-06-04 05:00:00','koncentracija']
-#    avg_test = np.mean(test)
-#    res_test = agregirani.loc['2014-06-04 05:00:00','avg']
-#    
-#    print('treba biti True, ako je sve u redu')
-#    print(avg_test == res_test)
-#    
-#    #test ponasanja ako agregator dobije prazan slice
-#    test_prazan = pd.DataFrame()
-#    test_agreg = agregator.agregiraj_kanal(test_prazan)
-#    print('prazan frejm:')
-#    print(test_agreg)
-    

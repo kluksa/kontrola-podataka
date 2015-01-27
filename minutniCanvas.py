@@ -197,6 +197,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #redefiniramo kanali, zanima nas sto je stvarno ucitano
         kanali = list(self.data.keys())
         #plot naredbe, detaljno cu komentirati prvu, ostale su na slican nacin:        
+
         #1. midline
         #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
         kanal = self.popisGrafova['glavniKanal']['midline']['kanal']
@@ -223,6 +224,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #naredba za plot
             self.axes.plot(x, 
                            y, 
+                           linewidth = self.popisGrafova['glavniKanal']['midline']['linewidth'], 
                            linestyle = self.popisGrafova['glavniKanal']['midline']['line'],
                            color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['midline']['rgb']), 
                            alpha = self.popisGrafova['glavniKanal']['midline']['alpha'],

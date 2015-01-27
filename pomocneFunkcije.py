@@ -12,7 +12,13 @@ from PyQt4 import QtGui
 import datetime
 from datetime import timedelta
 import pandas as pd
-
+###############################################################################
+###############################################################################
+"""definicjia vlastite exception klase"""
+class AppExcept(Exception):
+    pass
+###############################################################################
+###############################################################################
 def pronadji_tickove_minutni(tmin, tmax):
     """
     funkcija vraca liste tickmarkera (minor i major) i listu tick labela

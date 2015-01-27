@@ -244,6 +244,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #naredba za plot
             self.axes.plot(x, 
                            y, 
+                           linewidth = self.popisGrafova['glavniKanal']['midline']['linewidth'], 
                            linestyle = self.popisGrafova['glavniKanal']['midline']['line'],
                            color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['midline']['rgb']), 
                            alpha = self.popisGrafova['glavniKanal']['midline']['alpha'],

@@ -6,21 +6,31 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>533</width>
-    <height>609</height>
+    <width>626</width>
+    <height>545</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Kontrola crtanja grafova</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
-   <item>
+  <layout class="QGridLayout" name="gridLayout_5">
+   <item row="1" column="3">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
       <string>Detalji grafa glavnog kanala</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
        <widget class="QGroupBox" name="groupBox_3">
         <property name="title">
          <string>Status validacije (marker)</string>
@@ -66,7 +76,46 @@
         </layout>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item>
+       <widget class="QGroupBox" name="groupBox_7">
+        <property name="title">
+         <string>Stil linije glavnog kanala</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Stil linije:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>Sirina linije:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboStilLinije"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QDoubleSpinBox" name="doubleSpinBoxLine">
+           <property name="decimals">
+            <number>1</number>
+           </property>
+           <property name="minimum">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QGroupBox" name="groupBox_4">
         <property name="title">
          <string>Ispravnost podataka (boja)</string>
@@ -103,7 +152,7 @@
         </layout>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item>
        <widget class="QGroupBox" name="groupBox_6">
         <property name="title">
          <string>Prikaz ekstremnih vrijednosti (min, max)</string>
@@ -149,7 +198,7 @@
         </layout>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item>
        <widget class="QGroupBox" name="groupBox_5">
         <property name="title">
          <string>Fill između agregiranih komponenti</string>
@@ -208,7 +257,7 @@
      </layout>
     </widget>
    </item>
-   <item>
+   <item row="0" column="3">
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
       <string>Dodatni grafovi (average, koncentracija)</string>
@@ -216,6 +265,9 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="spacing">
+         <number>0</number>
+        </property>
         <item>
          <layout class="QVBoxLayout" name="tableViewLayout">
           <property name="spacing">
@@ -224,25 +276,32 @@
          </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="dodajGraf">
-          <property name="text">
-           <string>Dodaj graf</string>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="spacing">
+           <number>0</number>
           </property>
-         </widget>
+          <item>
+           <widget class="QPushButton" name="makniGrafGumb">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Makni graf</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="dodajGraf">
+            <property name="text">
+             <string>Dodaj graf</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
     </widget>
    </item>
   </layout>

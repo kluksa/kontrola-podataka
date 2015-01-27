@@ -57,7 +57,7 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_ReadFile"/>
+    <addaction name="action_reconnectREST"/>
     <addaction name="separator"/>
     <addaction name="action_Save_preset"/>
     <addaction name="action_Load_preset"/>
@@ -261,12 +261,12 @@
     <string>Prikaz minor tickova na minutnom grafu</string>
    </property>
   </action>
-  <action name="action_ReadFile">
+  <action name="action_reconnectREST">
    <property name="text">
-    <string>Read data</string>
+    <string>Reconnect to REST</string>
    </property>
    <property name="toolTip">
-    <string>Ucitaj podatke</string>
+    <string>Reinicijalizacija veze sa REST servisom</string>
    </property>
    <property name="statusTip">
     <string>Ucitaj podatke</string>

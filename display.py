@@ -8,13 +8,21 @@ Created on Wed Nov  5 14:20:39 2014
 import sys
 from PyQt4 import QtCore, QtGui, uic
 
+import pomocneFunkcije #samo zbog definicije custom exceptiona
 import kontroler
-import TreeNode
+import rest_izbornik
 import grafoviPanel
+
 ###############################################################################
 ###############################################################################
 base, form = uic.loadUiType('display.ui')
 class Display(base, form):
+    """
+    Glavni display okvir applikacije.
+        -glavni prozor
+        -toolbar
+        -msg bar
+    """
     def __init__(self, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
@@ -23,34 +31,33 @@ class Display(base, form):
         #inicijalizacija panela za grafove
         self.panel = grafoviPanel.GrafPanel(parent = self)
         #inicjalizacija izbornika, trenutno samo weblogger
-        self.webLoggerIzbornik = TreeNode.TreeTest()
-        #inicijalizacija kontrolora
-        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
-
+        self.restIzbornik = rest_izbornik.RestIzbornik()
         """postavljanje panela i izbornika u dock widgete"""
         #postavljanje panela u dockable widget self.dockWidget_grafovi
         self.dockWidget_grafovi.setWidget(self.panel)
         #postavi self.webLoggerIzbornik u kontrolni dock widget
-        self.dockWidget_kontrola.setWidget(self.webLoggerIzbornik)
-
-
+        self.dockWidget_kontrola.setWidget(self.restIzbornik)
+        """inicijalizacija kontrolora"""
+        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
         """povezivanje akcija vezanih za gui elemente"""
-        self.setup_akcije()
-        
-###############################################################################
+        self.setup_akcije()        
+#############################################################################
     def setup_akcije(self):
         """
-        Povezivanje QAction sa ciljanim slotovima.
-        Connectioni izmedju menu, toolbarova, i drugih opcija gui-a
+        Povezivanje QAction sa ciljanim slotovima (toolbar).
+        Connectioni izmedju menu, toolbarova, i drugih opcija gui-a.
         
-        npr. moram aplikaciji objasniti sto se tocno treba napraviti kada
-        netko klikne da zeli omoguciti span selekciju podataka na satnom grafu.
+        Pattern svih akcija je sljedeci:
+        -Nakon klika na akciju emitiraj specificni signal
+        -kontroler osluskuje i hvata te signale te ih realizira
         """
         #file i generalni actioni
         self.action_Exit.triggered.connect(self.close)
-        self.action_Save_preset.triggered.connect(self.request_save_preset)
-        self.action_Load_preset.triggered.connect(self.request_load_preset)
-        #satno agregirani graf
+        self.action_reconnectREST.triggered.connect(self.reinitialize_REST)
+#        self.action_Save_preset.triggered.connect(self.request_save_preset)
+#        self.action_Load_preset.triggered.connect(self.request_load_preset)
+
+        #toolbar, satno agregirani graf
         self.connect(self.action_SatniGrid, 
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.emit_update_satni_grid)
@@ -67,7 +74,7 @@ class Display(base, form):
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.emit_update_satni_legenda)
 
-        #minutni graf
+        #toolbar, minutni graf
         self.connect(self.action_MinutniGrid, 
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.emit_update_minutni_grid)
@@ -84,20 +91,30 @@ class Display(base, form):
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.emit_update_minutni_legenda)
 ###############################################################################
+    def reinitialize_REST(self):
+        """
+        Toolbar akcija za reinicijlalizaciju REST servisa
+        
+        Javlja kontrolnom dijelu programa da ponovi dio inicijalizacije vezane
+        za rest servis (ponovno definira reader/writer, sastavljanje novog stabla
+        programa mjerenja...)
+        """
+        self.emit(QtCore.SIGNAL('gui_reinitialize_REST'))
+###############################################################################
     def emit_update_satni_legenda(self, x):
         """
         Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
         stanjem checkable akcije za promjenu prikaza legende na satnom grafu.
         """
         self.emit(QtCore.SIGNAL('update_satni_legenda(PyQt_PyObject)'), x)
-###############################################################################
+################################################################################
     def emit_update_minutni_legenda(self, x):
         """
         Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
         stanjem checkable akcije za promjenu prikaza legende na minutnom grafu.
         """
         self.emit(QtCore.SIGNAL('update_minutni_legenda(PyQt_PyObject)'), x)
-###############################################################################
+################################################################################
     def emit_update_satni_grid(self, x):
         """
         Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
@@ -168,11 +185,15 @@ class Display(base, form):
         """
         self.emit(QtCore.SIGNAL('request_load_preset'))
 ###############################################################################
-    def reset_action_state(self, mapaStanja):
+    def set_action_state(self, mapaStanja):
         """
         Funkcija je zaduzena da postavi checkable akcije (satnigrid...) u stanje
-        koje odgovara kontroloru. Dodatno, funkcija mora "utisati" sve signale
-        da izbjegnemo bespotrebno iscrtavanje grafova.
+        koje odgovara kontroloru(*). Dodatno, funkcija mora privremeno "utisati" 
+        sve signale koje emitira display.
+        
+        *
+        -kontorlor je zaduzen da 'pamti' defaultno stanje sto ce se prikazivati
+        i kako (span, ticks...).
         """
         self.blockSignals(True)
         self.action_SatniGrid.setChecked(mapaStanja['satnigrid'])
@@ -186,23 +207,23 @@ class Display(base, form):
         self.action_MinutniMinorTicks.setChecked(mapaStanja['minutniticks'])
         self.action_MinutniLegenda.setChecked(mapaStanja['minutnilegend'])
         self.blockSignals(False)
-###############################################################################
-#    def closeEvent(self, event):
-#        """
-#        Overloadani signal za gasenje aplikacije. Dodatna potvrda za izlaz.
-#        """
-#        reply=QtGui.QMessageBox.question(
-#            self,
-#            'Potvrdi izlaz:',
-#            'Da li ste sigurni da hocete ugasiti aplikaciju?',
-#            QtGui.QMessageBox.Yes,
-#            QtGui.QMessageBox.No)
-#                
-#        if reply==QtGui.QMessageBox.Yes:
-#            event.accept()
-#        else:
-#            event.ignore()
-###############################################################################
+################################################################################
+##    def closeEvent(self, event):
+##        """
+##        Overloadani signal za gasenje aplikacije. Dodatna potvrda za izlaz.
+##        """
+##        reply=QtGui.QMessageBox.question(
+##            self,
+##            'Potvrdi izlaz:',
+##            'Da li ste sigurni da hocete ugasiti aplikaciju?',
+##            QtGui.QMessageBox.Yes,
+##            QtGui.QMessageBox.No)
+##                
+##        if reply==QtGui.QMessageBox.Yes:
+##            event.accept()
+##        else:
+##            event.ignore()
+################################################################################
         
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

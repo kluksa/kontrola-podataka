@@ -7,14 +7,16 @@ Created on Thu Jan 22 09:52:37 2015
 
 from PyQt4 import QtCore, QtGui
 import datetime #python datetime objekt, potreban za timedelta isl.
+import pickle #serializer podataka, koristim za spremanje/ucitavanje postavki
 import pandas as pd #pandas modul, za provjeru tipa nekih argumenata
+import copy #modul za deep copy nested struktura (primarno za kopije self.graf_defaults)
+
 import pomocneFunkcije #pomocne funkcije i klase (npr. AppExcept exception...)
 import networking_funkcije #web zahtjev, interface prema REST servisu
 import dokument_model #interni model za zapisivanje podataka u dict pandas datafrejmova
 import datareader #REST reader/writer
 import agregator #agregator
 import modeldrva #pomocne klase za definiranje tree modela programa mjerenja
-import copy #modul za deep copy nested struktura (primarno za kopije self.graf_defaults)
 import dijalog1 #modul sa dijalozima za promjenu i dodavanje grafova
 ###############################################################################
 ###############################################################################
@@ -160,8 +162,10 @@ class Kontroler(QtCore.QObject):
             for i in mapa.keys():
                 stanica = mapa[i]['postajaNaziv'] #parent = stanice[stanica]
                 komponenta = mapa[i]['komponentaNaziv']
-                mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
-                data = [komponenta, mjernaJedinica, i]
+                #mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
+                usporedno = mapa[i]['usporednoMjerenje']
+                #data = [komponenta, mjernaJedinica, i]
+                data = [komponenta, usporedno, i]
                 modeldrva.TreeItem(data, parent = stanice[stanica]) #kreacija TreeItem objekta
             
             self.modelProgramaMjerenja = modeldrva.ModelDrva(tree) #napravi model
@@ -370,7 +374,12 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('request_load_preset'),
                      self.load_preset)
 
-
+        ###set/update novog glavnog kanala u rest izbornik (prilikoom load preseta)###
+        self.connect(self, 
+                     QtCore.SIGNAL('set_glavni_kanal_izbornik(PyQt_PyObject)'), 
+                     self.gui.restIzbornik.postavi_novi_glavni_kanal)
+        
+        
 
 
 
@@ -712,350 +721,100 @@ class Kontroler(QtCore.QObject):
             self.naredi_crtanje_minutnog(self.sat)
 ###############################################################################
     def save_preset(self):
-        print('kontroler.save_preset not implemented')
-        pass
+        """
+        Funkcija omogucava spremanje postavki aplikacije u binary file.
+        Sprema se geometrija prozora, postavke grafova iz self.graf_defaults, 
+        stanje checkboxeva toolbarova isl.
+        """
+        #zapamti bine komponente
+        preset = self.gui.saveState()
+        geometrija = self.gui.geometry()
+        ostalo = copy.deepcopy(self.graf_defaults)
+        #poslozi ih u dictionary
+        mapa = {'preset':preset, 'geometrija':geometrija, 'ostalo':ostalo}
+        try:
+            #dohvati filename i stvori novi file uz pomoc getSaveFileName dijaloga
+            fileName = QtGui.QFileDialog.getSaveFileName(parent = self.gui, 
+                                                     caption = 'Spremi postavke', 
+                                                     filter = "Dat files (*.dat);;All files(*.*)")
+
+            if fileName:
+                with open(fileName, 'wb') as fwrite:
+                    pickle.dump(mapa, fwrite)
+                    print('save preset ok')
+                    
+        except Exception as err:
+            #opceniti fail akcije, javi error
+            tekst = 'Save postavki aplikacije nije uspjesno izveden.\n\n'+str(err)
+            self.prikazi_error_msg(tekst)
 ###############################################################################
     def load_preset(self):
-        print('kontroler.load_preset not implemented')
-        pass
+        """
+        Funkcija omogucava ucitavanje postavke aplikacije iz binarnog filea.
+        File treba biti prethodno spremljen uz pomoc self.save_preset().
+        """
+        #pripremi mapu/dictionary za prihvat podataka
+        mapa = None
+        #dohvati fileName uz pomoc getOpenFileName dijaloga
+        fileName = QtGui.QFileDialog.getOpenFileName(parent = self.gui, 
+                                                     caption = 'Ucitaj postavke',
+                                                     filter = "Dat files (*.dat);;All files(*.*)")
+
+        if fileName:
+            with open(fileName, 'rb') as fread:
+                mapa = pickle.load(fread)
+
+        #provjere da li je file ispravan
+        try:
+            tekst = 'Pogreska prilikom ucitavanja postavki.\nFile je corrupted ili je zadan pogresni file.'
+            assert isinstance(mapa, dict), tekst #provjera da je mapa tipa dict
+            assert ('geometrija' in mapa.keys()), tekst #provjera za trazeni kljuc u dictu
+            assert ('preset' in mapa.keys()), tekst #provjera za trazeni kljuc u dictu
+            assert ('ostalo' in mapa.keys()), tekst #provjera za trazeni kljuc u dictu
+            assert isinstance(mapa['geometrija'],QtCore.QRect), tekst #provjera tipa trazenog objekta
+            assert isinstance(mapa['preset'],QtCore.QByteArray), tekst #provjera tipa trazenog objekta
+            assert isinstance(mapa['ostalo'],dict), tekst #provjera tipa trazenog objekta
+            #provjera da li je mapa programa mjerenja zadana, potrebna je radi smislenog zadavanja kanala za crtanje
+            if self.mapa_mjerenjeId_to_opis == None:
+                raise AssertionError('Mapa programa mjerenja nije zadana.\nPokusajte se ponovno spojiti na REST servis.')
+            
+            #svi dostupni kljucevi programaMjerenjaId
+            presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
+            set1 = set(self.mapa_mjerenjeId_to_opis)
+            #set kljuceva spremljenih u mapa['ostalo']
+            set2 = []
+            #dodaj glavni kanal
+            set2.append(mapa['ostalo']['glavniKanal']['validanOK']['kanal'])
+            #dodaj pomocne kanale
+            for graf in mapa['ostalo']['pomocniKanali']:
+                set2.append(mapa['ostalo']['pomocniKanali'][graf]['kanal'])
+            #convert listu u set
+            set2 = set(set2)
+            #None moze biti u setu 2, makni ga sa popisa
+            if None in set2:
+                set2.remove(None)
+            #porvjera da li je set2 subset seta1, tj. da li su svi kljucevi u ucitanim
+            #defaultnim grafovima dostupni REST readeru (ako nisu javi error)
+            assert set2.issubset(set1), 'Neki ucitani programi mjerenja nisu dobro definirani (nisu dostupni REST servisu)'
+
+            #postavi geometriju
+            self.gui.setGeometry(mapa['geometrija'])
+            #postavi state displaya
+            self.gui.restoreState(mapa['preset'])
+            #postavi defaultne grafove
+            self.graf_defaults = copy.deepcopy(mapa['ostalo'])
+            
+            #sinhroniziraj checkable akcije sa ucitanim stanjem
+            self.update_gui_action_state()
+            #TODO!
+            #promjeni glavni kanal u rest izborniku (QTreeView) da odgovara novom glavnom kanalu
+            presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
+            if presetGlavniKanal != None:
+                print('postavi kanal...emitiraj novu postavku gui/restizborniku')
+                self.emit(QtCore.SIGNAL('set_glavni_kanal_izbornik(PyQt_PyObject)'),presetGlavniKanal)
+        
+        except AssertionError as err:
+            opis = 'Load postavki aplikacije nije uspjesno izveden.\n\n' + str(err)
+            self.prikazi_error_msg(opis)				
 ###############################################################################
 ###############################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#"""old stuff, delete when sure it's not needed"""
-#from PyQt4 import QtCore, QtGui
-#import pandas as pd
-#from datetime import timedelta
-#import copy
-#import pickle
-#
-#import datamodel
-#import datareader
-#import agregator
-#import networking_funkcije
-#import dijalog1
-################################################################################
-################################################################################
-#class Kontroler(QtCore.QObject):
-#    """
-#    Poveznica izmedju Gui kontrola i logike programa, poveznica sa modelom.
-#    """
-#    def __init__(self, parent = None, gui = None):
-#        QtCore.QObject.__init__(self, parent)
-#        """inicijalizacija relevantnih objekata i membera"""
-#        
-#        #url settings za REST web zahtjev i njegova incijalizacija
-#        self.baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
-#        self.resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
-#                        "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
-#        self.webZahtjev = networking_funkcije.WebZahtjev(self.baza, self.resursi)
-#
-#        #inicijalizacija dokumenta
-#        self.dokument = datamodel.DataModel()
-#
-#        #konstrukcija pomocnih dictova, adapteri za upis u dokument i izbornike
-#        self.programToKomponenta, self.komponentaToProgram = self.make_transformation_dicts(self.webZahtjev)
-#
-#        #inicijalizacija citaca
-#        self.csvReader = datareader.FileReader(model = self.dokument, mapa = self.komponentaToProgram)
-#        self.restReader = datareader.RESTReader(model = self.dokument, source = self.webZahtjev)
-#        self.restWriter = datareader.RESTWriterAgregiranih(source = self.webZahtjev)
-#
-#        #ocekuje se da se prosljedi instanca valjanog GUI elementa 
-#        self.gui = gui
-#        
-#        #defaultne vrijednosti za crtanje grafova (kanal je program mjerenja)
-#        self.graf_defaults = {
-#                'glavniKanal':{
-#                    'midline':{'kanal':None, 'line':'-', 'rgb':(0,0,0), 'alpha':1.0, 'zorder':100, 'label':'average'},
-#                    'validanOK':{'kanal':None, 'marker':'d', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, dobar', 'markersize':12}, 
-#                    'validanNOK':{'kanal':None, 'marker':'d', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'validiran, los', 'markersize':12}, 
-#                    'nevalidanOK':{'kanal':None, 'marker':'o', 'rgb':(0,255,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, dobar', 'markersize':12}, 
-#                    'nevalidanNOK':{'kanal':None, 'marker':'o', 'rgb':(255,0,0), 'alpha':1.0, 'zorder':100, 'label':'nije validiran, los', 'markersize':12},
-#                    'fillsatni':{'kanal':None, 'crtaj':True, 'data1':'q05', 'data2':'q95', 'rgb':(0,0,255), 'alpha':0.5, 'zorder':1}, 
-#                    'ekstremimin':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'min', 'markersize':12}, 
-#                    'ekstremimax':{'kanal':None, 'crtaj':True, 'marker':'+', 'rgb':(90,50,10), 'alpha':1.0, 'zorder':100, 'label':'max', 'markersize':12}
-#                                },
-#                'pomocniKanali':{}, 
-#                'ostalo':{
-#                    'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
-#                    'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
-#                        }
-#                            }
-#        #rubovi vremenskog intervala za izbor datuma (zadnje izabran datum)
-#        self.pickedDate = None
-#        self.gKanal = None
-#        self.tmin = None
-#        self.tmax = None
-#        self.sat = None
-#        #incijalizacija agregatora
-#        self.satniAgreg = agregator.Agregator()
-#        #povezivanje signala i funkcija
-#        self.poveznice()
-################################################################################
-#    def poveznice(self):
-#        """
-#        Funkcija koja postavlja logicke veze izmedju dijelova programa.
-#        """#                     
-#        self.connect(self, 
-#                     QtCore.SIGNAL('update_action_state(PyQt_PyObject)'), 
-#                     self.gui.reset_action_state)
-#                     
-#        self.connect(self, 
-#                     QtCore.SIGNAL('prebaci_glavni_kanal(PyQt_PyObject)'), 
-#                     self.gui.webLoggerIzbornik.postavi_novi_glavni_kanal)
-#
-#        
-#
-#        
-#
-################################################################################            
-#    def make_transformation_dicts(self, webzahtjev):
-#        """
-#        visak?
-#        Funkcija stvara 2 dictionarija za pomoc prilikom citanja fileova i 
-#        popunjavanja nekih izbornika.
-#        
-#        mapa1 ce sadrzavati "sirovi" dictionary dobiven od webzahtjeva:
-#            {programMjerenjaId:{dict sa podacima o postaji, komponenti...}, ...}
-#        
-#        mapa2 je pomocni dict, nested. Njegova svrha je pomocno popunjavanje
-#        odredjenih izbornika (dinamicko dodavanje postaja/komponenta/usporedno)
-#            {postaja:{komponenta:{usporedno:programMjerenjaId},...},...}
-#        """
-#        basemap = webzahtjev.get_sve_programe_mjerenja()
-#        mapa1 = {}
-#        mapa2 = {}       
-#        for key in basemap.keys():
-#            programMjerenja = int(key)
-#            mapa1[programMjerenja] = basemap[key]
-#            
-#        mapa2 = self.napravi_mapu_pretvorbe_kanala(mapa1)
-#            
-#        return mapa1, mapa2
-################################################################################
-#    def save_preset(self):
-#        """
-#        Funkcija omogucava spremanje postavki aplikacije u binary file.
-#        Sprema se geometrija prozora, postavke grafova iz self.graf_defaults, 
-#        stanje checkboxeva toolbarova isl.
-#        """
-#        #zapamti bine komponente
-#        preset = self.gui.saveState()
-#        geometrija = self.gui.geometry()
-#        ostalo = copy.deepcopy(self.graf_defaults)
-#        #poslozi ih u dictionary
-#        mapa = {'preset':preset, 'geometrija':geometrija, 'ostalo':ostalo}
-#        #dohvati filename gdje ih spremamo
-#        fileName = QtGui.QFileDialog.getSaveFileName(parent = self.gui, 
-#                                                     caption = 'Spremi postavke', 
-#                                                     filter = "Dat files (*.dat);;All files(*.*)")
-#        if fileName:
-#            with open(fileName, 'wb') as fwrite:
-#                pickle.dump(mapa, fwrite)
-#                print('Postavke su spremljene')
-################################################################################
-#    def load_preset(self):
-#        """
-#        Funkcija omogucava ucitavanje postavke aplikacije iz binarnog filea.
-#        File treba biti prethodno spremljen uz pomoc self.save_preset().
-#        """
-#        print('load preset starts')
-#        mapa = None
-#        #implicitni fail prilikom ucitavanja
-#        test = False
-#        #dohvati fileName
-#        fileName = QtGui.QFileDialog.getOpenFileName(parent = self.gui, 
-#                                                     caption = 'Ucitaj postavke',
-#                                                     filter = "Dat files (*.dat);;All files(*.*)")
-#        if fileName:
-#            with open(fileName, 'rb') as fread:
-#                mapa = pickle.load(fread)
-#                #provjere da li je file ispravan
-#                if type(mapa) == dict:
-#                    print('mapa je dict')
-#                    kljucevi = list(mapa.keys())
-#                    if ('geometrija' in kljucevi) and ('preset' in kljucevi) and ('ostalo' in kljucevi):
-#                        t1 = type(mapa['geometrija']) == QtCore.QRect
-#                        t2 = type(mapa['preset']) == QtCore.QByteArray
-#                        t3 = type(mapa['ostalo']) == dict
-#                        test = t1 and t2 and t3
-#        
-#                if test:
-#                    #napravi set kljuceva od svih dostupnih rest readeru
-#                    set1 = set(list(self.programToKomponenta.keys()))
-#                    #napravi set kljuceva svih podataka u mapa['ostalo']
-#                    set2 = []
-#                    set2.append(mapa['ostalo']['glavniKanal']['validanOK']['kanal'])
-#                    for graf in mapa['ostalo']['pomocniKanali']:
-#                        set2.append(mapa['ostalo']['pomocniKanali'][graf]['kanal'])
-#                    set2 = set(set2)
-#                    #None moze biti u setu2... makni ga
-#                    if None in set2:
-#                        set2.remove(None)
-#                    #provjera da li je set2 subset seta1 tj. da li su svi kljucevi u
-#                    #novim defaultnim opcijama grafova dostupni REST readeru
-#                    if set2.issubset(set1):
-#                        #postavi geometriju
-#                        self.gui.setGeometry(mapa['geometrija'])
-#                        #postavi state displaya
-#                        self.gui.restoreState(mapa['preset'])
-#                        #postavi defaultne grafove
-#                        self.graf_defaults = copy.deepcopy(mapa['ostalo'])
-#                        #sinhroniziraj checkable akcije sa ucitanim stanjem
-#                        self.refresh_toolbar_akcije()
-#                        #pomakni programski promjeni izabrani kanal u webloggeru (TreeNode.py)
-#                        presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
-#                        if presetGlavniKanal != None:
-#                            self.emit(QtCore.SIGNAL('prebaci_glavni_kanal(PyQt_PyObject)'), int(presetGlavniKanal))
-################################################################################
-#    def refresh_toolbar_akcije(self):
-#        """
-#        visak?
-#        Funkcija informira display o stanju checkable akcija (Satni grid, ...). 
-#        Primarno sluzi za pravilan prikaz displaya prilikom ucitavanja postavki 
-#        nakon sto pozovemo funkciju self.load_preset
-#        
-#        Emitirati cemo skraceni dict postavki koje treba podesiti:
-#        """
-#        checkableActionList = {}
-#        checkableActionList['satnigrid'] = self.graf_defaults['ostalo']['opcijesatni']['grid']
-#        checkableActionList['satnispan'] = self.graf_defaults['ostalo']['opcijesatni']['span']
-#        checkableActionList['satniticks'] = self.graf_defaults['ostalo']['opcijesatni']['ticks']
-#        checkableActionList['satnicursor'] = self.graf_defaults['ostalo']['opcijesatni']['cursor']
-#        checkableActionList['satnilegend'] = self.graf_defaults['ostalo']['opcijesatni']['legend']
-#        checkableActionList['minutnigrid'] = self.graf_defaults['ostalo']['opcijeminutni']['grid']
-#        checkableActionList['minutnispan'] = self.graf_defaults['ostalo']['opcijeminutni']['span']
-#        checkableActionList['minutniticks'] = self.graf_defaults['ostalo']['opcijeminutni']['ticks']
-#        checkableActionList['minutnicursor'] = self.graf_defaults['ostalo']['opcijeminutni']['cursor']
-#        checkableActionList['minutnilegend'] = self.graf_defaults['ostalo']['opcijeminutni']['legend']
-#        
-#        #emit updateani dict stanja displayu
-#        self.emit(QtCore.SIGNAL('update_action_state(PyQt_PyObject)'), checkableActionList)
-################################################################################
-#    def napravi_mapu_pretvorbe_kanala(self, sviKanali):
-#        """
-#        visak?
-#        Funkcija transformacije. Pretvara popis svih kanala dobiven sa REST
-#        servisa u nested strukturu
-#        ulaz:
-#        mapa {programMjerenjaid:{postaja, komponenta, usporedno...}}
-#        izlaz:
-#        mapa {postaja:{komponenta:{usporedno:programMjerenjaId}}}
-#        """
-#        transmapa = {}
-#        for key in sviKanali:
-#            postaja = sviKanali[key]['postajaNaziv']
-#            komponenta = sviKanali[key]['komponentaNaziv']
-#            usporedno = sviKanali[key]['usporednoMjerenje']
-#            if postaja not in transmapa.keys():
-#                transmapa[postaja] = {}
-#                transmapa[postaja][komponenta] = {}
-#                transmapa[postaja][komponenta][usporedno] = key
-#            else:
-#                if komponenta not in transmapa[postaja].keys():
-#                    transmapa[postaja][komponenta] = {}
-#                    transmapa[postaja][komponenta][usporedno] = key
-#                else:
-#                    transmapa[postaja][komponenta][usporedno] = key
-#        return transmapa
-################################################################################
-################################################################################

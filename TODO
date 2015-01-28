@@ -88,6 +88,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20141210:::VM:::Dodao sam funkciju get_sirovi u networking_funkcije.py. Dohvaca json bez problema, ali postoji problem sa datumima. Mozda sam ja promasio format izlaznog datuma (pretpostavka je da je YYYY-DD-MM), ali rubovi vremenskog slicea ne odgovaraju zadanom danu.:::
 20150109:::VM:::Generalni overhaul aplikacije za rad sa REST servisom. I dalje se pokrece sa kontrola_podataka.py:::
 20150127:::VM:::Preminenovao neke module na smislenije nazive, sredio dio exception handlinga, Ispravio izbornik za dodavanje pomocnih grafova (umjesto 3 comboboxa, "reciklirao" sam stablo od programa mjerenja. Jednostavniji pristup i bitno pregledniji). P.S. akcije save i load preset trenutno ne rade.:::
+20150128:::VM:::Tree model programa mjerenja pokazuje "usporedno" umjesto mjerne jedinice. Implementirao save/load preset akcije (pod file):::
+
 
 
 

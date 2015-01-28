@@ -182,7 +182,8 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         headeri
         """
-        headeri = ['Stanica/komponenta', 'Mjerna Jedinica', 'Program mjerenja']
+        #headeri = ['Stanica/komponenta', 'Mjerna Jedinica', 'Program mjerenja']
+        headeri = ['Stanica/komponenta', 'Usporedno', 'Program mjerenja']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 

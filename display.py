@@ -54,8 +54,8 @@ class Display(base, form):
         #file i generalni actioni
         self.action_Exit.triggered.connect(self.close)
         self.action_reconnectREST.triggered.connect(self.reinitialize_REST)
-#        self.action_Save_preset.triggered.connect(self.request_save_preset)
-#        self.action_Load_preset.triggered.connect(self.request_load_preset)
+        self.action_Save_preset.triggered.connect(self.request_save_preset)
+        self.action_Load_preset.triggered.connect(self.request_load_preset)
 
         #toolbar, satno agregirani graf
         self.connect(self.action_SatniGrid, 

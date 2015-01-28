@@ -112,36 +112,41 @@ class RestIzbornik(base5, form5):
         #informiraj kontroler o promjeni
         self.get_mjerenje_datum(True)
 ###############################################################################
-#    def pronadji_index_od_kanala(self, kanal):
-#        """
-#        Za zadani kanal (mjerenjeId) pronadji odgovarajuci QModelIndex u 
-#        stablu.
-#        ulaz je trazeni kanal, izlaz je QModelIndex
-#        """
-#        #TODO! try blok? ovo moze failati ako model nije dobro instanciran
-#        #"proseci" stablom u potrazi za indeksom
-#        for i in range(self.model.rowCount()):
-#            ind = self.model.index(i, 0) #index stanice, (parent)
-#            otac = self.model.getItem(ind)
-#            for j in range(otac.childCount()):
-#                ind2 = self.model.index(j, 0, parent = ind) #indeks djeteta
-#                komponenta = self.model.getItem(ind2)
-#                #provjera da li kanal u modelu odgovara zadanom kanalu
-#                if int(komponenta.data(2)) == kanal:
-#                    return ind2
-#        return None
+    def pronadji_index_od_kanala(self, kanal):
+        """
+        Za zadani kanal (mjerenjeId) pronadji odgovarajuci QModelIndex u 
+        stablu.
+        ulaz je trazeni kanal, izlaz je QModelIndex
+        """
+        try:
+            #"proseci" stablom u potrazi za indeksom
+            for i in range(self.model.rowCount()):
+                ind = self.model.index(i, 0) #index stanice, (parent)
+                otac = self.model.getItem(ind)
+                for j in range(otac.childCount()):
+                    ind2 = self.model.index(j, 0, parent = ind) #indeks djeteta
+                    komponenta = self.model.getItem(ind2)
+                    #provjera da li kanal u modelu odgovara zadanom kanalu
+                    if int(komponenta.data(2)) == kanal:
+                        return ind2
+            return None
+        except Exception as err:
+            print('fail: model nije instanciran')
+            print('rest_izbornik.py, funkcija pronadji_index_od_kanala')
+            print(err)
+            return None
 ###############################################################################
-#    def postavi_novi_glavni_kanal(self, kanal):
-#        """
-#        Metoda postavlja zadani kanal kao selektirani u treeView. Takodjer, 
-#        javlja kontroloru da je doslo do promjene u izabranom kanalu.
-#        """
-#        #TODO! ako pronadji_index_od_kanala ne faila, ovo bi trebalo raditi 100%
-#        noviIndex = self.pronadji_index_od_kanala(kanal)
-#        if noviIndex != None:
-#            #postavi novi indeks
-#            self.treeView.setCurrentIndex(noviIndex)
-#            #informiraj kontroler o promjeni, pokreni crtanje/izbor
-#            self.get_mjerenje_datum(True)                   
+    def postavi_novi_glavni_kanal(self, kanal):
+        """
+        Metoda postavlja zadani kanal kao selektirani u treeView. Takodjer, 
+        javlja kontroloru da je doslo do promjene u izabranom kanalu.
+        """
+        #ako pronadji_index_od_kanala ne faila, ovo bi trebalo raditi 100%
+        noviIndex = self.pronadji_index_od_kanala(kanal)
+        if noviIndex != None:
+            #postavi novi indeks
+            self.treeView.setCurrentIndex(noviIndex)
+            #informiraj kontroler o promjeni, pokreni crtanje/izbor
+            self.get_mjerenje_datum(True)
 ###############################################################################
 ###############################################################################           

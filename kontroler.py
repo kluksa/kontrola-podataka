@@ -589,10 +589,8 @@ class Kontroler(QtCore.QObject):
             self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), [self.graf_defaults, self.tmin, self.tmax])
             #promjena labela u panelima sa grafovima, opis
             try:
-                komponenta = str(self.mapa_mjerenjeId_to_opis[self.gKanal]['komponentaNaziv'])
-                postaja = str(self.mapa_mjerenjeId_to_opis[self.gKanal]['postajaNaziv'])
-                kanalText = postaja +'::'+komponenta
-                argList = [kanalText, str(self.tmin), str(self.tmax)]
+                opisKanala = self.mapa_mjerenjeId_to_opis[self.gKanal]
+                argList = [opisKanala, str(self.tmin), str(self.tmax)]
                 self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argList)
                 """
                 opis naredbi koje sljede:
@@ -646,14 +644,24 @@ class Kontroler(QtCore.QObject):
         datuma. Nakon sto dohvati podatke, emitira signal sa agregiranim 
         slajsom frejma i kanalom (upakiranim u listu).
         """
-        frejm = self.dokument.get_frame(key = kanal, tmin = self.tmin, tmax = self.tmax)
+        #TODO! ako ne dohvati frame iz dokumenta, vrati None
+        try:
+            frejm = self.dokument.get_frame(key = kanal, tmin = self.tmin, tmax = self.tmax)
+        except pomocneFunkcije.AppExcept as err:
+            #dohvacanje frejma je propalo
+            tekst = 'Trazena komponenta nije ucitana u model.\n' + str(repr(err))
+            #TODO! potencijalno iritantni popup - silent ignore?
+            self.prikazi_error_msg(tekst)
+            frejm = None
         #provjeri da li je frame stvarno dataframe prije agregacije (i da nije None)
         if isinstance(frejm,pd.core.frame.DataFrame):
             #agregiraj
             agregiraniFrejm = self.satniAgreg.agregiraj_kanal(frejm)
             #agregator ce vratiti None ako mu se prosljedi prazan frejm
             if isinstance(agregiraniFrejm, pd.core.frame.DataFrame):
-                arg = [kanal, agregiraniFrejm]
+                #prosljedi kanalid, agregirani frejm i opis kanala (mapu) satnomCanvasu
+                opisKanala = self.mapa_mjerenjeId_to_opis[kanal]
+                arg = [kanal, agregiraniFrejm, opisKanala]
                 #emitiraj signal
                 self.emit(QtCore.SIGNAL('emitiraj_agregirani(PyQt_PyObject)'), arg)
 ###############################################################################
@@ -664,7 +672,9 @@ class Kontroler(QtCore.QObject):
         """
         frejm = self.dokument.get_frame(key = lista[0], tmin = lista[1], tmax = lista[2])
         if isinstance(frejm, pd.core.frame.DataFrame):
-            arg = [lista[0], frejm]
+            #dodaj opis slajsa kanala, (mjerna jedinica, naziv, formula...)
+            opisKanala = self.mapa_mjerenjeId_to_opis[lista[0]]
+            arg = [lista[0], frejm, opisKanala]
             self.emit(QtCore.SIGNAL('emitiraj_minutni_slajs(PyQt_PyObject)'), arg)
 ###############################################################################
     def update_satni_grid(self, x):

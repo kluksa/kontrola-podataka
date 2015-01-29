@@ -64,16 +64,25 @@ class GrafPanel(base3, form3):
     def change_label(self, lista):
         """
         ova funkcija kao ulazni parametar uzima listu koja ima 3 elementa.
-        -lista[0] = string, Naziv postaje i glavnog kanala (postaja::kanal)
+        -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
         -lista[1] = string, timestamp (od)
         -lista[2] = string, timestamp (do)
+
         Rezultat je novi label sastavljen od tih elemenata.
         """
-        naziv = str(lista[0])
+        mapa = lista[0]
         od = str(lista[1])
         do = str(lista[2])
-        output = 'Glavni kanal: ' + naziv + '\nOd: ' + od + ' Do: ' + do
+        output = 'Vrijeme od: ' + od + ' Do: ' + do
         self.label.setText(output)
+        #iz mape izvuci opis glavnog kanala te sastavi dobro formatirani tekst
+        postaja = mapa['postajaNaziv']
+        komponenta = mapa['komponentaNaziv']
+        formula = mapa['komponentaFormula']
+        mjernaJedinica = mapa['komponentaMjernaJedinica']
+        opis = '{0}, {1}( {2} ) [{3}]'.format(postaja, komponenta, formula, mjernaJedinica)
+        self.glavniLabel.setText(opis)
+        
         
     def prebaci_dan_naprijed(self):
         """

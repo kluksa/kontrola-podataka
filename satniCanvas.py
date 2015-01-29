@@ -47,6 +47,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         
         self.data = {} #privremeni spremnik za frejmove (ucitane)
+        self.infoMapa = {} #privremeni spremnik za opis pojedinog frejma (mjerna jedinica, naziv kanala)
 
         self.__statusGlavniGraf = False #da li je nacrtan glavni graf
         self.__statusSpanSelector = False #da li je span selector aktivan
@@ -72,11 +73,13 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
         
         metoda postavlja agregirani frejm u self.data
-        lista -> [kanal, frejm]
+        lista -> [kanal, frejm, dict]
         kanal -> int, ime kanala
         frejm -> pandas dataframe, agregirani podaci
+        dict -> dict sa opisom kanala, sadrzi naziv, formulu, mjernu jedinicu, postaju
         """
         self.data[lista[0]] = lista[1] 
+        self.infoMapa[lista[0]] = lista[2]
 ###############################################################################            
     def highlight_dot(self, x, y):
         """

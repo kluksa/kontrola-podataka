@@ -45,6 +45,8 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)      
 
         self.data = {} #spremnik za frejmove (ucitane)
+        self.infoMapa = {} #spremnik sa info podacima o kanalima
+
         self.__statusGlavniGraf = False #da li je nacrtan glavni graf
         self.__statusSpanSelector = False #da li je span selector aktivan
         #annotation
@@ -65,11 +67,13 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
         
         metoda postavlja frejm minutnih podataka u self.__data
-        lista -> [kanal, frejm]
+        lista -> [kanal, frejm, dict]
         kanal -> int, ime kanala
         frejm -> pandas dataframe, minutni podaci
+        dict -> dict sa opisom kanala, sadrzi naziv, formulu, mjernu jedinicu, postaju
         """
         self.data[lista[0]] = lista[1]
+        self.infoMapa[lista[0]] = lista[2]
 ###############################################################################
     def crtaj(self, lista):
         """Eksplicitne naredbe za crtanje zadane sa popisom grafova i vremenskim

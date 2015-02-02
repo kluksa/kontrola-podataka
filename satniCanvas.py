@@ -47,7 +47,6 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         
         self.data = {} #privremeni spremnik za frejmove (ucitane)
-        self.infoMapa = {} #privremeni spremnik za opis pojedinog frejma (mjerna jedinica, naziv kanala)
 
         self.__statusGlavniGraf = False #da li je nacrtan glavni graf
         self.__statusSpanSelector = False #da li je span selector aktivan
@@ -73,13 +72,11 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
         
         metoda postavlja agregirani frejm u self.data
-        lista -> [kanal, frejm, dict]
+        lista -> [kanal, frejm]
         kanal -> int, ime kanala
         frejm -> pandas dataframe, agregirani podaci
-        dict -> dict sa opisom kanala, sadrzi naziv, formulu, mjernu jedinicu, postaju
         """
         self.data[lista[0]] = lista[1] 
-        self.infoMapa[lista[0]] = lista[2]
 ###############################################################################            
     def highlight_dot(self, x, y):
         """
@@ -149,6 +146,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
             label.set_rotation(30)
             label.set_fontsize(8)
+            
 
         #test opcenitih postavki priije crtanja:
         #CURSOR
@@ -247,7 +245,6 @@ class Graf(opcenitiCanvas.MPLCanvas):
             #naredba za plot
             self.axes.plot(x, 
                            y, 
-                           linewidth = self.popisGrafova['glavniKanal']['midline']['linewidth'], 
                            linestyle = self.popisGrafova['glavniKanal']['midline']['line'],
                            color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['midline']['rgb']), 
                            alpha = self.popisGrafova['glavniKanal']['midline']['alpha'],

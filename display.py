@@ -26,17 +26,24 @@ class Display(base, form):
     def __init__(self, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
-
+        
+        #init sa full screenom?
+        self.setWindowState(QtCore.Qt.WindowMaximized)
+        
         """inicijalizacija komponenti"""
         #inicijalizacija panela za grafove
         self.panel = grafoviPanel.GrafPanel(parent = self)
         #inicjalizacija izbornika, trenutno samo weblogger
         self.restIzbornik = rest_izbornik.RestIzbornik()
+        #inicjalizacija zero/span panela
+        self.zspanel = grafoviPanel.ZeroSpanPanel(parent = self)
         """postavljanje panela i izbornika u dock widgete"""
         #postavljanje panela u dockable widget self.dockWidget_grafovi
         self.dockWidget_grafovi.setWidget(self.panel)
-        #postavi self.webLoggerIzbornik u kontrolni dock widget
+        #postavi self.restIzbornik u kontrolni dock widget
         self.dockWidget_kontrola.setWidget(self.restIzbornik)
+        #postavi ZeroSpanPanel u dock widget
+        self.dockWidget_zerospan.setWidget(self.zspanel)
         """inicijalizacija kontrolora"""
         self.kontrola = kontroler.Kontroler(parent = None, gui = self)
         """povezivanje akcija vezanih za gui elemente"""

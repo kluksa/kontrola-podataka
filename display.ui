@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
-    <height>650</height>
+    <width>597</width>
+    <height>509</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -31,8 +31,8 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>16777215</width>
-     <height>16777215</height>
+     <width>16</width>
+     <height>614</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -49,7 +49,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>575</width>
+     <width>597</width>
      <height>18</height>
     </rect>
    </property>
@@ -128,12 +128,37 @@
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
-    <string>Satno agregirani podaci</string>
+    <string>Grafovi (podaci)</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_grafovi"/>
+   <widget class="QWidget" name="dockWidgetContents_grafovi">
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_zerospan">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Zero / Span</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_zerospan"/>
   </widget>
   <action name="action_Exit">
    <property name="text">

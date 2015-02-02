@@ -19,6 +19,20 @@ class AppExcept(Exception):
     pass
 ###############################################################################
 ###############################################################################
+def sredi_xtickove_zerospan(timestampovi):
+    """
+    funkcija pretvara listu y vrijednosti zero i span grafa u tickove prema datumu
+    npr. timestamp jedne vrijednosti za zerospan je '2015-02-14 12:34:56'
+    i treba se 'normalizirati' u '14.02' radi kraceg zapisa
+    
+    input je lista timestampova
+    output je lista stringova (labeli za tickove), lista timestampova (tick location)
+    """
+    tickLoc = [pd.to_datetime(i.date())for i in timestampovi]
+    tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
+    
+    return tickLoc, tickLab
+###############################################################################
 def pronadji_tickove_minutni(tmin, tmax):
     """
     funkcija vraca liste tickmarkera (minor i major) i listu tick labela

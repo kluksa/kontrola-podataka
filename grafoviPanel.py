@@ -15,7 +15,10 @@ Wrapper koji sadrzi:
 from PyQt4 import QtCore, uic #import djela Qt frejmworka
 import satniCanvas
 import minutniCanvas
-
+import zeroCanvas
+import spanCanvas
+###############################################################################
+###############################################################################
 base3, form3 = uic.loadUiType('panel_za_canvase.ui')
 class GrafPanel(base3, form3):
     """
@@ -95,5 +98,21 @@ class GrafPanel(base3, form3):
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan nazad
         """
         self.emit(QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'), -1)
+###############################################################################
+###############################################################################
+base6, form6 = uic.loadUiType('zerospan.ui')
+class ZeroSpanPanel(base6, form6):
+    def __init__(self, parent = None):
+        super(base6, self).__init__(parent)
+        self.setupUi(self)
+
+        #sredi title panela
+        self.setWindowTitle('Zero / Span grafovi')
+        #inicijalizacija canvasa
+        self.zeroGraf = zeroCanvas.Graf(parent = None)
+        self.spanGraf = spanCanvas.Graf(parent = None)
+        #dodavanje canvasa u layout panela
+        self.zeroLayout.addWidget(self.zeroGraf)
+        self.spanLayout.addWidget(self.spanGraf)
 ###############################################################################
 ###############################################################################

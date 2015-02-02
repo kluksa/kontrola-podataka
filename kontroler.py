@@ -10,6 +10,8 @@ import datetime #python datetime objekt, potreban za timedelta isl.
 import pickle #serializer podataka, koristim za spremanje/ucitavanje postavki
 import pandas as pd #pandas modul, za provjeru tipa nekih argumenata
 import copy #modul za deep copy nested struktura (primarno za kopije self.graf_defaults)
+import configparser #parser za configuration file (built in)
+import os #pristup direktorijima, provjere postojanja filea....
 
 import pomocneFunkcije #pomocne funkcije i klase (npr. AppExcept exception...)
 import networking_funkcije #web zahtjev, interface prema REST servisu
@@ -41,10 +43,26 @@ class Kontroler(QtCore.QObject):
         """incijalizacija agregatora podataka"""
         self.satniAgreg = agregator.Agregator()
         
+        #TODO! try block ? possible read/parse fail
+        #base exception for configparser: configparser.Error
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+        
+        REST_info = dict(config['REST_info'])
+        
         """url settings za REST web zahtjev"""
+        #defaults        
         self.baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
         self.resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
-                        "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
+                        "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
+                        "zerospan":"dhz.skz.rs.zerospan"}
+
+        #TODO! sredi "ljepsi nacin" ucitavanja config filea / neki dijalog za promjenu vrijednosti
+        self.baza = REST_info["base_url"]
+        self.resursi["siroviPodaci"] = REST_info["sirovipodaci"]
+        self.resursi["programMjerenja"] = REST_info["programmjerenja"]
+        self.resursi["zerospan"] = REST_info["zerospan"]
+
 
         """ostali memberi"""
         self.pickedDate = None #zadnje izabrani dan
@@ -108,6 +126,9 @@ class Kontroler(QtCore.QObject):
             self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
             #postavi model u member restIzbornika
             self.gui.restIzbornik.model = self.modelProgramaMjerenja
+        
+        """load default preset - pozicija widgeta"""
+        self.load_preset_mehanika(config['PRESET']['file_loc'])
 ###############################################################################
     def initialize_web_and_rest_interface(self, baza, resursi):
         """
@@ -223,10 +244,15 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('gui_reinitialize_REST'), 
                      self.reconnect_to_REST)
                      
-        ###gui zahtjev, izabrani datum i program mjerenja sa izbornika###
+        ###gui zahtjev, izabrani datum i program mjerenja sa izbornika, priprema crtanja grafova###
         self.connect(self.gui.restIzbornik, 
                      QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'), 
                      self.priredi_podatke)
+                     
+        ###gui zahtjev, pokreni zero/span crtanje i dohvacanje podataka###
+        self.connect(self.gui.restIzbornik, 
+                     QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'), 
+                     self.nacrtaj_zero_span)
 
         ###zaprimanje zahtjeva od panela za prebacivanjem dana naprijed ili nazad###
         self.connect(self.gui.panel, 
@@ -378,9 +404,17 @@ class Kontroler(QtCore.QObject):
         self.connect(self, 
                      QtCore.SIGNAL('set_glavni_kanal_izbornik(PyQt_PyObject)'), 
                      self.gui.restIzbornik.postavi_novi_glavni_kanal)
+                     
+        ###crtaj zero naredba zeroCanvas###
+        self.connect(self, 
+                     QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), 
+                     self.gui.zspanel.zeroGraf.crtaj)
+                     
+        ###crtaj span naredba spanCanvas###
+        self.connect(self, 
+                     QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), 
+                     self.gui.zspanel.spanGraf.crtaj)
         
-        
-
 
 
 ###############################################################################
@@ -758,23 +792,17 @@ class Kontroler(QtCore.QObject):
             tekst = 'Save postavki aplikacije nije uspjesno izveden.\n\n'+str(err)
             self.prikazi_error_msg(tekst)
 ###############################################################################
-    def load_preset(self):
+    def load_preset_mehanika(self, fileName):
         """
-        Funkcija omogucava ucitavanje postavke aplikacije iz binarnog filea.
-        File treba biti prethodno spremljen uz pomoc self.save_preset().
+        Funkcija odradjuje ucitavanje postavki ako je zadan file.
+        Mehanika iza postavljana preseta.
         """
-        #pripremi mapu/dictionary za prihvat podataka
         mapa = None
-        #dohvati fileName uz pomoc getOpenFileName dijaloga
-        fileName = QtGui.QFileDialog.getOpenFileName(parent = self.gui, 
-                                                     caption = 'Ucitaj postavke',
-                                                     filter = "Dat files (*.dat);;All files(*.*)")
-
+        
         if fileName:
             with open(fileName, 'rb') as fread:
                 mapa = pickle.load(fread)
 
-        #provjere da li je file ispravan
         try:
             tekst = 'Pogreska prilikom ucitavanja postavki.\nFile je corrupted ili je zadan pogresni file.'
             assert isinstance(mapa, dict), tekst #provjera da je mapa tipa dict
@@ -827,4 +855,40 @@ class Kontroler(QtCore.QObject):
             opis = 'Load postavki aplikacije nije uspjesno izveden.\n\n' + str(err)
             self.prikazi_error_msg(opis)				
 ###############################################################################
+    def load_preset(self):
+        """
+        Funkcija omogucava ucitavanje postavke aplikacije iz binarnog filea.
+        File treba biti prethodno spremljen uz pomoc self.save_preset().
+        """
+        #dohvati fileName uz pomoc getOpenFileName dijaloga
+        fileName = QtGui.QFileDialog.getOpenFileName(parent = self.gui, 
+                                                     caption = 'Ucitaj postavke',
+                                                     filter = "Dat files (*.dat);;All files(*.*)")
+        try:
+            #provjera da li file postoji
+            assert os.path.isfile(fileName), 'File ne postoji'
+            self.load_preset_mehanika(fileName)
+        except AssertionError as err:
+            opis = 'Za load preset nije zadan ispravan file.\n'+str(err)
+            self.prikazi_error_msg(opis)
+###############################################################################
+    def nacrtaj_zero_span(self, lista):
+        """
+        Crtanje zero span podataka.
+        1. dohvati podatke sa REST servisa, 
+        2. naredi crtanje istih
+        """
+        progMjer = int(lista[0])
+        datum = str(lista[1])
+        try:
+            #dokvati listu [zeroFrejm, spanFrejm]
+            frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)
+            #emitiraj signal za crtanjem
+            self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), frejmovi[0])
+            self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), frejmovi[1])
+            
+        except pomocneFunkcije.AppExcept as err:
+            opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)
+            self.prikazi_error_msg(opis)
+            
 ###############################################################################

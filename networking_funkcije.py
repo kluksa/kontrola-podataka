@@ -8,8 +8,9 @@ Created on Wed Jan 21 10:58:46 2015
 import requests
 import xml.etree.ElementTree as ET
 from PyQt4 import QtCore
-import pomocneFunkcije
+import pandas as pd
 
+import pomocneFunkcije
 ###############################################################################
 ###############################################################################
 class WebZahtjev(QtCore.QObject):
@@ -130,24 +131,70 @@ class WebZahtjev(QtCore.QObject):
             tekst = 'WebZahtjev.upload_json_agregiranih:Request fail (http error, timeout...).\n{0}'.format(e2)
             raise pomocneFunkcije.AppExcept(tekst) from e2
 ###############################################################################
+    def get_zero_span(self, programMjerenja, datum):
+        """
+        Dohvati zero-span vrijednosti
+        program mjerenja je tipa int, datum je string        
+        
+        path -- "program/datum"
+        getJson/GET
+        """
+        #point url na trazeni dio REST servisa
+        url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
+        #pripremi zahtjev
+        payload = {"id":"getJson", "name":"GET"}
+        try:
+            r = requests.get(url, params = payload, timeout = 9.1)
+            assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
+            if r.text != '[]':
+                zeroFrejm, spanFrejm = self.convert_zero_span(r.text)
+                return [zeroFrejm, spanFrejm]
+            else:
+                print('prazan json ', programMjerenja,' - ', datum)
+
+        except requests.exceptions.RequestException as e1:
+            tekst = 'WebZahtjev.get_zero_span:Request fail (http error, timeout...).\n{0}'.format(e1)
+            raise pomocneFunkcije.AppExcept(tekst) from e1
+        except AssertionError as e2:
+            tekst = 'WebZahtjev.get_zero_span:Assert fail. Bad response.\n{0}'.format(e2)
+            raise pomocneFunkcije.AppExcept(tekst) from e2
+###############################################################################
+    def convert_zero_span(self, jsonText):
+        """
+        Pretvori json string u dva datafrejma (zeroFrejm, spanFrejm)
+        """
+        frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['vrijeme'])
+        spanFrejm = frejm[frejm['vrsta'] == "S"]
+        zeroFrejm = frejm[frejm['vrsta'] == "Z"]
+        spanFrejm.index = spanFrejm['vrijeme']
+        zeroFrejm.index = zeroFrejm['vrijeme']
+        
+        return zeroFrejm, spanFrejm
+
+###############################################################################
 ###############################################################################
 if __name__ == '__main__':
     #definiranje baze i resursa
     baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
     resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
-                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja"}
+                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja", 
+                "zerospan":"dhz.skz.rs.zerospan"}
     #inicijalizacija WebZahtjev objekta
     wz = WebZahtjev(baza, resursi)
     """
     u principu, pozovi metodu unutar try bloka, ako se nesto slomi, 
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
-    """
+    """    
     try:
-        r = wz.get_programe_mjerenja()
-        print(r)
-#        r1 = wz.get_sirovi(145, '2015-01-14')
+#        r = wz.get_programe_mjerenja()
+#        print(r)
+#        r1 = wz.get_sirovi(170, '2015-01-15')
 #        print(r1)
-#        r2 = wz.upload_json_agregiranih('')
+        r = wz.get_zero_span(159, '2015-01-20')
+        print('Zero:\n',r[0])
+        print()
+        print('Span:\n',r[1])
+
     except Exception as e:
         print(e) #vraca tekst exceptiona
         print(repr(e))

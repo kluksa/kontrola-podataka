@@ -115,4 +115,22 @@ class ZeroSpanPanel(base6, form6):
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
 ###############################################################################
+    def change_label(self, lista):
+        """
+        ova funkcija kao ulazni parametar uzima listu koja ima 3 elementa, ali
+        samo prvi je od interesa.
+        
+        -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
+
+        Rezultat je novi label sastavljen od tih elemenata.
+        """
+        mapa = lista[0]
+        
+        #iz mape izvuci opis glavnog kanala te sastavi dobro formatirani tekst
+        postaja = mapa['postajaNaziv']
+        komponenta = mapa['komponentaNaziv']
+        formula = mapa['komponentaFormula']
+        opis = 'ZERO / SPAN za {0}, {1}( {2} )'.format(postaja, komponenta, formula)
+        self.glavniLabel.setText(opis)
+###############################################################################
 ###############################################################################

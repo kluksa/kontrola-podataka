@@ -4,6 +4,8 @@ Created on Mon Feb  2 12:34:36 2015
 
 @author: User
 """
+import matplotlib as mpl
+import pandas as pd
 
 import pomocneFunkcije #import pomocnih funkcija
 import opcenitiCanvas #import opcenitog (abstract) canvasa
@@ -17,27 +19,106 @@ class Graf(opcenitiCanvas.MPLCanvas):
         """konstruktor"""
         opcenitiCanvas.MPLCanvas.__init__(self, *args, **kwargs)
         self.zeroNacrtan = False
-        self.data = {} #privremeni spremnik za frejmove (ucitane)
+        self.data = None
+        
+        self.zadnjiAnnotation = None
+        self.annotationStatus = False
+        
         self.veze()
 ###############################################################################
-    def crtaj(self, frejm):
+    def crtaj(self, ulaz):
         """
         crtanje frejma span na canvasu
+
+        ulaz - [frejm graf_defaults]        
+        
+        Problem sa crtanjem... moram nacrtati liniju odvojeno bez picka
+        scatter podataka sa pickom.
+
+        inace i linija je pickable objekt koji dovodi do konfuznih situacija
+        
+        dodatno, prosljedi member u kojemu se nalazi opis grafa (marker, line...)
+        
+        
+        TODO!.. kada proradi kako spada, implementiraj isto na zero canvas
         """
         self.axes.clear()
         
-        x = list(frejm.index)
-        y = list(frejm['vrijednost'])
+        #TODO! prebaci na zero opis...
+        self.detalji = ulaz[1]
+        self.data = ulaz[0]
+        
+        #TODO! mangle frame data
+        #center line graf data  
+        lineFrame = ulaz[0].copy()
+        self.data = lineFrame
+        x = list(lineFrame.index)
+        y = list(lineFrame['vrijednost'])
+        
+        #scatter plot data - pickable tocke        
+        #TODO! za sada neki hardcoded crud
+        okFrame = ulaz[0].copy()
+        badFrame = ulaz[0].copy()
+        
+        #neke default granice? ovo se mora bolje srediti... neka funkcija?
+        lower = 350
+        upper = 500
+        #TODO! plot horizontalnih linija u step obliku za zadane datume...
+        #self.axes.ahline(y = lower)
+
+        okTocke = okFrame[okFrame['vrijednost'] >= lower]
+        okTocke = okTocke[okTocke['vrijednost'] <= upper]
+        xok = list(okTocke.index)
+        yok = list(okTocke['vrijednost'])
+
+        for indeks in lineFrame.index:
+            if indeks in xok:
+                badFrame = badFrame.drop([indeks])
+        
+        
+        xbad = list(badFrame.index)
+        ybad = list(badFrame['vrijednost'])
         
         #sredi tickove
         tickLoc, tickLab = pomocneFunkcije.sredi_xtickove_zerospan(x)
         self.axes.set_xticks(tickLoc)
         self.axes.set_xticklabels(tickLab)
-        
-        self.axes.plot(x, y)
+
+        #PLOT LINIJE IZMEDJU TOCAKA PODATAKA        
+        self.axes.plot(x, 
+                       y, 
+                       color = pomocneFunkcije.normalize_rgb(self.detalji['span']['midline']['rgb']), 
+                       alpha = self.detalji['span']['midline']['alpha'], 
+                       linestyle = self.detalji['span']['midline']['line'], 
+                       linewidth = self.detalji['span']['midline']['linewidth'], 
+                       zorder = self.detalji['span']['midline']['zorder'], 
+                       picker = self.detalji['span']['midline']['picker'])
+
+        if len(xok) > 0:
+            #PLOT OK TOCAKA HACK... ne valja... line is pickable
+            self.axes.plot(xok, 
+                           yok, 
+                           marker = self.detalji['span']['ok']['marker'],
+                           markersize = self.detalji['span']['ok']['markersize'], 
+                           color = pomocneFunkcije.normalize_rgb(self.detalji['span']['ok']['rgb']),
+                           alpha = self.detalji['span']['ok']['alpha'],
+                           linestyle = 'None',
+                           zorder = self.detalji['span']['ok']['zorder'])
+
+        if len(xbad) > 0:
+            #PLOT BAD TOCAKA
+            self.axes.plot(xbad, 
+                           ybad, 
+                           marker = self.detalji['span']['bad']['marker'],
+                           markersize = self.detalji['span']['bad']['markersize'], 
+                           color = pomocneFunkcije.normalize_rgb(self.detalji['span']['bad']['rgb']), 
+                           alpha = self.detalji['span']['bad']['alpha'],
+                           linestyle = 'None',
+                           zorder = self.detalji['span']['bad']['zorder'])
+
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel('Span')
-
+        
         xLabels = self.axes.get_xticklabels()
         for label in xLabels:
             #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
@@ -47,7 +128,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.zeroNacrtan = True
         self.defaultRasponX = self.axes.get_xlim()
         self.defaultRasponY = self.axes.get_ylim()
-
+        
         self.draw()
 ###############################################################################
     def veze(self):
@@ -55,6 +136,72 @@ class Graf(opcenitiCanvas.MPLCanvas):
         povezivanje callback funkcija matplotlib canvasa (pick...)
         """
         self.mpl_connect('scroll_event', self.scroll_zoom)
+        self.mpl_connect('pick_event', self.on_pick)
+###############################################################################
+    def on_pick(self, event):
+        """
+        pick callback, ali funkcionira samo ako se pickaju tocke na grafu
+        """
+        #definiraj x i y preko izabrane tocke
+        x = self.data.index[event.ind[0]]
+        y = self.data.loc[x, 'vrijednost']
+                        
+        if event.mouseevent.button == 2:
+            #middle click
+            if self.annotationStatus:
+                self.annotation.remove()
+                self.annotationStatus = False
+                self.draw()
+                if self.zadnjiAnnotation != x:
+                    self.napravi_annotation(x, y, event.mouseevent)
+            else:
+                self.napravi_annotation(x, y, event.mouseevent)
+###############################################################################
+    def napravi_annotation(self, x, y, event):
+        """
+        Napravi annotation na grafu, sa opisom x i y kooridinate.
+        
+        ulaz:
+        x, y vrijednosti tocke u data kooridinatama
+        event je instanca event.mouseevent dogadjaja
+        
+        output je self.annotation - specificna instanca annotationa
+        """
+        tekst = 'Vrijeme: '+str(x)+'\nSpan: '+str(y)
+
+        #definicija offseta anootationa (pixel position on canvas)
+        px = float(event.x)
+        py = float(event.y)
+
+        if px > 200:
+            aox = px -180
+        else:
+            aox = px + 50
+            
+        if py > 100:
+            aoy = py - 50
+        else:
+            aoy = py + 20
+
+        #instanca annotationa
+        self.annotation = self.axes.annotate(
+            tekst, 
+            xy = (str(x), y), 
+            xycoords='data', 
+            xytext = (aox, aoy), 
+            textcoords = 'axes pixels', 
+            ha = 'left', 
+            va = 'center', 
+            fontsize = 7, 
+            zorder = 5, 
+            bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+            arrowprops = dict(arrowstyle = '->'))
+        
+        #zapamti koji je annotation aktivan.
+        self.annotationStatus = True
+        self.zadnjiAnnotation = x
+        #nacrtaj
+        self.draw()
 ###############################################################################
     def scroll_zoom(self, event):
         """

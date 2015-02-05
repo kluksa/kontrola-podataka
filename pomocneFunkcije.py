@@ -28,7 +28,10 @@ def sredi_xtickove_zerospan(timestampovi):
     input je lista timestampova
     output je lista stringova (labeli za tickove), lista timestampova (tick location)
     """
-    tickLoc = [pd.to_datetime(i.date())for i in timestampovi]
+    tmin = min(timestampovi)
+    tmax = max(timestampovi)
+    raspon = pd.date_range(start = tmin, end = tmax, freq = 'D')
+    tickLoc = [pd.to_datetime(i.date())for i in raspon]
     tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
     
     return tickLoc, tickLab

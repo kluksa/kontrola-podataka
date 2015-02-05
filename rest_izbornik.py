@@ -81,7 +81,7 @@ class RestIzbornik(base5, form5):
                 else:
                     print('Kriva kombinacija, nedostaje program mjerenja.')
             else:
-                print('Kriva kombinacija, dan je u buducnosti.')
+                print('Kriva kombinacija, dan je u buducnosti ili programi mjerenja nisu ucitani.')
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n'+str(err)
             self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'),tekst)

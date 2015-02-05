@@ -169,6 +169,10 @@ class WebZahtjev(QtCore.QObject):
         spanFrejm.index = spanFrejm['vrijeme']
         zeroFrejm.index = zeroFrejm['vrijeme']
         
+        #kontrola za besmislene vrijednosti (tipa -999)
+        zeroFrejm = zeroFrejm[zeroFrejm['vrijednost'] > -998.0]
+        spanFrejm = spanFrejm[spanFrejm['vrijednost'] > -998.0]
+        
         return zeroFrejm, spanFrejm
 
 ###############################################################################
@@ -186,8 +190,8 @@ if __name__ == '__main__':
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """    
     try:
-#        r = wz.get_programe_mjerenja()
-#        print(r)
+        r = wz.get_programe_mjerenja()
+        print(r)
 #        r1 = wz.get_sirovi(170, '2015-01-15')
 #        print(r1)
         r = wz.get_zero_span(159, '2015-01-20')

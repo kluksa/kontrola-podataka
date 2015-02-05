@@ -73,13 +73,13 @@ class Kontroler(QtCore.QObject):
         self.modelProgramaMjerenja = None #tree model programa mjerenja
         self.mapa_mjerenjeId_to_opis = None #mapa, program mjerenja:dict parametara
         self.reloadAttempt = 0 #member koji prati broj pokusaja sklapanja tree modela programa mjerenja
-        
-        """inicijalizacija web sucelja (REST reader, REST writer, webZahtjev)"""
-        self.initialize_web_and_rest_interface(self.baza, self.resursi)
 
         """ocekuje se da se prosljedi instanca valjanog GUI elementa"""
         self.gui = gui
         
+        """inicijalizacija web sucelja (REST reader, REST writer, webZahtjev)"""
+        self.initialize_web_and_rest_interface(self.baza, self.resursi)
+
         """defaultne vrijednosti za crtanje grafova (kanal je program mjerenja)"""
         self.graf_defaults = {
                 'glavniKanal':{
@@ -96,6 +96,16 @@ class Kontroler(QtCore.QObject):
                 'ostalo':{
                     'opcijeminutni':{'cursor':False, 'span':True, 'ticks':True, 'grid':False, 'legend':False}, 
                     'opcijesatni':{'cursor':False, 'span':False, 'ticks':True, 'grid':False, 'legend':False}
+                        },
+                'zero':{
+                    'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
+                    'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
+                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2}
+                        },
+                'span':{
+                    'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
+                    'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
+                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2}                
                         }
                             }
         
@@ -126,7 +136,7 @@ class Kontroler(QtCore.QObject):
             self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
             #postavi model u member restIzbornika
             self.gui.restIzbornik.model = self.modelProgramaMjerenja
-        
+
         """load default preset - pozicija widgeta"""
         self.load_preset_mehanika(config['PRESET']['file_loc'])
 ###############################################################################
@@ -283,6 +293,11 @@ class Kontroler(QtCore.QObject):
         self.connect(self, 
                      QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), 
                      self.gui.panel.change_label)
+                     
+        ###update glavnog labela u zerospan panelu###
+        self.connect(self, 
+                     QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), 
+                     self.gui.zspanel.change_label)
 
         ###naredba za crtanje minutnog grafa###
         self.connect(self, 
@@ -678,7 +693,6 @@ class Kontroler(QtCore.QObject):
         datuma. Nakon sto dohvati podatke, emitira signal sa agregiranim 
         slajsom frejma i kanalom (upakiranim u listu).
         """
-        #TODO! ako ne dohvati frame iz dokumenta, vrati None
         try:
             frejm = self.dokument.get_frame(key = kanal, tmin = self.tmin, tmax = self.tmax)
         except pomocneFunkcije.AppExcept as err:
@@ -812,13 +826,18 @@ class Kontroler(QtCore.QObject):
             assert isinstance(mapa['geometrija'],QtCore.QRect), tekst #provjera tipa trazenog objekta
             assert isinstance(mapa['preset'],QtCore.QByteArray), tekst #provjera tipa trazenog objekta
             assert isinstance(mapa['ostalo'],dict), tekst #provjera tipa trazenog objekta
+
+            #izbaceno namjestanje glavnog kanala
             #provjera da li je mapa programa mjerenja zadana, potrebna je radi smislenog zadavanja kanala za crtanje
-            if self.mapa_mjerenjeId_to_opis == None:
-                raise AssertionError('Mapa programa mjerenja nije zadana.\nPokusajte se ponovno spojiti na REST servis.')
-            
+#            if self.mapa_mjerenjeId_to_opis == None:
+#                raise AssertionError('Mapa programa mjerenja nije zadana.\nPokusajte se ponovno spojiti na REST servis.')
+                
             #svi dostupni kljucevi programaMjerenjaId
-            presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
-            set1 = set(self.mapa_mjerenjeId_to_opis)
+            #presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
+            if self.mapa_mjerenjeId_to_opis:
+                set1 = set(self.mapa_mjerenjeId_to_opis)
+            else:
+                set1 = set()
             #set kljuceva spremljenih u mapa['ostalo']
             set2 = []
             #dodaj glavni kanal
@@ -844,12 +863,11 @@ class Kontroler(QtCore.QObject):
             
             #sinhroniziraj checkable akcije sa ucitanim stanjem
             self.update_gui_action_state()
-            #TODO!
-            #promjeni glavni kanal u rest izborniku (QTreeView) da odgovara novom glavnom kanalu
-            presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
-            if presetGlavniKanal != None:
-                print('postavi kanal...emitiraj novu postavku gui/restizborniku')
-                self.emit(QtCore.SIGNAL('set_glavni_kanal_izbornik(PyQt_PyObject)'),presetGlavniKanal)
+#            #promjeni glavni kanal u rest izborniku (QTreeView) da odgovara novom glavnom kanalu
+#            presetGlavniKanal = self.graf_defaults['glavniKanal']['validanOK']['kanal']
+#            if presetGlavniKanal != None:
+#                print('postavi kanal...emitiraj novu postavku gui/restizborniku')
+#                self.emit(QtCore.SIGNAL('set_glavni_kanal_izbornik(PyQt_PyObject)'),presetGlavniKanal)
         
         except AssertionError as err:
             opis = 'Load postavki aplikacije nije uspjesno izveden.\n\n' + str(err)
@@ -883,9 +901,15 @@ class Kontroler(QtCore.QObject):
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
             frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)
-            #emitiraj signal za crtanjem
-            self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), frejmovi[0])
-            self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), frejmovi[1])
+            if frejmovi != None:
+                outputZero = [frejmovi[0], self.graf_defaults]
+                outputSpan = [frejmovi[1], self.graf_defaults]
+                #emitiraj signal za crtanjem
+                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
+                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)
+            else:
+                #nama podataka
+                raise pomocneFunkcije.appExcept('Nema raspolozivih podataka')
             
         except pomocneFunkcije.AppExcept as err:
             opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)

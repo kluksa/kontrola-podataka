@@ -92,6 +92,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150129:::VM:::napravio zahtjev 2 (iznad panela sa grafovima dodao smisleni opis glavnog kanala u vecem fontu):::
 20150202:::VM:::Sredio load applikacije. Tab sa Zero/Span podacima je u primitiivnom izdanju ali iscrtava podatke:::
 20150203:::VM:::Implementirao zoom opciju za zero i span graf. Aktivira se mouse scrollom. Tocka iznad koje je mis ce ostati tamo gdje je i bila (relativno na rub canvasa) dok ce se skala smanjiti ili povecati za neki faktor.:::
+20150205:::VM:::Popravio dio sa zero span grafovima, trenutno hardcoded vrijednosti za crtanje (izbornik postavki u izradi):::
+
 
 
 

@@ -19,7 +19,7 @@ import dokument_model #interni model za zapisivanje podataka u dict pandas dataf
 import datareader #REST reader/writer
 import agregator #agregator
 import modeldrva #pomocne klase za definiranje tree modela programa mjerenja
-import dijalog1 #modul sa dijalozima za promjenu i dodavanje grafova
+import glavnidijalog #glavni modul za poziv dijaloga za promjenu opcija grafova NEW
 ###############################################################################
 ###############################################################################
 class Kontroler(QtCore.QObject):
@@ -100,12 +100,16 @@ class Kontroler(QtCore.QObject):
                 'zero':{
                     'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
-                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2}
+                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
+                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
+                    'fill':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.2}
                         },
                 'span':{
                     'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
-                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2}                
+                    'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
+                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
+                    'fill':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.2}
                         }
                             }
         
@@ -137,6 +141,13 @@ class Kontroler(QtCore.QObject):
             #postavi model u member restIzbornika
             self.gui.restIzbornik.model = self.modelProgramaMjerenja
 
+        #TODO!
+        """
+        svaki puta kada se promjeni default - doda se nova opcija isl, 
+        potrebno je ponovno saveati preset bez prethodnog loadanja.
+        Inace nove preinake u defaultima ce biti pregazene sa onima iz
+        startup.dat.
+        """
         """load default preset - pozicija widgeta"""
         self.load_preset_mehanika(config['PRESET']['file_loc'])
 ###############################################################################
@@ -606,28 +617,26 @@ class Kontroler(QtCore.QObject):
         Ako se prihvati izbor, promjene se defaultne vrijednosti te se 
         informacija o promjeni propagira dalje.
         """
-        #napravi kopiju trenutnih postavki
+        #napravi deep copy dicta defaulta (za slucaj cancel)
         postavke = copy.deepcopy(self.graf_defaults)
-        #inicijaliziraj i prikazi dijalog.
-        dijalogDetalji = dijalog1.OpcijeGrafova(
-            defaulti = postavke, 
+        dijalogDetalji = glavnidijalog.GlavniIzbor(
+            defaulti = postavke,
             opiskanala = self.mapa_mjerenjeId_to_opis, 
             stablo = self.modelProgramaMjerenja)
-            
-        if dijalogDetalji.exec_(): #ako je OK vraca 1, isto kao i True
+        
+        if dijalogDetalji.exec_():
             postavke = dijalogDetalji.dohvati_postavke()
             #kopiraj nove postavke i postavi ih u graf_defaults
             self.graf_defaults = copy.deepcopy(postavke)
-            """
-            moramo pokrenuti pripremu podataka jer pomocni kanali nisu nuzno ucitani.
-            Priprema podataka poziva crtanje satnog grafa, a naredba za crtanje
-            satnog grafa ukljucuje crtanje minutnog (ili clear)
-            """
-            #provjeri da li je izabran neki datum
+            #provjeri datum?
             if self.tmin != None:
                 targ = (self.tmin - datetime.timedelta(minutes = 1)) # timestamp
                 targ = str(targ.date())
+                #ponovno nacrtaj glavni graf
                 self.priredi_podatke([self.gKanal, targ])
+                #ponovno nacrtaj zero i span grafove
+                self.nacrtaj_zero_span([self.gKanal, targ])
+        
 ###############################################################################
     def naredi_crtanje_satnog(self):
         """
@@ -908,8 +917,8 @@ class Kontroler(QtCore.QObject):
                 self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
                 self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)
             else:
-                #nama podataka
-                raise pomocneFunkcije.appExcept('Nema raspolozivih podataka')
+                #nema podataka
+                raise pomocneFunkcije.AppExcept('Nema raspolozivih podataka')
             
         except pomocneFunkcije.AppExcept as err:
             opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)

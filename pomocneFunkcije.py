@@ -182,3 +182,160 @@ def qcolor_to_default_color(color):
     a = color.alpha()/255
     return (r,g,b), a
 ###############################################################################
+def make_step_value(inputLista, endpoint):
+    #TODO! NOT IMPLEMENTED
+    """
+    od ulazne liste [(vrijeme, vrijednost), ] napravi vrijednosti za step funkkciju
+    Cilj ove funkcije stvaranje "step" granice upozorenja od certificiranih
+    vrijednosti za zero i span.
+    
+    ulaz:
+    inputLista
+        --> lista podataka
+        --> struktura je jos nije definirana do kraja, ali se lako moze
+            preformulirati na trazeni oblik
+    
+    endpoint
+        --> krajnja tocka
+        --> zbog nacina rada algoritma, potrebno je definirati dodatnu
+            tocku na x osi kao krajnju tocku buduceg grafa
+        --> idealno bi trebala biti najveca x tocka na grafu
+    
+    izlaz:
+    lista tocaka koje iscrtavaju step oblik kada bi se nacrtale
+    
+    alogritam radi na sljedeci nacin:
+    1. petlja ide kroz sve tocke inputListe osim zadnje
+    2. raspakirava x i y kooridinate tocke i sljedece tocke u nizu (x1, y1), (x2, y2)
+    3. prepisuje tocke u novu listu tocno odredjenim redom
+        3.a -ako je izlazna lista "prazna" --> (x1,y1) , (x2,y1), (x2,y2)
+        3.b -ako je izlazna lista "puna" --> (x2,y1), (x2, y2)
+        
+    alogirtam dodaje tocku izmedju zadanih tocaka tako da umjesto "kosog"
+    prijelaza napravi "step". parametar endpoint dodaje tocku na kraju
+    kao horizontalnu liniju od zadnje step vrijednosti do tocke
+    (x = endpoint, zadnja vrijednost y)
+    """
+    out = []
+    for i in range(len(inputLista)-1):
+        x, y = inputLista[i]
+        j, k = inputLista[i+1]
+        if len(out):
+            #ako je lista puna, nemoj naljepiti prvi element, vec je dodan
+            out.append((j, y))
+            out.append((j, k))
+        else:
+            #ako je lista prazna... dodaj prvi element
+            out.append((x, y))
+            out.append((j, y))
+            out.append((j, k))
+    
+    #zadnja tocka... treba potegnuti horizontalnu liniju do endpointa
+    x, y = out[-1]
+    out.append((endpoint, y))
+    return out
+###############################################################################
+def make_warning_line(inputLista, postotak):
+    #TODO! NOT IMPLEMENTED
+    """
+    Napravi granice tolerancije za zero ili span iz liste tocaka "step" funkcije.
+    
+    ulaz:
+    inputLista
+        -->izlazna vrijednost funkcije make_step_value(lista, endpoint)
+        -->lista tocaka granice tolerancije u stilu "step" funkcije
+    postotak:
+        --> int, vrijednost postotka za koje ce se granica tolerancije
+            pomaknuti. npr. postotak = 5 --> 5% odmak od centralne linije.
+            
+    izlaz:
+        -->3 liste iste duljine zapakirane u tuple
+        --> x ,tocke na x osi, nepromjenjene
+        --> ymin, tocke na y osi pomaknute za postotak vrijednosti nize
+            od y vrijednosti "step" vrijednosti
+        --> ymax, tocke na y osi pomaknute za postotak vrijednosti vise
+            od y vrijednosti "step" vrijednosti
+            
+    algoritam radi liste uz pomoc list comprehensiona (kraci i brzi nacin)
+    """
+    #napravi listu x podataka
+    x = [i for i, j in inputLista]
+    #napravi listu y podataka "centralnih" step vrijednosti
+    y = [j for i, j in inputLista]
+    
+    #pomakni vrijednosti za neki postotak
+    ymin = [broj-(broj*int(postotak)/100) for broj in y]
+    ymax = [broj+(broj*int(postotak)/100) for broj in y]
+    
+    #vrati rezultate
+    return x, ymin, ymax
+###############################################################################
+def provjeri_zero_span_odstupanje(graf, tpl):
+    #TODO! NOT IMPLEMENTED
+    """
+    Provjera ispravnosti tocaka za zero i span graf (da li su unutar granica
+    tolerancije)
+    
+    ulaz:
+    graf
+        -->graf je izlaz funkcije make_warning_line(lista, postotak)
+        -->odredjuje parametre granica tolerancije
+    tpl
+        -->tuple (x, y), tocka ciju ispravnost zelimo provjeriti
+    
+    izlaz:
+        --> boolean
+        
+    algoritam:
+    nakon unpackinga tupleova i pripreme podataka, krecemo sa petljom
+    koja pokusava pronaci poziciju zadane tocke unutar step intervala.
+    
+    za svaku x vrijednost step podataka 'X', 
+    provjeri da li je zadani x unutar [X, X+1>
+    Ako je provjeri da li je vrijednost y tocke izmedju vrijednosti
+    step funkcije za taj interval.
+    Ako je unutar vrijednosti vrati True
+    Ako nije, vrati False i probaj drugi interval
+    """
+    x, y = tpl
+    xgraf, ymin, ymax = graf
+    
+    for i in range(len(xgraf)-1):
+        if x >= xgraf[i] and x < xgraf[i+1]:
+            if y >= ymax[i] or y <= ymin[i]:
+                return False
+            else:
+                return True    
+###############################################################################
+def fit_line(x, y):
+    """
+    Za 1-D liste x i y iste duljine, vrati parametre linearne regresije, 
+    nagib a i odsjecak na y osi b
+    
+    y = a * x + b
+    
+    !!!EKSTERNI DEPENDANCY!!!
+    statsmodels
+        --> model za statistiku
+        --> dolazi zapakiran sa nekim stackovima (scipy, winpython..) pa je
+            lako moguce da je vec postavljen
+        --> ako nije ::: pip install statsmodels
+    
+    Metoda fita:
+    fit least squares ordinary linear regression
+    """
+    try:
+        import statsmodels.api as sm
+        #STEP1 definiraj matrice Left Hand Side (LHS) and Right Hand Side (RHS)
+        X = sm.add_constant(x) #RHS
+        Y = y #LHS
+        #STEP2 inicijaliziraj model (modeli su klase)
+        model = sm.OLS(Y, X, missing = 'drop') #ignore NaN podatke (ne bi ih trebalo biti ali just in case...)
+        #STEP3 pozovi metodu modela fit
+        fit = model.fit()
+        #vrati parametre calleru
+        return fit.params[1], fit.params[0]
+    except ImportError:
+        print('eksterni modul --  statsmodels -- nije instaliran\npip install statsmodels')
+        return None, None
+###############################################################################

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>390</width>
-    <height>388</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,10 +22,10 @@
         <string>Centralna linija</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_4">
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_3">
           <property name="text">
-           <string>Pick radijus : </string>
+           <string>Boja linije : </string>
           </property>
          </widget>
         </item>
@@ -40,13 +40,6 @@
          <widget class="QLabel" name="label_2">
           <property name="text">
            <string>Sirina linije : </string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Boja linije : </string>
           </property>
          </widget>
         </item>
@@ -76,19 +69,23 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="pickMidline">
-          <property name="decimals">
-           <number>1</number>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Prozirnost : </string>
           </property>
-          <property name="minimum">
-           <double>0.100000000000000</double>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="alphaMidline">
+          <property name="decimals">
+           <number>2</number>
+          </property>
+          <property name="maximum">
+           <double>1.000000000000000</double>
           </property>
           <property name="singleStep">
-           <double>0.100000000000000</double>
-          </property>
-          <property name="value">
-           <double>5.000000000000000</double>
+           <double>0.050000000000000</double>
           </property>
          </widget>
         </item>
@@ -142,6 +139,23 @@
           </property>
          </widget>
         </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_17">
+          <property name="text">
+           <string>Prozirnost : </string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="okAlpha">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.050000000000000</double>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -189,6 +203,23 @@
          <widget class="QPushButton" name="badBoja">
           <property name="text">
            <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_18">
+          <property name="text">
+           <string>Prozirnost : </string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="badAlpha">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.050000000000000</double>
           </property>
          </widget>
         </item>
@@ -276,6 +307,26 @@
           </property>
          </widget>
         </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_19">
+          <property name="text">
+           <string>Prozirnost : </string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QDoubleSpinBox" name="granicaAlpha">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.050000000000000</double>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -316,6 +367,26 @@
           </property>
           <property name="text">
            <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_20">
+          <property name="text">
+           <string>Prozirnost : </string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="fillAlpha">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.050000000000000</double>
           </property>
          </widget>
         </item>

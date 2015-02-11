@@ -66,8 +66,13 @@ class ZeroIzbor(base22, form22):
         
         ###QDoubleSpinBox###
         self.sirinaMidline.setValue(defaulti['zero']['midline']['linewidth'])
-        self.pickMidline.setValue(defaulti['zero']['midline']['picker'])
         self.granicaSirina.setValue(defaulti['zero']['warning']['linewidth'])
+        #alpha stanje
+        self.alphaMidline.setValue(defaulti['zero']['midline']['alpha'])
+        self.okAlpha.setValue(defaulti['zero']['ok']['alpha'])
+        self.badAlpha.setValue(defaulti['zero']['bad']['alpha'])
+        self.granicaAlpha.setValue(defaulti['zero']['warning']['alpha'])
+        self.fillAlpha.setValue(defaulti['zero']['fill']['alpha'])
         
         ###QPushButton###
         rgb = defaulti['zero']['midline']['rgb']
@@ -94,8 +99,8 @@ class ZeroIzbor(base22, form22):
         stil = pomocneFunkcije.color_to_style_string('QPushButton#granicaBoja', boja)        
         self.granicaBoja.setStyleSheet(stil)
 
-        rgb = defaulti['zero']['warning']['rgb']
-        a = defaulti['zero']['warning']['alpha']
+        rgb = defaulti['zero']['fill']['rgb']
+        a = defaulti['zero']['fill']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.fillBoja.setStyleSheet(stil)

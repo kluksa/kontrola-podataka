@@ -91,6 +91,9 @@ class OpcijePomocnog(base7, form7):
         #linija width
         self.doubleSpinLine.setValue(self.defaultGraf[7])
         
+        #alpha vrijednost boje
+        self.alphaBoja.setValue(self.defaultGraf[9])
+        
         #boja, stil gumba
         rgb = self.defaultGraf[8]
         a = self.defaultGraf[9]
@@ -123,6 +126,20 @@ class OpcijePomocnog(base7, form7):
         self.doubleSpinLine.valueChanged.connect(self.promjeni_line_width)
         self.bojaButton.clicked.connect(self.promjeni_boju)
         self.treeView.clicked.connect(self.promjeni_izbor_stabla)
+        self.alphaBoja.valueChanged.connect(self.promjeni_alpha)
+###############################################################################
+    def promjeni_alpha(self, x):
+        """
+        promjena prozirnosti boje pomocnog kanala.
+        """
+        value = round(float(x), 2)
+        #postavi novu vrijednost
+        self.defaultGraf[9] = value
+        #update boju gumba
+        rgb = self.defaultGraf[8]
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
+        stil = pomocneFunkcije.color_to_style_string('QPushButton#bojaButton', boja)
+        self.bojaButton.setStyleSheet(stil)
 ###############################################################################
     def pronadji_index_od_kanala(self, kanal):
         """
@@ -234,6 +251,10 @@ class OpcijePomocnog(base7, form7):
             #zapamti novu boju
             self.defaultGraf[8] = rgb
             self.defaultGraf[9] = a
+            
+            #set novu alpha vrijednost u odgovarajuci QDoubleSpinBox
+            self.alphaBoja.setValue(a)
+            
             #promjeni boju gumba
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#bojaButton', boja)

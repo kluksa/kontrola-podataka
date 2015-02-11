@@ -73,6 +73,11 @@ class GrafIzbor(base21, form21):
         ###QSpinBox###
         self.markerSpin.setValue(defaulti['glavniKanal']['validanOK']['markersize'])
         self.markerEkstremSpin.setValue(defaulti['glavniKanal']['ekstremimin']['markersize'])
+        #alpha vrijdnosti
+        self.okFlagAlpha.setValue(defaulti['glavniKanal']['validanOK']['alpha'])
+        self.badFlagAlpha.setValue(defaulti['glavniKanal']['validanNOK']['alpha'])
+        self.ekstremAlpha.setValue(defaulti['glavniKanal']['ekstremimin']['alpha'])
+        self.fillAlpha.setValue(defaulti['glavniKanal']['fillsatni']['alpha'])
         
         ###QDoubleSpinBox###
         self.doubleSpinLinije.setValue(defaulti['glavniKanal']['midline']['linewidth'])

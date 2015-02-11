@@ -67,8 +67,13 @@ class SpanIzbor(base23, form23):
         
         ###QDoubleSpinBox###
         self.sirinaMidline.setValue(defaulti['span']['midline']['linewidth'])
-        self.pickMidline.setValue(defaulti['span']['midline']['picker'])
         self.granicaSirina.setValue(defaulti['span']['warning']['linewidth'])
+        #alpha stanje
+        self.alphaMidline.setValue(defaulti['span']['midline']['alpha'])
+        self.okAlpha.setValue(defaulti['span']['ok']['alpha'])
+        self.badAlpha.setValue(defaulti['span']['bad']['alpha'])
+        self.granicaAlpha.setValue(defaulti['span']['warning']['alpha'])
+        self.fillAlpha.setValue(defaulti['span']['fill']['alpha'])
         
         ###QPushButton###
         rgb = defaulti['span']['midline']['rgb']
@@ -95,8 +100,8 @@ class SpanIzbor(base23, form23):
         stil = pomocneFunkcije.color_to_style_string('QPushButton#granicaBoja', boja)        
         self.granicaBoja.setStyleSheet(stil)
 
-        rgb = defaulti['span']['warning']['rgb']
-        a = defaulti['span']['warning']['alpha']
+        rgb = defaulti['span']['fill']['rgb']
+        a = defaulti['span']['fill']['alpha']
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.fillBoja.setStyleSheet(stil)

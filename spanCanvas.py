@@ -95,26 +95,40 @@ class Graf(opcenitiCanvas.MPLCanvas):
                        picker = self.detalji['span']['midline']['picker'])
 
         if len(xok) > 0:
-            #PLOT OK TOCAKA HACK... ne valja... line is pickable
+            #PLOT OK TOCAKA
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.detalji['span']['ok']['rgb'])
+            a = self.detalji['span']['ok']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = mpl.colors.rgb2hex(boja)
+            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)
             self.axes.plot(xok, 
                            yok, 
                            marker = self.detalji['span']['ok']['marker'],
                            markersize = self.detalji['span']['ok']['markersize'], 
-                           color = pomocneFunkcije.normalize_rgb(self.detalji['span']['ok']['rgb']),
-                           alpha = self.detalji['span']['ok']['alpha'],
+                           color = boja,
+                           alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['span']['ok']['zorder'])
+                           zorder = self.detalji['span']['ok']['zorder'], 
+                           markeredgecolor = edgeBoja)
 
         if len(xbad) > 0:
             #PLOT BAD TOCAKA
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.detalji['span']['bad']['rgb'])
+            a = self.detalji['span']['bad']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = mpl.colors.rgb2hex(boja)
+            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)
             self.axes.plot(xbad, 
                            ybad, 
                            marker = self.detalji['span']['bad']['marker'],
                            markersize = self.detalji['span']['bad']['markersize'], 
-                           color = pomocneFunkcije.normalize_rgb(self.detalji['span']['bad']['rgb']), 
-                           alpha = self.detalji['span']['bad']['alpha'],
+                           color = boja, 
+                           alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['span']['bad']['zorder'])
+                           zorder = self.detalji['span']['bad']['zorder'], 
+                           markeredgecolor = edgeBoja)
 
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel('Span')

@@ -96,6 +96,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150209:::VM:::Preradio izbornik postavki grafova. U izborniku su neke opcije koje jos nisu implementirane (npr.warning line za zero ili span):::
 20150211:::VM:::Iz izbornika izbacen pick radijus, ubacena je dodatna kontrola za alpha vrijednost boje (prozirnost).:::
 20150211:::VM:::Dodane 3 pomocne funkcije za racunanje granica tolerancije zero i span grafa i funkcija za racunanje parametara linearne regresije (ovisi o eksternom modulu --> statsmodels). Trenutno nisu implementirane do kraja jer jos nemam podatke za certificirane vrijednosti zero i span.:::
+20150211:::VM:::Sredio boju ruba markera preko keyword argumenta naredbe za plot - markeredgecolor = neka boja. Boja ruba markera bi trebala odgovarati boji "povrsine" istog markera.:::
+
 
 
 

@@ -308,6 +308,7 @@ def provjeri_zero_span_odstupanje(graf, tpl):
                 return True    
 ###############################################################################
 def fit_line(x, y):
+    #TODO! NOT IMPLEMENTED
     """
     Za 1-D liste x i y iste duljine, vrati parametre linearne regresije, 
     nagib a i odsjecak na y osi b

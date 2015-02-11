@@ -252,14 +252,21 @@ class Graf(opcenitiCanvas.MPLCanvas):
             frejm = frejm[frejm[u'flag'] == 1000] #samo dobri flagovi, validirani
             x = list(frejm.index)
             y = list(frejm[u'koncentracija'])
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanOK']['rgb'])
+            a = self.popisGrafova['glavniKanal']['validanOK']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = matplotlib.colors.rgb2hex(boja)
+            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['validanOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanOK']['rgb']), 
-                              alpha = self.popisGrafova['glavniKanal']['validanOK']['alpha'], 
+                              color = boja, 
+                              alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['validanOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['validanOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'])
+                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'], 
+                              markeredgecolor = edgeBoja)
             self.__statusGlavniGraf = True
 
         #3. validanNOK
@@ -270,14 +277,21 @@ class Graf(opcenitiCanvas.MPLCanvas):
             frejm = frejm[frejm[u'flag'] == -1000] #samo losi flagovi, validirani
             x = list(frejm.index)
             y = list(frejm[u'koncentracija'])
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanNOK']['rgb'])
+            a = self.popisGrafova['glavniKanal']['validanNOK']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = matplotlib.colors.rgb2hex(boja)
+            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['validanNOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['validanNOK']['rgb']), 
-                              alpha = self.popisGrafova['glavniKanal']['validanNOK']['alpha'], 
+                              color = boja, 
+                              alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['validanNOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['validanNOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'])
+                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'], 
+                              markeredgecolor = edgeBoja)
             self.__statusGlavniGraf = True
 
         #4. nevalidanOK
@@ -289,14 +303,21 @@ class Graf(opcenitiCanvas.MPLCanvas):
             frejm = frejm[frejm[u'flag'] != 1000] #uzmi sve nevalidirane
             x = list(frejm.index)
             y = list(frejm[u'koncentracija'])
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanOK']['rgb'])
+            a = self.popisGrafova['glavniKanal']['nevalidanOK']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = matplotlib.colors.rgb2hex(boja)
+            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)            
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['nevalidanOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanOK']['rgb']), 
-                              alpha = self.popisGrafova['glavniKanal']['nevalidanOK']['alpha'], 
+                              color = boja, 
+                              alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['nevalidanOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['nevalidanOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'])
+                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'], 
+                              markeredgecolor = edgeBoja)
             self.__statusGlavniGraf = True
         
         #5 nevalidanNOK
@@ -308,14 +329,21 @@ class Graf(opcenitiCanvas.MPLCanvas):
             frejm = frejm[frejm[u'flag'] != -1000] #uzmi sve nevalidirane
             x = list(frejm.index)
             y = list(frejm[u'koncentracija'])
+            #"gimnastika" za boju ruba markera
+            boja = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanNOK']['rgb'])
+            a = self.popisGrafova['glavniKanal']['nevalidanNOK']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = matplotlib.colors.rgb2hex(boja)
+            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['nevalidanNOK']['marker'], 
-                              color = pomocneFunkcije.normalize_rgb(self.popisGrafova['glavniKanal']['nevalidanNOK']['rgb']), 
-                              alpha = self.popisGrafova['glavniKanal']['nevalidanNOK']['alpha'], 
+                              color = boja, 
+                              alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['nevalidanNOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['nevalidanNOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'])
+                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'], 
+                              markeredgecolor = edgeBoja)
             self.__statusGlavniGraf = True
         #kraj crtanja glavnog kanala
         
@@ -336,17 +364,25 @@ class Graf(opcenitiCanvas.MPLCanvas):
                     self.dGranica = najmanji
                 if najveci > self.gGranica:
                     self.gGranica = najveci
+                    
+                #"gimnastika" za boju ruba markera
+                boja = pomocneFunkcije.normalize_rgb(self.popisGrafova['pomocniKanali'][graf]['rgb'])
+                a = self.popisGrafova['pomocniKanali'][graf]['alpha']
+                #convert rgb to hexcode, then convert hexcode to valid rgba
+                hexcolor = matplotlib.colors.rgb2hex(boja)
+                edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
 
                 self.axes.plot(x, 
                                y, 
                                marker = self.popisGrafova['pomocniKanali'][graf]['marker'], 
                                linestyle = self.popisGrafova['pomocniKanali'][graf]['line'],
-                               color = pomocneFunkcije.normalize_rgb(self.popisGrafova['pomocniKanali'][graf]['rgb']), 
-                               alpha = self.popisGrafova['pomocniKanali'][graf]['alpha'],
+                               color = boja, 
+                               alpha = a,
                                zorder = self.popisGrafova['pomocniKanali'][graf]['zorder'],
                                label = self.popisGrafova['pomocniKanali'][graf]['label'], 
                                markersize = self.popisGrafova['pomocniKanali'][graf]['markersize'], 
-                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'])
+                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'], 
+                               markeredgecolor = edgeBoja)
 
                               
         if self.__statusGlavniGraf:

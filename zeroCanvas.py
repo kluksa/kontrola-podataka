@@ -95,26 +95,38 @@ class Graf(opcenitiCanvas.MPLCanvas):
                        picker = self.detalji['zero']['midline']['picker'])
 
         if len(xok) > 0:
-            #PLOT OK TOCAKA HACK... ne valja... line is pickable
+            #PLOT OK TOCAKA
+            boja = pomocneFunkcije.normalize_rgb(self.detalji['zero']['ok']['rgb'])
+            a = self.detalji['zero']['ok']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = mpl.colors.rgb2hex(boja)
+            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)            
             self.axes.plot(xok, 
                            yok, 
                            marker = self.detalji['zero']['ok']['marker'],
                            markersize = self.detalji['zero']['ok']['markersize'], 
-                           color = pomocneFunkcije.normalize_rgb(self.detalji['zero']['ok']['rgb']),
-                           alpha = self.detalji['zero']['ok']['alpha'],
+                           color = boja,
+                           alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['zero']['ok']['zorder'])
+                           zorder = self.detalji['zero']['ok']['zorder'], 
+                           markeredgecolor = edgeBoja)
 
         if len(xbad) > 0:
             #PLOT BAD TOCAKA
+            boja = pomocneFunkcije.normalize_rgb(self.detalji['zero']['bad']['rgb'])
+            a = self.detalji['zero']['bad']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = mpl.colors.rgb2hex(boja)
+            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)
             self.axes.plot(xbad, 
                            ybad, 
                            marker = self.detalji['zero']['bad']['marker'],
                            markersize = self.detalji['zero']['bad']['markersize'], 
-                           color = pomocneFunkcije.normalize_rgb(self.detalji['zero']['bad']['rgb']), 
-                           alpha = self.detalji['zero']['bad']['alpha'],
+                           color = boja, 
+                           alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['zero']['bad']['zorder'])
+                           zorder = self.detalji['zero']['bad']['zorder'], 
+                           markeredgecolor = edgeBoja)
 
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel('Zero')

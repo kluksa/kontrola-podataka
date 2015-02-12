@@ -101,16 +101,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.detalji['span']['ok']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = mpl.colors.rgb2hex(boja)
-            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)
+            edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
             self.axes.plot(xok, 
                            yok, 
                            marker = self.detalji['span']['ok']['marker'],
                            markersize = self.detalji['span']['ok']['markersize'], 
-                           color = boja,
+                           color = edgeBoja,
                            alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['span']['ok']['zorder'], 
-                           markeredgecolor = edgeBoja)
+                           zorder = self.detalji['span']['ok']['zorder'])
 
         if len(xbad) > 0:
             #PLOT BAD TOCAKA
@@ -119,16 +118,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.detalji['span']['bad']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = mpl.colors.rgb2hex(boja)
-            edgeBoja = mpl.colors.colorConverter(hexcolor, alpha = a)
+            edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
             self.axes.plot(xbad, 
                            ybad, 
                            marker = self.detalji['span']['bad']['marker'],
                            markersize = self.detalji['span']['bad']['markersize'], 
-                           color = boja, 
+                           color = edgeBoja, 
                            alpha = a,
                            linestyle = 'None',
-                           zorder = self.detalji['span']['bad']['zorder'], 
-                           markeredgecolor = edgeBoja)
+                           zorder = self.detalji['span']['bad']['zorder'])
 
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel('Span')

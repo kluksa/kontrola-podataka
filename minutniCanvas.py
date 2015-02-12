@@ -257,16 +257,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.popisGrafova['glavniKanal']['validanOK']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = matplotlib.colors.rgb2hex(boja)
-            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
+            edgeBoja = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['validanOK']['marker'], 
-                              color = boja, 
+                              color = edgeBoja, 
                               alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['validanOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['validanOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'], 
-                              markeredgecolor = edgeBoja)
+                              s = self.popisGrafova['glavniKanal']['validanOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #3. validanNOK
@@ -282,16 +281,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.popisGrafova['glavniKanal']['validanNOK']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = matplotlib.colors.rgb2hex(boja)
-            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
+            edgeBoja = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['validanNOK']['marker'], 
-                              color = boja, 
+                              color = edgeBoja, 
                               alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['validanNOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['validanNOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'], 
-                              markeredgecolor = edgeBoja)
+                              s = self.popisGrafova['glavniKanal']['validanNOK']['markersize'])
             self.__statusGlavniGraf = True
 
         #4. nevalidanOK
@@ -308,16 +306,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.popisGrafova['glavniKanal']['nevalidanOK']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = matplotlib.colors.rgb2hex(boja)
-            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)            
+            edgeBoja = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)            
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['nevalidanOK']['marker'], 
-                              color = boja, 
+                              color = edgeBoja, 
                               alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['nevalidanOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['nevalidanOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'], 
-                              markeredgecolor = edgeBoja)
+                              s = self.popisGrafova['glavniKanal']['nevalidanOK']['markersize'])
             self.__statusGlavniGraf = True
         
         #5 nevalidanNOK
@@ -334,16 +331,15 @@ class Graf(opcenitiCanvas.MPLCanvas):
             a = self.popisGrafova['glavniKanal']['nevalidanNOK']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = matplotlib.colors.rgb2hex(boja)
-            edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
+            edgeBoja = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)
             self.axes.scatter(x, 
                               y, 
                               marker = self.popisGrafova['glavniKanal']['nevalidanNOK']['marker'], 
-                              color = boja, 
+                              color = edgeBoja, 
                               alpha = a, 
                               zorder = self.popisGrafova['glavniKanal']['nevalidanNOK']['zorder'], 
                               label = self.popisGrafova['glavniKanal']['nevalidanNOK']['label'], 
-                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'], 
-                              markeredgecolor = edgeBoja)
+                              s = self.popisGrafova['glavniKanal']['nevalidanNOK']['markersize'])
             self.__statusGlavniGraf = True
         #kraj crtanja glavnog kanala
         
@@ -370,19 +366,18 @@ class Graf(opcenitiCanvas.MPLCanvas):
                 a = self.popisGrafova['pomocniKanali'][graf]['alpha']
                 #convert rgb to hexcode, then convert hexcode to valid rgba
                 hexcolor = matplotlib.colors.rgb2hex(boja)
-                edgeBoja = matplotlib.colors.colorConverter(hexcolor, alpha = a)
+                edgeBoja = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)
 
                 self.axes.plot(x, 
                                y, 
                                marker = self.popisGrafova['pomocniKanali'][graf]['marker'], 
                                linestyle = self.popisGrafova['pomocniKanali'][graf]['line'],
-                               color = boja, 
+                               color = edgeBoja, 
                                alpha = a,
                                zorder = self.popisGrafova['pomocniKanali'][graf]['zorder'],
                                label = self.popisGrafova['pomocniKanali'][graf]['label'], 
                                markersize = self.popisGrafova['pomocniKanali'][graf]['markersize'], 
-                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'], 
-                               markeredgecolor = edgeBoja)
+                               linewidth = self.popisGrafova['pomocniKanali'][graf]['linewidth'])
 
                               
         if self.__statusGlavniGraf:

@@ -20,6 +20,7 @@ import datareader #REST reader/writer
 import agregator #agregator
 import modeldrva #pomocne klase za definiranje tree modela programa mjerenja
 import glavnidijalog #glavni modul za poziv dijaloga za promjenu opcija grafova NEW
+import dodajRefZS #dijalog za dodavanje referentnih zero i span vrijednosti
 ###############################################################################
 ###############################################################################
 class Kontroler(QtCore.QObject):
@@ -441,8 +442,13 @@ class Kontroler(QtCore.QObject):
         self.connect(self, 
                      QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), 
                      self.gui.zspanel.spanGraf.crtaj)
+                     
         
-
+        ###Dijalog za dodavanje nove referentne certificirane vrijednsti za zero ili span###
+        self.connect(self.gui.zspanel, 
+                     QtCore.SIGNAL('dodaj_ref_tocku'), 
+                     self.dodaj_novi_zerospan_ref)
+                     
 
 ###############################################################################
     def prikazi_error_msg(self, poruka):
@@ -708,7 +714,6 @@ class Kontroler(QtCore.QObject):
         except pomocneFunkcije.AppExcept as err:
             #dohvacanje frejma je propalo
             tekst = 'Trazena komponenta nije ucitana u model.\n' + str(repr(err))
-            #TODO! potencijalno iritantni popup - silent ignore?
             self.prikazi_error_msg(tekst)
             frejm = None
         #provjeri da li je frame stvarno dataframe prije agregacije (i da nije None)
@@ -927,5 +932,57 @@ class Kontroler(QtCore.QObject):
         except pomocneFunkcije.AppExcept as err:
             opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)
             self.prikazi_error_msg(opis)
+###############################################################################
+    def dodaj_novi_zerospan_ref(self):
+        """
+        Funkcija za dodavanje nove referentne vrijednosti na zero span servis.
+        
+        - Poziva dijalog u kojem se odrede opcije
+        - provjera parametara
+        - naredba prema rest servisu za dodavanje novih.
+        - redraw?
+        """
+        #int id kanala
+        kanal = self.gKanal
+        if self.mapa_mjerenjeId_to_opis != None and kanal != None:
+            #dict sa opisnim parametrima za kanal
+            postaja  = self.mapa_mjerenjeId_to_opis[kanal]['postajaNaziv']
+            komponenta = self.mapa_mjerenjeId_to_opis[kanal]['komponentaNaziv']
+            formula = self.mapa_mjerenjeId_to_opis[kanal]['komponentaFormula']
+            opis = '{0}, {1}( {2} )'.format(postaja, komponenta, formula)
+    
+            dijalog = dodajRefZS.DijalogDodajRefZS(parent = None, opisKanal = opis, idKanal = kanal)
+            if dijalog.exec_():
+                podaci = dijalog.vrati_postavke()
+                try:
+                    #test da li je sve u redu?
+                    assert isinstance(podaci['vrijednost'], float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nReferentna vrijednost je krivo zadana.'
+                    assert isinstance(podaci['odstupanje'], float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nOdstupanje je krivo zadano.'
+                    
+                    #napravi json string za upload
+                    baseJson = '["pocetakPrimjene":{0},"vrijednost":{1},"vrsta":{2},"programMjerenjaId":{3},"dozvoljenoOdstupanje":{4}]'
+                    baseJson.format(podaci['vrijeme'], podaci['vrijednost'], podaci['vrsta'], podaci['kanal'], podaci['odstupanje'])
+                    
+                    #izlazni json string tocke
+                    jS = '{' + baseJson + '}'
+                    
+                    #potvrda za unos!
+                    odgovor = QtGui.QMessageBox.question(self.gui, 
+                                                         "Potvrdi upload na REST servis",
+                                                         "Potvrdite spremanje podataka na REST servis",
+                                                         QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+                    
+                    if odgovor == QtGui.QMessageBox.Yes:
+                        #put json na rest!
+                        self.webZahtjev.upload_ref_vrijednost_zs(jS)                    
+                        #confirmation da je uspjelo
+                        QtGui.QMessageBox.information(self.gui, "Potvrda unosa na REST", "Podaci sa novom referentnom vrijednosti uspjesno su spremljeni na REST servis")
+                        
+                except AssertionError as err:
+                    self.prikazi_error_msg(str(err))
+                except pomocneFunkcije.AppExcept as err2:
+                    self.prikazi_error_msg(str(err2))
+        else:
+            self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
 ###############################################################################
 ################################################################################

@@ -214,7 +214,28 @@ class WebZahtjev(QtCore.QObject):
         zero_ref.index = zero_ref['pocetakPrimjene']
         
         return zero_ref, span_ref
-
+###############################################################################
+    def upload_ref_vrijednost_zs(self, jS):
+        """
+        funkcija za upload nove vrijednosti referentne tocke zero ili span 
+        na REST servis.
+        """
+        #point url na REST  servis
+        url = self._base + self._resursi['zsref']
+        #pripiremi zahtjev
+        payload = {"id":"putJson", "name":"PUT"}
+        headers = {'Content-type': 'application/json'}
+        try:
+            assert jS != None, 'Ulazni parametar je None, json string nije zadan.'
+            assert len(jS) > 0, 'Ulazni json string je prazan'
+            r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1)
+            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+        except AssertionError as e1:
+            tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Assert fail.\n{0}'.format(e1)
+            raise pomocneFunkcije.AppExcept(tekst) from e1
+        except requests.exceptions.RequestException as e2:
+            tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Request fail (http error, timeout...).\n{0}'.format(e2)
+            raise pomocneFunkcije.AppExcept(tekst) from e2
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':
@@ -238,7 +259,9 @@ if __name__ == '__main__':
         r = wz.get_zs_ref(159, '2015-01-20')
         
         x = wz.get_zero_span(159, '2015-01-20')
-        print(x)
+        
+        
+#        print(x)
 #        print('izabrani datum : ', pd.to_datetime('2015-01-20'))
 #        print('referentne vrijednosti')
 #        for i in r[0].index:

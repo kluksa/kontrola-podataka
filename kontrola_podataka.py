@@ -23,17 +23,6 @@ sys.exit(aplikacija.exec_())
 TODO!
 1. sredi toolbar za pick/zoom opcijama za sve grafove! (qtoolbar)
 
-2. sredi dodavanje novih referentnih vrjednosti za zero/span
-    -pazi kod rest servisa, put mora imati programmjerenjaid
-    -izbornik za zero i span! dijalog na gumb? ili toolbar?
-    -verify type prije nego sto dodas na servis..typecheck!
-    
-3. REFACTOR CRTANJE GRAFOVA.... zero i span su skoro pa identicni!
-
-4. sredi crtanje zero i span do kraja
-     - flagiranje valjanih...
-     - problem sa step funkcijom (zadnja tocka neka bude rub x kooridinate)
-     - odmakni tocke od ruba!
-
-5. sort incoming dataframe data????
+2. reimplementiraj neki zoom opciju zajednicku SVIM canvasima
+    - dadaj metodu na opcenitiCanvas.py
 """

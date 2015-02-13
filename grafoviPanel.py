@@ -113,6 +113,21 @@ class ZeroSpanPanel(base6, form6):
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
+        
+        self.veze()
+###############################################################################
+    def veze(self):
+        """
+        povezivanje akcija widgeta sa funkcijama
+        """
+        self.dodajRefZS.clicked.connect(self.dodaj_ref_tocku)
+###############################################################################
+    def dodaj_ref_tocku(self):
+        """
+        Prosljedi zahtjev kontroloru da prikaze dijalog za dodavanje nove 
+        referentne vrijednosti
+        """
+        self.emit(QtCore.SIGNAL('dodaj_ref_tocku'))
 ###############################################################################
     def change_label(self, lista):
         """

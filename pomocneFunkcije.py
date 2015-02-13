@@ -298,3 +298,20 @@ def pripremi_ref_zero_span(frejm, endpoint):
     
     return (StepX, StepYMin, StepYMax)
 ###############################################################################
+def time_to_int(x):
+    """
+    Funkcija pretvara vrijeme x (pandas.tslib.Timestamp) u unix timestamp
+    
+    testirano sa:
+    http://www.onlineconversion.com/unix_time.htm
+    
+    bilo koji pandas timestamp definiran rucno preko string reprezentacije ili
+    programski (npr.funkcij pandas.tslib.Timestamp.now() ) vraca int koji
+    odgovara zadanom vremenu.
+    
+    BITNO!
+    based on seconds since standard epoch of 1/1/1970
+    vrijeme je u GMT
+    """
+    return x.value / 1000000000        
+###############################################################################

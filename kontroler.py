@@ -62,6 +62,7 @@ class Kontroler(QtCore.QObject):
         self.resursi["siroviPodaci"] = REST_info["sirovipodaci"]
         self.resursi["programMjerenja"] = REST_info["programmjerenja"]
         self.resursi["zerospan"] = REST_info["zerospan"]
+        self.resursi["zsref"] = REST_info["zsrefvrijednosti"]
 
 
         """ostali memberi"""
@@ -910,9 +911,12 @@ class Kontroler(QtCore.QObject):
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
             frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)
-            if frejmovi != None:
-                outputZero = [frejmovi[0], self.graf_defaults]
-                outputSpan = [frejmovi[1], self.graf_defaults]
+            #dohvati referentne vrijednosti za zero i span
+            refData = self.webZahtjev.get_zs_ref(progMjer, datum)
+
+            if frejmovi != None and refData != None:
+                outputZero = [frejmovi[0], self.graf_defaults, refData[0]]
+                outputSpan = [frejmovi[1], self.graf_defaults, refData[1]]
                 #emitiraj signal za crtanjem
                 self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
                 self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)
@@ -923,5 +927,5 @@ class Kontroler(QtCore.QObject):
         except pomocneFunkcije.AppExcept as err:
             opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)
             self.prikazi_error_msg(opis)
-            
 ###############################################################################
+################################################################################

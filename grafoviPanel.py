@@ -15,8 +15,7 @@ Wrapper koji sadrzi:
 from PyQt4 import QtCore, uic #import djela Qt frejmworka
 import satniCanvas
 import minutniCanvas
-import zeroCanvas
-import spanCanvas
+import zerospanCanvas
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('panel_za_canvase.ui')
@@ -109,8 +108,8 @@ class ZeroSpanPanel(base6, form6):
         #sredi title panela
         self.setWindowTitle('Zero / Span grafovi')
         #inicijalizacija canvasa
-        self.zeroGraf = zeroCanvas.Graf(parent = None)
-        self.spanGraf = spanCanvas.Graf(parent = None)
+        self.zeroGraf = zerospanCanvas.ZeroSpanGraf(parent = None, tip = 'zero', lok = 'bottom')
+        self.spanGraf = zerospanCanvas.ZeroSpanGraf(parent = None, tip = 'span', lok = 'top')
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)

@@ -174,6 +174,46 @@ class WebZahtjev(QtCore.QObject):
         spanFrejm = spanFrejm[spanFrejm['vrijednost'] > -998.0]
         
         return zeroFrejm, spanFrejm
+###############################################################################
+    def get_zs_ref(self, programMjerenja, datum):
+        """
+        dohvati zero / span referentne vrijednosti
+        program mjerenja je tipa int, datum je string
+        """
+        #point url na trazeni dio REST servisa
+        url = self._base + self._resursi['zsref']+'/'+str(programMjerenja)+'/'+datum
+        #pripremi zahtjev
+        payload = {"id":"getJson", "name":"GET"}
+        try:
+            r = requests.get(url, params = payload, timeout = 9.1)
+            assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
+            if r.text != '[]':
+                zero_ref, span_ref = self.convert_zs_ref(r.text)
+                return [zero_ref, span_ref]
+            else:
+                print('prazan json ', programMjerenja,' - ', datum)
+
+        except requests.exceptions.RequestException as e1:
+            tekst = 'WebZahtjev.get_zs_ref:Request fail (http error, timeout...).\n{0}'.format(e1)
+            raise pomocneFunkcije.AppExcept(tekst) from e1
+        except AssertionError as e2:
+            tekst = 'WebZahtjev.get_zs_ref:Assert fail. Bad response.\n{0}'.format(e2)
+            raise pomocneFunkcije.AppExcept(tekst) from e2
+###############################################################################
+    def convert_zs_ref(self, jsonText):
+        """
+        pretvori ulazni json string u dva pandas datafrejma (zero_ref, span_ref)
+        i vrati ih calleru.
+        """
+        frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['pocetakPrimjene'])
+        
+        span_ref = frejm[frejm['vrsta'] == "S"]
+        span_ref.index = span_ref['pocetakPrimjene']
+        
+        zero_ref = frejm[frejm['vrsta'] == "Z"]
+        zero_ref.index = zero_ref['pocetakPrimjene']
+        
+        return zero_ref, span_ref
 
 ###############################################################################
 ###############################################################################
@@ -182,7 +222,8 @@ if __name__ == '__main__':
     baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
     resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
                 "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja", 
-                "zerospan":"dhz.skz.rs.zerospan"}
+                "zerospan":"dhz.skz.rs.zerospan", 
+                "zsref":"dhz.skz.rs.zsrefvrijednosti"}
     #inicijalizacija WebZahtjev objekta
     wz = WebZahtjev(baza, resursi)
     """
@@ -190,14 +231,18 @@ if __name__ == '__main__':
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """    
     try:
-        r = wz.get_programe_mjerenja()
-        print(r)
+#        r = wz.get_programe_mjerenja()
+#        print(r)
 #        r1 = wz.get_sirovi(170, '2015-01-15')
 #        print(r1)
-        r = wz.get_zero_span(159, '2015-01-20')
-        print('Zero:\n',r[0])
-        print()
-        print('Span:\n',r[1])
+        r = wz.get_zs_ref(159, '2015-01-20')
+        
+        x = wz.get_zero_span(159, '2015-01-20')
+        print(x)
+#        print('izabrani datum : ', pd.to_datetime('2015-01-20'))
+#        print('referentne vrijednosti')
+#        for i in r[0].index:
+#            print(i)
 
     except Exception as e:
         print(e) #vraca tekst exceptiona

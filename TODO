@@ -98,6 +98,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150211:::VM:::Dodane 3 pomocne funkcije za racunanje granica tolerancije zero i span grafa i funkcija za racunanje parametara linearne regresije (ovisi o eksternom modulu --> statsmodels). Trenutno nisu implementirane do kraja jer jos nemam podatke za certificirane vrijednosti zero i span.:::
 20150211:::VM:::Sredio boju ruba markera preko keyword argumenta naredbe za plot - markeredgecolor = neka boja. Boja ruba markera bi trebala odgovarati boji "povrsine" istog markera.:::
 20150212:::VM:::Fix crasha appa. razlog je : zaboravio dodati poziv funkcije to_rgba. Izbacen markeredgecolor keyword jer je u biti nebitan ako se color postavi vec sa zadanom prozirnosti (nije bio prije pa promjena prozirnosti face colora markera nije promjenila prozirnost ruba.).:::
+20150213:::VM:::Refaktoriao zero / span graf, preslozio canvase da "maksimalno" iskoriste prostor (potencijalno konfuzno, jer nema vizualnog indikatora gdje span canvas zavrsava a gdje zero canvas pocinje).:::
+
 
 
 

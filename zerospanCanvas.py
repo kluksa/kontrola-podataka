@@ -43,7 +43,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             #makni splneove sa dna
             self.axes.spines['bottom'].set_visible(False)
             #pomakni figure da pokrije sto vise prostora udesno i dolje
-            self.axes.figure.subplots_adjust(bottom = 0.0)
+            self.axes.figure.subplots_adjust(bottom = 0.02)
             self.axes.figure.subplots_adjust(right = 0.98)
         else:
             self.axes.xaxis.set_ticks_position('bottom')
@@ -52,7 +52,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             ruba...
             """
             self.axes.spines['top'].set_visible(False)
-            self.axes.figure.subplots_adjust(top = 1.0)
+            self.axes.figure.subplots_adjust(top = 0.98)
             self.axes.figure.subplots_adjust(right = 0.98)
         
         

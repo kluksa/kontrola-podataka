@@ -21,6 +21,7 @@ import agregator #agregator
 import modeldrva #pomocne klase za definiranje tree modela programa mjerenja
 import glavnidijalog #glavni modul za poziv dijaloga za promjenu opcija grafova NEW
 import dodajRefZS #dijalog za dodavanje referentnih zero i span vrijednosti
+import authlogin #dijalog za unos username:password
 ###############################################################################
 ###############################################################################
 class Kontroler(QtCore.QObject):
@@ -44,8 +45,7 @@ class Kontroler(QtCore.QObject):
         """incijalizacija agregatora podataka"""
         self.satniAgreg = agregator.Agregator()
         
-        #TODO! try block ? possible read/parse fail
-        #base exception for configparser: configparser.Error
+        #config file read
         config = configparser.ConfigParser()
         config.read("config.ini")
         
@@ -58,7 +58,7 @@ class Kontroler(QtCore.QObject):
                         "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
                         "zerospan":"dhz.skz.rs.zerospan"}
 
-        #TODO! sredi "ljepsi nacin" ucitavanja config filea / neki dijalog za promjenu vrijednosti
+        #config file read
         self.baza = REST_info["base_url"]
         self.resursi["siroviPodaci"] = REST_info["sirovipodaci"]
         self.resursi["programMjerenja"] = REST_info["programmjerenja"]
@@ -75,12 +75,16 @@ class Kontroler(QtCore.QObject):
         self.modelProgramaMjerenja = None #tree model programa mjerenja
         self.mapa_mjerenjeId_to_opis = None #mapa, program mjerenja:dict parametara
         self.reloadAttempt = 0 #member koji prati broj pokusaja sklapanja tree modela programa mjerenja
+        self.appAuth = ("", "") #trenutno aktivni user/password
+        
+        #TODO! pozovi dijalog za login
+        self.change_auth_credentials()
 
         """ocekuje se da se prosljedi instanca valjanog GUI elementa"""
         self.gui = gui
         
         """inicijalizacija web sucelja (REST reader, REST writer, webZahtjev)"""
-        self.initialize_web_and_rest_interface(self.baza, self.resursi)
+        self.initialize_web_and_rest_interface()
 
         """defaultne vrijednosti za crtanje grafova (kanal je program mjerenja)"""
         self.graf_defaults = {
@@ -142,7 +146,7 @@ class Kontroler(QtCore.QObject):
             self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
             #postavi model u member restIzbornika
             self.gui.restIzbornik.model = self.modelProgramaMjerenja
-
+        
         #TODO!
         """
         svaki puta kada se promjeni default - doda se nova opcija isl, 
@@ -153,13 +157,13 @@ class Kontroler(QtCore.QObject):
         """load default preset - pozicija widgeta"""
         self.load_preset_mehanika(config['PRESET']['file_loc'])
 ###############################################################################
-    def initialize_web_and_rest_interface(self, baza, resursi):
+    def initialize_web_and_rest_interface(self):
         """
         Inicijalizacija web zahtjeva i REST reader/writer objekata koji ovise o
         njemu.
         """
         #inicijalizacija webZahtjeva
-        self.webZahtjev = networking_funkcije.WebZahtjev(self.baza, self.resursi)
+        self.webZahtjev = networking_funkcije.WebZahtjev(self.baza, self.resursi, self.appAuth)
         #inicijalizacija REST readera
         self.restReader = datareader.RESTReader(model = self.dokument, source = self.webZahtjev)
         #inicijalizacija REST writera agregiranih podataka
@@ -183,7 +187,7 @@ class Kontroler(QtCore.QObject):
         mapa['minutnilegend'] = self.graf_defaults['ostalo']['opcijeminutni']['legend']
         #naredi gui-u update stanja checkable akcija
         self.gui.set_action_state(mapa)       
-###############################################################################
+########################################################QtCore.SIGNAL('request_log_in')#######################
     def konstruiraj_tree_model(self):
         """
         Povuci sa REST servisa sve programe mjerenja
@@ -232,7 +236,7 @@ class Kontroler(QtCore.QObject):
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
-        self.initialize_web_and_rest_interface(self.baza, self.resursi)
+        self.initialize_web_and_rest_interface()
         self.update_gui_action_state()
         self.reloadAttempt += 1
         self.konstruiraj_tree_model()
@@ -449,7 +453,15 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('dodaj_ref_tocku'), 
                      self.dodaj_novi_zerospan_ref)
                      
+        
+        ###log in / log out korisnika###
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('request_log_in'), 
+                     self.change_auth_credentials)
 
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('request_log_out'), 
+                     self.logout_user)
 ###############################################################################
     def prikazi_error_msg(self, poruka):
         """
@@ -957,11 +969,10 @@ class Kontroler(QtCore.QObject):
                 try:
                     #test da li je sve u redu?
                     assert isinstance(podaci['vrijednost'], float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nReferentna vrijednost je krivo zadana.'
-                    assert isinstance(podaci['odstupanje'], float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nOdstupanje je krivo zadano.'
                     
                     #napravi json string za upload
-                    baseJson = '["pocetakPrimjene":{0},"vrijednost":{1},"vrsta":{2},"programMjerenjaId":{3},"dozvoljenoOdstupanje":{4}]'
-                    baseJson.format(podaci['vrijeme'], podaci['vrijednost'], podaci['vrsta'], podaci['kanal'], podaci['odstupanje'])
+                    baseJson = '["pocetakPrimjene":{0},"vrijednost":{1},"vrsta":{2},"programMjerenjaId":{3}]'
+                    baseJson.format(podaci['vrijeme'], podaci['vrijednost'], podaci['vrsta'], self.gKanal)
                     
                     #izlazni json string tocke
                     jS = '{' + baseJson + '}'
@@ -985,4 +996,20 @@ class Kontroler(QtCore.QObject):
         else:
             self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
 ###############################################################################
-################################################################################
+    def change_auth_credentials(self):
+        """
+        poziv modalnog dijaloga za promjenu user / password kombinacije
+        """
+        dijalog = authlogin.DijalogLoginAuth()
+        if dijalog.exec_():
+            self.appAuth = dijalog.vrati_postavke()
+            self.initialize_web_and_rest_interface()            
+###############################################################################
+    def logout_user(self):
+        """
+        logout, reset tuple (user, password) na prazne stringove
+        """
+        self.appAuth = ("", "")
+        self.initialize_web_and_rest_interface()
+###############################################################################
+###############################################################################

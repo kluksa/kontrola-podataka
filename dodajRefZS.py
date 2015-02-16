@@ -52,11 +52,7 @@ class DijalogDodajRefZS(base26, form26):
         #set vrijeme da pokazuje trenutak kaada je dijalog inicijaliziran
         self.vrijemeSelect.setDateTime(QtCore.QDateTime.currentDateTime())
         
-        self.veze()
-###############################################################################
-    def veze(self):
         self.vrijednostSelect.textEdited.connect(self.check_vrijednost)
-        self.odstupanjeSelect.textEdited.connect(self.check_odstupanje)
 ###############################################################################
     def check_vrijednost(self, x):
         """
@@ -66,15 +62,6 @@ class DijalogDodajRefZS(base26, form26):
         test = self.convert_line_edit_to_float(x)
         if not test:
             self.vrijednostSelect.setStyleSheet('color : red')
-###############################################################################
-    def check_odstupanje(self, x):
-        """
-        provjera ispravnosti unosa odstupanja... samo smisleni brojevi
-        """
-        self.odstupanjeSelect.setStyleSheet('')
-        test = self.convert_line_edit_to_float(x)
-        if not test:
-            self.odstupanjeSelect.setStyleSheet('color : red')
 ###############################################################################
     def convert_line_edit_to_float(self, x):
         """
@@ -109,13 +96,11 @@ class DijalogDodajRefZS(base26, form26):
         vrsta = self.vrstaSelect.currentText()[0] #samo prvo slovo stringa.. 'Z' ili 'S'
                
         vrijednost = self.convert_line_edit_to_float(self.vrijednostSelect.text()) #float
-        odstupanje = self.convert_line_edit_to_float(self.odstupanjeSelect.text()) #float
         
         out = {'vrsta':vrsta, 
                'vrijednost':vrijednost, 
                'vrijeme':vrijeme, 
-               'kanal':self.idKanal,
-               'odstupanje':odstupanje}
+               'kanal':self.idKanal}
         return out
 ###############################################################################
 ###############################################################################

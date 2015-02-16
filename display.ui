@@ -57,6 +57,8 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="action_Log_in"/>
+    <addaction name="action_Log_out"/>
     <addaction name="action_reconnectREST"/>
     <addaction name="separator"/>
     <addaction name="action_Save_preset"/>
@@ -327,6 +329,16 @@
    </property>
    <property name="toolTip">
     <string>Prikaz legende na minutnom grafu</string>
+   </property>
+  </action>
+  <action name="action_Log_in">
+   <property name="text">
+    <string>Log in</string>
+   </property>
+  </action>
+  <action name="action_Log_out">
+   <property name="text">
+    <string>Log out</string>
    </property>
   </action>
  </widget>

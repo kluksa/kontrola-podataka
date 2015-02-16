@@ -25,4 +25,8 @@ TODO!
 
 2. reimplementiraj neki zoom opciju zajednicku SVIM canvasima
     - dadaj metodu na opcenitiCanvas.py
+    
+IMPORTANT!
+
+4 - spremanje podataka na rest, gumb, nije implicitno.
 """

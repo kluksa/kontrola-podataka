@@ -100,6 +100,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150212:::VM:::Fix crasha appa. razlog je : zaboravio dodati poziv funkcije to_rgba. Izbacen markeredgecolor keyword jer je u biti nebitan ako se color postavi vec sa zadanom prozirnosti (nije bio prije pa promjena prozirnosti face colora markera nije promjenila prozirnost ruba.).:::
 20150213:::VM:::Refaktoriao zero / span graf, preslozio canvase da "maksimalno" iskoriste prostor (potencijalno konfuzno, jer nema vizualnog indikatora gdje span canvas zavrsava a gdje zero canvas pocinje).:::
 20150213:::VM:::Dodao funkcionalnost za dodavanje zero ili span referentnih vrijednosti (gumb je na zero/graf dockable widgetu). Ima par konceptualnih problema sa implementacijom... nisam 100% siguran koje podatke treba prosljediti REST servisu:::
+20150216:::VM:::Dodan HTTPBasicAuth, te funkcionalnost za login / logout usera. Zero i span graf su malo razmaknuti.  Kontekstni menu za promjenu flaga sada dozvoljava i promjenu stanja validiranosti (sada ima 4 opcije) te je moguc "undo" akcije promjene flaga.:::
+
 
 
 

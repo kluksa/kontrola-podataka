@@ -47,7 +47,7 @@ class Display(base, form):
         """inicijalizacija kontrolora"""
         self.kontrola = kontroler.Kontroler(parent = None, gui = self)
         """povezivanje akcija vezanih za gui elemente"""
-        self.setup_akcije()        
+        self.setup_akcije()
 #############################################################################
     def setup_akcije(self):
         """
@@ -63,6 +63,8 @@ class Display(base, form):
         self.action_reconnectREST.triggered.connect(self.reinitialize_REST)
         self.action_Save_preset.triggered.connect(self.request_save_preset)
         self.action_Load_preset.triggered.connect(self.request_load_preset)
+        self.action_Log_in.triggered.connect(self.request_log_in)
+        self.action_Log_out.triggered.connect(self.request_log_out)
 
         #toolbar, satno agregirani graf
         self.connect(self.action_SatniGrid, 
@@ -191,6 +193,18 @@ class Display(base, form):
         Prosljedi zahtjev kontroloru da ucita postavke aplikacije iz filea
         """
         self.emit(QtCore.SIGNAL('request_load_preset'))
+###############################################################################
+    def request_log_in(self):
+        """
+        Prosljedi kontroloru zahtjev za poziv log in dijaloga.
+        """
+        self.emit(QtCore.SIGNAL('request_log_in'))
+###############################################################################
+    def request_log_out(self):
+        """
+        Prosljedi kontroloru zahtjev za log out korisnika
+        """
+        self.emit(QtCore.SIGNAL('request_log_out'))
 ###############################################################################
     def set_action_state(self, mapaStanja):
         """

@@ -4,6 +4,8 @@ Created on Wed Jan 21 10:58:46 2015
 
 @author: User
 """
+from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPDigestAuth
 
 import requests
 import xml.etree.ElementTree as ET
@@ -16,13 +18,26 @@ import pomocneFunkcije
 class WebZahtjev(QtCore.QObject):
     """
     Klasa zaduzena za komunikaciju sa REST servisom
+    
+    INSTANCIRAN:
+    - u modulu kontroler.py prilikom inicijalizacije objekta Kontroler
+    - referenca na taj objekt se prosljedjuje svima koji komuniciraju sa REST-om
+    
+    drugi modluli koji ga koriste:
+    -datareader.RESTReader (source)
+    -datareader.RESTWriter (source)
     """
 ###############################################################################
-    def __init__(self, base, resursi):
-        """inicijalizacija sa baznim url-om i dictom resursa"""
+    def __init__(self, base, resursi, auth):
+        """inicijalizacija sa baznim url-om i dictom resursa i tupleom 
+        (user, password)"""
         QtCore.QObject.__init__(self)
         self._base = base
         self._resursi = resursi
+        self.user, self.pswd = auth
+        
+        #, auth = HTTPBasicAuth(self.user, self.pswd)
+        #, auth = (self.user, self.pswd)
 ###############################################################################
     def parse_xml(self, x):
         """
@@ -65,8 +80,8 @@ class WebZahtjev(QtCore.QObject):
         #pripremi zahtjev metode
         payload = {"id":"findAll", "name":"GET"}
         try:
-            #odradi request###############################################################################
-            r = requests.get(url, params = payload, timeout = 9.1)
+            r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
+            #r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPDigestAuth(self.user, self.pswd))           
             #assert dobar response (status code 200) i xml content-type
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
             assert r.headers['Content-Type'] == 'application/xml', 'Bad response, not xml'
@@ -93,7 +108,7 @@ class WebZahtjev(QtCore.QObject):
         #pripremi zahtjev###############################################################################
         payload = {"id":"getJson", "name":"GET"}
         try:
-            r = requests.get(url, params = payload, timeout = 9.1)
+            r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #assert dobar response (status code 200), json content-type
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
@@ -122,7 +137,7 @@ class WebZahtjev(QtCore.QObject):
         try:
             assert x != None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(x) > 0, 'Ulazni json string je prazan'
-            r = requests.put(url, params = payload, data = x, headers = headers, timeout = 9.1)
+            r = requests.put(url, params = payload, data = x, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_json_agregiranih:Assert fail.\n{0}'.format(e1)
@@ -134,7 +149,7 @@ class WebZahtjev(QtCore.QObject):
     def get_zero_span(self, programMjerenja, datum):
         """
         Dohvati zero-span vrijednosti
-        program mjerenja je tipa int, datum je string        
+        program mjerenja je tipa int, datum je string
         
         path -- "program/datum"
         getJson/GET
@@ -144,7 +159,7 @@ class WebZahtjev(QtCore.QObject):
         #pripremi zahtjev
         payload = {"id":"getJson", "name":"GET"}
         try:
-            r = requests.get(url, params = payload, timeout = 9.1)
+            r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
             if r.text != '[]':
                 zeroFrejm, spanFrejm = self.convert_zero_span(r.text)
@@ -185,7 +200,7 @@ class WebZahtjev(QtCore.QObject):
         #pripremi zahtjev
         payload = {"id":"getJson", "name":"GET"}
         try:
-            r = requests.get(url, params = payload, timeout = 9.1)
+            r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
             if r.text != '[]':
                 zero_ref, span_ref = self.convert_zs_ref(r.text)
@@ -218,7 +233,7 @@ class WebZahtjev(QtCore.QObject):
     def upload_ref_vrijednost_zs(self, jS):
         """
         funkcija za upload nove vrijednosti referentne tocke zero ili span 
-        na REST servis.
+        na REST servis.        
         """
         #point url na REST  servis
         url = self._base + self._resursi['zsref']
@@ -228,7 +243,7 @@ class WebZahtjev(QtCore.QObject):
         try:
             assert jS != None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(jS) > 0, 'Ulazni json string je prazan'
-            r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1)
+            r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Assert fail.\n{0}'.format(e1)
@@ -245,28 +260,28 @@ if __name__ == '__main__':
                 "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja", 
                 "zerospan":"dhz.skz.rs.zerospan", 
                 "zsref":"dhz.skz.rs.zsrefvrijednosti"}
+    aut = ("t1", "t1")
     #inicijalizacija WebZahtjev objekta
-    wz = WebZahtjev(baza, resursi)
+    wz = WebZahtjev(baza, resursi, aut)
     """
     u principu, pozovi metodu unutar try bloka, ako se nesto slomi, 
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """    
     try:
-#        r = wz.get_programe_mjerenja()
-#        print(r)
+        r = wz.get_programe_mjerenja()
+        print(r)
 #        r1 = wz.get_sirovi(170, '2015-01-15')
 #        print(r1)
-        r = wz.get_zs_ref(159, '2015-01-20')
-        
-        x = wz.get_zero_span(159, '2015-01-20')
-        
-        
+#        r = wz.get_zs_ref(159, '2015-01-20')
+#               
+#
 #        print(x)
 #        print('izabrani datum : ', pd.to_datetime('2015-01-20'))
 #        print('referentne vrijednosti')
 #        for i in r[0].index:
 #            print(i)
-
+#
     except Exception as e:
         print(e) #vraca tekst exceptiona
         print(repr(e))
+        

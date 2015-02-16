@@ -11,6 +11,8 @@ from PyQt4 import QtGui, QtCore
 import matplotlib
 from matplotlib.widgets import SpanSelector, Cursor
 
+import functools #pomoc kod refactoringa koda
+
 import pandas as pd
 
 import datetime
@@ -655,23 +657,27 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #definiraj menu i postavi akcije u njega
         menu = QtGui.QMenu(self)
         menu.setTitle('Promjeni flag')
-        action1 = QtGui.QAction("Flag: Dobar", menu) #pozitivan flag
-        action2 = QtGui.QAction("Flag: Los", menu) #negativan flag
+        action1 = QtGui.QAction("Validiran podatak, flag: dobar", menu)
+        action2 = QtGui.QAction("Validiran podatak, flag: los", menu)
+        action3 = QtGui.QAction("Sirov podatak, flag: dobar", menu)
+        action4 = QtGui.QAction("Sirov podatak, flag: los", menu)
         menu.addAction(action1)
         menu.addAction(action2)
+        menu.addAction(action3)
+        menu.addAction(action4)
         #povezi akcije menua sa metodama
-        action1.triggered.connect(self.dijalog_promjena_flaga_OK)
-        action2.triggered.connect(self.dijalog_promjena_flaga_NOK)
+        action1.triggered.connect(functools.partial(self.promjena_flaga, tip = 1000))
+        action2.triggered.connect(functools.partial(self.promjena_flaga, tip = -1000))
+        action3.triggered.connect(functools.partial(self.promjena_flaga, tip = 1))
+        action4.triggered.connect(functools.partial(self.promjena_flaga, tip = -1))
+        
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
 ###############################################################################    
-    def dijalog_promjena_flaga_OK(self):
+    def promjena_flaga(self, tip = None):
         """
-        Metoda sluzi za promjenu flaga na pozitivnu vrijednost i 
-        tretira se da su svi unutar intervala validirani.
-        
-        flag postavlja na 1000 na svim minutnim podatcima unutar intervala, 
-        ukljucujuci rubove.
+        Metoda sluzi za promjenu flaga ili stanja validiranosti podataka
+        ovisno o keyword argumentu tip.
         """
         #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
         tmin = self.__lastTimeMin
@@ -681,31 +687,11 @@ class Graf(opcenitiCanvas.MPLCanvas):
         tmin = pd.to_datetime(tmin)
         #dohvati glavni kanal
         glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal]
-        arg = [tmin, tmax, 1000, glavniKanal]
-        #sredi generalni emit za promjenu flaga
-        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
-###############################################################################        
-    def dijalog_promjena_flaga_NOK(self):
-        """
-        Metoda sluzi za promjenu flaga na negativnu vrijednost i 
-        tretira se da su svi unutar intervala validirani.
-        
-        flag postavlja na -1000 na svim minutnim podatcima unutar intervala, 
-        ukljucujuci rubove.
-        """
-        #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
-        tmin = self.__lastTimeMin
-        tmax = self.__lastTimeMax
-        #pomak slicea da uhvati sve ciljane minutne podatke
-        tmin = tmin - timedelta(minutes = 59)
-        tmin = pd.to_datetime(tmin)
-        #dohvati glavni kanal
-        glavniKanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
-        #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal]
-        arg = [tmin, tmax, -1000, glavniKanal]
-        #sredi generalni emit za promjenu flaga
-        self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
+        #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal] ovisno o tipu
+        if tip != None:
+            arg = [tmin, tmax, tip, glavniKanal]
+            #generalni emit za promjenu flaga
+            self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################
     def satni_span_flag(self, tmin, tmax):
         """

@@ -233,7 +233,10 @@ class WebZahtjev(QtCore.QObject):
     def upload_ref_vrijednost_zs(self, jS):
         """
         funkcija za upload nove vrijednosti referentne tocke zero ili span 
-        na REST servis.        
+        na REST servis.
+        
+        kanal je int vrijednost trenutno programMjerenjaId
+        jS je json string sa podacima o novoj referentnoj vrijednosti
         """
         #point url na REST  servis
         url = self._base + self._resursi['zsref']
@@ -268,13 +271,12 @@ if __name__ == '__main__':
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """    
     try:
-        r = wz.get_programe_mjerenja()
-        print(r)
+#        r = wz.get_programe_mjerenja()
+#        print(r)
 #        r1 = wz.get_sirovi(170, '2015-01-15')
-#        print(r1)
-#        r = wz.get_zs_ref(159, '2015-01-20')
-#               
-#
+        r1 = wz.get_zs_ref(159, '2015-01-20')
+        print(r1)
+        
 #        print(x)
 #        print('izabrani datum : ', pd.to_datetime('2015-01-20'))
 #        print('referentne vrijednosti')

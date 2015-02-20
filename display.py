@@ -8,6 +8,7 @@ Created on Wed Nov  5 14:20:39 2014
 import sys
 from PyQt4 import QtCore, QtGui, uic
 
+import functools
 import pomocneFunkcije #samo zbog definicije custom exceptiona
 import kontroler
 import rest_izbornik
@@ -47,6 +48,7 @@ class Display(base, form):
         """inicijalizacija kontrolora"""
         self.kontrola = kontroler.Kontroler(parent = None, gui = self)
         """povezivanje akcija vezanih za gui elemente"""
+        
         self.setup_akcije()
 #############################################################################
     def setup_akcije(self):
@@ -58,6 +60,12 @@ class Display(base, form):
         -Nakon klika na akciju emitiraj specificni signal
         -kontroler osluskuje i hvata te signale te ih realizira
         """
+        
+        #set ikone u odredjene akcije (zoom in, zoom out, pick)
+        self.actionZoomIn.setIcon(QtGui.QIcon('zoomin.jpeg'))
+        self.actionZoomOut.setIcon(QtGui.QIcon('zoomout.jpeg'))
+        self.actionPick.setIcon(QtGui.QIcon('select.jpeg'))
+
         #file i generalni actioni
         self.action_Exit.triggered.connect(self.close)
         self.action_reconnectREST.triggered.connect(self.reinitialize_REST)
@@ -65,6 +73,11 @@ class Display(base, form):
         self.action_Load_preset.triggered.connect(self.request_load_preset)
         self.action_Log_in.triggered.connect(self.request_log_in)
         self.action_Log_out.triggered.connect(self.request_log_out)
+        
+        #toggle zoom / pick opcije
+        self.actionZoomIn.triggered.connect(functools.partial(self.zoom_pick_toggle, tip = 'zoom'))
+        self.actionPick.triggered.connect(functools.partial(self.zoom_pick_toggle, tip = 'pick'))
+        self.actionZoomOut.triggered.connect(self.zoom_out)
 
         #toolbar, satno agregirani graf
         self.connect(self.action_SatniGrid, 
@@ -99,6 +112,30 @@ class Display(base, form):
         self.connect(self.action_MinutniLegenda, 
                      QtCore.SIGNAL('triggered(bool)'), 
                      self.emit_update_minutni_legenda)
+###############################################################################
+    def zoom_pick_toggle(self, x, tip = ''):
+        """
+        Toggle izmedju zoom i pick opcije na grafovima
+        x je tipa boolean
+        tip je keyword koji oznacava koji "gumb" ga poziva ('zoom' ili 'pick')
+        """
+        if tip == 'zoom':
+            #toggle suprotnu akciju na suprotno stanje od trenutne
+            self.actionPick.setChecked(not x)
+            #zapamti novo stanje zoom i pick opcije
+            arg = [x, not x]
+            #emitiraj promjenu stanja
+            self.emit(QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), arg)
+        elif tip == 'pick':
+            self.actionZoomIn.setChecked(not x)
+            arg = [not x, x]
+            self.emit(QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), arg)
+###############################################################################
+    def zoom_out(self):
+        """
+        Javi kontroloru da pokrene Zoom out svih grafova na pocetni polozaj.
+        """
+        self.emit(QtCore.SIGNAL('zoom_out_all'))
 ###############################################################################
     def reinitialize_REST(self):
         """
@@ -228,23 +265,28 @@ class Display(base, form):
         self.action_MinutniMinorTicks.setChecked(mapaStanja['minutniticks'])
         self.action_MinutniLegenda.setChecked(mapaStanja['minutnilegend'])
         self.blockSignals(False)
-################################################################################
-##    def closeEvent(self, event):
-##        """
-##        Overloadani signal za gasenje aplikacije. Dodatna potvrda za izlaz.
-##        """
-##        reply=QtGui.QMessageBox.question(
-##            self,
-##            'Potvrdi izlaz:',
-##            'Da li ste sigurni da hocete ugasiti aplikaciju?',
-##            QtGui.QMessageBox.Yes,
-##            QtGui.QMessageBox.No)
-##                
-##        if reply==QtGui.QMessageBox.Yes:
-##            event.accept()
-##        else:
-##            event.ignore()
-################################################################################
+###############################################################################
+    def closeEvent(self, event):
+        """
+        Overloadani signal za gasenje aplikacije. Dodatna potvrda za izlaz.
+        """
+        saveState = self.kontrola.exit_check()
+        if not saveState:
+            reply=QtGui.QMessageBox.question(
+                self,
+                'Potvrdi izlaz:',
+                'Da li ste sigurni da hocete ugasiti aplikaciju?\nNeki podaci nisu spremljeni na REST servis.',
+                QtGui.QMessageBox.Yes,
+                QtGui.QMessageBox.No)
+                
+            if reply==QtGui.QMessageBox.Yes:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            #izlaz iz aplikacije bez dodatnog pitanja.
+            event.accept()
+###############################################################################
         
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

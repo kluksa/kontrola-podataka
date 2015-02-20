@@ -59,6 +59,9 @@ class Graf(opcenitiCanvas.MPLCanvas):
         self.defaultRasponX = self.axes.get_xlim()
         self.defaultRasponY = self.axes.get_ylim()
 
+        #rastegni canvas udesno
+        self.axes.figure.subplots_adjust(right = 0.98)
+
         self.veze()        
 ###############################################################################
     def veze(self):
@@ -211,7 +214,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #plot naredbe, detaljno cu komentirati prvu, ostale su na slican nacin:        
 
         #1. midline
-        #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
+        #provjeri da li je trazeni kanal medju ucitanimaself.functools.partial(toggle, tip = 'bleh') (nije nuzno istinito)
         kanal = self.popisGrafova['glavniKanal']['midline']['kanal']
         #provjeri da li je trazeni kanal medju ucitanima (nije nuzno istinito)
         if kanal in kanali:
@@ -425,6 +428,10 @@ class Graf(opcenitiCanvas.MPLCanvas):
 
         #naredba za crtanje na canvas
         self.draw()
+
+        #TODO! zapamti max granice grafa za full zoom out!
+        self.xlim_original = (self.xmin, self.xmax)
+        self.ylim_original = self.axes.get_ylim()
         
         #promjeni cursor u normalan cursor
         QtGui.QApplication.restoreOverrideCursor()
@@ -437,33 +444,34 @@ class Graf(opcenitiCanvas.MPLCanvas):
         
         tmin i tmax su timestampovi, ali ih treba adaptirati
         """
-        if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
-            #konverzija ulaznih vrijednosti u pandas timestampove
-            tmin = matplotlib.dates.num2date(tmin)
-            tmax = matplotlib.dates.num2date(tmax)
-            tmin = datetime.datetime(tmin.year, tmin.month, tmin.day, tmin.hour, tmin.minute, tmin.second)
-            tmax = datetime.datetime(tmax.year, tmax.month, tmax.day, tmax.hour, tmax.minute, tmax.second)
-            #vremena se zaokruzuju na najblizu minutu (60 sekundi)
-            tmin = pomocneFunkcije.zaokruzi_vrijeme(tmin, 60)
-            tmax = pomocneFunkcije.zaokruzi_vrijeme(tmax, 60)
-            tmin = pd.to_datetime(tmin)
-            tmax = pd.to_datetime(tmax)
-    
-            #osiguranje da se ne preskoce granice glavnog kanala
-            if tmin < self.__tmin:
-                tmin = self.__tmin
-            if tmin > self.__tmax:
-                tmin = self.__tmax
-            if tmax < self.__tmin:
-                tmax = self.__tmin
-            if tmax > self.__tmax:
-                tmax = self.__tmax
-            
-            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
-            if tmin != tmax:
-                #pozovi dijalog za promjenu flaga
-                loc = QtGui.QCursor.pos()
-                self.show_menu(loc, tmin, tmax)
+        if self.MODEPICK:
+            if self.__statusGlavniGraf: #glavni graf mora biti nacrtan
+                #konverzija ulaznih vrijednosti u pandas timestampove
+                tmin = matplotlib.dates.num2date(tmin)
+                tmax = matplotlib.dates.num2date(tmax)
+                tmin = datetime.datetime(tmin.year, tmin.month, tmin.day, tmin.hour, tmin.minute, tmin.second)
+                tmax = datetime.datetime(tmax.year, tmax.month, tmax.day, tmax.hour, tmax.minute, tmax.second)
+                #vremena se zaokruzuju na najblizu minutu (60 sekundi)
+                tmin = pomocneFunkcije.zaokruzi_vrijeme(tmin, 60)
+                tmax = pomocneFunkcije.zaokruzi_vrijeme(tmax, 60)
+                tmin = pd.to_datetime(tmin)
+                tmax = pd.to_datetime(tmax)
+        
+                #osiguranje da se ne preskoce granice glavnog kanala
+                if tmin < self.__tmin:
+                    tmin = self.__tmin
+                if tmin > self.__tmax:
+                    tmin = self.__tmax
+                if tmax < self.__tmin:
+                    tmax = self.__tmin
+                if tmax > self.__tmax:
+                    tmax = self.__tmax
+                
+                #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
+                if tmin != tmax:
+                    #pozovi dijalog za promjenu flaga
+                    loc = QtGui.QCursor.pos()
+                    self.show_menu(loc, tmin, tmax)
 ###############################################################################
     def show_menu(self, pos, tmin, tmax):
         """
@@ -476,19 +484,13 @@ class Graf(opcenitiCanvas.MPLCanvas):
         #definiraj menu i postavi akcije u njega
         menu = QtGui.QMenu(self)
         menu.setTitle('Promjeni flag')
-        action1 = QtGui.QAction("Validiran podatak, flag: dobar", menu)
-        action2 = QtGui.QAction("Validiran podatak, flag: los", menu)
-        action3 = QtGui.QAction("Sirov podatak, flag: dobar", menu)
-        action4 = QtGui.QAction("Sirov podatak, flag: los", menu)
+        action1 = QtGui.QAction("Flag: dobar", menu)
+        action2 = QtGui.QAction("Flag: los", menu)
         menu.addAction(action1)
         menu.addAction(action2)
-        menu.addAction(action3)
-        menu.addAction(action4)
         #povezi akcije menua sa metodama
         action1.triggered.connect(functools.partial(self.promjena_flaga, tip = 1000))
         action2.triggered.connect(functools.partial(self.promjena_flaga, tip = -1000))
-        action3.triggered.connect(functools.partial(self.promjena_flaga, tip = 1))
-        action4.triggered.connect(functools.partial(self.promjena_flaga, tip = -1))
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
 ###############################################################################    
@@ -518,101 +520,79 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -desni klik pokrece context manager za promjenu flaga
         -middle mouse klik pokazuje tj. brise annotation
         """
-        #picker za podatke, annotations etc...
-        if self.__statusGlavniGraf and event.inaxes == self.axes:
-            #nuzna konverzija x tocke eventa u pandas timestamp
-            xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
-            #problem.. rounding offset aware i offset naive datetimes..workaround
-            xpoint = datetime.datetime(xpoint.year, 
-                                       xpoint.month, 
-                                       xpoint.day, 
-                                       xpoint.hour, 
-                                       xpoint.minute, 
-                                       xpoint.second)
-            #zaokruzi na najblizi puni sat (bitno za podudaranje indeksa u frejmu)
-            xpoint = pomocneFunkcije.zaokruzi_vrijeme(xpoint, 60)
-            #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
-            xpoint = pd.to_datetime(xpoint)
-            #bitno je da zaokruzeno vrijeme nije izvan granica frejma (izbjegavnjanje index errora)
-            if xpoint >= self.__tmax:
-                xpoint = self.__tmax
-            if xpoint <= self.__tmin:
-                xpoint = self.__tmin
-
-            #glavni kanal
-            gkanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
-
-            if xpoint in list(self.data[gkanal].index):
-                ypoint = self.data[gkanal].loc[xpoint, u'koncentracija']
-                if np.isnan(ypoint): #potencijalo za taj index konc = np.NaN
+        if self.MODEPICK:
+            #picker za podatke, annotations etc...
+            if self.__statusGlavniGraf and event.inaxes == self.axes:
+                #nuzna konverzija x tocke eventa u pandas timestamp
+                xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
+                #problem.. rounding offset aware i offset naive datetimes..workaround
+                xpoint = datetime.datetime(xpoint.year, 
+                                           xpoint.month, 
+                                           xpoint.day, 
+                                           xpoint.hour, 
+                                           xpoint.minute, 
+                                           xpoint.second)
+                #zaokruzi na najblizi puni sat (bitno za podudaranje indeksa u frejmu)
+                xpoint = pomocneFunkcije.zaokruzi_vrijeme(xpoint, 60)
+                #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
+                xpoint = pd.to_datetime(xpoint)
+                #bitno je da zaokruzeno vrijeme nije izvan granica frejma (izbjegavnjanje index errora)
+                if xpoint >= self.__tmax:
+                    xpoint = self.__tmax
+                if xpoint <= self.__tmin:
+                    xpoint = self.__tmin
+    
+                #glavni kanal
+                gkanal = self.popisGrafova['glavniKanal']['validanOK']['kanal']
+    
+                if xpoint in list(self.data[gkanal].index):
+                    ypoint = self.data[gkanal].loc[xpoint, u'koncentracija']
+                    if np.isnan(ypoint): #potencijalo za taj index konc = np.NaN
+                        miny = self.data[gkanal][u'koncentracija'].min()
+                        maxy = self.data[gkanal][u'koncentracija'].max()
+                        ypoint = (miny + maxy)/2                    
+                else:
                     miny = self.data[gkanal][u'koncentracija'].min()
                     maxy = self.data[gkanal][u'koncentracija'].max()
-                    ypoint = (miny + maxy)/2                    
-            else:
-                miny = self.data[gkanal][u'koncentracija'].min()
-                maxy = self.data[gkanal][u'koncentracija'].max()
-                ypoint = (miny + maxy)/2
-
-            if event.button == 2:
-                #annotations
-                #dohvati tekst annotationa
-                if xpoint in list(self.data[gkanal].index):
-                    konc = self.data[gkanal].loc[xpoint, u'koncentracija']
-                    status = self.data[gkanal].loc[xpoint, u'status']
-                    flag = self.data[gkanal].loc[xpoint, u'flag']
-                    tekst = 'Vrijeme: '+str(xpoint)+'\nKonc.: '+str(konc)+'\nStatus: '+str(status)+'\nFlag: '+str(flag)
-                else:
-                    tekst = 'Vrijeme: '+str(xpoint)+'\nNema podatka'
-
-                #annotation offset
-                size = self.frameSize()
-                x, y = size.width(), size.height()
-                x = x//2
-                y= y//2
-                clickedx = event.x
-                clickedy = event.y
-            
-                if clickedx >= x:
-                    clickedx = -80
-                    if clickedy >= y:
-                        clickedy = -30
+                    ypoint = (miny + maxy)/2
+    
+                if event.button == 2:
+                    #annotations
+                    #dohvati tekst annotationa
+                    if xpoint in list(self.data[gkanal].index):
+                        konc = self.data[gkanal].loc[xpoint, u'koncentracija']
+                        status = self.data[gkanal].loc[xpoint, u'status']
+                        flag = self.data[gkanal].loc[xpoint, u'flag']
+                        tekst = 'Vrijeme: '+str(xpoint)+'\nKonc.: '+str(konc)+'\nStatus: '+str(status)+'\nFlag: '+str(flag)
                     else:
-                        clickedy = 30
-                else:
-                    clickedx = 30
-                    if clickedy >= y:
-                        clickedy = -30
-                    else:
-                        clickedy = 30
+                        tekst = 'Vrijeme: '+str(xpoint)+'\nNema podatka'
+    
+                    #annotation offset
+                    size = self.frameSize()
+                    x, y = size.width(), size.height()
+                    x = x//2
+                    y= y//2
+                    clickedx = event.x
+                    clickedy = event.y
                 
-                if self.__testAnnotation == False:
-                    #napravi annotation
-                    self.__zadnjiAnnotationx = xpoint
-                    self.__testAnnotation = True
-                    #sami annotation, zorder 102, garancija da je iznad svega
-                    self.annotation = self.axes.annotate(
-                        tekst, 
-                        xy = (xpoint, ypoint), 
-                        xytext = (clickedx, clickedy), 
-                        textcoords = 'offset points', 
-                        ha = 'left', 
-                        va = 'center', 
-                        fontsize = 7, 
-                        zorder = 102, 
-                        bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
-                        arrowprops = dict(arrowstyle = '->'))
-                    self.draw()
-                    
-                else:
-                    if xpoint == self.__zadnjiAnnotationx:
-                        self.annotation.remove()
-                        self.__zadnjiAnnotationx = None
-                        self.__testAnnotation = False
-                        self.draw()
+                    if clickedx >= x:
+                        clickedx = -80
+                        if clickedy >= y:
+                            clickedy = -30
+                        else:
+                            clickedy = 30
                     else:
-                        self.annotation.remove()
+                        clickedx = 30
+                        if clickedy >= y:
+                            clickedy = -30
+                        else:
+                            clickedy = 30
+                    
+                    if self.__testAnnotation == False:
+                        #napravi annotation
                         self.__zadnjiAnnotationx = xpoint
                         self.__testAnnotation = True
+                        #sami annotation, zorder 102, garancija da je iznad svega
                         self.annotation = self.axes.annotate(
                             tekst, 
                             xy = (xpoint, ypoint), 
@@ -625,12 +605,35 @@ class Graf(opcenitiCanvas.MPLCanvas):
                             bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
                             arrowprops = dict(arrowstyle = '->'))
                         self.draw()
-            
-            if event.button == 3:
-                #flag change
-                #poziva context menu sa informacijom o lokaciji i satu
-                loc = QtGui.QCursor.pos() #lokacija klika
-                self.show_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
+                        
+                    else:
+                        if xpoint == self.__zadnjiAnnotationx:
+                            self.annotation.remove()
+                            self.__zadnjiAnnotationx = None
+                            self.__testAnnotation = False
+                            self.draw()
+                        else:
+                            self.annotation.remove()
+                            self.__zadnjiAnnotationx = xpoint
+                            self.__testAnnotation = True
+                            self.annotation = self.axes.annotate(
+                                tekst, 
+                                xy = (xpoint, ypoint), 
+                                xytext = (clickedx, clickedy), 
+                                textcoords = 'offset points', 
+                                ha = 'left', 
+                                va = 'center', 
+                                fontsize = 7, 
+                                zorder = 102, 
+                                bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7), 
+                                arrowprops = dict(arrowstyle = '->'))
+                            self.draw()
+                
+                if event.button == 3:
+                    #flag change
+                    #poziva context menu sa informacijom o lokaciji i satu
+                    loc = QtGui.QCursor.pos() #lokacija klika
+                    self.show_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
 ###############################################################################
     def clear_minutni(self):
         """

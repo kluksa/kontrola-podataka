@@ -4,7 +4,7 @@ Created on Thu Jan 22 10:55:55 2015
 
 @author: User
 """
-from PyQt4 import QtCore, uic
+from PyQt4 import QtGui, QtCore, uic
 import datetime #potreban za provjeru da li je izabrani dan u buducnosti
 import modeldrva #potreban samo za provjeru tipa modela
 ###############################################################################
@@ -19,6 +19,10 @@ class RestIzbornik(base5, form5):
         self.setupUi(self)
         
         self.model = None
+        
+        #set custom kalendar u widget
+        self.calendarWidget = CustomKalendar(parent = None)
+        self.calendarLayout.addWidget(self.calendarWidget)
         
         self.veze()
 ###############################################################################
@@ -149,4 +153,51 @@ class RestIzbornik(base5, form5):
             #informiraj kontroler o promjeni, pokreni crtanje/izbor
             self.get_mjerenje_datum(True)
 ###############################################################################
-###############################################################################           
+###############################################################################
+class CustomKalendar(QtGui.QCalendarWidget):
+    """
+    Subklasa kalendara koja boja odredjene datume u zadane boje.
+    
+    samo mu treba prosljediti dict QtCore.QDate objekata organiziranih u dvije
+    liste preko metode refresh_dates(dict datuma)
+    
+    'ok' --> zelena boja
+    'bad' --> crvena boja
+    """
+    def __init__(self, parent = None, datumi = {'ok':[], 'bad':[]}):
+        QtGui.QCalendarWidget.__init__(self, parent)
+        
+        #dict QDate objekata koji se trebaju razlicito obojati
+        self.datumi = datumi
+        
+        self.setFirstDayOfWeek(QtCore.Qt.Monday)
+        #boja za nedovrsene datume
+        self.color1 = QtGui.QColor(255,0,0)
+        self.color1.setAlpha(50)
+        #boja za dovrsene datume
+        self.color2 = QtGui.QColor(0,255,0)
+        self.color2.setAlpha(50)
+        #boja za select
+        self.color3 = QtGui.QColor(0,0,255)
+        self.color3.setAlpha(50)
+        
+        self.selectionChanged.connect(self.updateCells)
+###############################################################################
+    def paintCell(self, painter, rect, date):
+        QtGui.QCalendarWidget.paintCell(self, painter, rect, date)
+
+        if date in self.datumi['bad'] and date not in self.datumi['ok']:
+            painter.fillRect(rect, self.color1)
+        elif date in self.datumi['ok']:
+            painter.fillRect(rect, self.color2)
+            
+        izabrani = self.selectedDate()
+        if date == izabrani:
+            painter.fillRect(rect, self.color3)
+###############################################################################
+    def refresh_dates(self, qdatesdict):
+        self.datumi = qdatesdict
+        #updateCells, forsira ponovno iscrtavanje
+        self.updateCells()
+###############################################################################
+###############################################################################

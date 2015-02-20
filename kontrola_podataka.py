@@ -18,15 +18,37 @@ glavniProzor.show()
 sys.exit(aplikacija.exec_())
 
 
-
 """
 TODO!
-1. sredi toolbar za pick/zoom opcijama za sve grafove! (qtoolbar)
 
-2. reimplementiraj neki zoom opciju zajednicku SVIM canvasima
+
+1. funkcionalnost sljedeci/prethodni dan za zero/span panel??
+
+2. neovisni zoom/pick selektor za pojednini graf?
+
+3. refactor crtanje grafova
+
+4. ikone za ostale menu bar i tool bar akcije?
+
+5. multiple toolbars??
+
+TESTING!
+done:
+toolbar reimplementiran
+
+reimplementiraj neki zoom opciju zajednicku SVIM canvasima
     - dadaj metodu na opcenitiCanvas.py
-    
-IMPORTANT!
 
-4 - spremanje podataka na rest, gumb, nije implicitno.
+
+save to rest implementiran.
+    - sada je na gumbu koji je na centralnom dijelu panela sa grafovima
+    - nije moguce saveati podatke koji nisu 100% validirani, pokusaj istog javlja
+      error msg u obliku informacijskog dijaloga.
+    - save updatea kalendar
+
+in short za svaki kanal:
+- kada se ucita, datum se sprema u listu 'bad'
+- kada se spremi na rest, datum se sprema u listu 'ok'
+- kalendar boja datume iz te dvije liste u razlicite boje, vizualno je moguce pratiti
+  koji je datum spremljen a koji je samo ucitan u dokument.
 """

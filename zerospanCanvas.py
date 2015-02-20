@@ -41,7 +41,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             #prebaci lokaciju tickova
             self.axes.xaxis.set_ticks_position('top')
             #makni splneove sa dna
-            self.axes.spines['bottom'].set_visible(False)
+            #self.axes.spines['bottom'].set_visible(False)
             #pomakni figure da pokrije sto vise prostora udesno i dolje
             self.axes.figure.subplots_adjust(bottom = 0.02)
             self.axes.figure.subplots_adjust(right = 0.98)
@@ -51,7 +51,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             Ako maknemo gornji spine, 2 canvasa ce se sljepiti bez vidljivog
             ruba...
             """
-            self.axes.spines['top'].set_visible(False)
+            #self.axes.spines['top'].set_visible(False)
             self.axes.figure.subplots_adjust(top = 0.98)
             self.axes.figure.subplots_adjust(right = 0.98)
         
@@ -236,6 +236,11 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         self.defaultRasponY = self.axes.get_ylim()
         
         self.draw()
+        
+        #TODO! zapamti max granice grafa za full zoom out!
+        self.xlim_original = (tmin, tmax)
+        self.ylim_original = self.axes.get_ylim()
+
 ###############################################################################
     def veze(self):
         """
@@ -248,20 +253,21 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         """
         pick callback, ali funkcionira samo ako se pickaju tocke na grafu
         """
-        #definiraj x i y preko izabrane tocke
-        x = self.data.index[event.ind[0]]
-        y = self.data.loc[x, 'vrijednost']
-
-        if event.mouseevent.button == 2:
-            #middle click
-            if self.annotationStatus:
-                self.annotation.remove()
-                self.annotationStatus = False
-                self.draw()
-                if self.zadnjiAnnotation != x:
+        if self.MODEPICK:
+            #definiraj x i y preko izabrane tocke
+            x = self.data.index[event.ind[0]]
+            y = self.data.loc[x, 'vrijednost']
+    
+            if event.mouseevent.button == 2:
+                #middle click
+                if self.annotationStatus:
+                    self.annotation.remove()
+                    self.annotationStatus = False
+                    self.draw()
+                    if self.zadnjiAnnotation != x:
+                        self.napravi_annotation(x, y, event.mouseevent)
+                else:
                     self.napravi_annotation(x, y, event.mouseevent)
-            else:
-                self.napravi_annotation(x, y, event.mouseevent)
 ###############################################################################
     def napravi_annotation(self, x, y, event):
         """

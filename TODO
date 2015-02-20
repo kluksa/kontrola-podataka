@@ -101,6 +101,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150213:::VM:::Refaktoriao zero / span graf, preslozio canvase da "maksimalno" iskoriste prostor (potencijalno konfuzno, jer nema vizualnog indikatora gdje span canvas zavrsava a gdje zero canvas pocinje).:::
 20150213:::VM:::Dodao funkcionalnost za dodavanje zero ili span referentnih vrijednosti (gumb je na zero/graf dockable widgetu). Ima par konceptualnih problema sa implementacijom... nisam 100% siguran koje podatke treba prosljediti REST servisu:::
 20150216:::VM:::Dodan HTTPBasicAuth, te funkcionalnost za login / logout usera. Zero i span graf su malo razmaknuti.  Kontekstni menu za promjenu flaga sada dozvoljava i promjenu stanja validiranosti (sada ima 4 opcije) te je moguc "undo" akcije promjene flaga.:::
+20150218:::VM:::Popravio contekstni meni, dodao gumb za upload agregiranih vrijednosti na REST (vise nije automatski, i moguce je uploadati samo ako su svi validirani), implementirao toolbar sa zoom, pick opcijama za sve grafove. Akcije Zoom in i Pick su poput prekidaca, samo jedna moze biti aktivna (defaultno Pick). Sredio da kalendar "boja" datume ovisno o tome da li su ucitani (ili poslani) na REST.!!!NIJE TESTIRANO!!! Server je ugasen (status code 500):::
+20150220:::VM:::Sredio upload referentnih vrijednosti na REST:::
 
 
 

@@ -12,6 +12,7 @@ import pandas as pd #pandas modul, za provjeru tipa nekih argumenata
 import copy #modul za deep copy nested struktura (primarno za kopije self.graf_defaults)
 import configparser #parser za configuration file (built in)
 import os #pristup direktorijima, provjere postojanja filea....
+import json #json parser
 
 import pomocneFunkcije #pomocne funkcije i klase (npr. AppExcept exception...)
 import networking_funkcije #web zahtjev, interface prema REST servisu
@@ -76,8 +77,9 @@ class Kontroler(QtCore.QObject):
         self.mapa_mjerenjeId_to_opis = None #mapa, program mjerenja:dict parametara
         self.reloadAttempt = 0 #member koji prati broj pokusaja sklapanja tree modela programa mjerenja
         self.appAuth = ("", "") #trenutno aktivni user/password
+        self.setGlavnihKanala = set() #set glavnih kanala, prati koji su glavni kanali bili aktivni
         
-        #TODO! pozovi dijalog za login
+        #pozovi dijalog za login
         self.change_auth_credentials()
 
         """ocekuje se da se prosljedi instanca valjanog GUI elementa"""
@@ -85,6 +87,9 @@ class Kontroler(QtCore.QObject):
         
         """inicijalizacija web sucelja (REST reader, REST writer, webZahtjev)"""
         self.initialize_web_and_rest_interface()
+        
+        """dictionary datuma ucitanih i datuma validiranih (i spremljenih na REST servis)"""
+        self.kalendarStatus = {}
 
         """defaultne vrijednosti za crtanje grafova (kanal je program mjerenja)"""
         self.graf_defaults = {
@@ -462,6 +467,54 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui, 
                      QtCore.SIGNAL('request_log_out'), 
                      self.logout_user)
+                     
+        ###upload_agregirane_na rest servis###
+        self.connect(self.gui.panel, 
+                     QtCore.SIGNAL('upload_agregirane_to_rest'), 
+                     self.upload_agregirane_to_REST)
+                     
+        ###naredba za zoom out svih grafova na pocetno stanje###
+        #satni graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_out_all'), 
+                     self.gui.panel.satniGraf.full_zoom_out)
+        
+        #minutni graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_out_all'), 
+                     self.gui.panel.minutniGraf.full_zoom_out)
+                     
+        #zero graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_out_all'), 
+                     self.gui.zspanel.zeroGraf.full_zoom_out)
+
+        #span graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_out_all'), 
+                     self.gui.zspanel.spanGraf.full_zoom_out)
+
+        ###brebacivanje stanja kontrola za zoom / pick za sve grafove###
+        #satni graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), 
+                     self.gui.panel.satniGraf.zoom_or_pick)
+        
+        #minutni graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), 
+                     self.gui.panel.minutniGraf.zoom_or_pick)
+        
+        #zero graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), 
+                     self.gui.zspanel.zeroGraf.zoom_or_pick)
+
+        #span graf
+        self.connect(self.gui, 
+                     QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), 
+                     self.gui.zspanel.spanGraf.zoom_or_pick)
+
 ###############################################################################
     def prikazi_error_msg(self, poruka):
         """
@@ -521,12 +574,13 @@ class Kontroler(QtCore.QObject):
         """
         print('priredi podatke {0}'.format(lista))
 
-        #1. Promjena glavnog kanala i/ili datuma. Pitaj za save podataka?
-        if (self.gKanal != lista[0] or self.pickedDate != lista[1]):
-            #provjeri da li su memberi None prije prompta sa upload na REST
-            if self.gKanal != None and self.pickedDate != None:
-                #pozovi na spremanje
-                self.upload_agregirane_to_REST()
+        #TODO! prebaci save podatke na gumb vezan za tekuci datum
+#        #1. Promjena glavnog kanala i/ili datuma. Pitaj za save podataka?
+#        if (self.gKanal != lista[0] or self.pickedDate != lista[1]):
+#            #provjeri da li su memberi None prije prompta sa upload na REST
+#            if self.gKanal != None and self.pickedDate != None:
+#                #pozovi na spremanje
+#                self.upload_agregirane_to_REST()
                 
         #3. postavi nove vrijednosti preuzete iz zahtjeva kao membere
         self.gKanal = int(lista[0]) #informacija o glavnom kanalu
@@ -543,6 +597,8 @@ class Kontroler(QtCore.QObject):
         #2. ucitavanje svih kanala od interesa za crtanje u dokument
         sviBitniKanali = []
         sviBitniKanali.append(self.gKanal)
+        #prati koji su sve glavni kanali izabrani!!!
+        self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])        
         #postavi novi glavni kanal svugdje gdje je to bitno u graf_defaults
         for graf in self.graf_defaults['glavniKanal']:
             self.graf_defaults['glavniKanal'][graf]['kanal'] = self.gKanal
@@ -554,7 +610,10 @@ class Kontroler(QtCore.QObject):
         #pokusaj ucitati sve bitne kanale (glavni + pomocni kanali definirani u self.graf_defaults)
         for kanal in sviBitniKanali:
             try:
+                #citanje pojedinog kanala (ukljucujuci i pomocne)
                 self.restReader.read(key = kanal, date = datum)
+                #update popis ucitanih datuma za kalendar
+                self.update_kalendarStatus(kanal, datum, 'ucitani')
             except pomocneFunkcije.AppExcept as e1:
                 #dodaj listu [kanal, datum] u listu notUcitani
                 notUcitani.append([kanal, datum, e1])
@@ -566,69 +625,81 @@ class Kontroler(QtCore.QObject):
             #prokazi informacijski dijalog
             self.prikazi_error_msg(msg)
         
+        #promjeni "pozadinske boje" na kalendaru u rest izborniku
+        self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+
         #4.emit signala sa naredbom za crtanje grafova
         self.naredi_crtanje_satnog()
 ###############################################################################
     def upload_agregirane_to_REST(self):
         """
         funkcija uzima slice glavnog kanala, agregira ga, i uploada na rest servis.
-        Prompt za potvrdu spremanja podataka?
+        Spremanje podataka na REST moguce samo ako su svi podaci u nizu validirani.
+       
+        - tekuci dan? dozvoliti spremanje ako jos nisu svi podaci dostupni??
         """
-        try:
-            #promjeni cursor u wait cursor
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-
-            #dohvati frame iz dokumenta
-            frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
-            
-            assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_agregirane_to_REST:Assert fail, frame pogresnog tipa'
-            if len(frejm) > 0:
-                #agregiraj podatke
-                agregirani = self.satniAgreg.agregiraj_kanal(frejm)
+        #kreni samo ako je glavni kanal i datum izabran (tj. postoje neki podaci)
+        if self.gKanal != None and self.pickedDate != None:
+            try:
+                #promjeni cursor u wait cursor
+                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+    
+                #dohvati frame iz dokumenta
+                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
                 
-                #provjeri stupanj validacije agregiranog frejma
-                testValidacije = agregirani[u'flag'].map(self.test_stupnja_validacije)
-                lenSvih = len(testValidacije)
-                lenDobrih = len(testValidacije[testValidacije == True])
-                if lenSvih == lenDobrih:
-                    msg = msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + '\nna REST web servis?'
-                else:
-                    msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + '\nna REST web servis?'
-                    warn = '\nOPREZ!\nNeki podaci nisu validirani. Prilikom spremanja svi podaci smatraju se validiranima.'
-                    msg = msg+warn
-                
-                #privremeno vrati izgled cursora nazad na normalni
+                assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_agregirane_to_REST:Assert fail, frame pogresnog tipa'
+                if len(frejm) > 0:
+                    #agregiraj podatke
+                    agregirani = self.satniAgreg.agregiraj_kanal(frejm)
+                    
+                    #provjeri stupanj validacije agregiranog frejma
+                    testValidacije = agregirani[u'flag'].map(self.test_stupnja_validacije)
+                    lenSvih = len(testValidacije)
+                    lenDobrih = len(testValidacije[testValidacije == True])
+                    
+                    if lenSvih == lenDobrih:
+                        msg = msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + '\nna REST web servis?'
+                    else:
+                        msg = 'Neki podaci nisu validirani.\nNije moguce spremiti agregirane podatke na REST servis.'
+                        #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
+                        raise AssertionError(msg)
+                    
+                    #privremeno vrati izgled cursora nazad na normalni
+                    QtGui.QApplication.restoreOverrideCursor()
+                    #prompt izbora za spremanje filea, question
+                    odgovor = QtGui.QMessageBox.question(self.gui, 
+                                                         "Potvrdi upload na REST servis",
+                                                         msg,
+                                                         QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+                    if odgovor == QtGui.QMessageBox.Yes:
+                        #ponovno prebaci na wait cursor
+                        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                        #napravi prazan dataframe indeksiran na isti nacin kao agregirani
+                        output = pd.DataFrame(index = agregirani.index)
+                        #dodaj trazene stupce u output frejm
+                        output['programMjerenjaId'] = int(self.gKanal)
+                        output['vrijeme'] = agregirani.index
+                        output['vrijednost'] = agregirani['avg']
+                        output['status'] = agregirani['status']
+                        output['obuhvat'] = agregirani['count'].map(self.agregirani_count_to_postotak)
+                        #konverzija output frejma u json string
+                        jstring = output.to_json(orient = 'records')
+                        #upload uz pomoc rest writera
+                        self.restWriter.upload(jso = jstring)
+                        #update datume na kalendaru za spremljene (i validirane) podatke
+                        self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+                        #promjeni "pozadinske boje" na kalendaru u rest izborniku
+                        self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+    
+                #vrati izgled cursora nazad na normalni
                 QtGui.QApplication.restoreOverrideCursor()
-                #prompt izbora za spremanje filea, question
-                odgovor = QtGui.QMessageBox.question(self.gui, 
-                                                     "Potvrdi upload na REST servis",
-                                                     msg,
-                                                     QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-                if odgovor == QtGui.QMessageBox.Yes:
-                    #ponovno prebaci na wait cursor
-                    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                    #napravi prazan dataframe indeksiran na isti nacin kao agregirani                    
-                    output = pd.DataFrame(index = agregirani.index)
-                    #dodaj trazene stupce u output frejm
-                    output['programMjerenjaId'] = int(self.gKanal)
-                    output['vrijeme'] = agregirani.index
-                    output['vrijednost'] = agregirani['avg']
-                    output['status'] = agregirani['status']
-                    output['obuhvat'] = agregirani['count'].map(self.agregirani_count_to_postotak)
-                    #konverzija output frejma u json string
-                    jstring = output.to_json(orient = 'records')
-                    #upload uz pomoc rest writera
-                    self.restWriter.upload(jso = jstring)
-            
-            #vrati izgled cursora nazad na normalni
-            QtGui.QApplication.restoreOverrideCursor()
-        except AssertionError as e1:
-            self.prikazi_error_msg(e1)
-        except pomocneFunkcije.AppExcept as e2:
-            self.prikazi_error_msg(e2)
-        finally:
-            #vrati izgled cursora nazad na normalni
-            QtGui.QApplication.restoreOverrideCursor()
+            except AssertionError as e1:
+                self.prikazi_error_msg(e1)
+            except pomocneFunkcije.AppExcept as e2:
+                self.prikazi_error_msg(e2)
+            finally:
+                #vrati izgled cursora nazad na normalni
+                QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
     def prikazi_glavni_graf_dijalog(self):
         """            
@@ -955,6 +1026,7 @@ class Kontroler(QtCore.QObject):
         - redraw?
         """
         #int id kanala
+        #TODO! saljem odvojeno int programa mjerenja / dto json string
         kanal = self.gKanal
         if self.mapa_mjerenjeId_to_opis != None and kanal != None:
             #dict sa opisnim parametrima za kanal
@@ -970,12 +1042,15 @@ class Kontroler(QtCore.QObject):
                     #test da li je sve u redu?
                     assert isinstance(podaci['vrijednost'], float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nReferentna vrijednost je krivo zadana.'
                     
-                    #napravi json string za upload
-                    baseJson = '["pocetakPrimjene":{0},"vrijednost":{1},"vrsta":{2},"programMjerenjaId":{3}]'
-                    baseJson.format(podaci['vrijeme'], podaci['vrijednost'], podaci['vrsta'], self.gKanal)
-                    
-                    #izlazni json string tocke
-                    jS = '{' + baseJson + '}'
+                    #napravi json string za upload (dozvoljeno odstupanje je placeholder)
+                    #int od vremena... output je double zboj milisekundi
+                    jS = {"pocetakPrimjene":int(podaci['vrijeme']), 
+                          "vrijednost":podaci['vrijednost'], 
+                          "vrsta":podaci['vrsta'], 
+                          "dozvoljenoOdstupanje":0.0, 
+                          "programMjerenjaId":self.gKanal}
+                    #dict to json dump
+                    jS = json.dumps(jS)
                     
                     #potvrda za unos!
                     odgovor = QtGui.QMessageBox.question(self.gui, 
@@ -985,7 +1060,7 @@ class Kontroler(QtCore.QObject):
                     
                     if odgovor == QtGui.QMessageBox.Yes:
                         #put json na rest!
-                        self.webZahtjev.upload_ref_vrijednost_zs(jS)                    
+                        self.webZahtjev.upload_ref_vrijednost_zs(jS)
                         #confirmation da je uspjelo
                         QtGui.QMessageBox.information(self.gui, "Potvrda unosa na REST", "Podaci sa novom referentnom vrijednosti uspjesno su spremljeni na REST servis")
                         
@@ -1011,5 +1086,45 @@ class Kontroler(QtCore.QObject):
         """
         self.appAuth = ("", "")
         self.initialize_web_and_rest_interface()
+###############################################################################
+    def update_kalendarStatus(self, progMjer, datum, tip):
+        """
+        dodavanje datuma na popis ucitanih i ili validiranih ovisno o tipu
+        i programu mjerenja.
+        
+        progMjer --> program mjerenja id, integer
+        datum --> string reprezentacija datuma  'yyyy-MM-dd' formata
+        tip --> 'ucitani' ili 'spremljeni'
+        """
+        datum = QtCore.QDate.fromString(datum, 'yyyy-MM-dd')
+        if progMjer in self.kalendarStatus:
+            if tip == 'spremljeni':
+                if datum not in self.kalendarStatus[progMjer]['ok']:
+                    self.kalendarStatus[progMjer]['ok'].append(datum)
+            else:
+                if datum not in self.kalendarStatus[progMjer]['bad']:
+                    self.kalendarStatus[progMjer]['bad'].append(datum)
+        else:
+            self.kalendarStatus[progMjer] = {'ok':[], 'bad':[datum]}
+###############################################################################
+    def exit_check(self):
+        """
+        Funkcija sluzi za provjeru spremljenog rada prije izlaska iz aplikacije.
+        
+        provjerava za svaki ucitani glavni kanal, datume ucitanih i datume 
+        uspjesno spremljenih na REST.
+        
+        Funkcija vraca boolean ovisno o jednakosti skupova datuma.
+        
+        poziva ga display.py - u overloadanoj metodi za izlaz iz aplikacije
+        """
+        out = True
+        for kanal in self.setGlavnihKanala:
+            if set(self.kalendarStatus[kanal]['ok']) == set(self.kalendarStatus[kanal]['bad']):
+                out = out and True
+            else:
+                out = out and False
+        #return rezultat (upozori da neki podaci NISU spremljeni na REST)
+        return out
 ###############################################################################
 ###############################################################################

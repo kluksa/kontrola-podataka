@@ -62,6 +62,7 @@ class GrafPanel(base3, form3):
         #gumbi zaduzeni za prebacivanje dana naprijed i nazad
         self.pushButtonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.pushButtonPrethodni.clicked.connect(self.prebaci_dan_nazad)
+        self.buttonUploadAgregirane.clicked.connect(self.request_REST_save)
     
     def change_label(self, lista):
         """
@@ -84,7 +85,12 @@ class GrafPanel(base3, form3):
         mjernaJedinica = mapa['komponentaMjernaJedinica']
         opis = '{0}, {1}( {2} ) [{3}]'.format(postaja, komponenta, formula, mjernaJedinica)
         self.glavniLabel.setText(opis)
-        
+
+    def request_REST_save(self):
+        """
+        signalizira kontorleru da pokrene spremanje agregiranih na rest servis
+        """
+        self.emit(QtCore.SIGNAL('upload_agregirane_to_rest'))
         
     def prebaci_dan_naprijed(self):
         """

@@ -111,17 +111,17 @@ class Kontroler(QtCore.QObject):
                     'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
                     'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
-                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
-                    'fill':{'crtaj':False, 'rgb':(0,255,0), 'alpha':0.1},
-                    'fill2':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.1}
+                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':True},
+                    'fill':{'crtaj':True, 'rgb':(0,255,0), 'alpha':0.1},
+                    'fill2':{'crtaj':True, 'rgb':(255,0,0), 'alpha':0.1}
                         },
                 'span':{
                     'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
                     'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
-                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
-                    'fill':{'crtaj':False, 'rgb':(0,255,0), 'alpha':0.1},
-                    'fill2':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.1}
+                    'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':True},
+                    'fill':{'crtaj':True, 'rgb':(0,255,0), 'alpha':0.1},
+                    'fill2':{'crtaj':True, 'rgb':(255,0,0), 'alpha':0.1}
                         }
                             }
         
@@ -1066,8 +1066,8 @@ class Kontroler(QtCore.QObject):
                           "vrijednost":podaci['vrijednost'], 
                           "vrsta":podaci['vrsta'], 
                           "maxDozvoljeno":0.0, 
-                          "minDozvoljeno":0.0, 
-                          "programMjerenjaId":self.gKanal}
+                          "minDozvoljeno":0.0}
+                          
                     #dict to json dump
                     jS = json.dumps(jS)
                     
@@ -1079,7 +1079,7 @@ class Kontroler(QtCore.QObject):
                     
                     if odgovor == QtGui.QMessageBox.Yes:
                         #put json na rest!
-                        self.webZahtjev.upload_ref_vrijednost_zs(jS)
+                        self.webZahtjev.upload_ref_vrijednost_zs(jS, self.gKanal)
                         #confirmation da je uspjelo
                         QtGui.QMessageBox.information(self.gui, "Potvrda unosa na REST", "Podaci sa novom referentnom vrijednosti uspjesno su spremljeni na REST servis")
                         

@@ -190,7 +190,7 @@ class WebZahtjev(QtCore.QObject):
         
         return zeroFrejm, spanFrejm
 ###############################################################################
-    def upload_ref_vrijednost_zs(self, jS):
+    def upload_ref_vrijednost_zs(self, jS, kanal):
         """
         funkcija za upload nove vrijednosti referentne tocke zero ili span 
         na REST servis.
@@ -199,7 +199,7 @@ class WebZahtjev(QtCore.QObject):
         jS je json string sa podacima o novoj referentnoj vrijednosti
         """
         #point url na REST  servis
-        url = self._base + self._resursi['zerospan']
+        url = self._base + self._resursi['zerospan']+'/'+str(kanal)
         #pripiremi zahtjev
         payload = {"id":"putZeroSpanReferentnuVrijednost", "name":"PUT"}
         headers = {'Content-type': 'application/json'}

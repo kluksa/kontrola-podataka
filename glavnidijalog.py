@@ -257,6 +257,10 @@ class GlavniIzbor(base25, form25):
         self.zero.granicaAlpha.valueChanged.connect(self.zero_alpha_granica)
         #zero alpha setting, fill
         self.zero.fillAlpha.valueChanged.connect(self.zero_alpha_fill)
+        #zero fill2 setting
+        self.zero.fill2Boja.clicked.connect(self.zero_fill2_boja)
+        #zero, alpha setting , fill2
+        self.zero.fill2Alpha.valueChanged.connect(self.zero_alpha_fill2)
 
         ###span###
         #odredjivanje stila centralne linije zero grafa
@@ -299,8 +303,18 @@ class GlavniIzbor(base25, form25):
         self.span.granicaAlpha.valueChanged.connect(self.span_alpha_granica)
         #span alpha setting, fill
         self.span.fillAlpha.valueChanged.connect(self.span_alpha_fill)
+        #span fill2 boja
+        self.span.fill2Boja.clicked.connect(self.span_fill2_boja)
+        #span fill2 alpha
+        self.span.fill2Alpha.valueChanged.connect(self.span_alpha_fill2)
 
-
+        self.glavni_checkbox_ekstremi(self.defaulti['glavniKanal']['ekstremimin']['crtaj'])
+        self.glavni_checkbox_fillsatni(self.defaulti['glavniKanal']['fillsatni']['crtaj'])
+        self.span_fill_check(self.defaulti['span']['fill']['crtaj'])
+        self.span_granica_check(self.defaulti['span']['warning']['crtaj'])
+        self.zero_fill_check(self.defaulti['zero']['fill']['crtaj'])
+        self.zero_granica_check(self.defaulti['zero']['warning']['crtaj'])
+        
     """
     definicija callback funkcija
     
@@ -413,13 +427,15 @@ class GlavniIzbor(base25, form25):
         x je boolean koji javlja stanje checkboxa, True -> ima kvacicu
         """
         if x:
-            self.defaulti['glavniKanal']['fillsatni']['crtaj'] = True
+            self.defaulti['glavniKanal']['ekstremimin']['crtaj'] = True
+            self.defaulti['glavniKanal']['ekstremimax']['crtaj'] = True
             self.glavni.markerEkstrem.setEnabled(True)
             self.glavni.markerEkstremSpin.setEnabled(True)
             self.glavni.bojaEkstrem.setEnabled(True)
             self.glavni.ekstremAlpha.setEnabled(True)
         else:
-            self.defaulti['glavniKanal']['fillsatni']['crtaj'] = False
+            self.defaulti['glavniKanal']['ekstremimin']['crtaj'] = False
+            self.defaulti['glavniKanal']['ekstremimax']['crtaj'] = False
             self.glavni.markerEkstrem.setEnabled(False)
             self.glavni.markerEkstremSpin.setEnabled(False)
             self.glavni.bojaEkstrem.setEnabled(False)
@@ -780,12 +796,19 @@ class GlavniIzbor(base25, form25):
         """
         if x:
             self.defaulti['zero']['fill']['crtaj'] = True
+            self.defaulti['zero']['fill2']['crtaj'] = True
             self.zero.fillBoja.setEnabled(True)
             self.zero.fillAlpha.setEnabled(True)
+            self.zero.fill2Boja.setEnabled(True)
+            self.zero.fill2Alpha.setEnabled(True)
         else:
             self.defaulti['zero']['fill']['crtaj'] = False
+            self.defaulti['zero']['fill2']['crtaj'] = False
             self.zero.fillBoja.setEnabled(False)
             self.zero.fillAlpha.setEnabled(False)
+            self.zero.fill2Boja.setEnabled(False)
+            self.zero.fill2Alpha.setEnabled(False)
+
 ###############################################################################
     def zero_fill_boja(self, x):
         """
@@ -814,6 +837,34 @@ class GlavniIzbor(base25, form25):
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
             self.zero.fillBoja.setStyleSheet(stil)        
+###############################################################################
+    def zero_fill2_boja(self, x):
+        """
+        promjena boje sjencanog dijela izmedju "warning" granica zero grafa.
+        Unutar osjencanog podrucja, zero vrijednost je u dozvoljenom rasponu
+        """
+        #dohvati postojecu boju
+        rgb = self.defaulti['zero']['fill2']['rgb']
+        a = self.defaulti['zero']['fill2']['alpha']
+        #convert u QColor
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        #poziv dijaloga
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test == True ako je boja ispravno definirana
+            color = QtGui.QColor.fromRgba(color) #bitni adapter izlaza dijaloga
+            rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
+            
+            #postavi novu vrijednost
+            self.defaulti['zero']['fill2']['rgb'] = rgb
+            self.defaulti['zero']['fill2']['alpha'] = a
+
+            #set novi vrijednost alpha u odgovarajuci QDoubleSpinBox
+            self.zero.fill2Alpha.setValue(a)
+
+            #promjeni boju gumba
+            boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+            stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+            self.zero.fill2Boja.setStyleSheet(stil)
 ###############################################################################
     def zero_alpha_midline(self, x):
         """
@@ -884,6 +935,20 @@ class GlavniIzbor(base25, form25):
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.zero.fillBoja.setStyleSheet(stil)
+###############################################################################
+    def zero_alpha_fill2(self, x):
+        """
+        promjena razine transparencije (alpha) za boju "losih" markera
+        na zero grafu
+        """
+        value = round(float(x), 2)
+        #postavi novi alpha u defaulte
+        self.defaulti['zero']['fill2']['alpha'] = value
+        #promjeni odgovarajucu boju bez dijaloga        
+        rgb = self.defaulti['zero']['fill2']['rgb']
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
+        stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+        self.zero.fill2Boja.setStyleSheet(stil)
 ###############################################################################
     def span_midline_stil(self, x):
         """
@@ -1079,12 +1144,19 @@ class GlavniIzbor(base25, form25):
         """
         if x:
             self.defaulti['span']['fill']['crtaj'] = True
+            self.defaulti['span']['fill2']['crtaj'] = True
             self.span.fillBoja.setEnabled(True)
             self.span.fillAlpha.setEnabled(True)
+            self.span.fill2Boja.setEnabled(True)
+            self.span.fill2Alpha.setEnabled(True)
+
         else:
             self.defaulti['span']['fill']['crtaj'] = False
+            self.defaulti['span']['fill2']['crtaj'] = False
             self.span.fillBoja.setEnabled(False)
             self.span.fillAlpha.setEnabled(False)
+            self.span.fill2Boja.setEnabled(False)
+            self.span.fill2Alpha.setEnabled(False)
 ###############################################################################
     def span_fill_boja(self, x):
         """
@@ -1111,6 +1183,32 @@ class GlavniIzbor(base25, form25):
             boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
             stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
             self.span.fillBoja.setStyleSheet(stil)
+###############################################################################
+    def span_fill2_boja(self, x):
+        """
+        promjena boje linije granice dobrih zero vrijednosti(warning line)
+        """
+        #dohvati postojecu boju
+        rgb = self.defaulti['span']['fill2']['rgb']
+        a = self.defaulti['span']['fill2']['alpha']
+        #convert u QColor
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        #poziv dijaloga
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test: #test == True ako je boja ispravno definirana
+            color = QtGui.QColor.fromRgba(color) #bitni adapter izlaza dijaloga
+            rgb, a = pomocneFunkcije.qcolor_to_default_color(color)            
+            #postavi novu vrijednost
+            self.defaulti['span']['fill2']['rgb'] = rgb
+            self.defaulti['span']['fill2']['alpha'] = a
+
+            #set novi vrijednost alpha u odgovarajuci QDoubleSpinBox
+            self.span.fill2Alpha.setValue(a)
+
+            #promjeni boju gumba
+            boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+            stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+            self.span.fill2Boja.setStyleSheet(stil)
 ###############################################################################
     def span_alpha_midline(self, x):
         """
@@ -1181,5 +1279,19 @@ class GlavniIzbor(base25, form25):
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.span.fillBoja.setStyleSheet(stil)
+###############################################################################
+    def span_alpha_fill2(self, x):
+        """
+        promjena razine transparencije (alpha) za boju granica tolerancije
+        (warning line)
+        """
+        value = round(float(x),2)
+        #postavi novi alpha u defaulte
+        self.defaulti['span']['fill2']['alpha'] = value
+        #promjeni odgovarajucu boju bez dijaloga        
+        rgb = self.defaulti['span']['fill2']['rgb']
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
+        stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+        self.span.fill2Boja.setStyleSheet(stil)
 ###############################################################################
 ###############################################################################

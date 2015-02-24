@@ -38,8 +38,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
         -desni klik misem poteze promjenu flaga
         -middle klik misem iscrtava annotation na grafu
     """
-    def __init__(self, *args, **kwargs):
-        """konstruktor"""
+    def __init__(self, *args, **kwargs):        
         opcenitiCanvas.MPLCanvas.__init__(self, *args, **kwargs)
         
         #podrska za kontekstni meni za promjenu flaga
@@ -159,6 +158,7 @@ class Graf(opcenitiCanvas.MPLCanvas):
             self.axes.grid(True, which = 'minor', linewidth = 0.5)
         else:
             self.axes.grid(False)
+        
         #SPAN SELECTOR
         if self.popisGrafova['ostalo']['opcijeminutni']['span'] == True:
             self.__statusSpanSelector = True

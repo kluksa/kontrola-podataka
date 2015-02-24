@@ -74,6 +74,7 @@ class SpanIzbor(base23, form23):
         self.badAlpha.setValue(defaulti['span']['bad']['alpha'])
         self.granicaAlpha.setValue(defaulti['span']['warning']['alpha'])
         self.fillAlpha.setValue(defaulti['span']['fill']['alpha'])
+        self.fill2Alpha.setValue(defaulti['span']['fill2']['alpha'])
         
         ###QPushButton###
         rgb = defaulti['span']['midline']['rgb']
@@ -105,6 +106,12 @@ class SpanIzbor(base23, form23):
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.fillBoja.setStyleSheet(stil)
+
+        rgb = defaulti['span']['fill2']['rgb']
+        a = defaulti['span']['fill2']['alpha']
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+        self.fill2Boja.setStyleSheet(stil)
 
         ###QCheckBox###
         self.granicaCheck.setChecked(defaulti['span']['warning']['crtaj'])

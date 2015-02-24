@@ -103,6 +103,8 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150216:::VM:::Dodan HTTPBasicAuth, te funkcionalnost za login / logout usera. Zero i span graf su malo razmaknuti.  Kontekstni menu za promjenu flaga sada dozvoljava i promjenu stanja validiranosti (sada ima 4 opcije) te je moguc "undo" akcije promjene flaga.:::
 20150218:::VM:::Popravio contekstni meni, dodao gumb za upload agregiranih vrijednosti na REST (vise nije automatski, i moguce je uploadati samo ako su svi validirani), implementirao toolbar sa zoom, pick opcijama za sve grafove. Akcije Zoom in i Pick su poput prekidaca, samo jedna moze biti aktivna (defaultno Pick). Sredio da kalendar "boja" datume ovisno o tome da li su ucitani (ili poslani) na REST.!!!NIJE TESTIRANO!!! Server je ugasen (status code 500):::
 20150220:::VM:::Sredio upload referentnih vrijednosti na REST:::
+20150223:::VM:::Mala promjena kod startupa funkcije. Aplikacija se sada pokaze prije login dijaloga (te se nakon njega prilagodi izgledu zadanom u setupui.dat). Ispravke na Zero i Span grafu (prilagodba zahtjevima i novom api-u rest servisa):::
+
 
 
 

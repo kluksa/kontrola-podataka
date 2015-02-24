@@ -39,7 +39,7 @@ class Kontroler(QtCore.QObject):
         
     """
     def __init__(self, parent = None, gui = None):
-        QtCore.QObject.__init__(self, parent)
+        QtCore.QObject.__init__(self, parent)        
         """inicijalizacija dokumenta"""
         self.dokument = dokument_model.DataModel()
 
@@ -64,7 +64,6 @@ class Kontroler(QtCore.QObject):
         self.resursi["siroviPodaci"] = REST_info["sirovipodaci"]
         self.resursi["programMjerenja"] = REST_info["programmjerenja"]
         self.resursi["zerospan"] = REST_info["zerospan"]
-        self.resursi["zsref"] = REST_info["zsrefvrijednosti"]
 
 
         """ostali memberi"""
@@ -113,14 +112,16 @@ class Kontroler(QtCore.QObject):
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
                     'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
                     'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
-                    'fill':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.2}
+                    'fill':{'crtaj':False, 'rgb':(0,255,0), 'alpha':0.1},
+                    'fill2':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.1}
                         },
                 'span':{
                     'midline':{'line':'-', 'linewidth':1.0, 'rgb':(0,0,0), 'alpha':1.0, 'zorder':1, 'picker':5}, 
                     'ok':{'marker':'o', 'markersize':12, 'rgb':(0,255,0), 'alpha':1.0, 'zorder':2}, 
                     'bad':{'marker':'o', 'markersize':12, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':2},
                     'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':False},
-                    'fill':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.2}
+                    'fill':{'crtaj':False, 'rgb':(0,255,0), 'alpha':0.1},
+                    'fill2':{'crtaj':False, 'rgb':(255,0,0), 'alpha':0.1}
                         }
                             }
         
@@ -999,12 +1000,10 @@ class Kontroler(QtCore.QObject):
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
             frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)
-            #dohvati referentne vrijednosti za zero i span
-            refData = self.webZahtjev.get_zs_ref(progMjer, datum)
 
-            if frejmovi != None and refData != None:
-                outputZero = [frejmovi[0], self.graf_defaults, refData[0]]
-                outputSpan = [frejmovi[1], self.graf_defaults, refData[1]]
+            if frejmovi != None:
+                outputZero = [frejmovi[0], self.graf_defaults]
+                outputSpan = [frejmovi[1], self.graf_defaults]
                 #emitiraj signal za crtanjem
                 self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
                 self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)
@@ -1025,8 +1024,9 @@ class Kontroler(QtCore.QObject):
         - naredba prema rest servisu za dodavanje novih.
         - redraw?
         """
+        #TODO! saljem nazad isti DTO + programMjerenjaId, odstupanja su placeholderi (visak?)
         #int id kanala
-        #TODO! saljem odvojeno int programa mjerenja / dto json string
+        #saljem odvojeno int programa mjerenja / dto json string
         kanal = self.gKanal
         if self.mapa_mjerenjeId_to_opis != None and kanal != None:
             #dict sa opisnim parametrima za kanal
@@ -1044,10 +1044,11 @@ class Kontroler(QtCore.QObject):
                     
                     #napravi json string za upload (dozvoljeno odstupanje je placeholder)
                     #int od vremena... output je double zboj milisekundi
-                    jS = {"pocetakPrimjene":int(podaci['vrijeme']), 
+                    jS = {"vrijeme":int(podaci['vrijeme']), 
                           "vrijednost":podaci['vrijednost'], 
                           "vrsta":podaci['vrsta'], 
-                          "dozvoljenoOdstupanje":0.0, 
+                          "maxDozvoljeno":0.0, 
+                          "minDozvoljeno":0.0, 
                           "programMjerenjaId":self.gKanal}
                     #dict to json dump
                     jS = json.dumps(jS)

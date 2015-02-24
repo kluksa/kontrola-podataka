@@ -73,6 +73,7 @@ class ZeroIzbor(base22, form22):
         self.badAlpha.setValue(defaulti['zero']['bad']['alpha'])
         self.granicaAlpha.setValue(defaulti['zero']['warning']['alpha'])
         self.fillAlpha.setValue(defaulti['zero']['fill']['alpha'])
+        self.fill2Alpha.setValue(defaulti['zero']['fill2']['alpha'])
         
         ###QPushButton###
         rgb = defaulti['zero']['midline']['rgb']
@@ -104,6 +105,12 @@ class ZeroIzbor(base22, form22):
         boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
         stil = pomocneFunkcije.color_to_style_string('QPushButton#fillBoja', boja)
         self.fillBoja.setStyleSheet(stil)
+
+        rgb = defaulti['zero']['fill2']['rgb']
+        a = defaulti['zero']['fill2']['alpha']
+        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        stil = pomocneFunkcije.color_to_style_string('QPushButton#fill2Boja', boja)
+        self.fill2Boja.setStyleSheet(stil)
 
         ###QCheckBox###
         self.granicaCheck.setChecked(defaulti['zero']['warning']['crtaj'])

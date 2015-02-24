@@ -99,8 +99,6 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
 
         self.data = ulaz[0]
         self.detalji = ulaz[1]
-        #x, ymin, ymax kooridinate "step grafa" referentnih vrijednosti
-        self.refFrame = ulaz[2]
         #zadnji ulazni datum
         endpoint = self.data.loc[self.data.index[-1], 'vrijeme']
         #prvi ulazni datum
@@ -109,23 +107,18 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         #pomak xlimita grafa da tocke nisu na rubu
         tmin, tmax = pomocneFunkcije.prosiri_granice_grafa(beginpoint, endpoint, 1440)
         self.axes.set_xlim([tmin, tmax])
-        
-        #podaci za crtanje step warning line
-        self.xWarning, self.yMinWarning, self.yMaxWarning = pomocneFunkcije.pripremi_ref_zero_span(self.refFrame, endpoint)
-        
+                
         #center line graf data  
         lineFrame = ulaz[0].copy()
         self.data = lineFrame
         x = list(lineFrame.index)
         y = list(lineFrame['vrijednost'])
-        
+
         okFrame = ulaz[0].copy()
         badFrame = ulaz[0].copy()
         
-        
-        #pronalazak "dobrih tocaka
-        okTocke = okFrame[okFrame['vrijednost'] >= okFrame.index.map(self.__warning_line_mapper_low)]
-        okTocke = okTocke[okTocke['vrijednost'] <= okTocke.index.map(self.__warning_line_mapper_up)]
+        okTocke = okFrame[okFrame['vrijednost'] <= okFrame['maxDozvoljeno']]
+        okTocke = okTocke[okTocke['vrijednost'] >= okTocke['minDozvoljeno']]
         
         #x, y kooridinate "dobrih" podataka
         xok = list(okTocke.index)
@@ -143,6 +136,11 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         tickLoc, tickLab = pomocneFunkcije.sredi_xtickove_zerospan(x)
         self.axes.set_xticks(tickLoc)
         self.axes.set_xticklabels(tickLab)
+
+        self.xWarning = x
+        self.yMinWarning = list(lineFrame['minDozvoljeno'])
+        self.yMaxWarning = list(lineFrame['maxDozvoljeno'])
+
                 
         """PLOT LINIJE IZMEDJU TOCAKA PODATAKA"""
         self.axes.plot(x, 
@@ -154,7 +152,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
                        zorder = self.detalji[self.tipGrafa]['midline']['zorder'],
                        picker = self.detalji[self.tipGrafa]['midline']['picker'])
 
-        """plot step grafa granice tolerancije (waning line)"""
+        """plot grafa granice tolerancije (waning line)"""
         boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['warning']['rgb'])
         a = self.detalji[self.tipGrafa]['warning']['alpha']
         hexcolor = mpl.colors.rgb2hex(boja)
@@ -177,19 +175,6 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
                            linewidth = self.detalji[self.tipGrafa]['warning']['linewidth'], 
                            zorder = self.detalji[self.tipGrafa]['warning']['zorder'])
                            
-        """plot filla izmedju warning linija"""
-        boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['fill']['rgb'])
-        a = self.detalji[self.tipGrafa]['fill']['alpha']
-        hexcolor = mpl.colors.rgb2hex(boja)
-        edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
-        if self.detalji[self.tipGrafa]['fill']['crtaj']:
-            self.axes.fill_between(self.xWarning, 
-                                   self.yMinWarning,
-                                   self.yMaxWarning, 
-                                   color = edgeBoja, 
-                                   alpha = a, 
-                                   zorder = 1)
-
         if len(xok) > 0:
             """PLOT OK TOCAKA"""
             boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['ok']['rgb'])
@@ -230,17 +215,56 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             #cilj je lagano zaokrenuti labele da nisu jedan preko drugog
             label.set_rotation(30)
             label.set_fontsize(8)
-        
-        self.zeroNacrtan = True
+
+        """plot filla izmedju warning linija"""
+        boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['fill']['rgb'])
+        a = self.detalji[self.tipGrafa]['fill']['alpha']
+        hexcolor = mpl.colors.rgb2hex(boja)
+        edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
+        if self.detalji[self.tipGrafa]['fill']['crtaj']:
+            #fill izmedju warning linija
+            self.axes.fill_between(self.xWarning, 
+                                   self.yMinWarning,
+                                   self.yMaxWarning, 
+                                   color = edgeBoja, 
+                                   alpha = a, 
+                                   zorder = 1)
+                                   
         self.defaultRasponX = self.axes.get_xlim()
         self.defaultRasponY = self.axes.get_ylim()
         
         self.draw()
         
-        #TODO! zapamti max granice grafa za full zoom out!
+        #zapamti max granice grafa za full zoom out!
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
-
+        #unpacking tuple za fill2
+        ylimmin, ylimmax = self.ylim_original
+        
+        """plot filla izvan warning linija"""
+        boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['fill2']['rgb'])
+        a = self.detalji[self.tipGrafa]['fill2']['alpha']
+        hexcolor = mpl.colors.rgb2hex(boja)
+        edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
+        if self.detalji[self.tipGrafa]['fill2']['crtaj']:
+            #fill below
+            self.axes.fill_between(self.xWarning, 
+                                   self.yMinWarning,
+                                   ylimmin, 
+                                   color = edgeBoja, 
+                                   alpha = a, 
+                                   zorder = 1)
+            #fill above
+            self.axes.fill_between(self.xWarning, 
+                                   self.yMaxWarning,
+                                   ylimmax, 
+                                   color = edgeBoja, 
+                                   alpha = a, 
+                                   zorder = 1)
+                        
+        self.draw()
+        
+        self.zeroNacrtan = True
 ###############################################################################
     def veze(self):
         """

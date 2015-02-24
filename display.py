@@ -46,11 +46,24 @@ class Display(base, form):
         #postavi ZeroSpanPanel u dock widget
         self.dockWidget_zerospan.setWidget(self.zspanel)
         """inicijalizacija kontrolora"""
+#        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
+#        """povezivanje akcija vezanih za gui elemente"""
+        
+        QtCore.QTimer.singleShot(0, self.pokreni_kontrolu)
+#        self.setup_akcije()
+###############################################################################
+    def pokreni_kontrolu(self):
+        """
+        alternativan nacin loada aplikacije, forsira iscrtavanje primitivnog displaya
+        i stavlja dulji load kontrolnog elementa u event loop
+        
+        tj. init displaya ce zavrsiti prvo, zatim ce se instancirati kontroler
+        itd...
+        """
         self.kontrola = kontroler.Kontroler(parent = None, gui = self)
         """povezivanje akcija vezanih za gui elemente"""
-        
         self.setup_akcije()
-#############################################################################
+###############################################################################
     def setup_akcije(self):
         """
         Povezivanje QAction sa ciljanim slotovima (toolbar).

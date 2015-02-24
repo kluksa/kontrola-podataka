@@ -81,7 +81,7 @@ class WebZahtjev(QtCore.QObject):
         payload = {"id":"findAll", "name":"GET"}
         try:
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            #r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPDigestAuth(self.user, self.pswd))           
+            #r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPDigestAuth(self.user, self.pswd))
             #assert dobar response (status code 200) i xml content-type
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
             assert r.headers['Content-Type'] == 'application/xml', 'Bad response, not xml'
@@ -106,7 +106,7 @@ class WebZahtjev(QtCore.QObject):
         #point url na trazeni dio REST servisa
         url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
         #pripremi zahtjev###############################################################################
-        payload = {"id":"getJson", "name":"GET"}
+        payload = {"id":"getPodaci", "name":"GET"}
         try:
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #assert dobar response (status code 200), json content-type
@@ -132,7 +132,7 @@ class WebZahtjev(QtCore.QObject):
         #point url na REST  servis
         url = self._base + self._resursi['siroviPodaci']
         #pripiremi zahtjev
-        payload = {"id":"putJson", "name":"PUT"}
+        payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
             assert x != None, 'Ulazni parametar je None, json string nije zadan.'
@@ -157,7 +157,7 @@ class WebZahtjev(QtCore.QObject):
         #point url na trazeni dio REST servisa
         url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
         #pripremi zahtjev
-        payload = {"id":"getJson", "name":"GET"}
+        payload = {"id":"getZeroSpanLista", "name":"GET"}
         try:
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
@@ -190,46 +190,6 @@ class WebZahtjev(QtCore.QObject):
         
         return zeroFrejm, spanFrejm
 ###############################################################################
-    def get_zs_ref(self, programMjerenja, datum):
-        """
-        dohvati zero / span referentne vrijednosti
-        program mjerenja je tipa int, datum je string
-        """
-        #point url na trazeni dio REST servisa
-        url = self._base + self._resursi['zsref']+'/'+str(programMjerenja)+'/'+datum
-        #pripremi zahtjev
-        payload = {"id":"getJson", "name":"GET"}
-        try:
-            r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
-            if r.text != '[]':
-                zero_ref, span_ref = self.convert_zs_ref(r.text)
-                return [zero_ref, span_ref]
-            else:
-                print('prazan json ', programMjerenja,' - ', datum)
-
-        except requests.exceptions.RequestException as e1:
-            tekst = 'WebZahtjev.get_zs_ref:Request fail (http error, timeout...).\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
-        except AssertionError as e2:
-            tekst = 'WebZahtjev.get_zs_ref:Assert fail. Bad response.\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
-###############################################################################
-    def convert_zs_ref(self, jsonText):
-        """
-        pretvori ulazni json string u dva pandas datafrejma (zero_ref, span_ref)
-        i vrati ih calleru.
-        """
-        frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['pocetakPrimjene'])
-        
-        span_ref = frejm[frejm['vrsta'] == "S"]
-        span_ref.index = span_ref['pocetakPrimjene']
-        
-        zero_ref = frejm[frejm['vrsta'] == "Z"]
-        zero_ref.index = zero_ref['pocetakPrimjene']
-        
-        return zero_ref, span_ref
-###############################################################################
     def upload_ref_vrijednost_zs(self, jS):
         """
         funkcija za upload nove vrijednosti referentne tocke zero ili span 
@@ -239,9 +199,9 @@ class WebZahtjev(QtCore.QObject):
         jS je json string sa podacima o novoj referentnoj vrijednosti
         """
         #point url na REST  servis
-        url = self._base + self._resursi['zsref']
+        url = self._base + self._resursi['zerospan']
         #pripiremi zahtjev
-        payload = {"id":"putJson", "name":"PUT"}
+        payload = {"id":"putZeroSpanReferentnuVrijednost", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
             assert jS != None, 'Ulazni parametar je None, json string nije zadan.'
@@ -261,8 +221,7 @@ if __name__ == '__main__':
     baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
     resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
                 "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja", 
-                "zerospan":"dhz.skz.rs.zerospan", 
-                "zsref":"dhz.skz.rs.zsrefvrijednosti"}
+                "zerospan":"dhz.skz.rs.zerospan"}
     aut = ("t1", "t1")
     #inicijalizacija WebZahtjev objekta
     wz = WebZahtjev(baza, resursi, aut)
@@ -271,18 +230,19 @@ if __name__ == '__main__':
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """    
     try:
+#        """get programe mjerenja"""
 #        r = wz.get_programe_mjerenja()
 #        print(r)
+
+#        """get sirovi"""
 #        r1 = wz.get_sirovi(170, '2015-01-15')
-        r1 = wz.get_zs_ref(159, '2015-01-20')
-        print(r1)
+#        print(r1)
+
+        """get zero span"""
+        r2 = wz.get_zero_span(159, '2015-01-15')
+        print(r2)
         
-#        print(x)
-#        print('izabrani datum : ', pd.to_datetime('2015-01-20'))
-#        print('referentne vrijednosti')
-#        for i in r[0].index:
-#            print(i)
-#
+        
     except Exception as e:
         print(e) #vraca tekst exceptiona
         print(repr(e))

@@ -533,7 +533,9 @@ class Kontroler(QtCore.QObject):
         #vrati izgled cursora nazad na normalni nakon exceptiona
         QtGui.QApplication.restoreOverrideCursor()
         #prikazi information dialog sa pogreskom
-        QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
+        #TODO! neki pametan logging za sada kill sve displaye poruka!
+        """uncomment liniju ispod za dosadne poruke na gui-u"""
+        #QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
 ###############################################################################
     def promjeni_datum(self, x):
         """

@@ -115,7 +115,8 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         y = list(lineFrame['vrijednost'])
 
         okFrame = ulaz[0].copy()
-        badFrame = ulaz[0].copy()
+        badFrameMin = ulaz[0].copy()
+        badFrameMax = ulaz[0].copy()
         
         okTocke = okFrame[okFrame['vrijednost'] <= okFrame['maxDozvoljeno']]
         okTocke = okTocke[okTocke['vrijednost'] >= okTocke['minDozvoljeno']]
@@ -124,14 +125,17 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         xok = list(okTocke.index)
         yok = list(okTocke['vrijednost'])
         
-        #za lose podatke brze je proci kroz listu i izbaciti dobre iz svih
-        for indeks in lineFrame.index:
-            if indeks in xok:
-                badFrame = badFrame.drop([indeks])
-        #x, y kooridinate "losih" podataka
-        xbad = list(badFrame.index)
-        ybad = list(badFrame['vrijednost'])
+        badTocke1 = badFrameMax[badFrameMax['vrijednost'] > badFrameMax['maxDozvoljeno']]
+        badTocke2 = badFrameMin[badFrameMin['vrijednost'] < badFrameMin['minDozvoljeno']]
         
+        #x, y kooridinate "losih" podataka vecih od dozvoljenih
+        xbadh = list(badTocke1.index)
+        ybadh = list(badTocke1['vrijednost'])
+        #x, y kooridinate "losih" podataka manjih od dozvoljenih
+        xbadl = list(badTocke2.index)
+        ybadl = list(badTocke2['vrijednost'])
+        
+                
         #sredi tickove
         tickLoc, tickLab = pomocneFunkcije.sredi_xtickove_zerospan(x)
         self.axes.set_xticks(tickLoc)
@@ -191,21 +195,38 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
                            linestyle = 'None',
                            zorder = self.detalji[self.tipGrafa]['ok']['zorder'])
 
-        if len(xbad) > 0:
+        if len(xbadh) > 0:
             """PLOT BAD TOCAKA"""
             boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['bad']['rgb'])
             a = self.detalji[self.tipGrafa]['bad']['alpha']
             #convert rgb to hexcode, then convert hexcode to valid rgba
             hexcolor = mpl.colors.rgb2hex(boja)
             edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
-            self.axes.plot(xbad, 
-                           ybad, 
+            self.axes.plot(xbadh, 
+                           ybadh, 
                            marker = self.detalji[self.tipGrafa]['bad']['marker'],
                            markersize = self.detalji[self.tipGrafa]['bad']['markersize'], 
                            color = edgeBoja, 
                            alpha = a,
                            linestyle = 'None',
                            zorder = self.detalji[self.tipGrafa]['bad']['zorder'])
+
+        if len(xbadl) > 0:
+            """PLOT BAD TOCAKA"""
+            boja = pomocneFunkcije.normalize_rgb(self.detalji[self.tipGrafa]['bad']['rgb'])
+            a = self.detalji[self.tipGrafa]['bad']['alpha']
+            #convert rgb to hexcode, then convert hexcode to valid rgba
+            hexcolor = mpl.colors.rgb2hex(boja)
+            edgeBoja = mpl.colors.colorConverter.to_rgba(hexcolor, alpha = a)
+            self.axes.plot(xbadl, 
+                           ybadl, 
+                           marker = self.detalji[self.tipGrafa]['bad']['marker'],
+                           markersize = self.detalji[self.tipGrafa]['bad']['markersize'], 
+                           color = edgeBoja, 
+                           alpha = a,
+                           linestyle = 'None',
+                           zorder = self.detalji[self.tipGrafa]['bad']['zorder'])
+
 
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel(self.tipGrafa.upper())

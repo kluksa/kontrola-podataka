@@ -235,11 +235,11 @@ if __name__ == '__main__':
 #        print(r)
 
 #        """get sirovi"""
-#        r1 = wz.get_sirovi(170, '2015-01-15')
+#        r1 = wz.get_sirovi(65, '2015-02-22')
 #        print(r1)
 
         """get zero span"""
-        r2 = wz.get_zero_span(159, '2015-01-15')
+        r2 = wz.get_zero_span(65, '2015-02-22')
         print(r2)
         
         

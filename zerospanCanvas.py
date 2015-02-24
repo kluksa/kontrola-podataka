@@ -95,10 +95,10 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
 
         """
         self.axes.clear()
-        
 
         self.data = ulaz[0]
         self.detalji = ulaz[1]
+
         #zadnji ulazni datum
         endpoint = self.data.loc[self.data.index[-1], 'vrijeme']
         #prvi ulazni datum
@@ -335,6 +335,21 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         self.annotationStatus = True
         self.zadnjiAnnotation = x
         #nacrtaj
+        self.draw()
+###############################################################################
+    def clear_me(self):
+        """
+        clear grafa
+        """
+        self.axes.clear()
+        #nema podataka ili do njih nije moguce pristupiti
+        self.axes.text(0.5, 
+                       0.5, 
+                       'Nemoguce pristupiti podacima', 
+                       horizontalalignment='center', 
+                       verticalalignment='center', 
+                       fontsize = 8, 
+                       transform = self.axes.transAxes)
         self.draw()
 ###############################################################################
     def scroll_zoom(self, event):

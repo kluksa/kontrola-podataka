@@ -515,6 +515,15 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui, 
                      QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), 
                      self.gui.zspanel.spanGraf.zoom_or_pick)
+                     
+        #clear zero i span grafove
+        self.connect(self, 
+                     QtCore.SIGNAL('clearZeroSpan'), 
+                     self.gui.zspanel.spanGraf.clear_me)
+
+        self.connect(self, 
+                     QtCore.SIGNAL('clearZeroSpan'), 
+                     self.gui.zspanel.zeroGraf.clear_me)
 
 ###############################################################################
     def prikazi_error_msg(self, poruka):
@@ -817,7 +826,13 @@ class Kontroler(QtCore.QObject):
         zaprima zahtjev za frejm [kanal, tmin, tmax], dohvaca trazeni slajs od 
         dokumenta, reemitira trazeni slice.
         """
-        frejm = self.dokument.get_frame(key = lista[0], tmin = lista[1], tmax = lista[2])
+        try:
+            frejm = self.dokument.get_frame(key = lista[0], tmin = lista[1], tmax = lista[2])
+        except pomocneFunkcije.AppExcept as err:
+            #dohvacanje frejma je propalo
+            tekst = 'Trazena komponenta nije ucitana u model.\n' + str(repr(err))
+            self.prikazi_error_msg(tekst)
+            frejm = None
         if isinstance(frejm, pd.core.frame.DataFrame):
             #dodaj opis slajsa kanala, (mjerna jedinica, naziv, formula...)
             opisKanala = self.mapa_mjerenjeId_to_opis[lista[0]]
@@ -997,6 +1012,7 @@ class Kontroler(QtCore.QObject):
         """
         progMjer = int(lista[0])
         datum = str(lista[1])
+        self.emit(QtCore.SIGNAL('clearZeroSpan'))
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
             frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)

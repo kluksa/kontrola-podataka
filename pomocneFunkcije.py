@@ -315,3 +315,15 @@ def time_to_int(x):
     """
     return x.value / 1000000000        
 ###############################################################################
+def sync_zero_span_x_os(lista):
+    """
+    ulaz je lista od 2 datafrejma
+    izlaz je vremenski raspon x osi
+    """
+    min1 = min(lista[0].index)
+    min2 = min(lista[1].index)
+    max1 = max(lista[0].index)
+    max2 = max(lista[1].index)
+    
+    return [min(min1, min2), max(max1, max2)]
+###############################################################################

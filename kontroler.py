@@ -1041,10 +1041,13 @@ class Kontroler(QtCore.QObject):
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
             frejmovi = self.webZahtjev.get_zero_span(progMjer, datum, broj)
-
+            
+            #TODO! sync max raspona x osi (vremena)
+            raspon = pomocneFunkcije.sync_zero_span_x_os(frejmovi)
+            
             if frejmovi != None:
-                outputZero = [frejmovi[0], self.graf_defaults]
-                outputSpan = [frejmovi[1], self.graf_defaults]
+                outputZero = [frejmovi[0], self.graf_defaults, raspon]
+                outputSpan = [frejmovi[1], self.graf_defaults, raspon]
                 #emitiraj signal za crtanjem
                 self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
                 self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)

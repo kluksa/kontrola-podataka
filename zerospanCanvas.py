@@ -58,30 +58,6 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         
         self.veze()
 ###############################################################################
-    def __warning_line_mapper_low(self, vrijeme):
-        """
-        pomocna funkcija koja za zadani timestamp vraca referentnu certificiranu
-        vrijednost donje granice.
-        """
-        #napravi kopiju referentnih podataka
-        df = self.refFrame.copy()
-        #odbaci sve indekse koji su veci od zadanog timestampa
-        df = df[df.index < vrijeme]
-        #vrati srednju vrijednost umanjenu za dozvoljeno odstupanje
-        return df.loc[df.index[-1], 'vrijednost'] - df.loc[df.index[-1], 'dozvoljenoOdstupanje']
-###############################################################################
-    def __warning_line_mapper_up(self, vrijeme):
-        """
-        pomocna funkcija koja za zadani timestamp vraca referentnu certificiranu
-        vrijednost donje granice.
-        """
-        #napravi kopiju referentnih podataka
-        df = self.refFrame.copy()
-        #odbaci sve indekse koji su veci od zadanog timestampa
-        df = df[df.index < vrijeme]
-        #vrati srednju vrijednost uvecanu za dozvoljeno odstupanje
-        return df.loc[df.index[-1], 'vrijednost'] + df.loc[df.index[-1], 'dozvoljenoOdstupanje']
-###############################################################################
     def crtaj(self, ulaz):
         """
         crtanje frejma Zero na canvasu
@@ -98,11 +74,14 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
 
         self.data = ulaz[0]
         self.detalji = ulaz[1]
+        self.raspon = ulaz[2]
 
         #zadnji ulazni datum
-        endpoint = self.data.loc[self.data.index[-1], 'vrijeme']
+        #endpoint = self.data.loc[self.data.index[-1], 'vrijeme']
+        endpoint = self.raspon[1]
         #prvi ulazni datum
-        beginpoint = self.data.loc[self.data.index[0], 'vrijeme']
+        #beginpoint = self.data.loc[self.data.index[0], 'vrijeme']
+        beginpoint = self.raspon[0]
         
         #pomak xlimita grafa da tocke nisu na rubu
         tmin, tmax = pomocneFunkcije.prosiri_granice_grafa(beginpoint, endpoint, 1440)

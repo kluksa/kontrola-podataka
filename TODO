@@ -106,6 +106,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150223:::VM:::Mala promjena kod startupa funkcije. Aplikacija se sada pokaze prije login dijaloga (te se nakon njega prilagodi izgledu zadanom u setupui.dat). Ispravke na Zero i Span grafu (prilagodba zahtjevima i novom api-u rest servisa):::
 20150223:::VM:::Ispravljen bug kod crtanja minutnog grafa (javljao se exception kod pokusaja pristupa podacima koji nisu ucitani). Korekcija Zero i Span grafa. Refresh grafova prilikom promjene datuma ili kanala. Prilikom izbora kanala za kojeg ne postoje podaci ostao je stari graf. Sada na grafu je napisano da se do podataka ne moze doci.:::
 20150223:::VM:::Privremeno ugasene notifikaije o raznim errorima dok se sklepam neki logging sustav koji nije toliko iritantan. Fix Zero i span grafa:::
+20150225:::VM:::Dodana nova funkcionalnost na postavkama grafova (combobox sa izborom max broja podataka za zero i span i apply funkcionalnost).:::
 
 
 

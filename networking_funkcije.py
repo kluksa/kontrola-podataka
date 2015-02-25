@@ -146,18 +146,19 @@ class WebZahtjev(QtCore.QObject):
             tekst = 'WebZahtjev.upload_json_agregiranih:Request fail (http error, timeout...).\n{0}'.format(e2)
             raise pomocneFunkcije.AppExcept(tekst) from e2
 ###############################################################################
-    def get_zero_span(self, programMjerenja, datum):
+    def get_zero_span(self, programMjerenja, datum, kolicina):
         """
         Dohvati zero-span vrijednosti
         program mjerenja je tipa int, datum je string
         
         path -- "program/datum"
         getJson/GET
+        #TODO!
         """
         #point url na trazeni dio REST servisa
         url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
         #pripremi zahtjev
-        payload = {"id":"getZeroSpanLista", "name":"GET"}
+        payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
         try:
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
@@ -239,7 +240,7 @@ if __name__ == '__main__':
 #        print(r1)
 
         """get zero span"""
-        r2 = wz.get_zero_span(65, '2015-02-22')
+        r2 = wz.get_zero_span(65, '2015-02-22', 90)
         print(r2)
         
         

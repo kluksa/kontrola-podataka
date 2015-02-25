@@ -21,24 +21,6 @@ sys.exit(aplikacija.exec_())
 """
 TODO!
 
-bug sa glavnim dijalogom za postavke grafova...
-
-ZERO SPAN!
-promjena u zero span DTO
-
-{"maxDozvoljeno":float, "minDozvoljeno":float, "vrijednost":float,
-"vrijeme":int unix timestamp, "vrsta":char "Z" ili "S"}
-
-primam listu takvih
-saljem jenda json, sa dodatnim programMjerenjaId
-
-plot fill izmedju dozvoljenih zeleno (default)
-plot fill izvan dozvoljenih crveno (default)
-tocke unutar -- zeleno
-tocke izvan -- crveno
-
-
-
 1. funkcionalnost sljedeci/prethodni dan za zero/span panel??
 
 2. neovisni zoom/pick selektor za pojednini graf?

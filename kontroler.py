@@ -122,7 +122,8 @@ class Kontroler(QtCore.QObject):
                     'warning':{'line':'--', 'linewidth':1.0, 'rgb':(255,0,0), 'alpha':1.0, 'zorder':1, 'crtaj':True},
                     'fill':{'crtaj':True, 'rgb':(0,255,0), 'alpha':0.1},
                     'fill2':{'crtaj':True, 'rgb':(255,0,0), 'alpha':0.1}
-                        }
+                        }, 
+                'zerospan':{'brojPodataka':30}
                             }
         
         """povezivanje signala i funkcija (definicija toka)"""
@@ -524,7 +525,7 @@ class Kontroler(QtCore.QObject):
         self.connect(self, 
                      QtCore.SIGNAL('clearZeroSpan'), 
                      self.gui.zspanel.zeroGraf.clear_me)
-
+        
 ###############################################################################
     def prikazi_error_msg(self, poruka):
         """
@@ -717,7 +718,7 @@ class Kontroler(QtCore.QObject):
         """            
         Metoda poziva modalni dijalog za izbor postavki grafa.
         Ako se prihvati izbor, promjene se defaultne vrijednosti te se 
-        informacija o promjeni propagira dalje.
+        informacija o promjeni propagira dalje (ctanje grafova...).
         """
         #napravi deep copy dicta defaulta (za slucaj cancel)
         postavke = copy.deepcopy(self.graf_defaults)
@@ -726,19 +727,39 @@ class Kontroler(QtCore.QObject):
             opiskanala = self.mapa_mjerenjeId_to_opis, 
             stablo = self.modelProgramaMjerenja)
         
+        #apply gumb na dijalogu za postavke grafova
+        """Problem je pinnati izvor signala.. jer je izvor lokalna varijabla
+        funkcije. Iz tog razloga connect i disconnect je unutar funkcije"""
+        self.connect(dijalogDetalji,
+                     QtCore.SIGNAL('apply_promjene_izgleda(PyQt_PyObject)'), 
+                     self.apply_izmjene_postavki_grafova)
+        
         if dijalogDetalji.exec_():
             postavke = dijalogDetalji.dohvati_postavke()
-            #kopiraj nove postavke i postavi ih u graf_defaults
-            self.graf_defaults = copy.deepcopy(postavke)
-            #provjeri datum?
-            if self.tmin != None:
-                targ = (self.tmin - datetime.timedelta(minutes = 1)) # timestamp
-                targ = str(targ.date())
-                #ponovno nacrtaj glavni graf
-                self.priredi_podatke([self.gKanal, targ])
-                #ponovno nacrtaj zero i span grafove
-                self.nacrtaj_zero_span([self.gKanal, targ])
-        
+            #pozovi na update i crtanje
+            self.apply_izmjene_postavki_grafova(postavke)
+            
+            #disconnect signal
+            self.disconnect(dijalogDetalji, 
+                            QtCore.SIGNAL('apply_promjene_izgleda(PyQt_PyObject)'), 
+                            self.apply_izmjene_postavki_grafova)
+###############################################################################        
+    def apply_izmjene_postavki_grafova(self, mapa):
+        """
+        Implementacija promjena postavki grafova.
+        - update self.graf_defaults
+        - pozovi na pripremu podataka i crtanje svih grafova
+        """
+        #spremi nove postavke u defaultne
+        self.graf_defaults = copy.deepcopy(mapa)
+        #test za datum
+        if self.tmin != None:
+            targ = (self.tmin - datetime.timedelta(minutes = 1)) # timestamp
+            targ = str(targ.date())
+            #ponovno nacrtaj glavni graf
+            self.priredi_podatke([self.gKanal, targ])
+            #ponovno nacrtaj zero i span grafove
+            self.nacrtaj_zero_span([self.gKanal, targ])        
 ###############################################################################
     def naredi_crtanje_satnog(self):
         """
@@ -1014,10 +1035,12 @@ class Kontroler(QtCore.QObject):
         """
         progMjer = int(lista[0])
         datum = str(lista[1])
+        #dohvati broj podataka za zero i span prije crtanja.
+        broj = int(self.graf_defaults['zerospan']['brojPodataka'])
         self.emit(QtCore.SIGNAL('clearZeroSpan'))
         try:
             #dokvati listu [zeroFrejm, spanFrejm]
-            frejmovi = self.webZahtjev.get_zero_span(progMjer, datum)
+            frejmovi = self.webZahtjev.get_zero_span(progMjer, datum, broj)
 
             if frejmovi != None:
                 outputZero = [frejmovi[0], self.graf_defaults]

@@ -5,7 +5,7 @@ Created on Wed Feb  4 10:45:42 2015
 @author: User
 """
 
-from PyQt4 import QtGui, uic
+from PyQt4 import QtGui, QtCore, uic
 
 import glavnigrafwidget
 import pomocnigrafoviwidget
@@ -315,11 +315,37 @@ class GlavniIzbor(base25, form25):
         self.zero_fill_check(self.defaulti['zero']['fill']['crtaj'])
         self.zero_granica_check(self.defaulti['zero']['warning']['crtaj'])
         
+        #combobox sa max brojem tocaka za zero i span grafove
+        self.zero.maxNZeroSpan.currentIndexChanged.connect(self.promjena_maxN_zerospan)
+        self.span.maxNZeroSpan.currentIndexChanged.connect(self.promjena_maxN_zerospan)
+        
+        #apply gumb
+        self.applyButton.clicked.connect(self.apply_promjene)
     """
     definicija callback funkcija
     
     Sve promjene se moraju reflektirati na glavnom dictu defaulti
     """
+###############################################################################
+    def apply_promjene(self):
+        """
+        apply promjena grafa
+        """
+        self.emit(QtCore.SIGNAL('apply_promjene_izgleda(PyQt_PyObject)'), self.defaulti)
+###############################################################################
+    def promjena_maxN_zerospan(self, x):
+        """
+        promjena max broja podataka za zero i span graf.
+        Definirano u comboboxu, ulazni parametar je index izabranne vrijednosti, 
+        ali ga treba spremiti kao integer vrijednosti!
+        Takodjer treba pomaknuti i drugi combobox na odgovarajucu vrijednost
+        """
+        n = int(self.zero.maxNZeroSpan.itemText(x))
+        #zapamti promjenu
+        self.defaulti['zerospan']['brojPodataka'] = n
+        #pomakni sve relevantne comboboxeve (sync)
+        self.zero.maxNZeroSpan.setCurrentIndex(x)
+        self.span.maxNZeroSpan.setCurrentIndex(x)
 ###############################################################################
     def glavni_marker_nevalidan(self, x):
         """

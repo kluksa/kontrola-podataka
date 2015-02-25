@@ -53,13 +53,17 @@ class ZeroIzbor(base22, form22):
         okM = listHelpera[0][defaulti['zero']['ok']['marker']]
         badM = listHelpera[0][defaulti['zero']['bad']['marker']]
         wLine = listHelpera[2][defaulti['zero']['warning']['line']]
-        
+        #max broj tocaka za zero span graf -- nuzna konverzija u string!
+        maxN = str(defaulti['zerospan']['brojPodataka'])
+
         #setter za vrijednosti iz defaulta
         self.stilMidline.setCurrentIndex(self.stilMidline.findText(glavnaLinija))
         self.okMarker.setCurrentIndex(self.okMarker.findText(okM))
         self.badMarker.setCurrentIndex(self.badMarker.findText(badM))
         self.granicaLine.setCurrentIndex(self.granicaLine.findText(wLine))
-        
+        #setter za max broj tocaka zero span grafa
+        self.maxNZeroSpan.setCurrentIndex(self.maxNZeroSpan.findText(maxN))
+
         ###QSpinBox###
         self.okSize.setValue(defaulti['zero']['ok']['markersize'])
         self.badSize.setValue(defaulti['zero']['bad']['markersize'])

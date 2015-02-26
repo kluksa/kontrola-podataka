@@ -32,4 +32,6 @@ TODO!
 5. multiple toolbars??
 
 6. show hide toolbars??? (instanca_toolbara.hide(), instanca_toolbara.show())
+
+7. LOGGING
 """

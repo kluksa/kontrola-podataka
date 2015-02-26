@@ -239,8 +239,8 @@ if __name__ == '__main__':
 #        r1 = wz.get_sirovi(65, '2015-02-22')
 #        print(r1)
 
-        """get zero span"""
-        r2 = wz.get_zero_span(65, '2015-02-22', 90)
+        """get zero span plitvice ozon"""
+        r2 = wz.get_zero_span(65, '2015-02-18', 150)
         print(r2)
         
         

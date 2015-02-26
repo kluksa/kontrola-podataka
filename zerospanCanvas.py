@@ -7,6 +7,7 @@ Created on Mon Feb  2 11:22:25 2015
 Klasa (canvas) za prikaz ZERO ili SPAN vrijednosti.
 """
 import matplotlib as mpl
+from PyQt4 import QtCore
 
 import pomocneFunkcije #import pomocnih funkcija
 import opcenitiCanvas #import opcenitog (abstract) canvasa
@@ -71,7 +72,11 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
 
         """
         self.axes.clear()
-
+        #nema annotationa
+        self.annotationStatus = False
+        #reset labele na panelu
+        self.updateaj_labele_na_panelu(['','','',''])
+        
         self.data = ulaz[0]
         self.detalji = ulaz[1]
         self.raspon = ulaz[2]
@@ -270,7 +275,7 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
         """
         povezivanje callback funkcija matplotlib canvasa (pick...)
         """
-        self.mpl_connect('scroll_event', self.scroll_zoom)
+        #self.mpl_connect('scroll_event', self.scroll_zoom)
         self.mpl_connect('pick_event', self.on_pick)
 ###############################################################################
     def on_pick(self, event):
@@ -281,17 +286,42 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
             #definiraj x i y preko izabrane tocke
             x = self.data.index[event.ind[0]]
             y = self.data.loc[x, 'vrijednost']
-    
-            if event.mouseevent.button == 2:
-                #middle click
-                if self.annotationStatus:
-                    self.annotation.remove()
-                    self.annotationStatus = False
-                    self.draw()
-                    if self.zadnjiAnnotation != x:
-                        self.napravi_annotation(x, y, event.mouseevent)
-                else:
-                    self.napravi_annotation(x, y, event.mouseevent)
+            minD = self.data.loc[x, 'minDozvoljeno']
+            maxD = self.data.loc[x, 'maxDozvoljeno']
+            if y >= minD and y<= maxD:
+                status = 'Dobar'
+            else:
+                status = 'Ne valja'
+                    
+            if event.mouseevent.button == 1 or event.mouseevent.button == 2:
+                #left click or middle click
+                #update labels
+                argList = [str(y), str(minD), str(maxD), str(status)]
+                #sredi annotation
+                self.anotiraj_graf(x, y, event, argList)
+###############################################################################
+    def updateaj_labele_na_panelu(self, argList):
+                if self.tipGrafa == 'zero':
+                    self.emit(QtCore.SIGNAL('zero_point_info(PyQt_PyObject)'),argList)
+                elif self.tipGrafa == 'span':
+                    self.emit(QtCore.SIGNAL('span_point_info(PyQt_PyObject)'),argList)        
+###############################################################################
+    def anotiraj_graf(self, x, y, event, argList):
+        """
+        refactor annotiranja grafa
+        """
+        if self.annotationStatus:
+            self.annotation.remove()
+            self.annotationStatus = False
+            #clear info sa panela
+            self.updateaj_labele_na_panelu(['','','',''])
+            self.draw()
+            if self.zadnjiAnnotation != x:
+                self.napravi_annotation(x, y, event.mouseevent)
+                self.updateaj_labele_na_panelu(argList)
+        else:
+            self.napravi_annotation(x, y, event.mouseevent)
+            self.updateaj_labele_na_panelu(argList)
 ###############################################################################
     def napravi_annotation(self, x, y, event):
         """
@@ -352,76 +382,107 @@ class ZeroSpanGraf(opcenitiCanvas.MPLCanvas):
                        transform = self.axes.transAxes)
         self.draw()
 ###############################################################################
-    def scroll_zoom(self, event):
+    def rect_zoom(self, eclick, erelease):
         """
-        Implementacija zooma uz pomoc scroll gumba.
+        REIMPLEMENTED!
         
-        scroll up   --> zoom in
-        scroll down --> zoom out
+        metoda odradjuje zoom na isti nacin kao i metoda definirana u super klasi
+        samo uz jednu iznimku. emitira signal koji resizea x komponetu drugog tipa
+        grafa.
         
-        Zoom je centriran okolo pozicije misa kada se scrolla. ta tocka ce uvijek
-        ostati tamo gdje je i bila, samo ce se skala pomaknuti za predefinirani
-        faktor povecanja.
-        
-        BITNO JE NAPOMENUTI! zoom samo redefinira granice koje se prikazuju
+        tj. zoom na zero grafu skalira x os span grafa i obrnuto.
         """
-        #zanemari ako je cursor izvan canvasa
-        if event.inaxes:
-            #nadji trenutni raspon x i y osi
-            xRaspon = self.axes.get_xlim()
-            yRaspon = self.axes.get_ylim()
-            #nadji tocku iznad koje je aktiviran scroll_event
-            trenutniX = event.xdata
-            trenutniY = event.ydata
-            #definiraj povecanje zooma, gradacija zooma
-            faktorPovecanja = 1.5
-            #odredi novu skalu (raspon) ovisno o smjeru scrolla
-            if event.button == 'down':
-                #zoom out
-                skala = faktorPovecanja
-            elif event.button == 'up':
-                #zoom in
-                skala = 1.0 / faktorPovecanja
-            else:
-                """
-                potencijalni visak, ali za svaki slucaj da event.button ne bude
-                'up' ili 'down' vec nesto trece.
-                """
-                #tj. nemoj niti povecati niti smanjiti raspon x i y osi
-                skala = 1
-            
-            if self.zeroNacrtan:
-                #nova duljina / raspon skale xmax-xmin
-                lenNoviX = (xRaspon[1] - xRaspon[0]) * skala
-                lenNoviY = (yRaspon[1] - yRaspon[0]) * skala
-            
-                #relativni polozaj tocke od koje radimo zoom
-                relPosX = (xRaspon[1] - trenutniX) / (xRaspon[1] - xRaspon[0])
-                relPosY = (yRaspon[1] - trenutniY) / (yRaspon[1] - yRaspon[0])
-                
-                #racunanje novih x granica grafa
-                xmin = trenutniX - lenNoviX * (1 - relPosX)
-                xmax = trenutniX + lenNoviX * relPosX
-            
-                #racunanje novih y granica grafa
-                ymin = trenutniY - lenNoviY * (1 - relPosY)
-                ymax = trenutniY + lenNoviY * relPosY
-            
-                #onemoguci zoom out izvan granica originalnog grafa
-                if self.defaultRasponX[0] > xmin:
-                    xmin = self.defaultRasponX[0]
-                if self.defaultRasponX[1] < xmax:
-                    xmax = self.defaultRasponX[1]
-                if self.defaultRasponY[0] > ymin:
-                    ymin = self.defaultRasponY[0]
-                if self.defaultRasponY[1] < ymax:
-                    ymax = self.defaultRasponY[1]
-            
-                #postavi nove granice
-                self.axes.set_xlim([xmin, xmax])
-                self.axes.set_ylim([ymin, ymax])
-                
-                #prikazi promjenu
-                self.draw()
+        #rubovi zoom prozora
+        x = sorted([eclick.xdata, erelease.xdata])
+        y = sorted([eclick.ydata, erelease.ydata])
+        #reset granica osi
+        self.axes.set_xlim(x)
+        self.axes.set_ylim(y)
+        #draw
+        self.draw()
+        
+        if self.tipGrafa == 'zero':
+            self.emit(QtCore.SIGNAL('zero_sync_x_zoom(PyQt_PyObject)'), x)
+        elif self.tipGrafa == 'span':
+            self.emit(QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'), x)
+###############################################################################
+    def sync_x_zoom(self, x):
+        """
+        postavi novi raspon x osi.
+        """
+        self.axes.set_xlim(x)
+        self.draw()
+###############################################################################
+#    def scroll_zoom(self, event):
+#        """
+#        Implementacija zooma uz pomoc scroll gumba.
+#        
+#        scroll up   --> zoom in
+#        scroll down --> zoom out
+#        
+#        Zoom je centriran okolo pozicije misa kada se scrolla. ta tocka ce uvijek
+#        ostati tamo gdje je i bila, samo ce se skala pomaknuti za predefinirani
+#        faktor povecanja.
+#        
+#        BITNO JE NAPOMENUTI! zoom samo redefinira granice koje se prikazuju
+#        """
+#        #zanemari ako je cursor izvan canvasa
+#        if event.inaxes:
+#            #nadji trenutni raspon x i y osi
+#            xRaspon = self.axes.get_xlim()
+#            yRaspon = self.axes.get_ylim()
+#            #nadji tocku iznad koje je aktiviran scroll_event
+#            trenutniX = event.xdata
+#            trenutniY = event.ydata
+#            #definiraj povecanje zooma, gradacija zooma
+#            faktorPovecanja = 1.5
+#            #odredi novu skalu (raspon) ovisno o smjeru scrolla
+#            if event.button == 'down':
+#                #zoom out
+#                skala = faktorPovecanja
+#            elif event.button == 'up':
+#                #zoom in
+#                skala = 1.0 / faktorPovecanja
+#            else:
+#                """
+#                potencijalni visak, ali za svaki slucaj da event.button ne bude
+#                'up' ili 'down' vec nesto trece.
+#                """
+#                #tj. nemoj niti povecati niti smanjiti raspon x i y osi
+#                skala = 1
+#            
+#            if self.zeroNacrtan:
+#                #nova duljina / raspon skale xmax-xmin
+#                lenNoviX = (xRaspon[1] - xRaspon[0]) * skala
+#                lenNoviY = (yRaspon[1] - yRaspon[0]) * skala
+#            
+#                #relativni polozaj tocke od koje radimo zoom
+#                relPosX = (xRaspon[1] - trenutniX) / (xRaspon[1] - xRaspon[0])
+#                relPosY = (yRaspon[1] - trenutniY) / (yRaspon[1] - yRaspon[0])
+#                
+#                #racunanje novih x granica grafa
+#                xmin = trenutniX - lenNoviX * (1 - relPosX)
+#                xmax = trenutniX + lenNoviX * relPosX
+#            
+#                #racunanje novih y granica grafa
+#                ymin = trenutniY - lenNoviY * (1 - relPosY)
+#                ymax = trenutniY + lenNoviY * relPosY
+#            
+#                #onemoguci zoom out izvan granica originalnog grafa
+#                if self.defaultRasponX[0] > xmin:
+#                    xmin = self.defaultRasponX[0]
+#                if self.defaultRasponX[1] < xmax:
+#                    xmax = self.defaultRasponX[1]
+#                if self.defaultRasponY[0] > ymin:
+#                    ymin = self.defaultRasponY[0]
+#                if self.defaultRasponY[1] < ymax:
+#                    ymax = self.defaultRasponY[1]
+#            
+#                #postavi nove granice
+#                self.axes.set_xlim([xmin, xmax])
+#                self.axes.set_ylim([ymin, ymax])
+#                
+#                #prikazi promjenu
+#                self.draw()
 ###############################################################################
 ###############################################################################

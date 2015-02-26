@@ -57,9 +57,15 @@ class MPLCanvas(FigureCanvas):
         self.MODEZOOM = lista[0]
         self.MODEPICK = lista[1]
         if self.MODEZOOM:
+            boxinfo = dict(facecolor = 'yellow', 
+                           edgecolor = 'black', 
+                           alpha = 0.5, 
+                           fill = True)
+                           
             self.rectSelector = RectangleSelector(self.axes, 
                                                   self.rect_zoom, 
-                                                  drawtype = 'box')
+                                                  drawtype = 'box', 
+                                                  rectprops = boxinfo)
         else:
             self.rectSelector = None
 ###############################################################################

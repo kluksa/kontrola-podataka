@@ -525,6 +525,30 @@ class Kontroler(QtCore.QObject):
         self.connect(self, 
                      QtCore.SIGNAL('clearZeroSpan'), 
                      self.gui.zspanel.zeroGraf.clear_me)
+                     
+        #panel za grafove, promjena broja dana za zero i span
+        self.connect(self.gui.zspanel,
+                     QtCore.SIGNAL('broj_dana_changed(PyQt_PyObject)'), 
+                     self.zerospan_broj_dana_change)
+                     
+        #zspanel, update info labela za zero i span nakon picka na grafu
+        self.connect(self.gui.zspanel.zeroGraf,
+                     QtCore.SIGNAL('zero_point_info(PyQt_PyObject)'), 
+                     self.gui.zspanel.prikazi_info_zero)
+                     
+        self.connect(self.gui.zspanel.spanGraf, 
+                     QtCore.SIGNAL('span_point_info(PyQt_PyObject)'), 
+                     self.gui.zspanel.prikazi_info_span)
+                     
+        #zerospan, sinkronizacija zooma, ali samo po x osi
+        self.connect(self.gui.zspanel.zeroGraf,
+                     QtCore.SIGNAL('zero_sync_x_zoom(PyQt_PyObject)'), 
+                     self.gui.zspanel.spanGraf.sync_x_zoom)
+
+        self.connect(self.gui.zspanel.spanGraf,
+                     QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'), 
+                     self.gui.zspanel.zeroGraf.sync_x_zoom)
+
         
 ###############################################################################
     def prikazi_error_msg(self, poruka):
@@ -730,6 +754,7 @@ class Kontroler(QtCore.QObject):
         #apply gumb na dijalogu za postavke grafova
         """Problem je pinnati izvor signala.. jer je izvor lokalna varijabla
         funkcije. Iz tog razloga connect i disconnect je unutar funkcije"""
+        #apply change
         self.connect(dijalogDetalji,
                      QtCore.SIGNAL('apply_promjene_izgleda(PyQt_PyObject)'), 
                      self.apply_izmjene_postavki_grafova)
@@ -752,6 +777,8 @@ class Kontroler(QtCore.QObject):
         """
         #spremi nove postavke u defaultne
         self.graf_defaults = copy.deepcopy(mapa)
+        #sync broj dana na zero span panelu sa izborom u defaultima
+        self.gui.zspanel.update_promjene_broja_dana(self.graf_defaults['zerospan']['brojPodataka'])
         #test za datum
         if self.tmin != None:
             targ = (self.tmin - datetime.timedelta(minutes = 1)) # timestamp
@@ -1068,9 +1095,6 @@ class Kontroler(QtCore.QObject):
         - naredba prema rest servisu za dodavanje novih.
         - redraw?
         """
-        #TODO! saljem nazad isti DTO + programMjerenjaId, odstupanja su placeholderi (visak?)
-        #int id kanala
-        #saljem odvojeno int programa mjerenja / dto json string
         kanal = self.gKanal
         if self.mapa_mjerenjeId_to_opis != None and kanal != None:
             #dict sa opisnim parametrima za kanal
@@ -1171,5 +1195,15 @@ class Kontroler(QtCore.QObject):
                 out = out and False
         #return rezultat (upozori da neki podaci NISU spremljeni na REST)
         return out
+###############################################################################
+    def zerospan_broj_dana_change(self, x):
+        """
+        x je novi broj dana (int) koji treba prikazati za zero i span
+        -spremi u defaulte
+        -pokreni crtanje grafa
+        """
+        self.graf_defaults['zerospan']['brojPodataka'] = int(x)
+        #gKanal i pickedDate sadrze infromaciju o aktivnom akanalu i datumu na kalendaru
+        self.nacrtaj_zero_span([self.gKanal, self.pickedDate])
 ###############################################################################
 ###############################################################################

@@ -127,6 +127,7 @@ class ZeroSpanPanel(base6, form6):
         povezivanje akcija widgeta sa funkcijama
         """
         self.dodajRefZS.clicked.connect(self.dodaj_ref_tocku)
+        self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
 ###############################################################################
     def dodaj_ref_tocku(self):
         """
@@ -152,5 +153,44 @@ class ZeroSpanPanel(base6, form6):
         formula = mapa['komponentaFormula']
         opis = 'ZERO / SPAN za {0}, {1}( {2} )'.format(postaja, komponenta, formula)
         self.glavniLabel.setText(opis)
+###############################################################################
+    def update_promjene_broja_dana(self, x):
+        """
+        callback za update broja dana koji se prikazuju na zero span grafu
+        x je integer
+        block signal emit just in case
+        """
+        broj = str(x)
+        self.blockSignals(True)
+        self.brojDana.setCurrentIndex(self.brojDana.findText(broj))
+        self.blockSignals(False)
+###############################################################################
+    def promjeni_broj_dana(self, x):
+        """
+        -funkcija koja se poziva promjenom broja dana u comboboxu
+        -update defaulte, pozovi na ponovno crtanje grafa
+        """
+        broj = int(self.brojDana.itemText(x))
+        self.emit(QtCore.SIGNAL('broj_dana_changed(PyQt_PyObject)'), broj)
+###############################################################################
+    def prikazi_info_zero(self, lista):
+        """
+        funkcija updatea labele sa informacijom o zero tocki koja je izabrana 
+        na grafu [vrijednost, min, max, status]
+        """
+        self.zeroValue.setText(lista[0])
+        self.zeroMinD.setText(lista[1])
+        self.zeroMaxD.setText(lista[2])
+        self.zeroStatus.setText(lista[3])
+###############################################################################
+    def prikazi_info_span(self, lista):
+        """
+        funkcija updatea labele sa informacijom o span tocki koja je izabrana 
+        na grafu [vrijednost, min, max, status]
+        """
+        self.spanValue.setText(lista[0])
+        self.spanMinD.setText(lista[1])
+        self.spanMaxD.setText(lista[2])
+        self.spanStatus.setText(lista[3])
 ###############################################################################
 ###############################################################################

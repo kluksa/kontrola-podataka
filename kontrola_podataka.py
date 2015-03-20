@@ -21,6 +21,15 @@ sys.exit(aplikacija.exec_())
 potencijalni problemi
 1. unresponsive gui.
 - Implementacija thredova??
+- implemetacija je malo komplicirana
+    -instanciram QThreadObject()
+    -taj thread pokrece svoj event loop nakon poziva start metode
+    -bilo koji QObject mogu gurnuti u taj thread
+    -signali imaju protokol pomocu kojih mogu komunicirati sa drugim threadovima
+
+    -display i kontroler drzati u jednom threadu
+    -blocking I/O prebaciti u drugi thread? (networking, dokument..)
+    -potrebno je jos refaktorirati kod
 
 2. dokument nema mehanizam da oslobodi memoriju.
 - kako se dodaju podaci prostor u memoriji raste...

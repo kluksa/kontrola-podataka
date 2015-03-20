@@ -226,10 +226,10 @@ class Graf(opceniti_canvas.MPLCanvas):
                 t2 = self.tmax
 
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
-            if tmin != tmax:
+            if t1 != t2:
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
-                self.show_menu(loc, t1, t2)
+                self.show_context_menu(loc, t1, t2)
 ###############################################################################
     def show_context_menu(self, pos, tmin, tmax):
         """

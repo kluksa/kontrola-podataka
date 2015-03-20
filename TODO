@@ -110,6 +110,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150225:::VM:::Raspon x osi zero i span grafa se racuna prije poziva na crtanje i prosljedjuje se kao argument funkciji koja crta. (raspon bi trebao biti isti na oba grafa). Raspon se odnosi na max dozvoljenu sirinu (oba grafa se mogu i dalje neovisno zoomirati):::
 20150226:::VM:::U zerospan panleu je dodan funkcionalan combobox sa brojem dana i niz labela koji se popunjavaju ljevim klikom na zero i span tocke. Scroll zoom je disablean za zero i span graf, ali je rectangle zoom sada sinkroniziran(zoom jednog grafa rescalea x os drugog):::
 20150320:::VM:::Veliki refactoring, izgled displaya, nacin crtanja grafova, interakcija sa grafovima, config i logging.:::
+20150320:::VM:::ispravljen bug sa minutnim grafom:::
 
 
 

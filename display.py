@@ -4,280 +4,156 @@
 Created on Wed Nov  5 14:20:39 2014
 
 @author: User
+
 """
-import sys
+import configparser
+import logging
+
 from PyQt4 import QtCore, QtGui, uic
 
-import functools
-import pomocneFunkcije #samo zbog definicije custom exceptiona
-import kontroler
 import rest_izbornik
-import grafoviPanel
+import grafovi_panel
+import app_dto
+import kontroler
+import auth_login
+import glavni_dijalog
 
 ###############################################################################
 ###############################################################################
-base, form = uic.loadUiType('display.ui')
+base, form = uic.loadUiType('./ui_files/display.ui')
 class Display(base, form):
-    """
-    Glavni display okvir applikacije.
-        -glavni prozor
-        -toolbar
-        -msg bar
-    """
-    def __init__(self, parent = None):
+    def __init__(self, configfile = None, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
-        
-        #init sa full screenom?
-        self.setWindowState(QtCore.Qt.WindowMaximized)
-        
-        """inicijalizacija komponenti"""
-        #inicijalizacija panela za grafove
-        self.panel = grafoviPanel.GrafPanel(parent = self)
-        #inicjalizacija izbornika, trenutno samo weblogger
+
+        self.config = configparser.ConfigParser()
+        try:
+            self.config.read(configfile)
+        except Exception as err:
+            print('Greska kod ucitavanja config.ini')
+            print(err)
+            #exit application
+            QtGui.QApplication.closeAllWindows()
+
+
+        #set up logger preko "privatne" metode
+        self.setup_logging()
+
+        #set up inicijalizaciju
+        self.setup_main_window()
+        """
+        Todo... treba srediti toggle tickova grida isl do kraja
+        """
+
+###############################################################################
+    def setup_main_window(self):
+        """
+        setup glavnog prozora koristeci podatke iz self.config
+        """
+        #inicijaliuacija app dto objekta uz pomoc config filea
+        self.appSettings = app_dto.AppSettingsDTO(self.config)
+        #inicijalizacija graf dto objekata uz pomoc config filea
+        self.grafSettings = app_dto.GrafSettingsDTO(self.config)
+
+        #set state chekcable akcija
+        self.action_satni_grid.setChecked(self.appSettings.satniGrid)
+        self.action_satni_cursor.setChecked(self.appSettings.satniCursor)
+        self.action_satni_minor_ticks.setChecked(self.appSettings.satniTicks)
+        self.action_satni_span_selector.setChecked(self.appSettings.satniSelector)
+        self.action_satni_legend.setChecked(self.appSettings.satniLegend)
+        self.action_minutni_grid.setChecked(self.appSettings.minutniGrid)
+        self.action_minutni_cursor.setChecked(self.appSettings.minutniCursor)
+        self.action_minutni_minor_ticks.setChecked(self.appSettings.minutniTicks)
+        self.action_minutni_span_selector.setChecked(self.appSettings.minutniSelector)
+        self.action_minutni_legend.setChecked(self.appSettings.minutniLegend)
+        self.action_zoom.setChecked(self.appSettings.zoom)
+
+        #inicijalizacija panela sa grafovima koncentracije
+        self.koncPanel = grafovi_panel.KoncPanel()
+        self.koncPanelLayout.addWidget(self.koncPanel)
+        #inicijalizacija panela sa zero/span grafovima
+        self.zsPanel = grafovi_panel.ZeroSpanPanel()
+        self.zsPanelLayout.addWidget(self.zsPanel)
+        #inicijalizacija i postavljanje kontrolnog widgeta (tree view/kalendar...)
         self.restIzbornik = rest_izbornik.RestIzbornik()
-        #inicjalizacija zero/span panela
-        self.zspanel = grafoviPanel.ZeroSpanPanel(parent = self)
-        """postavljanje panela i izbornika u dock widgete"""
-        #postavljanje panela u dockable widget self.dockWidget_grafovi
-        self.dockWidget_grafovi.setWidget(self.panel)
-        #postavi self.restIzbornik u kontrolni dock widget
-        self.dockWidget_kontrola.setWidget(self.restIzbornik)
-        #postavi ZeroSpanPanel u dock widget
-        self.dockWidget_zerospan.setWidget(self.zspanel)
-        """inicijalizacija kontrolora"""
-#        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
-#        """povezivanje akcija vezanih za gui elemente"""
-        
-        QtCore.QTimer.singleShot(0, self.pokreni_kontrolu)
-#        self.setup_akcije()
-###############################################################################
-    def pokreni_kontrolu(self):
-        """
-        alternativan nacin loada aplikacije, forsira iscrtavanje primitivnog displaya
-        i stavlja dulji load kontrolnog elementa u event loop
-        
-        tj. init displaya ce zavrsiti prvo, zatim ce se instancirati kontroler
-        itd...
-        """
-        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
-        """povezivanje akcija vezanih za gui elemente"""
-        self.setup_akcije()
-###############################################################################
-    def setup_akcije(self):
-        """
-        Povezivanje QAction sa ciljanim slotovima (toolbar).
-        Connectioni izmedju menu, toolbarova, i drugih opcija gui-a.
-        
-        Pattern svih akcija je sljedeci:
-        -Nakon klika na akciju emitiraj specificni signal
-        -kontroler osluskuje i hvata te signale te ih realizira
-        """
-        
-        #set ikone u odredjene akcije (zoom in, zoom out, pick)
-        self.actionZoomIn.setIcon(QtGui.QIcon('zoomin.jpeg'))
-        self.actionZoomOut.setIcon(QtGui.QIcon('zoomout.jpeg'))
-        self.actionPick.setIcon(QtGui.QIcon('select.jpeg'))
+        self.dockWidget.setWidget(self.restIzbornik)
 
-        #file i generalni actioni
-        self.action_Exit.triggered.connect(self.close)
-        self.action_reconnectREST.triggered.connect(self.reinitialize_REST)
-        self.action_Save_preset.triggered.connect(self.request_save_preset)
-        self.action_Load_preset.triggered.connect(self.request_load_preset)
-        self.action_Log_in.triggered.connect(self.request_log_in)
-        self.action_Log_out.triggered.connect(self.request_log_out)
-        
-        #toggle zoom / pick opcije
-        self.actionZoomIn.triggered.connect(functools.partial(self.zoom_pick_toggle, tip = 'zoom'))
-        self.actionPick.triggered.connect(functools.partial(self.zoom_pick_toggle, tip = 'pick'))
-        self.actionZoomOut.triggered.connect(self.zoom_out)
+        #toggle koji je gumb u rest izborniku aktivan (ovisno o aktivnom tabu)
+        ind = self.tabWidget.currentIndex()
+        self.toggle_upload_buttons(ind)
 
-        #toolbar, satno agregirani graf
-        self.connect(self.action_SatniGrid, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_satni_grid)
-        self.connect(self.action_SatniCursor, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_satni_cursor)
-        self.connect(self.action_SatniSpan, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_satni_span)
-        self.connect(self.action_SatniMinorTicks, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_satni_ticks)
-        self.connect(self.action_SatniLegenda, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_satni_legenda)
+        #setup stanja grafova (ticks, grid, span, zoom....)
+        self.koncPanel.satniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.satniCursor, self.appSettings.satniSelector, "SATNI")
+        self.koncPanel.minutniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.minutniCursor, self.appSettings.minutniSelector, "MINUTNI")
+        self.zsPanel.zeroGraf.set_interaction_mode(self.appSettings.zoom, False, False, "SPAN")
+        self.zsPanel.spanGraf.set_interaction_mode(self.appSettings.zoom, False, False, "ZERO")
 
-        #toolbar, minutni graf
-        self.connect(self.action_MinutniGrid, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_minutni_grid)
-        self.connect(self.action_MinutniCursor, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_minutni_cursor)
-        self.connect(self.action_MinutniSpan, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_minutni_span)
-        self.connect(self.action_MinutniMinorTicks, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_minutni_ticks)
-        self.connect(self.action_MinutniLegenda, 
-                     QtCore.SIGNAL('triggered(bool)'), 
-                     self.emit_update_minutni_legenda)
+        #setup icons
+        self.setup_ikone()
+
+        #definiranje signala gui elemenata
+        self.setup_signals()
+
+        #na kraju inicijalizacije stavi inicijalizaciju kontorlora u event loop
+        QtCore.QTimer.singleShot(0, self.setup_kontroler)
 ###############################################################################
-    def zoom_pick_toggle(self, x, tip = ''):
+    def promjeniTabRef(self, x):
         """
-        Toggle izmedju zoom i pick opcije na grafovima
-        x je tipa boolean
-        tip je keyword koji oznacava koji "gumb" ga poziva ('zoom' ili 'pick')
+        promjena tab, koji je od panela trenutno prikazan na ekranu.
         """
-        if tip == 'zoom':
-            #toggle suprotnu akciju na suprotno stanje od trenutne
-            self.actionPick.setChecked(not x)
-            #zapamti novo stanje zoom i pick opcije
-            arg = [x, not x]
-            #emitiraj promjenu stanja
-            self.emit(QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), arg)
-        elif tip == 'pick':
-            self.actionZoomIn.setChecked(not x)
-            arg = [not x, x]
-            self.emit(QtCore.SIGNAL('zoom_pick_state(PyQt_PyObject)'), arg)
+        #enable/disable gumbe na rest izborniku
+        self.toggle_upload_buttons(x)
+        #emit promjene aktivnog taba
+        self.emit(QtCore.SIGNAL('tab_promjenjen(PyQt_PyObject)'), x)
 ###############################################################################
-    def zoom_out(self):
+    def toggle_upload_buttons(self, x):
         """
-        Javi kontroloru da pokrene Zoom out svih grafova na pocetni polozaj.
+        enable/disable toggle za gumbe na restIzborniku.
+        Kada je aktivan tab sa koncentracijskim grafovima
+            -upload agregiranih je enabled
+            -dodavanje zero span ref vrijednosti je disabled
+        Kada je aktivan tab sa zero/span grafovima situacija je obrnuta.
         """
-        self.emit(QtCore.SIGNAL('zoom_out_all'))
+        if x == 0:
+            self.restIzbornik.uploadAgregirane.setEnabled(True)
+        elif x == 1:
+            self.restIzbornik.uploadAgregirane.setEnabled(False)
 ###############################################################################
-    def reinitialize_REST(self):
+    def setup_ikone(self):
         """
-        Toolbar akcija za reinicijlalizaciju REST servisa
-        
-        Javlja kontrolnom dijelu programa da ponovi dio inicijalizacije vezane
-        za rest servis (ponovno definira reader/writer, sastavljanje novog stabla
-        programa mjerenja...)
+        Postavljanje ikona za definirane QAkcije (toolbar/menubar...)
         """
-        self.emit(QtCore.SIGNAL('gui_reinitialize_REST'))
+        self.action_exit.setIcon(QtGui.QIcon('./icons/close19.png'))
+        self.action_log_in.setIcon(QtGui.QIcon('./icons/enter3.png'))
+        self.action_log_out.setIcon(QtGui.QIcon('./icons/door9.png'))
+        self.action_reconnect.setIcon(QtGui.QIcon('./icons/cogwheel9.png'))
+        self.action_zoom.setIcon(QtGui.QIcon('./icons/zoom24.png'))
+        self.action_zoom_out.setIcon(QtGui.QIcon('./icons/zoom25.png'))
+        self.action_stil_grafova.setIcon(QtGui.QIcon('./icons/bars7.png'))
 ###############################################################################
-    def emit_update_satni_legenda(self, x):
+    def setup_signals(self):
         """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza legende na satnom grafu.
+        Metoda difinira signale koje emitiraju dijelovi sucelja prema kontrolnom
+        elementu.
         """
-        self.emit(QtCore.SIGNAL('update_satni_legenda(PyQt_PyObject)'), x)
-################################################################################
-    def emit_update_minutni_legenda(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza legende na minutnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_minutni_legenda(PyQt_PyObject)'), x)
-################################################################################
-    def emit_update_satni_grid(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza grida na satnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_satni_grid(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_satni_span(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu span selektora na satnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_satni_span(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_satni_cursor(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza cursora na satnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_satni_cursor(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_satni_ticks(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza minor tickova na satnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_satni_ticks(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_minutni_grid(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza grida na minutnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_minutni_grid(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_minutni_cursor(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza cursora na minutnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_minutni_cursor(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_minutni_span(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu span selektora na minutnom grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_minutni_span(PyQt_PyObject)'), x)
-###############################################################################
-    def emit_update_minutni_ticks(self, x):
-        """
-        Ulazni parametar je tipa boolean. Metoda reemitira signal sa novim
-        stanjem checkable akcije za promjenu prikaza minor tickova na minutnom
-        grafu.
-        """
-        self.emit(QtCore.SIGNAL('update_minutni_ticks(PyQt_PyObject)'), x)
-###############################################################################
-    def request_save_preset(self):
-        """
-        Prosljedi zahtjev kontroloru da spremi trenutne postavke aplikacije
-        u file
-        """
-        self.emit(QtCore.SIGNAL('request_save_preset'))
-###############################################################################
-    def request_load_preset(self):
-        """
-        Prosljedi zahtjev kontroloru da ucita postavke aplikacije iz filea
-        """
-        self.emit(QtCore.SIGNAL('request_load_preset'))
-###############################################################################
-    def request_log_in(self):
-        """
-        Prosljedi kontroloru zahtjev za poziv log in dijaloga.
-        """
-        self.emit(QtCore.SIGNAL('request_log_in'))
-###############################################################################
-    def request_log_out(self):
-        """
-        Prosljedi kontroloru zahtjev za log out korisnika
-        """
-        self.emit(QtCore.SIGNAL('request_log_out'))
-###############################################################################
-    def set_action_state(self, mapaStanja):
-        """
-        Funkcija je zaduzena da postavi checkable akcije (satnigrid...) u stanje
-        koje odgovara kontroloru(*). Dodatno, funkcija mora privremeno "utisati" 
-        sve signale koje emitira display.
-        
-        *
-        -kontorlor je zaduzen da 'pamti' defaultno stanje sto ce se prikazivati
-        i kako (span, ticks...).
-        """
-        self.blockSignals(True)
-        self.action_SatniGrid.setChecked(mapaStanja['satnigrid'])
-        self.action_SatniCursor.setChecked(mapaStanja['satnicursor'])
-        self.action_SatniSpan.setChecked(mapaStanja['satnispan'])
-        self.action_SatniMinorTicks.setChecked(mapaStanja['satniticks'])
-        self.action_SatniLegenda.setChecked(mapaStanja['satnilegend'])
-        self.action_MinutniGrid.setChecked(mapaStanja['minutnigrid'])
-        self.action_MinutniCursor.setChecked(mapaStanja['minutnicursor'])
-        self.action_MinutniSpan.setChecked(mapaStanja['minutnispan'])
-        self.action_MinutniMinorTicks.setChecked(mapaStanja['minutniticks'])
-        self.action_MinutniLegenda.setChecked(mapaStanja['minutnilegend'])
-        self.blockSignals(False)
+        self.tabWidget.currentChanged.connect(self.promjeniTabRef)
+        self.action_exit.triggered.connect(self.close)
+        self.action_log_in.triggered.connect(self.request_log_in)
+        self.action_log_out.triggered.connect(self.request_log_out)
+        self.action_reconnect.triggered.connect(self.request_reconnect)
+        self.action_satni_grid.triggered.connect(self.request_satni_grid_toggle)
+        self.action_satni_cursor.triggered.connect(self.request_satni_cursor_toggle)
+        self.action_satni_minor_ticks.triggered.connect(self.request_satni_ticks_toggle)
+        self.action_satni_span_selector.triggered.connect(self.request_satni_span_toggle)
+        self.action_satni_legend.triggered.connect(self.request_satni_legend_toggle)
+        self.action_minutni_grid.triggered.connect(self.request_minutni_grid_toggle)
+        self.action_minutni_cursor.triggered.connect(self.request_minutni_cursor_toggle)
+        self.action_minutni_minor_ticks.triggered.connect(self.request_minutni_ticks_toggle)
+        self.action_minutni_span_selector.triggered.connect(self.request_minutni_span_toggle)
+        self.action_minutni_legend.triggered.connect(self.request_minutni_legend_toggle)
+        self.action_zoom.triggered.connect(self.zoom_toggle)
+        self.action_zoom_out.triggered.connect(self.zoom_out)
+        self.action_stil_grafova.triggered.connect(self.promjeni_stil_grafova)
 ###############################################################################
     def closeEvent(self, event):
         """
@@ -291,7 +167,7 @@ class Display(base, form):
                 'Da li ste sigurni da hocete ugasiti aplikaciju?\nNeki podaci nisu spremljeni na REST servis.',
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No)
-                
+
             if reply==QtGui.QMessageBox.Yes:
                 event.accept()
             else:
@@ -300,9 +176,168 @@ class Display(base, form):
             #izlaz iz aplikacije bez dodatnog pitanja.
             event.accept()
 ###############################################################################
-        
-if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
-    x = Display()
-    x.show()
-    sys.exit(app.exec_())
+    def promjeni_stil_grafova(self):
+        opis = self.kontrola.mapaMjerenjeIdToOpis
+        drvo = self.kontrola.modelProgramaMjerenja
+        if opis != None and drvo != None:
+            logging.info('Pozvan dijalog za promjenu stila grafova')
+            dijalog = glavni_dijalog.GlavniIzbor(defaulti = self.grafSettings, opiskanala = opis, stablo = drvo, parent = self)
+
+            #connect apply gumb
+            self.connect(dijalog,
+                         QtCore.SIGNAL('apply_promjene_izgleda'),
+                         self.naredi_promjenu_izgleda_grafova)
+
+            if dijalog.exec_():
+                logging.debug('Dialog za stil closed, accepted')
+                self.naredi_promjenu_izgleda_grafova()
+            else:
+                logging.debug('Dialog za stil closed')
+                self.naredi_promjenu_izgleda_grafova()
+
+            #disconnect apply gumb
+            self.disconnect(dijalog,
+                            QtCore.SIGNAL('apply_promjene_izgleda'),
+                            self.naredi_promjenu_izgleda_grafova)
+
+        else:
+            QtGui.QMessageBox.information(self, 'Problem:', 'Nije moguce pokrenuti dijalog.\nProvjeri da li su programi mjerenja uspjesno ucitani.')
+            logging.debug('Nije moguce inicijalizirati dijalog za stil grafova, nedostaje model mjerenja')
+###############################################################################
+    def naredi_promjenu_izgleda_grafova(self):
+        """
+        emitiraj zahtjev prema kontorlolu za update izgleda grafova
+        """
+        self.emit(QtCore.SIGNAL('izgled_grafa_promjenjen'))
+###############################################################################
+    def request_log_in(self):
+        """
+        - prikazi dijalog za unos korisnickog imena i lozinke
+        - enable/disable odredjene akcije
+        - emitiraj signal sa tuple objektom (korisnicko ime, sifra)
+        """
+        dijalog = auth_login.DijalogLoginAuth()
+        if dijalog.exec_():
+            info = dijalog.vrati_postavke()
+            logging.info('User logged in. User = {0}'.format(info[0]))
+            #disable log in action, enable log out action
+            self.action_log_in.setEnabled(False)
+            self.action_log_out.setEnabled(True)
+            self.emit(QtCore.SIGNAL('request_log_in(PyQt_PyObject)'), info)
+###############################################################################
+    def request_log_out(self):
+        """
+        - prikazi dijalog za potvrdu log outa
+        - enable/diable odredjene akcije
+        - emitiraj signal za log out
+        """
+        dijalog = QtGui.QMessageBox.question(self,
+                                             'Log out:',
+                                             'Potvrdi log out.',
+                                             QtGui.QMessageBox.Yes,
+                                             QtGui.QMessageBox.No)
+        if dijalog == QtGui.QMessageBox.Yes:
+            logging.info('User logged out.')
+            self.action_log_in.setEnabled(True)
+            self.action_log_out.setEnabled(False)
+            self.emit(QtCore.SIGNAL('request_log_out'))
+###############################################################################
+    def request_reconnect(self):
+        """
+        metoda emitira request za reconnect proceduru
+        """
+        self.emit(QtCore.SIGNAL('request_reconnect'))
+###############################################################################
+    def request_satni_grid_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_satniGrid(x)
+        self.koncPanel.satniGraf.toggle_grid(x)
+###############################################################################
+    def request_satni_cursor_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_satniCursor(x)
+        self.koncPanel.satniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.satniCursor, self.appSettings.satniSelector, "SATNI")
+###############################################################################
+    def request_satni_ticks_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_satniTicks(x)
+        self.koncPanel.satniGraf.toggle_ticks(x)
+###############################################################################
+    def request_satni_span_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_satniSelector(x)
+        self.koncPanel.satniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.satniCursor, self.appSettings.satniSelector, "SATNI")
+###############################################################################
+    def request_satni_legend_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_satniLegend(x)
+        self.koncPanel.satniGraf.toggle_legend(x)
+###############################################################################
+    def request_minutni_grid_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_minutniGrid(x)
+        self.koncPanel.minutniGraf.toggle_grid()
+###############################################################################
+    def request_minutni_cursor_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_minutniCursor(x)
+        self.koncPanel.minutniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.minutniCursor, self.appSettings.minutniSelector, "MINUTNI")
+###############################################################################
+    def request_minutni_ticks_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_minutniTicks(x)
+        self.koncPanel.minutniGraf.toggle_ticks(x)
+###############################################################################
+    def request_minutni_span_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_minutniSelector(x)
+        self.koncPanel.minutniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.minutniCursor, self.appSettings.minutniSelector, "MINUTNI")
+###############################################################################
+    def request_minutni_legend_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_minutniLegend(x)
+        self.koncPanel.minutniGraf.toggle_legend(x)
+###############################################################################
+    def zoom_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.appSettings.set_zoom(x)
+        self.koncPanel.satniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.satniCursor, self.appSettings.satniSelector, "SATNI")
+        self.koncPanel.minutniGraf.set_interaction_mode(self.appSettings.zoom, self.appSettings.minutniCursor, self.appSettings.minutniSelector, "MINUTNI")
+        #zs
+        self.zsPanel.zeroGraf.set_interaction_mode(self.appSettings.zoom, False, False, "ZERO")
+        self.zsPanel.spanGraf.set_interaction_mode(self.appSettings.zoom, False, False, "SPAN")
+###############################################################################
+    def zoom_out(self):
+        """
+        Prosljedjuje naredbu kontrolnom elementu da napravi full zoom out
+        na svim grafovima
+        """
+        self.koncPanel.satniGraf.full_zoom_out()
+        self.koncPanel.minutniGraf.full_zoom_out()
+        self.zsPanel.spanGraf.full_zoom_out()
+        self.zsPanel.zeroGraf.full_zoom_out()
+###############################################################################
+    def setup_kontroler(self):
+        """
+        Metoda inicijalizira kontroler dio aplikacije.
+        """
+        self.kontrola = kontroler.Kontroler(parent = None, gui = self)
+###############################################################################
+    def setup_logging(self):
+        """
+        pattern of use:
+        ovo je top modul, za sve child module koristi se isti logger sve dok
+        su u istom procesu (konzoli). U child modulima dovoljno je samo importati
+        logging module te bilo gdje pozvati logging.info('msg') (ili neku slicnu
+        metodu za dodavanje u log).
+        """
+        logging.basicConfig(level = logging.INFO,
+                            filename = 'applog.log',
+                            filemode = 'w',
+                            format = '{levelname}:::{asctime}:::{module}:::{funcName}:::{message}',
+                            style = '{')
+###############################################################################
+###############################################################################
+
+
+

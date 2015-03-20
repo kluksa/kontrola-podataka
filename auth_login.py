@@ -6,10 +6,10 @@ Created on Mon Feb 16 10:13:58 2015
 """
 from PyQt4 import uic
 
-base30, form30 = uic.loadUiType('auth_login.ui')
-class DijalogLoginAuth(base30, form30):
+base4, form4 = uic.loadUiType('./ui_files/auth_login.ui')
+class DijalogLoginAuth(base4, form4):
     def __init__(self, parent = None):
-        super(base30, self).__init__(parent)
+        super(base4, self).__init__(parent)
         self.setupUi(self)
         
         #memberi za user/pass

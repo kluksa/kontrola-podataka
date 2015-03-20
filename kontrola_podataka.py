@@ -4,34 +4,28 @@
 Created on Fri Oct 31 14:06:55 2014
 
 @author: User
-
-Glavni pokretac aplikacije za kontrolu podataka
 """
-
 import sys
 from PyQt4 import QtGui
 import display
-
+#instancira QApplication objekt i starta main event loop
 aplikacija = QtGui.QApplication(sys.argv)
-glavniProzor = display.Display()
+#inicijaliziraj aplikaciju sa config fileom
+glavniProzor = display.Display(configfile = 'config.ini')
+#prikaz GUI na ekran
 glavniProzor.show()
+#clean exit iz aplikacije
 sys.exit(aplikacija.exec_())
 
-
 """
-TODO!
+potencijalni problemi
+1. unresponsive gui.
+- Implementacija thredova??
 
-1. funkcionalnost sljedeci/prethodni dan za zero/span panel??
-
-2. neovisni zoom/pick selektor za pojednini graf?
-
-3. refactor crtanje grafova?
-
-4. ikone za ostale menu bar i tool bar akcije?
-
-5. multiple toolbars??
-
-6. show hide toolbars??? (instanca_toolbara.hide(), instanca_toolbara.show())
-
-7. LOGGING
+2. dokument nema mehanizam da oslobodi memoriju.
+- kako se dodaju podaci prostor u memoriji raste...
+- test pandas dataframe od 512640 redaka (1 god minutnih podataka) sa
+  180 stupaca sa random float podacima zauzima oko 700MB memorije.
+- procjena memorije se moze izracunati preko sljedece funkcije
+  memsize = df.index.nbytes+df.values.nbytes+df.columns.nbytes
 """

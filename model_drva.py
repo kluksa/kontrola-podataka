@@ -14,7 +14,7 @@ class TreeItem(object):
     Posebna klasa za tree strukturu.
     Posjeduje 3 bitna membera i hrpu metoda koje se trebaju brinuti da
     QtCore.QAbstractItemModel fonkcionira.
-    
+
     self._parent --> referencira parent node (takodjer TreeItem objekt)
     self._childItems --> LISTA djece (svi child itemi su TreeItem objekti)
     self._data --> kontenjer koji sadrzi neke podatke (npr, lista, dict...)
@@ -23,7 +23,7 @@ class TreeItem(object):
         self._parent = parent
         self._data = data
         self._childItems = []
-        
+
         if self._parent != None:
             #sutomatski dodaj sebe u popis child objekata svog parenta
             self._parent._childItems.append(self)
@@ -83,13 +83,13 @@ class TreeItem(object):
 class ModelDrva(QtCore.QAbstractItemModel):
     """
     Specificna implementacija QtCore.QAbstractItemModel, model nije editable!
-    
+
     Za inicijalizaciju modela bitno je prosljediti root item neke tree strukture
     koja se sastoji od TreeItem instanci.
     """
     def __init__(self, data, parent = None):
         QtCore.QAbstractItemModel.__init__(self, parent)
-        
+
         self.rootItem = data
 ###############################################################################
     def index(self, row, column, parent = QtCore.QModelIndex()):
@@ -98,7 +98,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         if parent.isValid() and parent.column() != 0:
             return QtCore.QModelIndex()
-            
+
         parentItem = self.getItem(parent)
         childItem = parentItem.child(row)
         if childItem:
@@ -110,7 +110,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
 ###############################################################################
     def getItem(self, index):
         """
-        funckija vraca objekt pod indeksom index, ili rootItem ako indeks 
+        funckija vraca objekt pod indeksom index, ili rootItem ako indeks
         nije valjan
         """
         if index.isValid():
@@ -124,7 +124,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         primarni getter za vrijednost objekta
         za index i ulogu, vraca reprezentaciju view objektu
-        
+
         TODO! ovaj dio ovisi o tipu "kontenjera" TreeItema, poziva se metoda
         TreeItema data. treba pripaziti da li je poziv metode smisleno srocen
         """
@@ -133,8 +133,6 @@ class ModelDrva(QtCore.QAbstractItemModel):
             if index.column() == 0:
                 return item.data(0)
             elif index.column() == 1:
-                return item.data(1)
-            elif index.column() == 2:
                 return item.data(2)
         else:
             return None
@@ -152,14 +150,15 @@ class ModelDrva(QtCore.QAbstractItemModel):
         u principu, ova vrijednost odgovara broju stupaca u treeView widgetu
         te je jako bitna za metodu data ovog modela. Moguce ju je jednostavno
         hardcodirati na neku vrijednost.
-        
+
         npr. return 1 (view ce imati samo jedan stupac (tree))
         npr. return 2 (view ce imati 2 stupca (tree, sto god odredis u metodi
         data da vrati u tom stupcu))
-        
+
         TODO! pitanje je koliko informacija nam treba u view-u
         """
-        return self.rootItem.columnCount()
+#        return self.rootItem.columnCount()
+        return 2
 ###############################################################################
     def parent(self, index):
         """
@@ -169,21 +168,21 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         if not index.isValid():
             return QtCore.QModelIndex()
-            
+
         childItem = self.getItem(index)
         parentItem = childItem.parent()
         if parentItem == self.rootItem:
             return QtCore.QModelIndex()
         else:
             return self.createIndex(parentItem.childNumber(), 0, parentItem)
-            
+
 ###############################################################################
     def headerData(self, section, orientation, role):
         """
         headeri
         """
-        #headeri = ['Stanica/komponenta', 'Mjerna Jedinica', 'Program mjerenja']
-        headeri = ['Stanica/komponenta', 'Usporedno', 'Program mjerenja']
+        #headeri = ['Stanica/komponenta', 'Usporedno', 'Program mjerenja']
+        headeri = ['Stanica/komponenta', 'Program mjerenja']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 

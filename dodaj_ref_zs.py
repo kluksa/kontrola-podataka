@@ -6,13 +6,13 @@ Created on Fri Feb 13 12:01:41 2015
 """
 import pandas as pd
 
-import pomocneFunkcije
+import pomocne_funkcije
 from PyQt4 import QtCore, uic
 
 ###############################################################################
 ###############################################################################
-base26, form26 = uic.loadUiType('dodavanje_referentnih.ui')
-class DijalogDodajRefZS(base26, form26):
+base10, form10 = uic.loadUiType('./ui_files/dodavanje_referentnih_zero_span.ui')
+class DijalogDodajRefZS(base10, form10):
     """
     Dijalog za dodavanje novih referentnih vrijednosti za ZERO i SPAN.
     
@@ -42,13 +42,13 @@ class DijalogDodajRefZS(base26, form26):
     """
     
     def __init__(self, parent = None, opisKanal = None, idKanal = None):
-        super(base26, self).__init__(parent)
+        super(base10, self).__init__(parent)
         self.setupUi(self)
         
         #set int id kanala
         self.idKanal = idKanal
         #set program mjerenja opis
-        self.programSelect.setText(opisKanal)        
+        self.programSelect.setText(opisKanal)
         #set vrijeme da pokazuje trenutak kaada je dijalog inicijaliziran
         self.vrijemeSelect.setDateTime(QtCore.QDateTime.currentDateTime())
         
@@ -91,7 +91,7 @@ class DijalogDodajRefZS(base26, form26):
         #convert u pandas.tslib.Timestamp
         vrijeme = pd.to_datetime(vrijeme)
         #convert u unix timestamp
-        vrijeme = pomocneFunkcije.time_to_int(vrijeme)
+        vrijeme = pomocne_funkcije.time_to_int(vrijeme)
 
         vrsta = self.vrstaSelect.currentText()[0] #samo prvo slovo stringa.. 'Z' ili 'S'
                

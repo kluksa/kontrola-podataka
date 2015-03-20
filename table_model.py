@@ -6,7 +6,7 @@ Created on Tue Nov  4 15:56:53 2014
 """
 
 from PyQt4 import QtGui, QtCore
-import pomocneFunkcije
+import pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
@@ -132,7 +132,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 rgb = self.grafInfo[row][8]
                 alpha = self.grafInfo[row][9]
                 #stvaranje tocne nijanse kao QColor
-                boja = pomocneFunkcije.default_color_to_qcolor(rgb, alpha)
+                boja = pomocne_funkcije.default_color_to_qcolor(rgb, alpha)
                 #izrada pixmapa i ikone koju dodajemo kao ukras
                 pixmap = QtGui.QPixmap(20,20)
                 pixmap.fill(boja)

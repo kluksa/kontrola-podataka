@@ -5,44 +5,44 @@ Created on Wed Jan 21 10:58:46 2015
 @author: User
 """
 from requests.auth import HTTPBasicAuth
-from requests.auth import HTTPDigestAuth
 
 import requests
+import logging
 import xml.etree.ElementTree as ET
 from PyQt4 import QtCore
 import pandas as pd
 
-import pomocneFunkcije
+import pomocne_funkcije
 ###############################################################################
 ###############################################################################
 class WebZahtjev(QtCore.QObject):
     """
     Klasa zaduzena za komunikaciju sa REST servisom
-    
+
     INSTANCIRAN:
     - u modulu kontroler.py prilikom inicijalizacije objekta Kontroler
     - referenca na taj objekt se prosljedjuje svima koji komuniciraju sa REST-om
-    
+
     drugi modluli koji ga koriste:
     -datareader.RESTReader (source)
     -datareader.RESTWriter (source)
     """
 ###############################################################################
     def __init__(self, base, resursi, auth):
-        """inicijalizacija sa baznim url-om i dictom resursa i tupleom 
+        """inicijalizacija sa baznim url-om i dictom resursa i tupleom
         (user, password)"""
         QtCore.QObject.__init__(self)
         self._base = base
         self._resursi = resursi
         self.user, self.pswd = auth
-        
+
         #, auth = HTTPBasicAuth(self.user, self.pswd)
         #, auth = (self.user, self.pswd)
 ###############################################################################
     def parse_xml(self, x):
         """
         Pomocna funkcija za internu upotrebu, NE POZIVAJ IZVAN MODULA.
-        Parsira xml sa programima mjerenja preuzetih sa rest servisa, 
+        Parsira xml sa programima mjerenja preuzetih sa rest servisa,
         input: string
         output: dictionary sa bitnim podacima
         """
@@ -59,12 +59,12 @@ class WebZahtjev(QtCore.QObject):
             usporednoMjerenje = programMjerenja.find('usporednoMjerenje').text
             #dodavanje mjerenja u dictionary
             rezultat[i] = {
-                'postajaId':postajaId, 
-                'postajaNaziv':postajaNaziv, 
-                'komponentaId':komponentaId, 
-                'komponentaNaziv':komponentaNaziv, 
-                'komponentaMjernaJedinica':komponentaMjernaJedinica, 
-                'komponentaFormula':komponentaFormula, 
+                'postajaId':postajaId,
+                'postajaNaziv':postajaNaziv,
+                'komponentaId':komponentaId,
+                'komponentaNaziv':komponentaNaziv,
+                'komponentaMjernaJedinica':komponentaMjernaJedinica,
+                'komponentaFormula':komponentaFormula,
                 'usporednoMjerenje':usporednoMjerenje}
         #vrati trazeni dictionary
         return rezultat
@@ -90,22 +90,22 @@ class WebZahtjev(QtCore.QObject):
             return rezultat
         except AssertionError as e1:
             tekst = 'WebZahtjev.get_programe_mjerenja:Assert fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
         except requests.exceptions.RequestException as e2:
             tekst = 'WebZahtjev.get_programe_mjerenja:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
+            raise pomocne_funkcije.AppExcept(tekst) from e2
         except Exception as e3:
             tekst = 'WebZahtjev.get_programe_mjerenja:Opceniti fail.\n{0}'.format(e3)
-            raise pomocneFunkcije.AppExcept(tekst) from e3
+            raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
     def get_sirovi(self, programMjerenja, datum):
         """
-        Novi REST servis, za zadani program mjerenja (int) i datum (string, 
+        Novi REST servis, za zadani program mjerenja (int) i datum (string,
         u formatu YYYY-MM-DD) dohvati sirove podatke
         """
         #point url na trazeni dio REST servisa
         url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
-        #pripremi zahtjev###############################################################################
+        #pripremi zahtjev
         payload = {"id":"getPodaci", "name":"GET"}
         try:
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
@@ -117,13 +117,13 @@ class WebZahtjev(QtCore.QObject):
             return r.text
         except AssertionError as e1:
             tekst = 'WebZahtjev.get_sirovi:Assert fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
         except requests.exceptions.RequestException as e2:
             tekst = 'WebZahtjev.get_sirovi:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
+            raise pomocne_funkcije.AppExcept(tekst) from e2
         except Exception as e3:
             tekst = 'WebZahtjev.get_sirovi:Opceniti fail.\n{0}'.format(e3)
-            raise pomocneFunkcije.AppExcept(tekst) from e3
+            raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
     def upload_json_agregiranih(self, x):
         """
@@ -141,25 +141,24 @@ class WebZahtjev(QtCore.QObject):
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_json_agregiranih:Assert fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
         except requests.exceptions.RequestException as e2:
             tekst = 'WebZahtjev.upload_json_agregiranih:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
+            raise pomocne_funkcije.AppExcept(tekst) from e2
 ###############################################################################
     def get_zero_span(self, programMjerenja, datum, kolicina):
         """
         Dohvati zero-span vrijednosti
         program mjerenja je tipa int, datum je string
-        
+
         path -- "program/datum"
-        getJson/GET
-        #TODO!
         """
-        #point url na trazeni dio REST servisa
-        url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
-        #pripremi zahtjev
-        payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
         try:
+            #point url na trazeni dio REST servisa
+            url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
+            #pripremi zahtjev
+            payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
+            #request
             r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
             if r.text != '[]':
@@ -170,10 +169,13 @@ class WebZahtjev(QtCore.QObject):
 
         except requests.exceptions.RequestException as e1:
             tekst = 'WebZahtjev.get_zero_span:Request fail (http error, timeout...).\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
         except AssertionError as e2:
             tekst = 'WebZahtjev.get_zero_span:Assert fail. Bad response.\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
+            raise pomocne_funkcije.AppExcept(tekst) from e2
+        except Exception as e3:
+            tekst = 'WebZahtjev.get_zero_span:exception. {0}'.format(e3)
+            raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
     def convert_zero_span(self, jsonText):
         """
@@ -184,18 +186,18 @@ class WebZahtjev(QtCore.QObject):
         zeroFrejm = frejm[frejm['vrsta'] == "Z"]
         spanFrejm.index = spanFrejm['vrijeme']
         zeroFrejm.index = zeroFrejm['vrijeme']
-        
+
         #kontrola za besmislene vrijednosti (tipa -999)
         zeroFrejm = zeroFrejm[zeroFrejm['vrijednost'] > -998.0]
         spanFrejm = spanFrejm[spanFrejm['vrijednost'] > -998.0]
-        
+
         return zeroFrejm, spanFrejm
 ###############################################################################
     def upload_ref_vrijednost_zs(self, jS, kanal):
         """
-        funkcija za upload nove vrijednosti referentne tocke zero ili span 
+        funkcija za upload nove vrijednosti referentne tocke zero ili span
         na REST servis.
-        
+
         kanal je int vrijednost trenutno programMjerenjaId
         jS je json string sa podacima o novoj referentnoj vrijednosti
         """
@@ -211,40 +213,40 @@ class WebZahtjev(QtCore.QObject):
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Assert fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            logging.error('assert fail (bad response, los request..)', exc_info = True)
         except requests.exceptions.RequestException as e2:
             tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocneFunkcije.AppExcept(tekst) from e2
+            raise pomocne_funkcije.AppExcept(tekst) from e2
 ###############################################################################
 ###############################################################################
 if __name__ == '__main__':
     #definiranje baze i resursa
-    baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
-    resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci", 
-                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja", 
+    #baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
+    baza = "http://172.20.0.179:8080/SKZ-war/webresources/"
+    resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci",
+                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
                 "zerospan":"dhz.skz.rs.zerospan"}
     aut = ("t1", "t1")
     #inicijalizacija WebZahtjev objekta
     wz = WebZahtjev(baza, resursi, aut)
     """
-    u principu, pozovi metodu unutar try bloka, ako se nesto slomi, 
+    u principu, pozovi metodu unutar try bloka, ako se nesto slomi,
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
-    """    
+    """
     try:
 #        """get programe mjerenja"""
 #        r = wz.get_programe_mjerenja()
-#        print(r)
+#        print(r) #works
 
 #        """get sirovi"""
-#        r1 = wz.get_sirovi(65, '2015-02-22')
-#        print(r1)
+#        r1 = wz.get_sirovi(159, '2015-02-22')
+#        print(r1) #works
 
         """get zero span plitvice ozon"""
-        r2 = wz.get_zero_span(65, '2015-02-18', 150)
-        print(r2)
-        
-        
+        r2 = wz.get_zero_span(65, '2015-02-18', 30)
+        print(r2) #works
+
+
     except Exception as e:
         print(e) #vraca tekst exceptiona
         print(repr(e))
-        

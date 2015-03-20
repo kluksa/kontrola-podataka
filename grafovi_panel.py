@@ -12,32 +12,37 @@ Wrapper koji sadrzi:
     4. minutni canvas (canvas za prikaz minutnih podataka)
 """
 
-from PyQt4 import QtCore, uic #import djela Qt frejmworka
-import satniCanvas
-import minutniCanvas
-import zerospanCanvas
+from PyQt4 import QtCore, uic 
+import satni_canvas
+import minutni_canvas
+import zero_span_canvas
+import logging
 ###############################################################################
 ###############################################################################
-base3, form3 = uic.loadUiType('panel_za_canvase.ui')
-class GrafPanel(base3, form3):
+base2, form2 = uic.loadUiType('./ui_files/konc_graf_panel.ui')
+class KoncPanel(base2, form2):
     """
     Klasa za prikaz grafova
     Sadrzaj ovog panela je sljedeci (kako se prikazuje odozgo prema dolje):
     
-    1. self.verticalLayoutSatni
+    1. self.glavniLabel
+        -QLabel koji sluzi za prikaz trenutno aktivnog kanala
+        (stanica, formula, kanal, mjerna jedinica...)
+        
+    2. self.verticalLayoutSatni
         -placeholder definiran u QtDesigneru (layout)
         -sluzi da se u njega stavi satni canvas
         
-    2. self.horizontalLayout
+    3. self.horizontalLayout
         -horiznotalni layout koji sadrzi 3 elementa
-        2.1. self.pushButtonPrethodni
+        2.1. self.buttonPrethodni
             -QPushButton koji sluzi za prebacivanje dana na prethodni dan
-        2.2. self.label
+        2.2. self.satLabel
             -QLabel koji sluzi za prikaz naziva glavnog kanala i vremenkog intervala
-        2.3. self.pushButtonSljedeci
+        2.3. self.buttonSljedeci
             -QPushButton koji slizi za prebacivanje dana na sljedeci dan
     
-    3. self.verticalLayoutMinutni
+    4. self.verticalLayoutMinutni
         -placeholder definiran u QtDesigneru (QWidget)
         -sluzi da se u njega stavi minutni canvas
         
@@ -47,123 +52,112 @@ class GrafPanel(base3, form3):
     self.minutniGraf --> instanca minutnog canvasa
     """
     def __init__(self, parent = None):
-        super(base3, self).__init__(parent)
+        """
+        init ide sa appSettings zbog inicijalne postavke interakcije sa grafovima
+        """
+        super(base2, self).__init__(parent)
         self.setupUi(self)
 
-        #sredi title panela
-        self.setWindowTitle('Grafovi satno agregiranih podataka i minutnih podataka')
         #inicijalizacija canvasa
-        self.satniGraf = satniCanvas.Graf(parent = None)
-        self.minutniGraf = minutniCanvas.Graf(parent = None)
+        self.satniGraf = satni_canvas.Graf(parent = None)
+        self.minutniGraf = minutni_canvas.Graf(parent = None)
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
         self.verticalLayoutMinutni.addWidget(self.minutniGraf)
         
         #gumbi zaduzeni za prebacivanje dana naprijed i nazad
-        self.pushButtonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
-        self.pushButtonPrethodni.clicked.connect(self.prebaci_dan_nazad)
-        self.buttonUploadAgregirane.clicked.connect(self.request_REST_save)
-    
-    def change_label(self, lista):
+        self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
+        self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
+###############################################################################
+    def change_glavniLabel(self, lista):
         """
         ova funkcija kao ulazni parametar uzima listu koja ima 3 elementa.
         -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
-        -lista[1] = string, timestamp (od)
-        -lista[2] = string, timestamp (do)
+        -lista[1] = string, datum formata YYYY-MM-DD
 
-        Rezultat je novi label sastavljen od tih elemenata.
+        Informacija o izboru se postavlja u label.
         """
         mapa = lista[0]
-        od = str(lista[1])
-        do = str(lista[2])
-        output = 'Vrijeme od: ' + od + ' Do: ' + do
-        self.label.setText(output)
-        #iz mape izvuci opis glavnog kanala te sastavi dobro formatirani tekst
+        datum = lista[1]
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
         mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]'.format(postaja, komponenta, formula, mjernaJedinica)
+        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4}'.format(postaja, komponenta, formula, mjernaJedinica, datum)
         self.glavniLabel.setText(opis)
-
-    def request_REST_save(self):
+        logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
+###############################################################################
+    def change_satLabel(self, sat):
         """
-        signalizira kontorleru da pokrene spremanje agregiranih na rest servis
+        funkcija postavlja string izabranog sata sa satno agregiranog grafa u
+        satLabel.
         """
-        self.emit(QtCore.SIGNAL('upload_agregirane_to_rest'))
-        
+        msg = str(sat)
+        self.satLabel.setText(msg)
+        logging.info('satLabel promjenjen, value = {0}'.format(msg))
+###############################################################################
     def prebaci_dan_naprijed(self):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan naprjed
         """
         self.emit(QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'), 1)
-    
+        logging.info('request pomak dana unaprijed')
+###############################################################################
     def prebaci_dan_nazad(self):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan nazad
         """
         self.emit(QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'), -1)
+        logging.info('request pomak dana unazad')
 ###############################################################################
 ###############################################################################
-base6, form6 = uic.loadUiType('zerospan.ui')
-class ZeroSpanPanel(base6, form6):
+base3, form3 = uic.loadUiType('./ui_files/zero_span_panel.ui')
+class ZeroSpanPanel(base3, form3):
     def __init__(self, parent = None):
-        super(base6, self).__init__(parent)
+        super(base3, self).__init__(parent)
         self.setupUi(self)
-
-        #sredi title panela
-        self.setWindowTitle('Zero / Span grafovi')
+        #TODO! nakon inicijalizacije canvasa inicijaliziraj interaction mode
         #inicijalizacija canvasa
-        self.zeroGraf = zerospanCanvas.ZeroSpanGraf(parent = None, tip = 'zero', lok = 'bottom')
-        self.spanGraf = zerospanCanvas.ZeroSpanGraf(parent = None, tip = 'span', lok = 'top')
+        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(parent = None, tip = 'zero', lok = 'bottom')
+        self.spanGraf = zero_span_canvas.ZeroSpanGraf(parent = None, tip = 'span', lok = 'top')
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
-        
+
         self.veze()
 ###############################################################################
     def veze(self):
         """
         povezivanje akcija widgeta sa funkcijama
         """
-        self.dodajRefZS.clicked.connect(self.dodaj_ref_tocku)
         self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
+        self.dodajZSRef.clicked.connect(self.dodaj_novu_zs_ref_vrijednost)
+###############################################################################    
+    def dodaj_novu_zs_ref_vrijednost(self):
+        """
+        Dodavanje nove referentne vrijednosti za zero/span
+        """
+        logging.info('Request za dodavanjem nove zero/span referentne vrijednosti')
+        self.emit(QtCore.SIGNAL('dodaj_novi_zs_ref'))
 ###############################################################################
-    def dodaj_ref_tocku(self):
+    def change_glavniLabel(self, lista):
         """
-        Prosljedi zahtjev kontroloru da prikaze dijalog za dodavanje nove 
-        referentne vrijednosti
-        """
-        self.emit(QtCore.SIGNAL('dodaj_ref_tocku'))
-###############################################################################
-    def change_label(self, lista):
-        """
-        ova funkcija kao ulazni parametar uzima listu koja ima 3 elementa, ali
-        samo prvi je od interesa.
+        ova funkcija kao ulazni parametar uzima listu
         
         -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
+        -lista[1] = datum u string formatu YYYY-MM-DD
 
         Rezultat je novi label sastavljen od tih elemenata.
         """
         mapa = lista[0]
-        
-        #iz mape izvuci opis glavnog kanala te sastavi dobro formatirani tekst
+        datum = lista[1]
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
-        opis = 'ZERO / SPAN za {0}, {1}( {2} )'.format(postaja, komponenta, formula)
+        mjernaJedinica = mapa['komponentaMjernaJedinica']
+        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4}'.format(postaja, komponenta, formula, mjernaJedinica, datum)
         self.glavniLabel.setText(opis)
-###############################################################################
-    def update_promjene_broja_dana(self, x):
-        """
-        callback za update broja dana koji se prikazuju na zero span grafu
-        x je integer
-        block signal emit just in case
-        """
-        broj = str(x)
-        self.blockSignals(True)
-        self.brojDana.setCurrentIndex(self.brojDana.findText(broj))
-        self.blockSignals(False)
+        logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
 ###############################################################################
     def promjeni_broj_dana(self, x):
         """
@@ -171,26 +165,29 @@ class ZeroSpanPanel(base6, form6):
         -update defaulte, pozovi na ponovno crtanje grafa
         """
         broj = int(self.brojDana.itemText(x))
-        self.emit(QtCore.SIGNAL('broj_dana_changed(PyQt_PyObject)'), broj)
+        logging.info('request za prikazom drugog broja dana, novi = {0}'.format(str(broj)))
+        self.emit(QtCore.SIGNAL('request_zs_broj_dana_change(PyQt_PyObject)'), broj)
 ###############################################################################
     def prikazi_info_zero(self, lista):
         """
         funkcija updatea labele sa informacijom o zero tocki koja je izabrana 
-        na grafu [vrijednost, min, max, status]
+        na grafu [vrijeme, vrijednost, min, max, status]
         """
-        self.zeroValue.setText(lista[0])
-        self.zeroMinD.setText(lista[1])
-        self.zeroMaxD.setText(lista[2])
-        self.zeroStatus.setText(lista[3])
+        self.zeroVrijeme.setText(lista[0])
+        self.zeroValue.setText(lista[1])
+        self.zeroMinD.setText(lista[2])
+        self.zeroMaxD.setText(lista[3])
+        self.zeroStatus.setText(lista[4])
 ###############################################################################
     def prikazi_info_span(self, lista):
         """
         funkcija updatea labele sa informacijom o span tocki koja je izabrana 
-        na grafu [vrijednost, min, max, status]
+        na grafu [vrijeme, vrijednost, min, max, status]
         """
-        self.spanValue.setText(lista[0])
-        self.spanMinD.setText(lista[1])
-        self.spanMaxD.setText(lista[2])
-        self.spanStatus.setText(lista[3])
+        self.spanVrijeme.setText(lista[0])
+        self.spanValue.setText(lista[1])
+        self.spanMinD.setText(lista[2])
+        self.spanMaxD.setText(lista[3])
+        self.spanStatus.setText(lista[4])
 ###############################################################################
 ###############################################################################

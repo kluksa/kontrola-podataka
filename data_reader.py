@@ -5,12 +5,13 @@ Created on Wed Dec 17 15:18:10 2014
 
 @author: User
 """
+import logging
 import pandas as pd
 import numpy as np
 import datetime
 from PyQt4 import QtCore
 
-import pomocneFunkcije
+import pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
@@ -109,12 +110,13 @@ class RESTReader(QtCore.QObject):
                     #dodaj na ucitane samo ako je datum manji od danas (reload trenutnog dana je moguc)
                     self.uspjesnoUcitani.append((key, date))
                 pass
-            except pomocneFunkcije.AppExcept as err:
+            except pomocne_funkcije.AppExcept as err:
                 """
                 Moguci razlozi za Exception
                 - prilikom ucitavanja jsona (self.source.get_sirovi)
                 - prilikom upisa datafrejma u model (self.model.set_frame)
                 """
+                logging.error('read data fail', exc_info = True)
                 #potrebno je javiti problem kontroleru aplikacije
                 self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
 ###############################################################################
@@ -133,11 +135,12 @@ class RESTWriterAgregiranih(QtCore.QObject):
         """
         try:
             self.source.upload_json_agregiranih(jso)
-        except pomocneFunkcije.AppExcept as err:
+        except pomocne_funkcije.AppExcept as err:
             """
             Moguci razlozi za Exception
             -prilikom uploada na REST
             """
+            logging.error('write data fail', exc_info = True)
             #potrebno je javiti problem kontroleru aplikacije
             self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
 ###############################################################################

@@ -7,11 +7,11 @@ Created on Fri Feb  6 13:10:01 2015
 
 from PyQt4 import QtGui, uic
 
-import pomocneFunkcije
+import pomocne_funkcije
 ###############################################################################
 ###############################################################################
-base7, form7 = uic.loadUiType('opcije_pomocnih.ui')
-class OpcijePomocnog(base7, form7):
+base9, form9 = uic.loadUiType('./ui_files/opcije_pomocnih.ui')
+class OpcijePomocnog(base9, form9):
     """
     Klasa je dijalog preko kojeg se bira i odredjuju postavke pomocnog
     grafa.
@@ -24,36 +24,36 @@ class OpcijePomocnog(base7, form7):
             -stablo, instanca modela programa mjerenja (izbor stanice/kanala/usporedno)
             -copcije - lista combobox opcija [[markeri], [linije]]
             -opisna mapa (nested),  {programMjerenjaId:{stanica, kanal, usporedno....}}
-            
+
         *lista sadrzi redom elemente:
-        [kanal id, postaja, komponenta, usporedno, marker, markersize, line, 
+        [kanal id, postaja, komponenta, usporedno, marker, markersize, line,
         linewidth, rgb tuple, alpha, zorder, label]
         """
-        super(base7, self).__init__(parent)
+        super(base9, self).__init__(parent)
         self.setupUi(self)
-        
+
         self.markeri = copcije[0] #popis svih stilova markera
         self.linije = copcije[1] #popis svih stilova linije
         self.transformMapa = mapa #nested dict, programMjerenjaId:info o tom mjerenju
-                
+
         #provjeri da li je default zadan, spremi default u privatni member
         if default == []:
             #definiraj defaultnu vrijednost
-            self.defaultGraf = [None, 
-                            None, 
-                            None, 
-                            None, 
-                            'Bez markera', 
-                            12, 
-                            'Puna linija', 
-                            1.0, 
-                            (0,0,255), 
-                            1.0, 
-                            5, 
+            self.defaultGraf = [None,
+                            None,
+                            None,
+                            None,
+                            'Bez markera',
+                            12,
+                            'Puna linija',
+                            1.0,
+                            (0,0,255),
+                            1.0,
+                            5,
                             '']
         else:
             self.defaultGraf = default
-        
+
         #spremi stablo u privatni member
         self.stablo = stablo
 
@@ -74,32 +74,30 @@ class OpcijePomocnog(base7, form7):
         """
         #postavi model programa mjerenja u qtreeview
         self.treeView.setModel(self.stablo)
-        
+
         #marker combo
         self.comboMarkerStil.clear()
         self.comboMarkerStil.addItems(self.markeri)
         self.comboMarkerStil.setCurrentIndex(self.comboMarkerStil.findText(self.defaultGraf[4]))
-        
+
         #marker size
         self.spinMarker.setValue(self.defaultGraf[5])
-        
+
         #linija combo
         self.comboLineStil.clear()
         self.comboLineStil.addItems(self.linije)
         self.comboLineStil.setCurrentIndex(self.comboLineStil.findText(self.defaultGraf[6]))
-        
+
         #linija width
         self.doubleSpinLine.setValue(self.defaultGraf[7])
-        
+
         #alpha vrijednost boje
         self.alphaBoja.setValue(self.defaultGraf[9])
-        
+
         #boja, stil gumba
         rgb = self.defaultGraf[8]
         a = self.defaultGraf[9]
-        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
-        stil = pomocneFunkcije.color_to_style_string('QPushButton#bojaButton', boja)
-        self.bojaButton.setStyleSheet(stil)
+        self.set_widget_color_style(rgb, a, "QPushButton", self.bojaButton)
 
         #label
         self.lineEditLabel.clear()
@@ -109,7 +107,7 @@ class OpcijePomocnog(base7, form7):
         nazivGrafa = postaja+':'+komponenta+':'+usporedno
         self.lineEditLabel.setText(nazivGrafa)
         self.defaultGraf[11] = nazivGrafa
-        
+
         #pokusaj izabrati isti element u stablu (ako je element izabran)
         if self.defaultGraf[0] != None:
             self.postavi_novi_glavni_kanal(self.defaultGraf[0])
@@ -137,13 +135,11 @@ class OpcijePomocnog(base7, form7):
         self.defaultGraf[9] = value
         #update boju gumba
         rgb = self.defaultGraf[8]
-        boja = pomocneFunkcije.default_color_to_qcolor(rgb, value)
-        stil = pomocneFunkcije.color_to_style_string('QPushButton#bojaButton', boja)
-        self.bojaButton.setStyleSheet(stil)
+        self.set_widget_color_style(rgb, value, "QPushButton", self.bojaButton)
 ###############################################################################
     def pronadji_index_od_kanala(self, kanal):
         """
-        Za zadani kanal (mjerenjeId) pronadji odgovarajuci QModelIndex u 
+        Za zadani kanal (mjerenjeId) pronadji odgovarajuci QModelIndex u
         stablu.
         ulaz je trazeni kanal, izlaz je QModelIndex
         """
@@ -181,7 +177,7 @@ class OpcijePomocnog(base7, form7):
         """
         Ako netko izabere stanicu u stablu, prog == None
         Ako netko izabere komponentu u stablu, prog == programMjerenjaId
-        
+
         nastavi samo ako je izabrana komponenta!
         """
         if prog != None:
@@ -190,13 +186,13 @@ class OpcijePomocnog(base7, form7):
             postaja = str(self.transformMapa[prog]['postajaNaziv'])
             komponenta = str(self.transformMapa[prog]['komponentaNaziv'])
             usporedno = str(self.transformMapa[prog]['usporednoMjerenje'])
-            
+
             #promjeni self.defaultGraf ciljane vrijednosti
             self.defaultGraf[0] = prog
             self.defaultGraf[1] = postaja
             self.defaultGraf[2] = komponenta
             self.defaultGraf[3] = usporedno
-            
+
             #promjeni label da odgovara izboru
             tekst = postaja+':'+komponenta+':'+usporedno
             self.lineEditLabel.clear()
@@ -220,7 +216,7 @@ class OpcijePomocnog(base7, form7):
         promjeni/zapamti promjenu stila linije
         """
         marker = self.comboLineStil.currentText()
-        self.defaultGraf[4] = marker
+        self.defaultGraf[6] = marker
 ###############################################################################
     def promjeni_marker_size(self):
         """
@@ -242,22 +238,33 @@ class OpcijePomocnog(base7, form7):
         rgb = self.defaultGraf[8]
         a = self.defaultGraf[9]
         #convert u QColor
-        boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
+        boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga za promjenu boje
         color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
         if test: #test == True ako je boja ispravno definirana
             color = QtGui.QColor.fromRgba(color) #bitni adapter izlaza dijaloga
-            rgb, a = pomocneFunkcije.qcolor_to_default_color(color)
+            rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #zapamti novu boju
             self.defaultGraf[8] = rgb
             self.defaultGraf[9] = a
-            
+
             #set novu alpha vrijednost u odgovarajuci QDoubleSpinBox
             self.alphaBoja.setValue(a)
-            
+
             #promjeni boju gumba
-            boja = pomocneFunkcije.default_color_to_qcolor(rgb, a)
-            stil = pomocneFunkcije.color_to_style_string('QPushButton#bojaButton', boja)
-            self.bojaButton.setStyleSheet(stil)
+            self.set_widget_color_style(rgb, a, "QPushButton", self.bojaButton)
+###############################################################################
+    def set_widget_color_style(self, rgb, a, tip, target):
+        """
+        izrada stila widgeta
+        tip - qwidget tip, npr "QPushButton"
+        target - instanca widgeta kojem mjenjamo stil
+        """
+        #get string name of target object
+        name = str(target.objectName())
+        #napravi stil
+        stil = pomocne_funkcije.rgba_to_style_string(rgb, a , tip, name)
+        #set stil u target
+        target.setStyleSheet(stil)
 ###############################################################################
 ###############################################################################

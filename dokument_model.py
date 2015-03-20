@@ -8,7 +8,7 @@ Created on Wed Jan 21 14:45:37 2015
 import pandas as pd
 from PyQt4 import QtCore
 
-import pomocneFunkcije
+import pomocne_funkcije
 ###############################################################################
 ###############################################################################
 class DataModel(QtCore.QObject):
@@ -45,6 +45,8 @@ class DataModel(QtCore.QObject):
             assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
             #provjeri ulazni frame
             self.dataframe_structure_test(frame)
+            #TODO! SORT DATAFRAME
+            frame.sort_index(inplace = True)
             #dodaj na self.data
             if key in self.data.keys():
                 #merge
@@ -65,7 +67,7 @@ class DataModel(QtCore.QObject):
                 self.data[key].sort()
         except AssertionError as e:
             tekst = 'DataModel.set_frame:Assert fail.\n{0}'.format(e)
-            raise pomocneFunkcije.AppExcept(tekst) from e
+            raise pomocne_funkcije.AppExcept(tekst) from e
 ###############################################################################
     def get_frame(self, key = None, tmin = None, tmax = None):
         """funkcija dohvaca trazeni slice frejma"""
@@ -75,6 +77,8 @@ class DataModel(QtCore.QObject):
             assert isinstance(tmax, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
             #napravi kopiju cijelog frejma
             df = self.data[key].copy()
+            #TODO! sort dataframe
+            df.sort_index(inplace = True)
             #za svaki slucaj provjeri da li je min i max ok, ako nije zamjeni ih
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
@@ -86,7 +90,7 @@ class DataModel(QtCore.QObject):
             return df
         except (LookupError, TypeError, AssertionError) as e1:
             tekst = 'DataModel.get_frame:Lookup/Type fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
 ###############################################################################
     def notify_about_change(self):
         """Funkcija emitira specificni signal da je doslo do promjene u flaga."""
@@ -103,6 +107,6 @@ class DataModel(QtCore.QObject):
             self.notify_about_change()
         except (LookupError, TypeError) as e1:
             tekst = 'DataModel.change_flag:Lookup/Type fail.\n{0}'.format(e1)
-            raise pomocneFunkcije.AppExcept(tekst) from e1
+            raise pomocne_funkcije.AppExcept(tekst) from e1
 ###############################################################################
 ###############################################################################

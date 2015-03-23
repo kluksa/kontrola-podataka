@@ -137,14 +137,25 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.setup_limits('SATNI') #metda definirana u opceniti_canvas.py
             self.setup_ticks()
             self.setup_legend() #metda definirana u opceniti_canvas.py
-            #naredba za crtanje
-            self.draw()
 
             #toggle minor tickova, i grida
             self.toggle_ticks(self.appDto.satniTicks) #metda definirana u opceniti_canvas.py
             self.toggle_grid(self.appDto.satniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.satniLegend) #metda definirana u opceniti_canvas.py
 
+
+            #highlight prijasnje tocke #TODO!
+            if self.statusHighlight:
+                hx, hy = self.lastHighlight
+                if hx in self.data[self.gKanal].index:
+                    # pronadji novu y vrijednosti indeksa
+                    hy = self.data[self.gKanal].loc[hx, 'avg']
+                    self.make_highlight(hx, hy)
+                else:
+                    self.statusHighlight = False
+                    self.lastHighlight = (None, None)
+
+            self.draw()
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()
 
@@ -157,6 +168,7 @@ class Graf(opceniti_canvas.MPLCanvas):
                            verticalalignment='center',
                            fontsize = 8,
                            transform = self.axes.transAxes)
+            self.draw()
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
@@ -179,7 +191,7 @@ class Graf(opceniti_canvas.MPLCanvas):
 
         allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
         for label in allXLabels:
-            label.set_rotation(30)
+            label.set_rotation(45)
             label.set_fontsize(8)
 ###############################################################################
     def crtaj_scatter_konc(self, komponenta, dto, flag):

@@ -445,7 +445,7 @@ class Kontroler(QtCore.QObject):
 
         #update lebele na panelima (povratna informacija koji je kanal aktivan i za koje vrijeme)
         argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
-        self.emit(QtCore.SIGNAL('update_graf_label'), argList)
+        self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argList)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
 ###############################################################################
@@ -486,7 +486,8 @@ class Kontroler(QtCore.QObject):
         """
         Crtanje zero span podataka.
         1. dohvati podatke sa REST servisa,
-        2. naredi crtanje istih
+        2. update label
+        3. naredi crtanje istih
         """
         self.emit(QtCore.SIGNAL('clearZeroSpan'))
         try:

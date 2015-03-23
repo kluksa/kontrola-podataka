@@ -7,6 +7,7 @@ Created on Mon Feb  2 11:22:25 2015
 Klasa (canvas) za prikaz ZERO ili SPAN vrijednosti.
 """
 from PyQt4 import QtCore
+import pandas as pd
 
 import pomocne_funkcije #import pomocnih funkcija
 import opceniti_canvas #import opcenitog (abstract) canvasa
@@ -87,8 +88,12 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         yok = list(okTocke['vrijednost'])
         #pronalazak losih tocaka
         frejm = self.data.copy()
-        badTocke = frejm[frejm['vrijednost'] > frejm['maxDozvoljeno']]
-        badTocke = badTocke[badTocke['vrijednost'] < badTocke['minDozvoljeno']]
+        badOver = frejm[frejm['vrijednost'] > frejm['maxDozvoljeno']]
+        frejm = self.data.copy()
+        badUnder = frejm[frejm['vrijednost'] < frejm['minDozvoljeno']]
+        badTocke = badUnder.append(badOver)
+        badTocke.sort()
+        badTocke.drop_duplicates() # za svaki slucaj ako dodamo 2 ista indeksa
         xbad = list(badTocke.index)
         ybad = list(badTocke['vrijednost'])
 
@@ -154,7 +159,7 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         self.axes.set_ylabel(self.tipGrafa.upper())
         #limit grafa
         self.axes.set_xlim((beginpoint, endpoint))
-        self.setup_limits('zero')
+        self.setup_limits('ZERO')
         self.setup_ticks(self.data.index)
 
         self.draw()
@@ -200,6 +205,11 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         tickLoc, tickLab = pomocne_funkcije.sredi_xtickove_zerospan(x)
         self.axes.set_xticks(tickLoc)
         self.axes.set_xticklabels(tickLab)
+
+        allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
+        for label in allXLabels:
+            label.set_rotation(45)
+            label.set_fontsize(8)
 ###############################################################################
     def crtaj_scatter_zs(self, x, y, dto):
         """
@@ -246,6 +256,11 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         y = self.data.loc[x, 'vrijednost']
         minD = self.data.loc[x, 'minDozvoljeno']
         maxD = self.data.loc[x, 'maxDozvoljeno']
+        # ako postoje vise istih indeksa, uzmi zadnji
+        if type(y) is pd.core.series.Series:
+            y = y[-1]
+            minD = minD[-1]
+            maxD = maxD[-1]
         if y >= minD and y<= maxD:
             status = 'Dobar'
         else:
@@ -271,6 +286,11 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
             y = self.data.loc[x, 'vrijednost']
             minD = self.data.loc[x, 'minDozvoljeno']
             maxD = self.data.loc[x, 'maxDozvoljeno']
+            # ako postoje vise istih indeksa, uzmi zadnji
+            if type(y) is pd.core.series.Series:
+                y = y[-1]
+                minD = minD[-1]
+                maxD = maxD[-1]
             if y >= minD and y<= maxD:
                 status = 'Dobar'
             else:

@@ -111,6 +111,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150226:::VM:::U zerospan panleu je dodan funkcionalan combobox sa brojem dana i niz labela koji se popunjavaju ljevim klikom na zero i span tocke. Scroll zoom je disablean za zero i span graf, ali je rectangle zoom sada sinkroniziran(zoom jednog grafa rescalea x os drugog):::
 20150320:::VM:::Veliki refactoring, izgled displaya, nacin crtanja grafova, interakcija sa grafovima, config i logging.:::
 20150320:::VM:::ispravljen bug sa minutnim grafom:::
+20150323:::VM:::ispravak bugova (cranje losih zero/span, select zero span bugovi, label zero span grafa, highlight tocke na satnom grafu). Nisam uspio reproducirati bug sa minutnim resizeom, takodjer problem sa x labelima je zbog minor tickova (Mogu izbrisati labele minor tickova i samo ostaviti tick marker?).:::
 
 
 

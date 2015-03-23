@@ -170,6 +170,7 @@ class Graf(opceniti_canvas.MPLCanvas):
                            verticalalignment='center',
                            fontsize = 8,
                            transform = self.axes.transAxes)
+            self.draw()
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
@@ -192,7 +193,7 @@ class Graf(opceniti_canvas.MPLCanvas):
 
         allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
         for label in allXLabels:
-            label.set_rotation(30)
+            label.set_rotation(45)
             label.set_fontsize(8)
 ###############################################################################
     def span_select(self, t1, t2):

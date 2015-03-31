@@ -47,6 +47,13 @@
      </property>
     </widget>
    </item>
+   <item>
+    <widget class="QPushButton" name="uploadMinutne">
+     <property name="text">
+      <string>Upload minutne</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

@@ -229,6 +229,10 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('request_upload_agregirane'),
                      self.upload_satno_agregirane)
+        ###UPLOAD MINUTNIH PODATAKA NA REST SERVIS###
+        self.connect(self.gui.restIzbornik,
+                     QtCore.SIGNAL('request_upload_minutne'),
+                     self.upload_minutne_na_REST)
 
         ###PROMJENA IZGLEDA GRAFA###
         self.connect(self.gui,
@@ -302,7 +306,8 @@ class Kontroler(QtCore.QObject):
         baseurl = str(self.gui.appSettings.RESTBaseUrl)
         resursi = {'siroviPodaci':str(self.gui.appSettings.RESTSiroviPodaci),
                    'programMjerenja':str(self.gui.appSettings.RESTProgramMjerenja),
-                   'zerospan':str(self.gui.appSettings.RESTZeroSpan)}
+                   'zerospan':str(self.gui.appSettings.RESTZeroSpan),
+                   'satniPodaci':str(self.gui.appSettings.RESTSatniPodaci)}
         #inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
         #inicijalizacija REST readera
@@ -415,6 +420,12 @@ class Kontroler(QtCore.QObject):
         self.tmin = pd.to_datetime(self.tmin)
         sviBitniKanali = []
         sviBitniKanali.append(self.gKanal)
+        #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
+        #TODO!
+        self.tKontejnerId = self.get_kanal_temp_kontenjera()
+        if self.tKontejnerId is not None:
+            sviBitniKanali.append(self.tKontejnerId)
+
         #prati koji su sve glavni kanali izabrani!!!
         self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
         #pronadji sve ostale kanale potrebne za crtanje
@@ -455,7 +466,7 @@ class Kontroler(QtCore.QObject):
         zadan datum, tj. donja i gornja granica intervala i glavni kanal.
         """
         if (self.tmin != None and self.tmax != None and self.gKanal != None):
-            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), [self.gKanal, self.tmin, self.tmax, self.gui.grafSettings, self.gui.appSettings])
+            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), [self.gKanal, self.tmin, self.tmax, self.gui.grafSettings, self.gui.appSettings, self.tKontejnerId])
             #promjena labela u panelima sa grafovima, opis
             try:
                 opisKanala = self.mapaMjerenjeIdToOpis[self.gKanal]
@@ -531,7 +542,7 @@ class Kontroler(QtCore.QObject):
             lowLim = pd.to_datetime(lowLim)
             #update labela izabranog sata
             self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), self.sat)
-            self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),[self.gKanal, lowLim, highLim, self.gui.grafSettings, self.gui.appSettings])
+            self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),[self.gKanal, lowLim, highLim, self.gui.grafSettings, self.gui.appSettings, self.tKontejnerId])
 ###############################################################################
     def dodaj_novu_referentnu_vrijednost(self):
         """
@@ -583,6 +594,65 @@ class Kontroler(QtCore.QObject):
             logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
             self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
 ###############################################################################
+    def upload_minutne_na_REST(self):
+        """
+        Dohvati trenutno aktivni kanal i vrijeme adaptiraj i upload na REST
+        """
+        if self.gKanal != None and self.pickedDate != None:
+            try:
+                #promjeni cursor u wait cursor
+                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                #dohvati frame iz dokumenta
+                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
+                assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_minutne_to_REST:Assert fail, frame pogresnog tipa'
+                if len(frejm):
+                    testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
+                    lenSvih = len(testValidacije)
+                    lenDobrih = len(testValidacije[testValidacije == True])
+                    if lenSvih == lenDobrih:
+                        msg = msg = 'Spremi minutne podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + ' na REST web servis?'
+                    else:
+                        msg = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
+                        #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
+                        raise AssertionError(msg)
+
+                    #privremeno vrati izgled cursora nazad na normalni
+                    QtGui.QApplication.restoreOverrideCursor()
+                    #prompt izbora za spremanje filea, question
+                    odgovor = QtGui.QMessageBox.question(self.gui,
+                                                         "Potvrdi upload na REST servis",
+                                                         msg,
+                                                         QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+                    if odgovor == QtGui.QMessageBox.Yes:
+                        #ponovno prebaci na wait cursor
+                        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                        #napravi prazan dataframe indeksiran na isti nacin kao agregirani
+                        output = pd.DataFrame(index = frejm.index)
+                        #dodaj trazene stupce u output frejm
+
+                        output['vrijeme'] = frejm.index
+                        output['vrijednost'] = frejm['koncentracija']
+                        output['id'] = frejm['id']
+                        output['valjan'] = frejm['flag'].map(pomocne_funkcije.int_to_boolean)
+                        #konverzija output frejma u json string
+                        jstring = output.to_json(orient = 'records')
+                        #upload uz pomoc rest writera
+                        self.restWriter.upload_minutne(jso = jstring)
+                        #update status kalendara
+                        self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+                        self.promjena_boje_kalendara()
+                #vrati izgled cursora nazad na normalni
+                QtGui.QApplication.restoreOverrideCursor()
+            except AssertionError as e1:
+                logging.error('Nema podataka ili svi nisu validirani.', exc_info = True)
+                self.prikazi_error_msg(e1)
+            except pomocne_funkcije.AppExcept as e2:
+                logging.error('Error prilikom uploada na rest servis', exc_info = True)
+                self.prikazi_error_msg(e2)
+            finally:
+                #vrati izgled cursora nazad na normalni
+                QtGui.QApplication.restoreOverrideCursor()
+###############################################################################
     def upload_satno_agregirane(self):
         """
         Dohvati trenutno aktivni kanal i vrijeme, agregiraj i upload na rest
@@ -596,7 +666,7 @@ class Kontroler(QtCore.QObject):
                 frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
 
                 assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_agregirane_to_REST:Assert fail, frame pogresnog tipa'
-                if len(frejm) > 0:
+                if len(frejm):
                     #agregiraj podatke
                     agregirani = self.satniAgregator.agregiraj_kanal(frejm)
 
@@ -633,10 +703,9 @@ class Kontroler(QtCore.QObject):
                         #konverzija output frejma u json string
                         jstring = output.to_json(orient = 'records')
                         #upload uz pomoc rest writera
-                        self.restWriter.upload(jso = jstring)
+                        self.restWriter.upload_agregirane(jso = jstring)
                         #update status kalendara
                         self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
-                        print('Great success, uploaded')
                         self.promjena_boje_kalendara()
 
                 #vrati izgled cursora nazad na normalni
@@ -766,5 +835,18 @@ class Kontroler(QtCore.QObject):
                 out = out and False
         #return rezultat (upozori da neki podaci NISU spremljeni na REST)
         return out
+###############################################################################
+    def get_kanal_temp_kontenjera(self):
+        """
+        iz dicta programa mjerenja i glavnog kanala dohvati programMjerenjaId
+        odgovarajuceg mjerenja Temperature kontejnera za tu stanicu (ako
+        postoji, ako ne vrati None)
+        """
+        stanica = self.mapaMjerenjeIdToOpis[self.gKanal]['postajaId']
+        for key in self.mapaMjerenjeIdToOpis:
+            if self.mapaMjerenjeIdToOpis[key]['postajaId'] is stanica:
+                if self.mapaMjerenjeIdToOpis[key]['komponentaNaziv'] == 'Temperatura kontejnera':
+                    if key is not self.gKanal:
+                        return key
 ###############################################################################
 ###############################################################################

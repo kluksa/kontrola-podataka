@@ -35,6 +35,8 @@ class RestIzbornik(base1, form1):
         """
         #upload agregirane gumb
         self.uploadAgregirane.clicked.connect(self.request_upload_agregiranih)
+        #upload minutne gumb
+        self.uploadMinutne.clicked.connect(self.request_upload_minutnih)
 
         #doubleclick/enter na kalendar
         self.calendarWidget.activated.connect(self.get_mjerenje_datum)
@@ -52,6 +54,14 @@ class RestIzbornik(base1, form1):
         """
         self.emit(QtCore.SIGNAL('request_upload_agregirane'))
         logging.debug('request za upload agregiranih vrijednosti predan kontroloru')
+###############################################################################
+    def request_upload_minutnih(self, x):
+        """
+        Emit zahtjev za uploadom agregiranih podataka trenutno aktivnog kanala
+        i datuma.
+        """
+        self.emit(QtCore.SIGNAL('request_upload_minutne'))
+        logging.debug('request za upload minutnih vrijednosti predan kontroloru')
 ###############################################################################
     def get_mjerenje_datum(self, x):
         """

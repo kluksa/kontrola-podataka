@@ -67,11 +67,16 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.tmax = lista[2]
         self.dto = lista[3]
         self.appDto = lista[4]
+        self.tKontejner = lista[5]
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
         self.gKanal = lista[0]
         #emit zahtjev za podacima, return se vraca u member self.data
         self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), lista[:3])
         if self.gKanal in self.data.keys():
+            #TODO! ucitaj temperaturu kontejnera ako postoji
+            if self.tKontejner is not None:
+                arg = [self.tKontejner, self.tmin, self.tmax]
+                self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
@@ -119,6 +124,9 @@ class Graf(opceniti_canvas.MPLCanvas):
             #crtanje pomocnih grafova
             popis = list(self.data.keys())
             popis.remove(self.gKanal)
+            #TODO! makni temperaturu kontenjera sa popisa
+            if self.tKontejner:
+                popis.remove(self.tKontejner)
             for key in popis:
                 frejm = self.data[key]
                 x = list(frejm.index)
@@ -142,6 +150,26 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.toggle_ticks(self.appDto.satniTicks) #metda definirana u opceniti_canvas.py
             self.toggle_grid(self.appDto.satniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.satniLegend) #metda definirana u opceniti_canvas.py
+
+            #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
+            if self.tKontejner is not None:
+                frejm = self.data[self.tKontejner]
+                frejm = frejm[frejm['flag'] > 0]
+                overlimit = frejm[frejm['avg'] > 30]
+                underlimit = frejm[frejm['avg'] < 15]
+                frejm = overlimit.append(underlimit)
+                x = list(frejm.index)
+                brojLosih = len(x)
+                if brojLosih:
+                    y1, y2 = self.ylim_original
+                    c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
+                    y = [c for i in range(brojLosih)]
+                    self.axes.plot(x,
+                                   y,
+                                   marker = '*',
+                                   color = 'Red',
+                                   linestyle = 'None',
+                                   alpha = 0.4)
 
 
             #highlight prijasnje tocke #TODO!

@@ -22,25 +22,15 @@ import glavni_dijalog
 ###############################################################################
 base, form = uic.loadUiType('./ui_files/display.ui')
 class Display(base, form):
-    def __init__(self, configfile = None, parent = None):
+    def __init__(self, cfg = None, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
 
-        self.config = configparser.ConfigParser()
-        try:
-            self.config.read(configfile)
-        except Exception as err:
-            print('Greska kod ucitavanja config.ini')
-            print(err)
-            #exit application
-            QtGui.QApplication.closeAllWindows()
-
-
-        #set up logger preko "privatne" metode
-        self.setup_logging()
+        self.config = cfg
 
         #set up inicijalizaciju
         self.setup_main_window()
+
         """
         Todo... treba srediti toggle tickova grida isl do kraja
         """
@@ -322,20 +312,6 @@ class Display(base, form):
         Metoda inicijalizira kontroler dio aplikacije.
         """
         self.kontrola = kontroler.Kontroler(parent = None, gui = self)
-###############################################################################
-    def setup_logging(self):
-        """
-        pattern of use:
-        ovo je top modul, za sve child module koristi se isti logger sve dok
-        su u istom procesu (konzoli). U child modulima dovoljno je samo importati
-        logging module te bilo gdje pozvati logging.info('msg') (ili neku slicnu
-        metodu za dodavanje u log).
-        """
-        logging.basicConfig(level = logging.INFO,
-                            filename = 'applog.log',
-                            filemode = 'w',
-                            format = '{levelname}:::{asctime}:::{module}:::{funcName}:::{message}',
-                            style = '{')
 ###############################################################################
 ###############################################################################
 

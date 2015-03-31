@@ -31,14 +31,14 @@ class RESTReader(QtCore.QObject):
 ###############################################################################
     def valjan_conversion(self, x):
         """
-        Adapter, funkcija uzima boolean vrijednost i pretvara je u 
+        Adapter, funkcija uzima boolean vrijednost i pretvara je u
         1 (True) ili -1 (False)
         """
         if x:
             return 1
         else:
             return -1
-###############################################################################    
+###############################################################################
     def status_string_conversion(self, x):
         """
         Adapter, funkcija uzima string vrijednost status stringa i pretvara je
@@ -69,10 +69,13 @@ class RESTReader(QtCore.QObject):
         #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
         noviIndex = frame['vrijeme']
         frame.index = noviIndex
+        #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
+        podatakId = frame['id']
         #dohvati koncentraciju
         koncentracija = frame['vrijednost'].astype(np.float64)
         koncentracija = koncentracija.map(self.nan_conversion)
-        #dohvati status i adaptiraj ga
+        #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
+        statusString = frame['statusString']
         status = frame['statusString']
         status = status.map(self.status_string_conversion)
         status = status.astype(np.float64)
@@ -80,10 +83,13 @@ class RESTReader(QtCore.QObject):
         valjan = frame['valjan']
         valjan = valjan.map(self.valjan_conversion)
         valjan = valjan.astype(np.int64)
+
         #sklopi izlazni dataframe da odgovara API-u dokumenta
-        df = pd.DataFrame({u'koncentracija':koncentracija, 
-                           u'status':status, 
-                           u'flag':valjan})
+        df = pd.DataFrame({'koncentracija':koncentracija,
+                           'status':status,
+                           'flag':valjan,
+                           'id':podatakId,
+                           'statusString':statusString})
         #vrati adaptirani dataframe
         return df
 ###############################################################################
@@ -91,8 +97,8 @@ class RESTReader(QtCore.QObject):
         """
         key je programMjerenja
         date je trazeni datum
-        
-        vraca True ako je upis u model prosao OK, 
+
+        vraca True ako je upis u model prosao OK,
         False u suprotnom slucaju
         """
         sada = datetime.datetime.now()
@@ -129,12 +135,28 @@ class RESTWriterAgregiranih(QtCore.QObject):
         #instanca Web zahtjeva za rest servise
         QtCore.QObject.__init__(self)
         self.source = source
-    def upload(self, jso = None):
+
+    def upload_agregirane(self, jso = None):
         """
-        Ova funkcija zaduzena je za upisivanje json stringa u REST web servis.
+        Ova funkcija zaduzena je za upisivanje json stringa agregiranih u REST web servis.
         """
         try:
             self.source.upload_json_agregiranih(jso)
+        except pomocne_funkcije.AppExcept as err:
+            """
+            Moguci razlozi za Exception
+            -prilikom uploada na REST
+            """
+            logging.error('write data fail', exc_info = True)
+            #potrebno je javiti problem kontroleru aplikacije
+            self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
+
+    def upload_minutne(self, jso = None):
+        """
+        Ova funkcija zaduzena je za upisivanje json stringa minutnih u REST web servis.
+        """
+        try:
+            self.source.upload_json_minutnih(jso)
         except pomocne_funkcije.AppExcept as err:
             """
             Moguci razlozi za Exception

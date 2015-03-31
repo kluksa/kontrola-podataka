@@ -127,10 +127,10 @@ class WebZahtjev(QtCore.QObject):
 ###############################################################################
     def upload_json_agregiranih(self, x):
         """
-        Za zadani json string x, predaj zahtjev za spremanje u REST servis.
+        Za zadani json string  agregiranih x, predaj zahtjev za spremanje u REST servis.
         """
         #point url na REST  servis
-        url = self._base + self._resursi['siroviPodaci']
+        url = self._base + self._resursi['satniPodaci']
         #pripiremi zahtjev
         payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
@@ -145,6 +145,28 @@ class WebZahtjev(QtCore.QObject):
         except requests.exceptions.RequestException as e2:
             tekst = 'WebZahtjev.upload_json_agregiranih:Request fail (http error, timeout...).\n{0}'.format(e2)
             raise pomocne_funkcije.AppExcept(tekst) from e2
+###############################################################################
+    def upload_json_minutnih(self, x):
+        """
+        Za zadani json string x minutnih podataka, predaj zahtjev za spremanje u REST servis.
+        """
+        #point url na REST  servis
+        url = self._base + self._resursi['siroviPodaci']
+        #pripiremi zahtjev
+        payload = {"id":"putPodaci", "name":"PUT"}
+        headers = {'Content-type': 'application/json'}
+        try:
+            assert x != None, 'Ulazni parametar je None, json string nije zadan.'
+            assert len(x) > 0, 'Ulazni json string je prazan'
+            r = requests.put(url, params = payload, data = x, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+        except AssertionError as e1:
+            tekst = 'WebZahtjev.upload_json_minutnih:Assert fail.\n{0}'.format(e1)
+            raise pomocne_funkcije.AppExcept(tekst) from e1
+        except requests.exceptions.RequestException as e2:
+            tekst = 'WebZahtjev.upload_json_minutnih:Request fail (http error, timeout...).\n{0}'.format(e2)
+            raise pomocne_funkcije.AppExcept(tekst) from e2
+
 ###############################################################################
     def get_zero_span(self, programMjerenja, datum, kolicina):
         """
@@ -225,8 +247,10 @@ if __name__ == '__main__':
     baza = "http://172.20.0.179:8080/SKZ-war/webresources/"
     resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci",
                 "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
-                "zerospan":"dhz.skz.rs.zerospan"}
+                "zerospan":"dhz.skz.rs.zerospan",
+                "satniPodaci":"dhz.skz.rs.satnipodatak"}
     aut = ("t1", "t1")
+
     #inicijalizacija WebZahtjev objekta
     wz = WebZahtjev(baza, resursi, aut)
     """
@@ -234,17 +258,17 @@ if __name__ == '__main__':
     exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
     """
     try:
-#        """get programe mjerenja"""
+        """get programe mjerenja"""
 #        r = wz.get_programe_mjerenja()
 #        print(r) #works
 
-#        """get sirovi"""
-#        r1 = wz.get_sirovi(159, '2015-02-22')
-#        print(r1) #works
+        """get sirovi"""
+        r1 = wz.get_sirovi(159, '2015-02-22')
 
-        """get zero span plitvice ozon"""
-        r2 = wz.get_zero_span(65, '2015-02-18', 30)
-        print(r2) #works
+#        """get zero span plitvice ozon"""
+#        r2 = wz.get_zero_span(65, '2015-02-18', 30)
+#        print(r2) #works
+
 
 
     except Exception as e:

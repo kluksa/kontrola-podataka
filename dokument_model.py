@@ -16,7 +16,7 @@ class DataModel(QtCore.QObject):
     Data model aplikacije
     Podaci se spremaju u mapu datafrejmova {programMjerenja:DataFrame,...}
     programMjerenja je tipa int - vezan za programMjerenjaId u bazi
-    
+
     struktura DataFrejma:
     index:
         -datetime index --> type : pd.tseries.index.DatetimeIndex
@@ -24,6 +24,8 @@ class DataModel(QtCore.QObject):
         -"koncentracija" --> dtype: np.float64
         -"status" --> dtype: np.float64
         -"flag" --> dtype: np.int64
+        -"id" --> dtype : int
+        -"statusString" -->dtype : string
     """
 ###############################################################################
     def __init__(self, parent = None):
@@ -37,6 +39,8 @@ class DataModel(QtCore.QObject):
         assert 'koncentracija' in list(frame.columns), 'Assert fail, nedostaje stupac koncentracija'
         assert 'status' in list(frame.columns), 'Assert fail, nedostaje stupac status'
         assert 'flag' in list(frame.columns), 'Assert fail, nedostaje stupac flag'
+        assert 'id' in list(frame.columns), 'Assert fail, nedostaje stupac id'
+        assert 'statusString' in list(frame.columns), 'Assert fail, nedostaje stupac statusString'
 ###############################################################################
     def set_frame(self, key = None, frame = None):
         """postavi frame u self.data pod kljucem key"""
@@ -45,19 +49,19 @@ class DataModel(QtCore.QObject):
             assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
             #provjeri ulazni frame
             self.dataframe_structure_test(frame)
-            #TODO! SORT DATAFRAME
+            #SORT DATAFRAME
             frame.sort_index(inplace = True)
             #dodaj na self.data
             if key in self.data.keys():
                 #merge
                 self.data[key] = pd.merge(
-                    self.data[key], 
-                    frame, 
-                    how = 'outer', 
-                    left_index = True, 
-                    right_index = True, 
-                    sort = True, 
-                    on = ['koncentracija', 'status', 'flag'])
+                    self.data[key],
+                    frame,
+                    how = 'outer',
+                    left_index = True,
+                    right_index = True,
+                    sort = True,
+                    on = ['koncentracija', 'status', 'flag', 'id', 'statusString'])
                 #update values
                 self.data[key].update(frame)
                 self.data[key].sort()
@@ -100,7 +104,7 @@ class DataModel(QtCore.QObject):
         """Promjena flaga za zadani vremenski interval"""
         try:
             if tmin > tmax:
-                tmin, tmax = tmax, tmin        
+                tmin, tmax = tmax, tmin
             #direktno promjeni flag u zadanom intervalu
             self.data[key].loc[tmin:tmax, u'flag'] = flag
             #objavi svima koji slusaju da je doslo do promjene

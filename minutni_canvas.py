@@ -103,9 +103,14 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.appDto = lista[4]
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
         self.gKanal = lista[0]
+        self.tKontejner = lista[5]
         #emit zahtjev za podacima, return se vraca u member self.data
         self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), lista[:3])
         if self.gKanal in self.data.keys():
+            #TODO! ucitaj temperaturu kontejnera ako postoji
+            if self.tKontejner is not None:
+                arg = [self.tKontejner, self.tmin, self.tmax]
+                self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
@@ -132,6 +137,9 @@ class Graf(opceniti_canvas.MPLCanvas):
             #crtanje pomocnih grafova
             popis = list(self.data.keys())
             popis.remove(self.gKanal)
+            #TODO! makni temperaturu kontenjera sa popisa
+            if self.tKontejner:
+                popis.remove(self.tKontejner)
             for key in popis:
                 frejm = self.data[key]
                 x = list(frejm.index)
@@ -150,13 +158,32 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.setup_limits('MINUTNI') #metda definirana u opceniti_canvas.py
             self.setup_ticks()
             self.setup_legend() #metda definirana u opceniti_canvas.py
-            #naredba za crtanje
-            self.draw()
 
             #toggle minor tickova, i grida
             self.toggle_ticks(self.appDto.minutniTicks) #metda definirana u opceniti_canvas.py
             self.toggle_grid(self.appDto.minutniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.minutniLegend) #metda definirana u opceniti_canvas.py
+
+            #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
+            if self.tKontejner is not None:
+                frejm = self.data[self.tKontejner]
+                frejm = frejm[frejm['flag'] > 0]
+                overlimit = frejm[frejm['koncentracija'] > 30]
+                underlimit = frejm[frejm['koncentracija'] < 15]
+                frejm = overlimit.append(underlimit)
+                x = list(frejm.index)
+                brojLosih = len(x)
+                if brojLosih:
+                    y1, y2 = self.ylim_original
+                    c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
+                    y = [c for i in range(brojLosih)]
+                    self.axes.plot(x,
+                                   y,
+                                   marker = '*',
+                                   color = 'Red',
+                                   linestyle = 'None',
+                                   alpha = 0.4)
+            self.draw()
 
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()

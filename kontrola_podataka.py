@@ -7,11 +7,30 @@ Created on Fri Oct 31 14:06:55 2014
 """
 import sys
 from PyQt4 import QtGui
+import configparser
+import pomocne_funkcije
 import display
+
+config = configparser.ConfigParser()
+try:
+    config.read('config.ini')
+except Exception as err:
+    print('Greska kod ucitavanja config.ini')
+    print('Application exit')
+    print(err)
+    #kill interpreter
+    exit()
+#dohvati postevke za logger (section, option, fallback ako log ne postoji)
+filename = config.get('LOG_SETUP', 'file', fallback='applog.log')
+filemode = config.get('LOG_SETUP', 'mode', fallback='a')
+level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
+#setup logging
+pomocne_funkcije.setup_logging(file = filename, mode = filemode, lvl=level)
+
 #instancira QApplication objekt i starta main event loop
 aplikacija = QtGui.QApplication(sys.argv)
-#inicijaliziraj aplikaciju sa config fileom
-glavniProzor = display.Display(configfile = 'config.ini')
+#inicijaliziraj aplikaciju sa config objektom
+glavniProzor = display.Display(cfg = config)
 #prikaz GUI na ekran
 glavniProzor.show()
 #clean exit iz aplikacije

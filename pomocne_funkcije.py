@@ -18,6 +18,7 @@ import datetime
 from datetime import timedelta
 import pandas as pd
 import numpy as np
+import logging
 
 ###############################################################################
 ###############################################################################
@@ -208,9 +209,10 @@ def pronadji_tickove_satni(tmin, tmax):
     for ind in tempTickovi:
         if ind not in majorTickovi:
             #formatiraj vrijeme u sat:min 12:15:00 -> 12h:15m
-            ftime = str(ind.hour)+'h:'+str(ind.minute)+'m'
+            #ftime = str(ind.hour)+'h:'+str(ind.minute)+'m'
             minorTickovi.append(ind)
-            minorLabeli.append(ftime)
+            minorLabeli.append("")
+            #minorLabeli.append(ftime)
 
     out = {'majorTickovi':majorTickovi,
            'majorLabeli':majorLabeli,
@@ -234,7 +236,8 @@ def pronadji_tickove_minutni(tmin, tmax):
     for ind in tempTickovi:
         if ind not in majorTickovi:
             minorTickovi.append(ind)
-            minorLabeli.append(str(ind.minute)+'m')
+            #minorLabeli.append(str(ind.minute)+'m')
+            minorLabeli.append("")
 
     out = {'majorTickovi':majorTickovi,
            'majorLabeli':majorLabeli,
@@ -341,7 +344,49 @@ def mpl_time_to_pandas_datetime(vrijeme):
     #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
     return pd.to_datetime(pdTime)
 ###############################################################################
+def setup_logging(file='applog.log', mode='a', lvl='INFO'):
+    """
+    pattern of use:
+    ovo je top modul, za sve child module koristi se isti logger sve dok
+    su u istom procesu (konzoli). U child modulima dovoljno je samo importati
+    logging module te bilo gdje pozvati logging.info('msg') (ili neku slicnu
+    metodu za dodavanje u log).
+    """
+    DOZVOLJENI = {'DEBUG': logging.DEBUG,
+                  'INFO': logging.INFO,
+                  'WARNING': logging.WARNING,
+                  'ERROR':logging.ERROR,
+                  'CRITICAL': logging.CRITICAL}
+    #lvl parametar
+    if lvl in DOZVOLJENI:
+        lvl = DOZVOLJENI[lvl]
+    else:
+        lvl = logging.ERROR
+    #filemode
+    if mode not in ['a','w']:
+        mode = 'a'
+    try:
+        logging.basicConfig(level = lvl,
+                            filename = file,
+                            filemode = mode,
+                            format = '{levelname}:::{asctime}:::{module}:::{funcName}:::{message}',
+                            style = '{')
+    except OSError as err:
+        print('Error prilikom konfiguracije logera.', err)
+        print('Application exit')
+        #ugasi interpreter...exit iz programa.
+        exit()
+###############################################################################
+def int_to_boolean(x):
+    """
+    ako je x vrijednost veca ili jednaka 0 vraca True,
+    ako nije, vraca False
 
-if __name__ == '__main__':
-    print(mpl_time_to_pandas_datetime(735668.041667))
-    print(mpl_time_to_pandas_datetime(735669.0))
+    Primarno sluzi kao adapter za flag vrijednost mintnih podataka prilikom uploada
+    podataka na rest
+    """
+    if x >= 0:
+        return True
+    else:
+        return False
+###############################################################################

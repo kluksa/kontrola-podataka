@@ -37,6 +37,7 @@ class AppSettingsDTO():
         self.RESTProgramMjerenja = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'program_mjerenja', 'dhz.skz.aqdb.entity.programmjerenja', str)
         self.RESTSiroviPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'sirovi_podaci', 'dhz.skz.rs.sirovipodaci', str)
         self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
+        self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci', 'dhz.skz.rs.satnipodatak', str)
         logging.debug('Inicijalizacija DTO za gui elemente, end')
 ###############################################################################
     def set_satniGrid(self, x):

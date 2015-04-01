@@ -125,8 +125,10 @@ class Graf(opceniti_canvas.MPLCanvas):
             popis = list(self.data.keys())
             popis.remove(self.gKanal)
             #TODO! makni temperaturu kontenjera sa popisa
+            # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
             if self.tKontejner:
-                popis.remove(self.tKontejner)
+                if self.tKontejner in popis:
+                    popis.remove(self.tKontejner)
             for key in popis:
                 frejm = self.data[key]
                 x = list(frejm.index)
@@ -152,6 +154,7 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.toggle_legend(self.appDto.satniLegend) #metda definirana u opceniti_canvas.py
 
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
+            # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
             if self.tKontejner is not None:
                 frejm = self.data[self.tKontejner]
                 frejm = frejm[frejm['flag'] > 0]

@@ -107,6 +107,7 @@ class Graf(opceniti_canvas.MPLCanvas):
         #emit zahtjev za podacima, return se vraca u member self.data
         self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), lista[:3])
         if self.gKanal in self.data.keys():
+
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
                 arg = [self.tKontejner, self.tmin, self.tmax]
@@ -121,6 +122,8 @@ class Graf(opceniti_canvas.MPLCanvas):
             frejm = self.data[self.gKanal]
             x = list(frejm.index)
             y = list(frejm[u'koncentracija'])
+
+
             self.axes.plot(x,
                            y,
                            linestyle = self.dto.minutniMidline.lineStyle,
@@ -138,8 +141,11 @@ class Graf(opceniti_canvas.MPLCanvas):
             popis = list(self.data.keys())
             popis.remove(self.gKanal)
             #TODO! makni temperaturu kontenjera sa popisa
+
             if self.tKontejner:
+
                 popis.remove(self.tKontejner)
+
             for key in popis:
                 frejm = self.data[key]
                 x = list(frejm.index)
@@ -222,6 +228,7 @@ class Graf(opceniti_canvas.MPLCanvas):
         for label in allXLabels:
             label.set_rotation(45)
             label.set_fontsize(8)
+
 ###############################################################################
     def span_select(self, t1, t2):
         """

@@ -76,9 +76,10 @@ class RESTReader(QtCore.QObject):
         koncentracija = koncentracija.map(self.nan_conversion)
         #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
         statusString = frame['statusString']
-        status = frame['statusString']
-        status = status.map(self.status_string_conversion)
-        status = status.astype(np.float64)
+#        status = frame['statusString']
+#        status = status.map(self.status_string_conversion)
+#        status = status.astype(np.float64)
+        status = 0
         #adapter za boolean vrijesnost valjan  (buduci flag)
         valjan = frame['valjan']
         valjan = valjan.map(self.valjan_conversion)

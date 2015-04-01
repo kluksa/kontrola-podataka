@@ -21,7 +21,7 @@ import glavni_dijalog
 ###############################################################################
 ###############################################################################
 base, form = uic.loadUiType('./ui_files/display.ui')
-class Display(base, form):
+class GlavniProzor(base, form):
     def __init__(self, cfg = None, parent = None):
         super(base, self).__init__(parent)
         self.setupUi(self)
@@ -59,7 +59,7 @@ class Display(base, form):
         self.action_zoom.setChecked(self.appSettings.zoom)
 
         #inicijalizacija panela sa grafovima koncentracije
-        self.koncPanel = grafovi_panel.KoncPanel()
+        self.koncPanel = grafovi_panel.KoncPanel(self.grafSettings, self.appSettings)
         self.koncPanelLayout.addWidget(self.koncPanel)
         #inicijalizacija panela sa zero/span grafovima
         self.zsPanel = grafovi_panel.ZeroSpanPanel()

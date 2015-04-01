@@ -9,7 +9,7 @@ import sys
 from PyQt4 import QtGui
 import configparser
 import pomocne_funkcije
-import display
+import glavniprozor
 
 config = configparser.ConfigParser()
 try:
@@ -30,7 +30,7 @@ pomocne_funkcije.setup_logging(file = filename, mode = filemode, lvl=level)
 #instancira QApplication objekt i starta main event loop
 aplikacija = QtGui.QApplication(sys.argv)
 #inicijaliziraj aplikaciju sa config objektom
-glavniProzor = display.Display(cfg = config)
+glavniProzor = glavniprozor.GlavniProzor(cfg = config)
 #prikaz GUI na ekran
 glavniProzor.show()
 #clean exit iz aplikacije

@@ -466,7 +466,7 @@ class Kontroler(QtCore.QObject):
         zadan datum, tj. donja i gornja granica intervala i glavni kanal.
         """
         if (self.tmin != None and self.tmax != None and self.gKanal != None):
-            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), [self.gKanal, self.tmin, self.tmax, self.gui.grafSettings, self.gui.appSettings, self.tKontejnerId])
+            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), {'kanalId' : self.gKanal, 'pocetnoVrijeme': self.tmin, 'zavrsnoVrijeme' : self.tmax, 'tempKontejner'  : self.tKontejnerId})
             #promjena labela u panelima sa grafovima, opis
             try:
                 opisKanala = self.mapaMjerenjeIdToOpis[self.gKanal]
@@ -825,7 +825,7 @@ class Kontroler(QtCore.QObject):
 
         Funkcija vraca boolean ovisno o jednakosti skupova datuma.
 
-        poziva ga display.py - u overloadanoj metodi za izlaz iz aplikacije
+        poziva ga glavniprozor.py - u overloadanoj metodi za izlaz iz aplikacije
         """
         out = True
         for kanal in self.setGlavnihKanala:

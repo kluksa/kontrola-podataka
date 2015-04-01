@@ -51,7 +51,7 @@ class KoncPanel(base2, form2):
     self.satniGraf --> instanca satnog canvasa       
     self.minutniGraf --> instanca minutnog canvasa
     """
-    def __init__(self, parent = None):
+    def __init__(self, konfig, appKonfig, parent = None):
         """
         init ide sa appSettings zbog inicijalne postavke interakcije sa grafovima
         """
@@ -59,7 +59,7 @@ class KoncPanel(base2, form2):
         self.setupUi(self)
 
         #inicijalizacija canvasa
-        self.satniGraf = satni_canvas.Graf(parent = None)
+        self.satniGraf = satni_canvas.Graf(konfig, appKonfig, parent = None)
         self.minutniGraf = minutni_canvas.Graf(parent = None)
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)

@@ -22,7 +22,7 @@ class Graf(opceniti_canvas.MPLCanvas):
     """
     Definira detalje crtanja satno agregiranog grafa i pripadne evente
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, konfig, appKonfig, *args, **kwargs):
         """konstruktor"""
         opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
         #podrska za kontekstni meni za promjenu flaga (desni klik misem na canvas)
@@ -45,10 +45,16 @@ class Graf(opceniti_canvas.MPLCanvas):
 
         #rastegni canvas udesno
         self.axes.figure.subplots_adjust(right = 0.98)
+
+        self.dto = konfig
+        self.appDto = appKonfig
 ###############################################################################
     def crtaj(self, lista):
         """
         Eksplicitne naredbe za crtanje
+
+        ULTRASUPER RUZNO. Ako vec moras zapakirati vise vrijednosti u jedan objekt onda koristi dictionary
+        na taj nacin imas lista['tmin'] a ne lista[1], cime povecavas i fleksibilnost i citljivost
 
         lista[0] --> int ,programMjerenjaId glavnog kanala
         lista[1] --> tmin
@@ -63,24 +69,27 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.data = {}
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.tmin = lista[1]
-        self.tmax = lista[2]
-        self.dto = lista[3]
-        self.appDto = lista[4]
-        self.tKontejner = lista[5]
+        self.pocetnoVrijeme = lista['pocetnoVrijeme'] #tmin moze biti i temperatura, sto fali pocetnoVrijeme
+        self.zavrsnoVrijeme = lista['zavrsnoVrijeme']
+        #self.dto = lista[3] # nije DTO nego je config objekt
+        #self.appDto = lista[4] # zasto konfig objekt saljes kroz poziv za crtanje??? Ne bi li to trebalo ici kroz
+        #konstruktor ili neki drugi poziv. Ako sam dobro shvatio DTO-i su u stvari konfizi koji se jednom definiraju
+
+        self.tKontejner = lista['tempKontejner']
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
-        self.gKanal = lista[0]
+        self.gKanal = lista['kanalId']
         #emit zahtjev za podacima, return se vraca u member self.data
-        self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), lista[:3])
+        arg = [lista['kanalId'], lista['pocetnoVrijeme'], lista['zavrsnoVrijeme']]
+        self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
         if self.gKanal in self.data.keys():
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
-                arg = [self.tKontejner, self.tmin, self.tmax]
+                arg = [self.tKontejner, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                 self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
-                    arg = [programKey, self.tmin, self.tmax]
+                    arg = [programKey, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                     self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
 
             #ostali bi sada svi trebali biti u self.data
@@ -156,23 +165,24 @@ class Graf(opceniti_canvas.MPLCanvas):
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
             # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
             if self.tKontejner is not None:
-                frejm = self.data[self.tKontejner]
-                frejm = frejm[frejm['flag'] > 0]
-                overlimit = frejm[frejm['avg'] > 30]
-                underlimit = frejm[frejm['avg'] < 15]
-                frejm = overlimit.append(underlimit)
-                x = list(frejm.index)
-                brojLosih = len(x)
-                if brojLosih:
-                    y1, y2 = self.ylim_original
-                    c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
-                    y = [c for i in range(brojLosih)]
-                    self.axes.plot(x,
-                                   y,
-                                   marker = '*',
-                                   color = 'Red',
-                                   linestyle = 'None',
-                                   alpha = 0.4)
+                if self.tKontejner in self.data:
+                    frejm = self.data[self.tKontejner]
+                    frejm = frejm[frejm['flag'] > 0]
+                    overlimit = frejm[frejm['avg'] > 30]
+                    underlimit = frejm[frejm['avg'] < 15]
+                    frejm = overlimit.append(underlimit)
+                    x = list(frejm.index)
+                    brojLosih = len(x)
+                    if brojLosih:
+                        y1, y2 = self.ylim_original
+                        c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
+                        y = [c for i in range(brojLosih)]
+                        self.axes.plot(x,
+                                       y,
+                                       marker = '*',
+                                       color = 'Red',
+                                       linestyle = 'None',
+                                       alpha = 0.4)
 
 
             #highlight prijasnje tocke #TODO!
@@ -209,7 +219,7 @@ class Graf(opceniti_canvas.MPLCanvas):
         major ticks - svaki puni sat
         minor ticks - svakih 15 minuta (ali bez vrijednosti punog sata)
         """
-        tickovi = pomocne_funkcije.pronadji_tickove_satni(self.tmin, self.tmax)
+        tickovi = pomocne_funkcije.pronadji_tickove_satni(self.pocetnoVrijeme, self.zavrsnoVrijeme)
         self.majorTickLoc = tickovi['majorTickovi']
         self.majorTickLab = tickovi['majorLabeli']
         self.minorTickLoc = tickovi['minorTickovi']
@@ -333,10 +343,10 @@ class Graf(opceniti_canvas.MPLCanvas):
             #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
             xpoint = pd.to_datetime(xpoint)
             #bitno je da zaokruzeno vrijeme nije izvan granica frejma (izbjegavnjanje index errora)
-            if xpoint >= self.tmax:
-                xpoint = self.tmax
-            if xpoint <= self.tmin:
-                xpoint = self.tmin
+            if xpoint >= self.zavrsnoVrijeme:
+                xpoint = self.zavrsnoVrijeme
+            if xpoint <= self.pocetnoVrijeme:
+                xpoint = self.pocetnoVrijeme
 
             #highlight selected point - kooridinate ako nedostaju podaci
             if xpoint in list(self.data[self.gKanal].index):
@@ -416,14 +426,14 @@ class Graf(opceniti_canvas.MPLCanvas):
             t2 = pd.to_datetime(t2)
 
             #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
-            if t1 < self.tmin:
-                t1 = self.tmin
-            if t1 > self.tmax:
-                t1 = self.tmax
-            if t2 < self.tmin:
-                t2 = self.tmin
-            if t2 > self.tmax:
-                t2 = self.tmax
+            if t1 < self.pocetnoVrijeme:
+                t1 = self.pocetnoVrijeme
+            if t1 > self.zavrsnoVrijeme:
+                t1 = self.zavrsnoVrijeme
+            if t2 < self.pocetnoVrijeme:
+                t2 = self.pocetnoVrijeme
+            if t2 > self.zavrsnoVrijeme:
+                t2 = self.zavrsnoVrijeme
             print(t1, t2)
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
             if t1 != t2:

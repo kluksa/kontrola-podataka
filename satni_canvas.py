@@ -49,7 +49,81 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.dto = konfig
         self.appDto = appKonfig
 ###############################################################################
+<<<<<<< HEAD
     def crtaj(self, ulaz):
+=======
+    def crtaj_pomocne(self, popis):
+        for key in popis:
+            frejm = self.data[key]
+            x = list(frejm.index)
+            y = list(frejm[u'avg'])
+            self.axes.plot(x,
+                           y,
+                           marker=self.dto.dictPomocnih[key].markerStyle,
+                           markersize=self.dto.dictPomocnih[key].markerSize,
+                           linestyle=self.dto.dictPomocnih[key].lineStyle,
+                           linewidth=self.dto.dictPomocnih[key].lineWidth,
+                           color=self.dto.dictPomocnih[key].color,
+                           zorder=self.dto.dictPomocnih[key].zorder,
+                           label=self.dto.dictPomocnih[key].label)
+
+    def crtaj_glavni_graf(self):
+        # ostali bi sada svi trebali biti u self.data
+        ###step2. crtanje grafova koji su uspjesno ucitani u self.data###
+        #midline
+        frejm = self.data[self.gKanal]
+        x = list(frejm.index)
+        y = list(frejm[u'avg'])
+        self.axes.plot(x,
+                       y,
+                       linestyle=self.dto.satniMidline.lineStyle,
+                       linewidth=self.dto.satniMidline.lineWidth,
+                       color=self.dto.satniMidline.color,
+                       zorder=self.dto.satniMidline.zorder,
+                       label=self.dto.satniMidline.label)
+        #fill izmedju komponenti
+        if self.dto.satniFill.crtaj:
+            self.axes.fill_between(x,
+                                   list(frejm[self.dto.satniFill.komponenta1]),
+                                   list(frejm[self.dto.satniFill.komponenta2]),
+                                   facecolor=self.dto.satniFill.color,
+                                   zorder=self.dto.satniFill.zorder,
+                                   label=self.dto.satniFill.label)
+
+        #ekstremi min i max
+        if self.dto.satniEksMin.crtaj:
+            self.crtaj_scatter_konc('min', self.dto.satniEksMin, None)
+            self.crtaj_scatter_konc('max', self.dto.satniEksMax, None)
+        #validan i ok flag
+        self.crtaj_scatter_konc('avg', self.dto.satniVOK, 1000)
+        #validan i los flag
+        self.crtaj_scatter_konc('avg', self.dto.satniVBAD, -1000)
+        #sirov podatak i ok flag
+        self.crtaj_scatter_konc('avg', self.dto.satniNVOK, 1)
+        #sirov podatak i los flag
+        self.crtaj_scatter_konc('avg', self.dto.satniNVBAD, -1)
+
+    def crtaj_oznake_temperature(self):
+        frejm = self.data[self.tKontejner]
+        frejm = frejm[frejm['flag'] > 0]
+        overlimit = frejm[frejm['avg'] > 30]
+        underlimit = frejm[frejm['avg'] < 15]
+        frejm = overlimit.append(underlimit)
+        x = list(frejm.index)
+        brojLosih = len(x)
+        if brojLosih:
+            y1, y2 = self.ylim_original
+            c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+            y = [c for i in range(brojLosih)]
+            self.axes.plot(x,
+                           y,
+                           marker='*',
+                           color='Red',
+                           linestyle='None',
+                           alpha=0.4)
+
+    def crtaj(self, lista):
+>>>>>>> origin/fix
         """
         Eksplicitne naredbe za crtanje
 
@@ -83,6 +157,7 @@ class Graf(opceniti_canvas.MPLCanvas):
                'od':self.pocetnoVrijeme,
                'do':self.zavrsnoVrijeme}
         self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
+
         if self.gKanal in self.data.keys():
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
@@ -100,45 +175,14 @@ class Graf(opceniti_canvas.MPLCanvas):
                     #arg = [programKey, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                     self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
 
-            #ostali bi sada svi trebali biti u self.data
-            ###step2. crtanje grafova koji su uspjesno ucitani u self.data###
-            #midline
-            frejm = self.data[self.gKanal]
-            x = list(frejm.index)
-            y = list(frejm[u'avg'])
-            self.axes.plot(x,
-                           y,
-                           linestyle = self.dto.satniMidline.lineStyle,
-                           linewidth = self.dto.satniMidline.lineWidth,
-                           color = self.dto.satniMidline.color,
-                           zorder = self.dto.satniMidline.zorder,
-                           label = self.dto.satniMidline.label)
+            self.crtaj_glavni_graf()
 
-            #fill izmedju komponenti
-            if self.dto.satniFill.crtaj:
-                y1 = list(frejm[self.dto.satniFill.komponenta1])
-                y2 = list(frejm[self.dto.satniFill.komponenta2])
-                self.axes.fill_between(x,
-                                       y1,
-                                       y2,
-                                       facecolor = self.dto.satniFill.color,
-                                       zorder = self.dto.satniFill.zorder,
-                                       label = self.dto.satniFill.label)
 
-            #ekstremi min i max
-            if self.dto.satniEksMin.crtaj:
-                self.crtaj_scatter_konc('min', self.dto.satniEksMin, None)
-                self.crtaj_scatter_konc('max', self.dto.satniEksMax, None)
-            #validan i ok flag
-            self.crtaj_scatter_konc('avg', self.dto.satniVOK, 1000)
-            #validan i los flag
-            self.crtaj_scatter_konc('avg', self.dto.satniVBAD, -1000)
-            #sirov podatak i ok flag
-            self.crtaj_scatter_konc('avg', self.dto.satniNVOK, 1)
-            #sirov podatak i los flag
-            self.crtaj_scatter_konc('avg', self.dto.satniNVBAD, -1)
+
 
             #crtanje pomocnih grafova
+            # ovo u novu funkciju
+
             popis = list(self.data.keys())
             popis.remove(self.gKanal)
             #TODO! makni temperaturu kontenjera sa popisa
@@ -146,21 +190,10 @@ class Graf(opceniti_canvas.MPLCanvas):
             if self.tKontejner:
                 if self.tKontejner in popis:
                     popis.remove(self.tKontejner)
-            for key in popis:
-                frejm = self.data[key]
-                x = list(frejm.index)
-                y = list(frejm[u'avg'])
-                self.axes.plot(x,
-                               y,
-                               marker = self.dto.dictPomocnih[key].markerStyle,
-                               markersize = self.dto.dictPomocnih[key].markerSize,
-                               linestyle = self.dto.dictPomocnih[key].lineStyle,
-                               linewidth = self.dto.dictPomocnih[key].lineWidth,
-                               color = self.dto.dictPomocnih[key].color,
-                               zorder = self.dto.dictPomocnih[key].zorder,
-                               label = self.dto.dictPomocnih[key].label)
 
+            self.crtaj_pomocne(popis)
             #set limits and ticks
+
             self.setup_limits('SATNI') #metda definirana u opceniti_canvas.py
             self.setup_ticks()
             self.setup_legend() #metda definirana u opceniti_canvas.py
@@ -170,30 +203,14 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.toggle_grid(self.appDto.satniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.satniLegend) #metda definirana u opceniti_canvas.py
 
+
+
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
             # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
             if self.tKontejner is not None:
                 if self.tKontejner in self.data:
-                    frejm = self.data[self.tKontejner]
-                    frejm = frejm[frejm['flag'] > 0]
-                    overlimit = frejm[frejm['avg'] > 30]
-                    underlimit = frejm[frejm['avg'] < 15]
-                    frejm = overlimit.append(underlimit)
-                    x = list(frejm.index)
-                    brojLosih = len(x)
-                    if brojLosih:
-                        y1, y2 = self.ylim_original
-                        c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
-                        y = [c for i in range(brojLosih)]
-                        self.axes.plot(x,
-                                       y,
-                                       marker = '*',
-                                       color = 'Red',
-                                       linestyle = 'None',
-                                       alpha = 0.4)
+                    self.crtaj_oznake_temperature()#highlight prijasnje tocke #TODO!
 
-
-            #highlight prijasnje tocke #TODO!
             if self.statusHighlight:
                 hx, hy = self.lastHighlight
                 if hx in self.data[self.gKanal].index:
@@ -220,6 +237,7 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.draw()
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()
+
 ###############################################################################
     def setup_ticks(self):
         """

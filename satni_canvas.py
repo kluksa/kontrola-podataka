@@ -49,18 +49,17 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.dto = konfig
         self.appDto = appKonfig
 ###############################################################################
-    def crtaj(self, lista):
+    def crtaj(self, ulaz):
         """
         Eksplicitne naredbe za crtanje
 
         ULTRASUPER RUZNO. Ako vec moras zapakirati vise vrijednosti u jedan objekt onda koristi dictionary
         na taj nacin imas lista['tmin'] a ne lista[1], cime povecavas i fleksibilnost i citljivost
 
-        lista[0] --> int ,programMjerenjaId glavnog kanala
-        lista[1] --> tmin
-        lista[2] --> tmax
-        lista[3] --> grafSettingsDTO
-        lista[4] --> appSettingsDTO
+        ulaz['kanalId'] --> int ,programMjerenjaId glavnog kanala
+        ulaz['pocetnoVrijeme'] --> pocetno vrijeme
+        ulaz['zavrsnoVrijeme'] --> zavrsno vrijeme
+        ulaz['tempKontejner'] --> temperatura kontejnera id
         """
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
@@ -69,27 +68,36 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.data = {}
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.pocetnoVrijeme = lista['pocetnoVrijeme'] #tmin moze biti i temperatura, sto fali pocetnoVrijeme
-        self.zavrsnoVrijeme = lista['zavrsnoVrijeme']
+        self.pocetnoVrijeme = ulaz['pocetnoVrijeme'] #tmin moze biti i temperatura, sto fali pocetnoVrijeme
+        self.zavrsnoVrijeme = ulaz['zavrsnoVrijeme']
         #self.dto = lista[3] # nije DTO nego je config objekt
         #self.appDto = lista[4] # zasto konfig objekt saljes kroz poziv za crtanje??? Ne bi li to trebalo ici kroz
         #konstruktor ili neki drugi poziv. Ako sam dobro shvatio DTO-i su u stvari konfizi koji se jednom definiraju
 
-        self.tKontejner = lista['tempKontejner']
+        self.tKontejner = ulaz['tempKontejner']
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
-        self.gKanal = lista['kanalId']
+        self.gKanal = ulaz['kanalId']
         #emit zahtjev za podacima, return se vraca u member self.data
-        arg = [lista['kanalId'], lista['pocetnoVrijeme'], lista['zavrsnoVrijeme']]
+        #arg = [ulaz['kanalId'], ulaz['pocetnoVrijeme'], ulaz['zavrsnoVrijeme']]
+        arg = {'kanal':self.gKanal,
+               'od':self.pocetnoVrijeme,
+               'do':self.zavrsnoVrijeme}
         self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
         if self.gKanal in self.data.keys():
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
-                arg = [self.tKontejner, self.pocetnoVrijeme, self.zavrsnoVrijeme]
+                #arg = [self.tKontejner, self.pocetnoVrijeme, self.zavrsnoVrijeme]
+                arg = {'kanal':self.tKontejner,
+                       'od':self.pocetnoVrijeme,
+                       'do':self.zavrsnoVrijeme}
                 self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
-                    arg = [programKey, self.pocetnoVrijeme, self.zavrsnoVrijeme]
+                    arg = {'kanal':programKey,
+                           'od':self.pocetnoVrijeme,
+                           'do':self.zavrsnoVrijeme}
+                    #arg = [programKey, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                     self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
 
             #ostali bi sada svi trebali biti u self.data
@@ -434,25 +442,24 @@ class Graf(opceniti_canvas.MPLCanvas):
                 t2 = self.pocetnoVrijeme
             if t2 > self.zavrsnoVrijeme:
                 t2 = self.zavrsnoVrijeme
-            print(t1, t2)
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
             if t1 != t2:
                 #pozovi dijalog za promjenu flaga
                 loc = QtGui.QCursor.pos()
                 self.show_context_menu(loc, t1, t2)
 ###############################################################################
-    def set_agregirani_kanal(self, arglist):
+    def set_agregirani_kanal(self, ulaz):
         """
         BITNA METODA! - mehanizam s kojim se ucitavaju frejmovi za crtanje.
         -metoda crtaj trazi od kontrolera podatke
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
+        - ulaz je mapa koja sadrzi kanalId i agregirani frejm
 
         metoda postavlja agregirani frejm u self.data
-        lista -> [kanal, frejm]
-        kanal -> int, ime kanala
-        frejm -> pandas dataframe, agregirani podaci
+        ulaz['kanal'] -> int, 'ime' kanala
+        ulaz['agregirani'] -> pandas dataframe, agregirani podaci
         """
-        self.data[arglist[0]] = arglist[1]
+        self.data[ulaz['kanal']] = ulaz['agregirani']
 ###############################################################################
     def show_context_menu(self, pos, tmin, tmax):
         """
@@ -488,7 +495,11 @@ class Graf(opceniti_canvas.MPLCanvas):
         tmin = pd.to_datetime(tmin)
         #pakiranje zahtjeva u listu [tmin, tmax, flag, glavni kanal] ovisno o tipu
         if tip != None:
-            arg = [tmin, tmax, tip, self.gKanal]
+            #arg = [tmin, tmax, tip, self.gKanal]
+            arg = {'od': tmin,
+                   'do': tmax,
+                   'noviFlag': tip,
+                   'kanal': self.gKanal}
             #generalni emit za promjenu flaga
             self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################

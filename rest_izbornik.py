@@ -92,7 +92,8 @@ class RestIzbornik(base1, form1):
                 prog = item._data[2] #dohvati program mjerenja iz liste podataka
 
                 if prog != None:
-                    output = [int(prog), dan]
+                    output = {'programMjerenjaId': int(prog),
+                              'datumString': dan}
                     #print('Izabrana kombinacija: {0}'.format(output))
                     self.emit(QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'), output)
                     logging.info('izabrana kombinacija kanala i datuma : {0}'.format(str(output)))

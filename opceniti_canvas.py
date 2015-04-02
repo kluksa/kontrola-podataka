@@ -82,8 +82,7 @@ class MPLCanvas(FigureCanvas):
 
 ###############################################################################
     def crtaj(self):
-        """overload specific method"""
-        print('crtaj method, overload za specificni graf')
+        """overload specific method za crtanje"""
 ###############################################################################
     def rect_zoom(self, eclick, erelease):
         """
@@ -99,13 +98,16 @@ class MPLCanvas(FigureCanvas):
         self.draw()
 ###############################################################################
     def on_pick(self, event):
-        print('on_pick method, overload for specific graph')
+        """on_pick method, overload for specific graph"""
+        pass
 ###############################################################################
     def on_pick_point(self, event):
-        print('on_pick_point method, overload for specific graph')
+        """on_pick_point method, overload for specific graph"""
+        pass
 ###############################################################################
     def span_select(self, xmin, xmax):
-        print('span select metoda, overload for specific graph')
+        """span select metoda, overload for specific graph"""
+        pass
 ###############################################################################
     def connect_pick_evente(self, tip):
         """mpl connection ovisno o tipu canvasa"""

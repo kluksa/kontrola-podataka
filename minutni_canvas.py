@@ -23,7 +23,7 @@ class Graf(opceniti_canvas.MPLCanvas):
     """
     Definira detalje crtanja minutnog grafa i pripadne evente
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, konfig, appKonfig, *args, **kwargs):
         opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
 
         #podrska za kontekstni meni za promjenu flaga
@@ -44,6 +44,9 @@ class Graf(opceniti_canvas.MPLCanvas):
 
         #rastegni canvas udesno
         self.axes.figure.subplots_adjust(right = 0.98)
+
+        self.dto = konfig
+        self.appDto = appKonfig
 ###############################################################################
     def clear_minutni(self):
         """
@@ -63,30 +66,28 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.axes.clear()
         self.draw()
 ###############################################################################
-    def set_minutni_kanal(self, arglist):
+    def set_minutni_kanal(self, argMap):
         """
         BITNA METODA! - mehanizam s kojim se ucitavaju frejmovi za crtanje.
         -metoda crtaj trazi od kontrolera podatke
         -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
+        -ulaz je mapa
 
         metoda postavlja frejm minutnih podataka u self.__data
-        lista -> [kanal, frejm, dict]
-        kanal -> int, ime kanala
-        frejm -> pandas dataframe, minutni podaci
-        dict -> dict sa opisom kanala, sadrzi naziv, formulu, mjernu jedinicu, postaju
+        argMap['kanal'] -> int, ime kanala
+        argMap['dataFrejm'] -> pandas dataframe, minutni podaci
         """
-        self.data[arglist[0]] = arglist[1]
+        self.data[argMap['kanal']] = argMap['dataFrejm']
 ###############################################################################
-    def crtaj(self, lista):
+    def crtaj(self, ulaz):
         """Eksplicitne naredbe za crtanje zadane sa popisom grafova i vremenskim
         intervalom.
 
-        ulaz je lista
-        lista[0] - programMjerenjaID za glavni kanal
-        lista[1] - donja granica vremenskog intervala
-        lista[2] - gornja granica vremenskog intervala
-        lista[3] - grafSettingsDTO
-        lista[4] - appSettingsDTO
+        ulaz je mapa
+        ulaz['kanalId'] - glavni kanal id
+        ulaz['pocetnoVrijeme'] - min vrijeme
+        ulaz['zavrsnoVrijeme'] - max vrijeme
+        ulaz['tempKontejner'] - temp. kontejnera id
         """
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
@@ -97,25 +98,30 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.data = {}
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.tmin = lista[1]
-        self.tmax = lista[2]
-        self.dto = lista[3]
-        self.appDto = lista[4]
+        self.tmin = ulaz['pocetnoVrijeme']
+        self.tmax = ulaz['zavrsnoVrijeme']
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
-        self.gKanal = lista[0]
-        self.tKontejner = lista[5]
+        self.gKanal = ulaz['kanalId']
+        self.tKontejner = ulaz['tempKontejner']
         #emit zahtjev za podacima, return se vraca u member self.data
-        self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), lista[:3])
+        arg = {'kanal': self.gKanal,
+               'od': self.tmin,
+               'do': self.tmax}
+        self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
         if self.gKanal in self.data.keys():
 
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
-                arg = [self.tKontejner, self.tmin, self.tmax]
+                arg = {'kanal': self.tKontejner,
+                       'od': self.tmin,
+                       'do': self.tmax}
                 self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
-                    arg = [programKey, self.tmin, self.tmax]
+                    arg = {'kanal': programKey,
+                           'od': self.tmin,
+                           'do': self.tmax}
                     self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
 
             #midline plot
@@ -297,7 +303,12 @@ class Graf(opceniti_canvas.MPLCanvas):
         tmax = self.__lastTimeMax
         #pakiranje zahtjeva u listu [tmin, tmax, flag, kanal] ovisno o tipu
         if tip != None:
-            arg = [tmin, tmax, tip, self.gKanal]
+            #arg = [tmin, tmax, tip, self.gKanal]
+            arg = {'od': tmin,
+                   'do': tmax,
+                   'noviFlag': tip,
+                   'kanal': self.gKanal}
+
             #generalni emit za promjenu flaga
             self.emit(QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'), arg)
 ###############################################################################
@@ -327,7 +338,6 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.statusGlavniGraf = True
 ###############################################################################
     def on_pick(self, event):
-        print('pick not implemented')
         """
         pick event na satnom grafu
         """

@@ -17,7 +17,7 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
     """
     Klasa za prikaz Zero vrijednosti
     """
-    def __init__(self, *args, tip = None, lok = None, **kwargs):
+    def __init__(self, konfig, appKonfig, *args, tip = None, lok = None, **kwargs):
         opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
 
         self.data = None
@@ -27,6 +27,9 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         #kooridinate zadnjeg highlighta
         self.lastHighlight = (None, None)
 
+        #config objects
+        self.dto = konfig
+        self.appDto = appKonfig
 
         #tip odredjuje da li je ovo zero ili span graf
         self.tipGrafa = tip
@@ -51,10 +54,9 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
 ###############################################################################
     def crtaj(self, ulaz):
         """
-        ulaz je arg. lista
-        ulaz[0] = frejm
-        ulaz[1] = grafSettingsDTO
-        ulaz[2] = raspon x osi (xmin, xmax)
+        ulaz je mapa
+        ulaz['frejm'] --> dataframe
+        ulaz['raspon'] --> max raspon x osi
         """
         self.axes.clear()
 
@@ -66,9 +68,8 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
 
         self.updateaj_labele_na_panelu('normal', ['','','','',''])
 
-        self.data = ulaz[0]
-        self.dto = ulaz[1]
-        self.raspon = ulaz[2]
+        self.data = ulaz['frejm']
+        self.raspon = ulaz['raspon']
 
         #prvi ulazni datum
         beginpoint = self.raspon[0]
@@ -269,7 +270,12 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         if event.mouseevent.button == 1 or event.mouseevent.button == 2:
             #left click or middle click
             #update labels
-            argList = [str(x), str(y), str(minD), str(maxD), str(status)]
+            #argList = [str(x), str(y), str(minD), str(maxD), str(status)]
+            argList = {'xtocka': str(x),
+                       'ytocka': str(y),
+                       'minDozvoljenoOdstupanje': str(minD),
+                       'maxDozvoljenoOdstupanje': str(maxD),
+                       'status': str(status)}
             #highlight tocku
             self.highlight_pick((x, y))
             #emit update vrijednosti
@@ -279,9 +285,17 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         """
         Nakon sto netko na komplementarnom grafu izabere index, pronadji najblizi
         te ga highlitaj i updateaj labele na panelu
+
+        argList je dict
+
+        argList = {'xtocka': str(x),
+                   'ytocka': str(y),
+                   'minDozvoljenoOdstupanje': str(minD),
+                   'maxDozvoljenoOdstupanje': str(maxD),
+                   'status': str(status)}
         """
         if self.statusGlavniGraf:
-            ind = pomocne_funkcije.pronadji_najblizi_time_indeks(self.data.index, argList[0])
+            ind = pomocne_funkcije.pronadji_najblizi_time_indeks(self.data.index, argList['xtocka'])
             x = self.data.index[ind]
             y = self.data.loc[x, 'vrijednost']
             minD = self.data.loc[x, 'minDozvoljeno']
@@ -296,7 +310,13 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
             else:
                 status = 'Ne valja'
 
-            newArgList = [str(x), str(y), str(minD), str(maxD), str(status)]
+            #newArgList = [str(x), str(y), str(minD), str(maxD), str(status)]
+            newArgList = {'xtocka': str(x),
+                          'ytocka': str(y),
+                          'minDozvoljenoOdstupanje': str(minD),
+                          'maxDozvoljenoOdstupanje': str(maxD),
+                          'status': str(status)}
+
             self.highlight_pick((x, y))
             self.updateaj_labele_na_panelu('normal', newArgList)
 ###############################################################################

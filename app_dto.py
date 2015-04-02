@@ -96,6 +96,10 @@ class AppSettingsDTO():
         self.RESTSiroviPodaci = x
         logging.info('REST siroviPodaci relative url promjenjen, novi = {0}'.format(x))
 ###############################################################################
+    def set_RESTSatniPodaci(self, x):
+        self.RESTSatniPodaci = x
+        logging.info('REST satniPodaci relative url promjenjen, novi = {0}'.format(x))
+###############################################################################
     def set_RESTZeroSpan(self, x):
         self.RESTZeroSpan = x
         logging.info('REST zerospan relative url promjenjen, novi = {0}'.format(x))

@@ -41,8 +41,8 @@ class Kontroler(QtCore.QObject):
         self.pickedDate = None #zadnje izabrani datum, string 'yyyy-mm-dd'
         self.gKanal = None #trenutno aktivni glavni kanal, integer
         self.sat = None #zadnje izabrani sat na satnom grafu, bitno za crtanje minutnog
-        self.tmin = None #donji rub vremenskog slajsa izabranog dana
-        self.tmax = None #dornji rub vremenskog slajsa izabranog dana
+        self.pocetnoVrijeme = None #donji rub vremenskog slajsa izabranog dana
+        self.zavrsnoVrijeme = None #gornji rub vremenskog slajsa izabranog dana
         self.modelProgramaMjerenja = None #tree model programa mjerenja
         self.mapaMjerenjeIdToOpis = None #dict podataka o kanalu, kljuc je ID mjerenja
         self.appAuth = ("", "") #korisnicko ime i lozinka za REST servis
@@ -195,6 +195,7 @@ class Kontroler(QtCore.QObject):
         self.connect(self,
                      QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'),
                      self.gui.zsPanel.spanGraf.crtaj)
+
         #setter podataka za tocku na zero grafu
         self.connect(self.gui.zsPanel.zeroGraf,
                      QtCore.SIGNAL('zero_point_update(PyQt_PyObject)'),
@@ -239,34 +240,35 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('izgled_grafa_promjenjen'),
                      self.apply_promjena_izgleda_grafova)
 ###############################################################################
-    def dohvati_minutni_frejm(self, lista):
+    def dohvati_minutni_frejm(self, ulaz):
         """
         Bitna metoda za crtanje minutnih podataka
-        ulaz je lista sa 3 elementa
-        lista[0] - id glavnog kanala mjerenja (int)
-        lista[1] - tmin (pandas timestamp)
-        lista[2] - tmax (pandas timestamp)
+        ulaz je mapa sa 3 elementa
+        ulaz['kanal'] - id glavnog kanala mjerenja (int)
+        ulaz['od'] - tmin (pandas timestamp)
+        ulaz['do'] - tmax (pandas timestamp)
         """
         try:
-            frejm = self.dokument.get_frame(key = lista[0], tmin = lista[1], tmax = lista[2])
+            frejm = self.dokument.get_frame(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'])
         except pomocne_funkcije.AppExcept:
             logging.error('App exception.', exc_info = True)
             frejm = None
         #test za ispravnost vracenog frejma
         if isinstance(frejm, pd.core.frame.DataFrame):
-            arg = [lista[0], frejm]
+            arg = {'kanal':ulaz['kanal'],
+                   'dataFrejm':frejm}
             self.emit(QtCore.SIGNAL('vrati_minutni_frejm(PyQt_PyObject)'), arg)
 ###############################################################################
-    def dohvati_agregirani_frejm(self, lista):
+    def dohvati_agregirani_frejm(self, mapa):
         """
         Bitna metoda za crtanje satno agregiranih podataka.
-        ulaz je lista sa 3 elementa
-        lista[0] - id glavnog kanala (int)
-        lista[1] - tmin, (pandas timestamp)
-        lista[2] - tmax, (pandas timestamp)
+        ulaz je mapa sa 3 elementa
+        mapa['kanal'] - id glavnog kanala (int)
+        mapa['od'] - tmin, (pandas timestamp)
+        mapa['do'] - tmax, (pandas timestamp)
         """
         try:
-            frejm = self.dokument.get_frame(key = lista[0], tmin = lista[1], tmax = lista[2])
+            frejm = self.dokument.get_frame(key = mapa['kanal'], tmin = mapa['od'], tmax = mapa['do'])
         except pomocne_funkcije.AppExcept:
             logging.error('App exception.', exc_info = True)
             frejm = None
@@ -277,7 +279,8 @@ class Kontroler(QtCore.QObject):
             #agregator ce vratiti None ako mu se prosljedi prazan frejm
             if isinstance(agregiraniFrejm, pd.core.frame.DataFrame):
                 #vrati listu [kanal, agregiraniFrejm] nazad satnom grafu
-                arg = [lista[0], agregiraniFrejm]
+                arg = {'kanal': mapa['kanal'],
+                       'agregirani': agregiraniFrejm}
                 self.emit(QtCore.SIGNAL('vrati_agregirani_frejm(PyQt_PyObject)'), arg)
 ###############################################################################
     def user_log_in(self, x):
@@ -385,9 +388,10 @@ class Kontroler(QtCore.QObject):
         #prikazi information dialog sa pogreskom
         #QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
 ###############################################################################
-    def priredi_podatke(self, lista):
+    def priredi_podatke(self, mapa):
         """
-        Funkcija analizira zahtjev preuzet u obliku liste [programMjerenjaId, datum]
+        Funkcija analizira zahtjev preuzet u obliku mape
+        {'programMjerenjaId':int, 'datumString':'YYYY-MM-DD'}
         te radi 4 bitne stvari:
 
         1. provjerava da li je zahtjev pomaknuo "fokus" sa prikazanih podataka
@@ -399,29 +403,27 @@ class Kontroler(QtCore.QObject):
             - rest citac namjerno nece zapamtiti trenutni dan
         3. Postavlja odredjene membere potrebne za daljnji rad
             - self.gKanal --> trenutni glavni kanal za crtanje (programMjerenjaId)
-            - self.tmin --> donji vremenski rub datuma (datum 00:01:00)
-            - self.tmax --> gornji vremenski rub datuma (datum +1 dan 00:00:00)
+            - self.pocetnoVrijeme --> donji vremenski rub datuma (datum 00:01:00)
+            - self.zavrsnoVrijeme --> gornji vremenski rub datuma (datum +1 dan 00:00:00)
             - self.pickedDate --> trenutno izabrani dan
         4. Pokrece proces crtanja
 
         """
         #reset status crtanja
         self.drawStatus = [False, False]
-        print('priredi podatke {0}'.format(lista))
-        self.gKanal = int(lista[0]) #informacija o glavnom kanalu
-        datum = lista[1] #datum je string formata YYYY-MM-DD
+        self.gKanal = int(mapa['programMjerenjaId']) #informacija o glavnom kanalu
+        datum = mapa['datumString'] #datum je string formata YYYY-MM-DD
         self.pickedDate = datum #postavi izabrani datum
         #pretvaranje datuma u 2 timestampa od 00:01:00 do 00:00:00 iduceg dana
         tsdatum = pd.to_datetime(datum)
-        self.tmax = tsdatum + datetime.timedelta(days = 1)
-        self.tmin = tsdatum + datetime.timedelta(minutes = 1)
+        self.zavrsnoVrijeme = tsdatum + datetime.timedelta(days = 1)
+        self.pocetnoVrijeme = tsdatum + datetime.timedelta(minutes = 1)
         #za svaki slucaj, pobrinimo se da su varijable pandas.tslib.Timestamp
-        self.tmax = pd.to_datetime(self.tmax)
-        self.tmin = pd.to_datetime(self.tmin)
+        self.zavrsnoVrijeme = pd.to_datetime(self.zavrsnoVrijeme)
+        self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
         sviBitniKanali = []
         sviBitniKanali.append(self.gKanal)
         #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
-        #TODO!
         self.tKontejnerId = self.get_kanal_temp_kontenjera()
         if self.tKontejnerId is not None:
             sviBitniKanali.append(self.tKontejnerId)
@@ -455,8 +457,11 @@ class Kontroler(QtCore.QObject):
             self.prikazi_error_msg(msg)
 
         #update lebele na panelima (povratna informacija koji je kanal aktivan i za koje vrijeme)
-        argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
-        self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argList)
+        #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
+        argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
+                  'datum': self.pickedDate}
+
+        self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
 ###############################################################################
@@ -465,13 +470,14 @@ class Kontroler(QtCore.QObject):
         Funkcija koja emitira signal sa naredbom za crtanje samo ako je prethodno
         zadan datum, tj. donja i gornja granica intervala i glavni kanal.
         """
-        if (self.tmin != None and self.tmax != None and self.gKanal != None):
-            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), {'kanalId' : self.gKanal, 'pocetnoVrijeme': self.tmin, 'zavrsnoVrijeme' : self.tmax, 'tempKontejner'  : self.tKontejnerId})
+        if (self.pocetnoVrijeme != None and self.zavrsnoVrijeme != None and self.gKanal != None):
+            arg = {'kanalId' : self.gKanal,
+                   'pocetnoVrijeme': self.pocetnoVrijeme,
+                   'zavrsnoVrijeme' : self.zavrsnoVrijeme,
+                   'tempKontejner'  : self.tKontejnerId}
+            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), arg)
             #promjena labela u panelima sa grafovima, opis
             try:
-                opisKanala = self.mapaMjerenjeIdToOpis[self.gKanal]
-                argList = [opisKanala, str(self.tmin), str(self.tmax)]
-                self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argList)
                 """
                 opis naredbi koje sljede:
                 Zanima nas da li je netko vec odabrao satni interval za minutni graf.
@@ -482,7 +488,7 @@ class Kontroler(QtCore.QObject):
                 "clearati" graf ili narediti ponovno crtanje minutnog grafa.
                 """
                 if self.sat != None:
-                    if (self.sat >= self.tmin and self.sat <= self.tmax):
+                    if (self.sat >= self.pocetnoVrijeme and self.sat <= self.zavrsnoVrijeme):
                         self.crtaj_minutni_graf(self.sat)
                     else:
                         #clear minutni graf ako se datum pomakne
@@ -490,7 +496,6 @@ class Kontroler(QtCore.QObject):
                         #clear izabrani label sata
                         self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), '')
             except (TypeError, LookupError) as err:
-                print(err)
                 self.prikazi_error_msg(err)
 ###############################################################################
     def crtaj_zero_span(self):
@@ -511,11 +516,13 @@ class Kontroler(QtCore.QObject):
             raspon = pomocne_funkcije.sync_zero_span_x_os(frejmovi)
 
             if frejmovi != None:
-                outputZero = [frejmovi[0], self.gui.grafSettings, raspon]
-                outputSpan = [frejmovi[1], self.gui.grafSettings, raspon]
+                argZero = {'frame':frejmovi[0],
+                           'raspon':raspon}
+                argSpan = {'frame':frejmovi[1],
+                           'raspon':raspon}
                 #emitiraj signal za crtanjem
-                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), outputZero)
-                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), outputSpan)
+                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), argZero)
+                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), argSpan)
             else:
                 #nema podataka
                 raise pomocne_funkcije.AppExcept('Nema raspolozivih podataka')
@@ -536,13 +543,17 @@ class Kontroler(QtCore.QObject):
         dobro zadani zahtjev za crtanjem minutnom canvasu.
         """
         self.sat = izabrani_sat
-        if self.sat <= self.tmax and self.sat >=self.tmin:
+        if self.sat <= self.zavrsnoVrijeme and self.sat >=self.pocetnoVrijeme:
             highLim = self.sat
             lowLim = highLim - datetime.timedelta(minutes = 59)
             lowLim = pd.to_datetime(lowLim)
             #update labela izabranog sata
             self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), self.sat)
-            self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),[self.gKanal, lowLim, highLim, self.gui.grafSettings, self.gui.appSettings, self.tKontejnerId])
+            arg = {'kanalId' : self.gKanal,
+                   'pocetnoVrijeme': self.pocetnoVrijeme,
+                   'zavrsnoVrijeme' : self.zavrsnoVrijeme,
+                   'tempKontejner'  : self.tKontejnerId}
+            self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),arg)
 ###############################################################################
     def dodaj_novu_referentnu_vrijednost(self):
         """
@@ -603,14 +614,14 @@ class Kontroler(QtCore.QObject):
                 #promjeni cursor u wait cursor
                 QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
                 #dohvati frame iz dokumenta
-                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
+                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
                 assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_minutne_to_REST:Assert fail, frame pogresnog tipa'
                 if len(frejm):
                     testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
                     lenSvih = len(testValidacije)
                     lenDobrih = len(testValidacije[testValidacije == True])
                     if lenSvih == lenDobrih:
-                        msg = msg = 'Spremi minutne podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + ' na REST web servis?'
+                        msg = msg = 'Spremi minutne podatke od ' + str(self.gKanal) + ':' + str(self.pocetnoVrijeme.date()) + ' na REST web servis?'
                     else:
                         msg = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
                         #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
@@ -663,7 +674,7 @@ class Kontroler(QtCore.QObject):
                 QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
                 #dohvati frame iz dokumenta
-                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.tmin, tmax = self.tmax)
+                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
 
                 assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_agregirane_to_REST:Assert fail, frame pogresnog tipa'
                 if len(frejm):
@@ -676,7 +687,7 @@ class Kontroler(QtCore.QObject):
                     lenDobrih = len(testValidacije[testValidacije == True])
 
                     if lenSvih == lenDobrih:
-                        msg = msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.tmin.date()) + ' na REST web servis?'
+                        msg = msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.pocetnoVrijeme.date()) + ' na REST web servis?'
                     else:
                         msg = 'Neki podaci nisu validirani.\nNije moguce spremiti agregirane podatke na REST servis.'
                         #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
@@ -802,19 +813,22 @@ class Kontroler(QtCore.QObject):
         self.crtaj_satni_graf()
         self.crtaj_zero_span()
 ###############################################################################
-    def promjeni_flag(self, lista):
+    def promjeni_flag(self, ulaz):
         """
         Odgovor kontrolora na zahtjev za promjenom flaga. Kontrolor naredjuje
         dokumentu da napravi odgovarajucu izmjenu.
-        Ulazni parametar je lista koja sadrzi [tmin, tmax, novi flag, kanal].
-        tocan vremenski interval (rubovi su ukljuceni), novu vrijednost flaga,
-        te program mjerenja (kanal) na koji se promjena odnosi.
+
+        Ulazni parametar je mapa:
+        ulaz['od'] -->pocetno vrijeme, pandas timestamp
+        ulaz['do'] -->zavrsno vrijeme, pandas timestamp
+        ulaz['flag'] -->novi flag
+        ulaz['kanal'] -->kanal koji se mijenja
 
         P.S. dokument ima vlastiti signal da javi kada je doslo do promjene
 
         QtCore.SIGNAL('model_flag_changed')
         """
-        self.dokument.change_flag(key = lista[3], tmin = lista[0], tmax = lista[1], flag = lista[2])
+        self.dokument.change_flag(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'], flag = ulaz['flag'])
 ###############################################################################
     def exit_check(self):
         """

@@ -6,7 +6,6 @@ Created on Wed Nov  5 14:20:39 2014
 @author: User
 
 """
-import configparser
 import logging
 
 from PyQt4 import QtCore, QtGui, uic
@@ -34,7 +33,6 @@ class GlavniProzor(base, form):
         """
         Todo... treba srediti toggle tickova grida isl do kraja
         """
-
 ###############################################################################
     def setup_main_window(self):
         """
@@ -62,7 +60,7 @@ class GlavniProzor(base, form):
         self.koncPanel = grafovi_panel.KoncPanel(self.grafSettings, self.appSettings)
         self.koncPanelLayout.addWidget(self.koncPanel)
         #inicijalizacija panela sa zero/span grafovima
-        self.zsPanel = grafovi_panel.ZeroSpanPanel()
+        self.zsPanel = grafovi_panel.ZeroSpanPanel(self.grafSettings, self.appSettings)
         self.zsPanelLayout.addWidget(self.zsPanel)
         #inicijalizacija i postavljanje kontrolnog widgeta (tree view/kalendar...)
         self.restIzbornik = rest_izbornik.RestIzbornik()

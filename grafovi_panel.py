@@ -12,7 +12,7 @@ Wrapper koji sadrzi:
     4. minutni canvas (canvas za prikaz minutnih podataka)
 """
 
-from PyQt4 import QtCore, uic 
+from PyQt4 import QtCore, uic
 import satni_canvas
 import minutni_canvas
 import zero_span_canvas
@@ -24,15 +24,15 @@ class KoncPanel(base2, form2):
     """
     Klasa za prikaz grafova
     Sadrzaj ovog panela je sljedeci (kako se prikazuje odozgo prema dolje):
-    
+
     1. self.glavniLabel
         -QLabel koji sluzi za prikaz trenutno aktivnog kanala
         (stanica, formula, kanal, mjerna jedinica...)
-        
+
     2. self.verticalLayoutSatni
         -placeholder definiran u QtDesigneru (layout)
         -sluzi da se u njega stavi satni canvas
-        
+
     3. self.horizontalLayout
         -horiznotalni layout koji sadrzi 3 elementa
         2.1. self.buttonPrethodni
@@ -41,14 +41,14 @@ class KoncPanel(base2, form2):
             -QLabel koji sluzi za prikaz naziva glavnog kanala i vremenkog intervala
         2.3. self.buttonSljedeci
             -QPushButton koji slizi za prebacivanje dana na sljedeci dan
-    
+
     4. self.verticalLayoutMinutni
         -placeholder definiran u QtDesigneru (QWidget)
         -sluzi da se u njega stavi minutni canvas
-        
 
-    
-    self.satniGraf --> instanca satnog canvasa       
+
+
+    self.satniGraf --> instanca satnog canvasa
     self.minutniGraf --> instanca minutnog canvasa
     """
     def __init__(self, konfig, appKonfig, parent = None):
@@ -60,25 +60,25 @@ class KoncPanel(base2, form2):
 
         #inicijalizacija canvasa
         self.satniGraf = satni_canvas.Graf(konfig, appKonfig, parent = None)
-        self.minutniGraf = minutni_canvas.Graf(parent = None)
+        self.minutniGraf = minutni_canvas.Graf(konfig, appKonfig, parent = None)
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
         self.verticalLayoutMinutni.addWidget(self.minutniGraf)
-        
+
         #gumbi zaduzeni za prebacivanje dana naprijed i nazad
         self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
 ###############################################################################
-    def change_glavniLabel(self, lista):
+    def change_glavniLabel(self, ulaz):
         """
-        ova funkcija kao ulazni parametar uzima listu koja ima 3 elementa.
-        -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
-        -lista[1] = string, datum formata YYYY-MM-DD
+        ova funkcija kao ulazni parametar uzima mapu koja ima 2 elementa.
+        -'opis' = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
+        -'datum' = string, datum formata YYYY-MM-DD
 
         Informacija o izboru se postavlja u label.
         """
-        mapa = lista[0]
-        datum = lista[1]
+        mapa = ulaz['opis']
+        datum = ulaz['datum']
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
@@ -113,13 +113,13 @@ class KoncPanel(base2, form2):
 ###############################################################################
 base3, form3 = uic.loadUiType('./ui_files/zero_span_panel.ui')
 class ZeroSpanPanel(base3, form3):
-    def __init__(self, parent = None):
+    def __init__(self, konfig, appKonfig, parent = None):
         super(base3, self).__init__(parent)
         self.setupUi(self)
         #TODO! nakon inicijalizacije canvasa inicijaliziraj interaction mode
         #inicijalizacija canvasa
-        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(parent = None, tip = 'zero', lok = 'bottom')
-        self.spanGraf = zero_span_canvas.ZeroSpanGraf(parent = None, tip = 'span', lok = 'top')
+        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, parent = None, tip = 'zero', lok = 'bottom')
+        self.spanGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, parent = None, tip = 'span', lok = 'top')
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
@@ -132,7 +132,7 @@ class ZeroSpanPanel(base3, form3):
         """
         self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.dodajZSRef.clicked.connect(self.dodaj_novu_zs_ref_vrijednost)
-###############################################################################    
+###############################################################################
     def dodaj_novu_zs_ref_vrijednost(self):
         """
         Dodavanje nove referentne vrijednosti za zero/span
@@ -140,17 +140,16 @@ class ZeroSpanPanel(base3, form3):
         logging.info('Request za dodavanjem nove zero/span referentne vrijednosti')
         self.emit(QtCore.SIGNAL('dodaj_novi_zs_ref'))
 ###############################################################################
-    def change_glavniLabel(self, lista):
+    def change_glavniLabel(self, ulaz):
         """
-        ova funkcija kao ulazni parametar uzima listu
-        
-        -lista[0] = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
-        -lista[1] = datum u string formatu YYYY-MM-DD
+        ova funkcija kao ulazni parametar uzima mapu koja ima 2 elementa.
+        -'opis' = mapa, opis kanala (naziv, mjerna jedinica, postaja...)
+        -'datum' = string, datum formata YYYY-MM-DD
 
-        Rezultat je novi label sastavljen od tih elemenata.
+        Informacija o izboru se postavlja u label.
         """
-        mapa = lista[0]
-        datum = lista[1]
+        mapa = ulaz['opis']
+        datum = ulaz['datum']
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
@@ -168,26 +167,38 @@ class ZeroSpanPanel(base3, form3):
         logging.info('request za prikazom drugog broja dana, novi = {0}'.format(str(broj)))
         self.emit(QtCore.SIGNAL('request_zs_broj_dana_change(PyQt_PyObject)'), broj)
 ###############################################################################
-    def prikazi_info_zero(self, lista):
+    def prikazi_info_zero(self, mapa):
         """
-        funkcija updatea labele sa informacijom o zero tocki koja je izabrana 
-        na grafu [vrijeme, vrijednost, min, max, status]
+        funkcija updatea labele sa informacijom o zero tocki koja je izabrana
+        na grafu.
+
+        mapa['xtocka'] = vrijeme
+        mapa['ytocka'] = vrijednost
+        mapa['minDozvoljenoOdstupanje'] = min dozvoljeno odstupanje
+        mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
+        mapa['status'] = status
         """
-        self.zeroVrijeme.setText(lista[0])
-        self.zeroValue.setText(lista[1])
-        self.zeroMinD.setText(lista[2])
-        self.zeroMaxD.setText(lista[3])
-        self.zeroStatus.setText(lista[4])
+        self.zeroVrijeme.setText(mapa['xtocka'])
+        self.zeroValue.setText(mapa['ytocka'])
+        self.zeroMinD.setText(mapa['minDozvoljenoOdstupanje'])
+        self.zeroMaxD.setText(mapa['maxDozvoljenoOdstupanje'])
+        self.zeroStatus.setText(mapa['status'])
 ###############################################################################
-    def prikazi_info_span(self, lista):
+    def prikazi_info_span(self, mapa):
         """
-        funkcija updatea labele sa informacijom o span tocki koja je izabrana 
-        na grafu [vrijeme, vrijednost, min, max, status]
+        funkcija updatea labele sa informacijom o span tocki koja je izabrana
+        na grafu
+
+        mapa['xtocka'] = vrijeme
+        mapa['ytocka'] = vrijednost
+        mapa['minDozvoljenoOdstupanje'] = min dozvoljeno odstupanje
+        mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
+        mapa['status'] = status
         """
-        self.spanVrijeme.setText(lista[0])
-        self.spanValue.setText(lista[1])
-        self.spanMinD.setText(lista[2])
-        self.spanMaxD.setText(lista[3])
-        self.spanStatus.setText(lista[4])
+        self.spanVrijeme.setText(mapa['xtocka'])
+        self.spanValue.setText(mapa['ytocka'])
+        self.spanMinD.setText(mapa['minDozvoljenoOdstupanje'])
+        self.spanMaxD.setText(mapa['maxDozvoljenoOdstupanje'])
+        self.spanStatus.setText(mapa['status'])
 ###############################################################################
 ###############################################################################

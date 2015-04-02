@@ -550,8 +550,8 @@ class Kontroler(QtCore.QObject):
             #update labela izabranog sata
             self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), self.sat)
             arg = {'kanalId' : self.gKanal,
-                   'pocetnoVrijeme': self.pocetnoVrijeme,
-                   'zavrsnoVrijeme' : self.zavrsnoVrijeme,
+                   'pocetnoVrijeme': lowLim,
+                   'zavrsnoVrijeme' : highLim,
                    'tempKontejner'  : self.tKontejnerId}
             self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),arg)
 ###############################################################################
@@ -821,14 +821,14 @@ class Kontroler(QtCore.QObject):
         Ulazni parametar je mapa:
         ulaz['od'] -->pocetno vrijeme, pandas timestamp
         ulaz['do'] -->zavrsno vrijeme, pandas timestamp
-        ulaz['flag'] -->novi flag
+        ulaz['noviFlag'] -->novi flag
         ulaz['kanal'] -->kanal koji se mijenja
 
         P.S. dokument ima vlastiti signal da javi kada je doslo do promjene
 
         QtCore.SIGNAL('model_flag_changed')
         """
-        self.dokument.change_flag(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'], flag = ulaz['flag'])
+        self.dokument.change_flag(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'], flag = ulaz['noviFlag'])
 ###############################################################################
     def exit_check(self):
         """

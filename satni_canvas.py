@@ -49,9 +49,6 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.dto = konfig
         self.appDto = appKonfig
 ###############################################################################
-<<<<<<< HEAD
-    def crtaj(self, ulaz):
-=======
     def crtaj_pomocne(self, popis):
         for key in popis:
             frejm = self.data[key]
@@ -122,8 +119,7 @@ class Graf(opceniti_canvas.MPLCanvas):
                            linestyle='None',
                            alpha=0.4)
 
-    def crtaj(self, lista):
->>>>>>> origin/fix
+    def crtaj(self, ulaz):
         """
         Eksplicitne naredbe za crtanje
 
@@ -177,9 +173,6 @@ class Graf(opceniti_canvas.MPLCanvas):
 
             self.crtaj_glavni_graf()
 
-
-
-
             #crtanje pomocnih grafova
             # ovo u novu funkciju
 
@@ -202,7 +195,6 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.toggle_ticks(self.appDto.satniTicks) #metda definirana u opceniti_canvas.py
             self.toggle_grid(self.appDto.satniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.satniLegend) #metda definirana u opceniti_canvas.py
-
 
 
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica

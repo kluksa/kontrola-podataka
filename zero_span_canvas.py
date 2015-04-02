@@ -65,10 +65,14 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
 
         #kooridinate zadnjeg highlighta
         self.lastHighlight = (None, None)
+        emptyArgs = {'xtocka': '',
+                     'ytocka': '',
+                     'minDozvoljenoOdstupanje': '',
+                     'maxDozvoljenoOdstupanje': '',
+                     'status': ''}
+        self.updateaj_labele_na_panelu('normal', emptyArgs)
 
-        self.updateaj_labele_na_panelu('normal', ['','','','',''])
-
-        self.data = ulaz['frejm']
+        self.data = ulaz['frame']
         self.raspon = ulaz['raspon']
 
         #prvi ulazni datum

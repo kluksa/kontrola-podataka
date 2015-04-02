@@ -10,7 +10,8 @@ from PyQt4 import QtCore
 import pandas as pd
 
 import pomocne_funkcije #import pomocnih funkcija
-import opceniti_canvas #import opcenitog (abstract) canvasa
+from app.view import opceniti_canvas
+
 ###############################################################################
 ###############################################################################
 class ZeroSpanGraf(opceniti_canvas.MPLCanvas):

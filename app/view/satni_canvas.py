@@ -6,6 +6,7 @@ Created on Wed Nov  5 08:38:40 2014
 
 Klasa (canvas) za prikaz satno agregiranih vrijednosti.
 """
+
 from PyQt4 import QtGui, QtCore
 
 import functools
@@ -176,13 +177,16 @@ class Graf(opceniti_canvas.MPLCanvas):
             #crtanje pomocnih grafova
             # ovo u novu funkciju
 
-            popis = list(self.data.keys())
-            popis.remove(self.gKanal)
-            #TODO! makni temperaturu kontenjera sa popisa
-            # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
-            if self.tKontejner:
-                if self.tKontejner in popis:
-                    popis.remove(self.tKontejner)
+            key_set = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
+            popis =  {key: self.data[key] for key in key_set}
+
+#            popis = list()
+#            popis.remove(self.gKanal)
+            # #TODO! makni temperaturu kontenjera sa popisa
+            # # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
+            # if self.tKontejner:
+            #     if self.tKontejner in popis:
+            #         popis.remove(self.tKontejner)
 
             self.crtaj_pomocne(popis)
             #set limits and ticks

@@ -8,6 +8,7 @@ Klasa (canvas) za prikaz minutnih vrijednosti.
 """
 
 from PyQt4 import QtGui, QtCore
+
 import functools
 import matplotlib
 import pandas as pd
@@ -143,14 +144,16 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.crtaj_scatter_konc(self.dto.minutniNVOK, 1)
             self.crtaj_scatter_konc(self.dto.minutniNVBAD, -1)
 
-            #crtanje pomocnih grafova
-            popis = list(self.data.keys())
-            popis.remove(self.gKanal)
-            #TODO! makni temperaturu kontenjera sa popisa
-
-            if self.tKontejner:
-
-                popis.remove(self.tKontejner)
+            key_set = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
+            popis =  {key: self.data[key] for key in key_set}
+            # #crtanje pomocnih grafova
+            # popis = list(self.data.keys())
+            # popis.remove(self.gKanal)
+            # #TODO! makni temperaturu kontenjera sa popisa
+            #
+            # if self.tKontejner:
+            #
+            #     popis.remove(self.tKontejner)
 
             for key in popis:
                 frejm = self.data[key]

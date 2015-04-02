@@ -12,11 +12,13 @@ Wrapper koji sadrzi:
     4. minutni canvas (canvas za prikaz minutnih podataka)
 """
 
-from PyQt4 import QtCore, uic
-import satni_canvas
-import minutni_canvas
-import zero_span_canvas
 import logging
+
+from PyQt4 import QtCore, uic
+
+from app.view import minutni_canvas, satni_canvas, zero_span_canvas
+
+
 ###############################################################################
 ###############################################################################
 base2, form2 = uic.loadUiType('./ui_files/konc_graf_panel.ui')
@@ -59,8 +61,8 @@ class KoncPanel(base2, form2):
         self.setupUi(self)
 
         #inicijalizacija canvasa
-        self.satniGraf = satni_canvas.Graf(konfig, appKonfig, parent = None)
-        self.minutniGraf = minutni_canvas.Graf(konfig, appKonfig, parent = None)
+        self.satniGraf = satni_canvas.SatniKanvas(konfig, appKonfig, parent = None)
+        self.minutniGraf = minutni_canvas.MinutniKanvas(konfig, appKonfig, parent = None)
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
         self.verticalLayoutMinutni.addWidget(self.minutniGraf)

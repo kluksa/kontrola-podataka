@@ -10,12 +10,14 @@ import logging
 
 from PyQt4 import QtCore, QtGui, uic
 
-import rest_izbornik
+from app.view import rest_izbornik, glavni_dijalog, grafovi_panel
 import grafovi_panel
 import app_dto
 import kontroler
 import auth_login
 import glavni_dijalog
+
+
 
 ###############################################################################
 ###############################################################################

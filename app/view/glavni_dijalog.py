@@ -5,13 +5,15 @@ Created on Wed Feb  4 10:45:42 2015
 @author: User
 """
 
-from PyQt4 import QtGui, QtCore, uic
 import logging
 
+from PyQt4 import QtGui, QtCore, uic
+
 import pomocne_funkcije
-import glavni_graf_widget
+from app.view import glavni_graf_widget
 import zero_span_widget
 import pomocni_grafovi_widget
+
 
 ###############################################################################
 ###############################################################################

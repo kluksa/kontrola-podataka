@@ -70,6 +70,17 @@ class KoncPanel(base2, form2):
         #gumbi zaduzeni za prebacivanje dana naprijed i nazad
         self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
+        self.buttonPonisti.clicked.connect(self.ponisti_promjene)
+        self.buttonRestSave.clicked.connect(self.save_na_rest)
+###############################################################################
+    def ponisti_promjene(self):
+        """emitiraj signal kontroleru da 'ponisti' promjene za trenutni dan i postaju"""
+        self.emit(QtCore.SIGNAL('ponisti_izmjene'))
+###############################################################################
+    def save_na_rest(self):
+        """emitiraj signal kontroleru da spremi podatke za trenutni dan i postaju na
+        rest servis"""
+        self.emit(QtCore.SIGNAL('upload_na_rest'))
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """

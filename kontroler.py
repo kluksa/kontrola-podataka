@@ -239,6 +239,16 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui,
                      QtCore.SIGNAL('izgled_grafa_promjenjen'),
                      self.apply_promjena_izgleda_grafova)
+
+        ###GUMB NA KONCENTRACIJSKOM PANELU ZA PONISTAVANJE IZMJENA###
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('ponisti_izmjene'),
+                     self.ponisti_izmjene)
+        ###GUMB NA KONCENTRACIJSKOM PANELU ZA SPREMANJE NA REST###
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('upload_na_rest'),
+                     self.upload_minutne_na_REST)
+                     #TODO! moze i agregirane, samo promjeni slot u self.upload_satno_agregirane
 ###############################################################################
     def dohvati_minutni_frejm(self, ulaz):
         """
@@ -464,6 +474,22 @@ class Kontroler(QtCore.QObject):
         self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
+###############################################################################
+    def ponisti_izmjene(self):
+        """
+        funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
+        trenutno aktivnog kanala za trenutno izabrani datum.
+        """
+        #TODO!
+        if self.gKanal is not None and self.pickedDate is not None:
+            arg = (self.gKanal, self.pickedDate)
+            #reader prati sto je ucitao do sada, pa moramo maknuti referencu sa liste
+            if arg in self.restReader.uspjesnoUcitani:
+                self.restReader.uspjesnoUcitani.remove(arg)
+            mapa = {'programMjerenjaId':self.gKanal,
+                    'datumString':self.pickedDate}
+            #pokreni postupak kao da je kombinacija datuma i kanala prvi puta izabrana
+            self.priredi_podatke(mapa)
 ###############################################################################
     def crtaj_satni_graf(self):
         """

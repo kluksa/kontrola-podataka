@@ -90,6 +90,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="buttonPonisti">
+       <property name="text">
+        <string>Ponisti izmjene</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Izabrani sat : </string>
@@ -103,6 +110,13 @@
       <widget class="QLabel" name="satLabel">
        <property name="text">
         <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonRestSave">
+       <property name="text">
+        <string>Spremi na REST</string>
        </property>
       </widget>
      </item>

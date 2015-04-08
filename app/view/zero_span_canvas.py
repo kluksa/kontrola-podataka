@@ -167,7 +167,10 @@ class ZeroSpanGraf(opceniti_canvas.OpcenitiKanvas):
 
         #Axes labeli
         self.axes.set_xlabel('Vrijeme')
-        #self.axes.set_ylabel(self.tipGrafa.upper())
+        if self.tipGrafa == self.Tip.span:
+            self.axes.set_ylabel('SPAN')
+        else:
+            self.axes.set_ylabel('ZERO')
         #limit grafa
         self.axes.set_xlim((beginpoint, endpoint))
         self.setup_limits('ZERO')

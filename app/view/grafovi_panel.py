@@ -120,8 +120,8 @@ class ZeroSpanPanel(base3, form3):
         self.setupUi(self)
         #TODO! nakon inicijalizacije canvasa inicijaliziraj interaction mode
         #inicijalizacija canvasa
-        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, parent = None, tip = 'zero', lok = 'bottom')
-        self.spanGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, parent = None, tip = 'span', lok = 'top')
+        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, zero_span_canvas.ZeroSpanGraf.Tip.zero, parent = None)
+        self.spanGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, zero_span_canvas.ZeroSpanGraf.Tip.span, parent = None)
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)

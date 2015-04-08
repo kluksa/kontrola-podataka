@@ -7,26 +7,27 @@ Created on Wed Nov  5 08:38:40 2014
 Klasa (canvas) za prikaz satno agregiranih vrijednosti.
 """
 
-from PyQt4 import QtGui, QtCore
-
 import functools
-import matplotlib
-import pandas as pd
 import datetime
 from datetime import timedelta
 
+from PyQt4 import QtGui, QtCore
+import matplotlib
+import pandas as pd
+
 import pomocne_funkcije
-import opceniti_canvas
+from app.view import opceniti_canvas
 ###############################################################################
 ###############################################################################
-class Graf(opceniti_canvas.MPLCanvas):
+class SatniKanvas(opceniti_canvas.OpcenitiKanvas):
     """
     Definira detalje crtanja satno agregiranog grafa i pripadne evente
     """
     def __init__(self, konfig, appKonfig, *args, **kwargs):
         """konstruktor"""
-        opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
-        #podrska za kontekstni meni za promjenu flaga (desni klik misem na canvas)
+        opceniti_canvas.OpcenitiKanvas.__init__(self, *args, **kwargs)
+
+        #podrska za kontekstni meni za promjenu flaga
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
         self.data = {} #privremeni spremnik za frejmove (ucitane)
@@ -141,15 +142,11 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.statusAnnotation = False
         self.pocetnoVrijeme = ulaz['pocetnoVrijeme'] #tmin moze biti i temperatura, sto fali pocetnoVrijeme
         self.zavrsnoVrijeme = ulaz['zavrsnoVrijeme']
-        #self.dto = lista[3] # nije DTO nego je config objekt
-        #self.appDto = lista[4] # zasto konfig objekt saljes kroz poziv za crtanje??? Ne bi li to trebalo ici kroz
-        #konstruktor ili neki drugi poziv. Ako sam dobro shvatio DTO-i su u stvari konfizi koji se jednom definiraju
 
         self.tKontejner = ulaz['tempKontejner']
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
         self.gKanal = ulaz['kanalId']
         #emit zahtjev za podacima, return se vraca u member self.data
-        #arg = [ulaz['kanalId'], ulaz['pocetnoVrijeme'], ulaz['zavrsnoVrijeme']]
         arg = {'kanal':self.gKanal,
                'od':self.pocetnoVrijeme,
                'do':self.zavrsnoVrijeme}
@@ -158,7 +155,6 @@ class Graf(opceniti_canvas.MPLCanvas):
         if self.gKanal in self.data.keys():
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
-                #arg = [self.tKontejner, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                 arg = {'kanal':self.tKontejner,
                        'od':self.pocetnoVrijeme,
                        'do':self.zavrsnoVrijeme}
@@ -169,30 +165,17 @@ class Graf(opceniti_canvas.MPLCanvas):
                     arg = {'kanal':programKey,
                            'od':self.pocetnoVrijeme,
                            'do':self.zavrsnoVrijeme}
-                    #arg = [programKey, self.pocetnoVrijeme, self.zavrsnoVrijeme]
                     self.emit(QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'), arg)
 
             self.crtaj_glavni_graf()
 
-            #crtanje pomocnih grafova
-            # ovo u novu funkciju
-
             key_set = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
             popis =  {key: self.data[key] for key in key_set}
 
-#            popis = list()
-#            popis.remove(self.gKanal)
-            # #TODO! makni temperaturu kontenjera sa popisa
-            # # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
-            # if self.tKontejner:
-            #     if self.tKontejner in popis:
-            #         popis.remove(self.tKontejner)
-
             self.crtaj_pomocne(popis)
             #set limits and ticks
-
             self.setup_limits('SATNI') #metda definirana u opceniti_canvas.py
-            self.setup_ticks()
+            self.setup_ticks(pomocne_funkcije.pronadji_tickove_satni(self.pocetnoVrijeme, self.zavrsnoVrijeme))
             self.setup_legend() #metda definirana u opceniti_canvas.py
 
             #toggle minor tickova, i grida
@@ -202,10 +185,8 @@ class Graf(opceniti_canvas.MPLCanvas):
 
 
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
-            # ne valja, treba provjeriti ima li podataka, a ne postoji li kljuc pod kojim bi trebalo biti podataka
-            if self.tKontejner is not None:
-                if self.tKontejner in self.data:
-                    self.crtaj_oznake_temperature()#highlight prijasnje tocke #TODO!
+            if self.tKontejner in self.data:
+                self.crtaj_oznake_temperature()
 
             if self.statusHighlight:
                 hx, hy = self.lastHighlight
@@ -217,10 +198,6 @@ class Graf(opceniti_canvas.MPLCanvas):
                     self.statusHighlight = False
                     self.lastHighlight = (None, None)
 
-            self.draw()
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
-
         else:
             self.axes.clear()
             self.axes.text(0.5,
@@ -230,18 +207,18 @@ class Graf(opceniti_canvas.MPLCanvas):
                            verticalalignment='center',
                            fontsize = 8,
                            transform = self.axes.transAxes)
-            self.draw()
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
+        self.draw()
+        #promjeni cursor u normalan cursor
+        QtGui.QApplication.restoreOverrideCursor()
 
 ###############################################################################
-    def setup_ticks(self):
+    def setup_ticks(self, tickovi):
         """
         postavljanje pozicije i formata tickova x osi.
         major ticks - svaki puni sat
         minor ticks - svakih 15 minuta (ali bez vrijednosti punog sata)
         """
-        tickovi = pomocne_funkcije.pronadji_tickove_satni(self.pocetnoVrijeme, self.zavrsnoVrijeme)
+
         self.majorTickLoc = tickovi['majorTickovi']
         self.majorTickLab = tickovi['majorLabeli']
         self.minorTickLoc = tickovi['minorTickovi']
@@ -256,7 +233,45 @@ class Graf(opceniti_canvas.MPLCanvas):
         for label in allXLabels:
             label.set_rotation(45)
             label.set_fontsize(8)
+
 ###############################################################################
+    def span_select(self, t1, t2):
+        """
+        Metoda je povezana sa span selektorom (ako je inicijaliziran).
+        Metoda je zaduzena da prikaze kontekstni dijalog za promjenu flaga
+        na mjestu gdje "releasamo" ljevi klik.
+
+        t1 i t2 su timestampovi, ali ih treba adaptirati
+        """
+        sekunde = 3600
+        if self.statusGlavniGraf: #glavni graf mora biti nacrtan
+            #konverzija ulaznih vrijednosti u pandas timestampove
+            t1 = matplotlib.dates.num2date(t1)
+            t2 = matplotlib.dates.num2date(t2)
+            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
+            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
+            #vremena se zaokruzuju na najblizi sat
+            t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, sekunde)
+            t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, sekunde)
+            t1 = pd.to_datetime(t1)
+            t2 = pd.to_datetime(t2)
+
+            #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
+            if t1 < self.pocetnoVrijeme:
+                t1 = self.pocetnoVrijeme
+            if t1 > self.zavrsnoVrijeme:
+                t1 = self.zavrsnoVrijeme
+            if t2 < self.pocetnoVrijeme:
+                t2 = self.pocetnoVrijeme
+            if t2 > self.zavrsnoVrijeme:
+                t2 = self.zavrsnoVrijeme
+            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
+            if t1 != t2:
+                #pozovi dijalog za promjenu flaga
+                loc = QtGui.QCursor.pos()
+                self.show_context_menu(loc, t1, t2)
+###############################################################################
+
     def crtaj_scatter_konc(self, komponenta, dto, flag):
         """
         pomocna funkcija za crtanje scatter tipa grafa (samo tocke)
@@ -426,41 +441,6 @@ class Graf(opceniti_canvas.MPLCanvas):
                 #poziva context menu sa informacijom o lokaciji i satu
                 loc = QtGui.QCursor.pos() #lokacija klika
                 self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
-###############################################################################
-    def span_select(self, t1, t2):
-        """
-        Metoda je povezana sa span selektorom (ako je inicijaliziran).
-        Metoda je zaduzena da prikaze kontekstni dijalog za promjenu flaga
-        na mjestu gdje "releasamo" ljevi klik.
-
-        t1 i t2 su timestampovi, ali ih treba adaptirati
-        """
-        if self.statusGlavniGraf: #glavni graf mora biti nacrtan
-            #konverzija ulaznih vrijednosti u pandas timestampove
-            t1 = matplotlib.dates.num2date(t1)
-            t2 = matplotlib.dates.num2date(t2)
-            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
-            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
-            #vremena se zaokruzuju na najblizi sat
-            t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 3600)
-            t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 3600)
-            t1 = pd.to_datetime(t1)
-            t2 = pd.to_datetime(t2)
-
-            #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
-            if t1 < self.pocetnoVrijeme:
-                t1 = self.pocetnoVrijeme
-            if t1 > self.zavrsnoVrijeme:
-                t1 = self.zavrsnoVrijeme
-            if t2 < self.pocetnoVrijeme:
-                t2 = self.pocetnoVrijeme
-            if t2 > self.zavrsnoVrijeme:
-                t2 = self.zavrsnoVrijeme
-            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
-            if t1 != t2:
-                #pozovi dijalog za promjenu flaga
-                loc = QtGui.QCursor.pos()
-                self.show_context_menu(loc, t1, t2)
 ###############################################################################
     def set_agregirani_kanal(self, ulaz):
         """

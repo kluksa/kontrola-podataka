@@ -11,15 +11,20 @@ import pandas as pd
 
 import pomocne_funkcije #import pomocnih funkcija
 from app.view import opceniti_canvas
+from enum import Enum
 
 ###############################################################################
 ###############################################################################
-class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
+class ZeroSpanGraf(opceniti_canvas.OpcenitiKanvas):
     """
     Klasa za prikaz Zero vrijednosti
     """
-    def __init__(self, konfig, appKonfig, *args, tip = None, lok = None, **kwargs):
-        opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
+    class Tip(Enum):
+        zero=1
+        span=2
+
+    def __init__(self, konfig, appKonfig, tip, *args, **kwargs):
+        opceniti_canvas.OpcenitiKanvas.__init__(self, *args, **kwargs)
 
         self.data = None
 
@@ -35,7 +40,6 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         #tip odredjuje da li je ovo zero ili span graf
         self.tipGrafa = tip
         #lokacija odredjuje da li je graf na vrhu ili dnu ('top', 'bottom')
-        self.lokacija = lok
 
         """
         SETTER POZICIJE GRAFA
@@ -43,7 +47,7 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         - pomicanje kooridinatnih osi
         - odredjivanje na kojoj osi se crtaju tickovi
         """
-        if self.lokacija == 'top':
+        if self.tipGrafa == self.Tip.span:
             #prebaci lokaciju tickova
             self.axes.xaxis.set_ticks_position('top')
             self.axes.figure.subplots_adjust(bottom = 0.02)
@@ -103,7 +107,8 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         xbad = list(badTocke.index)
         ybad = list(badTocke['vrijednost'])
 
-        if self.tipGrafa == 'span' and len(x) > 0:
+
+        if self.tipGrafa == self.Tip.span and len(x) > 0:
             #midline
             self.axes.plot(x,
                            y,
@@ -131,7 +136,7 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
                 self.crtaj_fill_zs(x, wu, hedge, self.dto.spanFill2)
                 self.crtaj_fill_zs(x, ledge, wl, self.dto.spanFill2)
             self.statusGlavniGraf = True
-        elif self.tipGrafa == 'zero' and len(x) > 0:
+        elif self.tipGrafa == self.Tip.zero and len(x) > 0:
             #midline
             self.axes.plot(x,
                            y,
@@ -162,7 +167,7 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
 
         #Axes labeli
         self.axes.set_xlabel('Vrijeme')
-        self.axes.set_ylabel(self.tipGrafa.upper())
+        #self.axes.set_ylabel(self.tipGrafa.upper())
         #limit grafa
         self.axes.set_xlim((beginpoint, endpoint))
         self.setup_limits('ZERO')
@@ -326,13 +331,13 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
             self.updateaj_labele_na_panelu('normal', newArgList)
 ###############################################################################
     def updateaj_labele_na_panelu(self, tip, argList):
-        if self.tipGrafa == 'zero':
+        if self.tipGrafa == self.Tip.zero:
             if tip =='pick':
                 self.emit(QtCore.SIGNAL('zero_point_pick_update(PyQt_PyObject)'),argList)
                 self.emit(QtCore.SIGNAL('zero_point_update(PyQt_PyObject)'),argList)
             else:
                 self.emit(QtCore.SIGNAL('zero_point_update(PyQt_PyObject)'),argList)
-        elif self.tipGrafa == 'span':
+        elif self.tipGrafa == self.Tip.span:
             if tip == 'pick':
                 self.emit(QtCore.SIGNAL('span_point_pick_update(PyQt_PyObject)'),argList)
                 self.emit(QtCore.SIGNAL('span_point_update(PyQt_PyObject)'),argList)
@@ -377,9 +382,9 @@ class ZeroSpanGraf(opceniti_canvas.MPLCanvas):
         #draw
         self.draw()
 
-        if self.tipGrafa == 'zero':
+        if self.tipGrafa == self.Tip.zero:
             self.emit(QtCore.SIGNAL('zero_sync_x_zoom(PyQt_PyObject)'), x)
-        elif self.tipGrafa == 'span':
+        elif self.tipGrafa == self.Tip.span:
             self.emit(QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'), x)
 ###############################################################################
     def sync_x_zoom(self, x):

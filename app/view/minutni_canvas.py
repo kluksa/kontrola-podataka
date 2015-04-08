@@ -7,25 +7,24 @@ Created on Wed Nov  5 13:14:26 2014
 Klasa (canvas) za prikaz minutnih vrijednosti.
 """
 
-from PyQt4 import QtGui, QtCore
-
 import functools
+import datetime
+
+from PyQt4 import QtGui, QtCore
 import matplotlib
 import pandas as pd
-import numpy as np
-import datetime
-from datetime import timedelta
 
 import pomocne_funkcije
-import opceniti_canvas
+from app.view import opceniti_canvas
 ###############################################################################
 ###############################################################################
-class Graf(opceniti_canvas.MPLCanvas):
+class MinutniKanvas(opceniti_canvas.OpcenitiKanvas):
     """
     Definira detalje crtanja minutnog grafa i pripadne evente
     """
     def __init__(self, konfig, appKonfig, *args, **kwargs):
-        opceniti_canvas.MPLCanvas.__init__(self, *args, **kwargs)
+        """konstruktor"""
+        opceniti_canvas.OpcenitiKanvas.__init__(self, *args, **kwargs)
 
         #podrska za kontekstni meni za promjenu flaga
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -49,37 +48,58 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.dto = konfig
         self.appDto = appKonfig
 ###############################################################################
-    def clear_minutni(self):
-        """
-        clear minutnog grafa
-        """
-        #podrska za kontekstni meni za promjenu flaga
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+    def crtaj_pomocne(self, popis):
+        for key in popis:
+            frejm = self.data[key]
+            x = list(frejm.index)
+            y = list(frejm[u'koncentracija'])
+            self.axes.plot(x,
+                           y,
+                           marker=self.dto.dictPomocnih[key].markerStyle,
+                           markersize=self.dto.dictPomocnih[key].markerSize,
+                           linestyle=self.dto.dictPomocnih[key].lineStyle,
+                           linewidth=self.dto.dictPomocnih[key].lineWidth,
+                           color=self.dto.dictPomocnih[key].color,
+                           zorder=self.dto.dictPomocnih[key].zorder,
+                           label=self.dto.dictPomocnih[key].label)
 
-        self.data = {} #spremnik za frejmove (ucitane)
+    def crtaj_glavni_graf(self):
+        # midline plot
+        frejm = self.data[self.gKanal]
+        x = list(frejm.index)
+        y = list(frejm[u'koncentracija'])
+        self.axes.plot(x,
+                       y,
+                       linestyle=self.dto.minutniMidline.lineStyle,
+                       linewidth=self.dto.minutniMidline.lineWidth,
+                       color=self.dto.minutniMidline.color,
+                       zorder=self.dto.minutniMidline.zorder,
+                       label=self.dto.minutniMidline.label)
+        #plot tocaka ovisno o flagu i validaciji
+        self.crtaj_scatter_konc(self.dto.minutniVOK, 1000)
+        self.crtaj_scatter_konc(self.dto.minutniVBAD, -1000)
+        self.crtaj_scatter_konc(self.dto.minutniNVOK, 1)
+        self.crtaj_scatter_konc(self.dto.minutniNVBAD, -1)
 
-        self.statusGlavniGraf = False
-        self.statusAnnotation = False
+    def crtaj_oznake_temperature(self):
+        frejm = self.data[self.tKontejner]
+        frejm = frejm[frejm['flag'] > 0]
+        overlimit = frejm[frejm['koncentracija'] > 30]
+        underlimit = frejm[frejm['koncentracija'] < 15]
+        frejm = overlimit.append(underlimit)
+        x = list(frejm.index)
+        brojLosih = len(x)
+        if brojLosih:
+            y1, y2 = self.ylim_original
+            c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+            y = [c for i in range(brojLosih)]
+            self.axes.plot(x,
+                           y,
+                           marker='*',
+                           color='Red',
+                           linestyle='None',
+                           alpha=0.4)
 
-        #kooridinate zadnjeg highlighta
-        self.lastAnnotation = None
-
-        self.axes.clear()
-        self.draw()
-###############################################################################
-    def set_minutni_kanal(self, argMap):
-        """
-        BITNA METODA! - mehanizam s kojim se ucitavaju frejmovi za crtanje.
-        -metoda crtaj trazi od kontrolera podatke
-        -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
-        -ulaz je mapa
-
-        metoda postavlja frejm minutnih podataka u self.__data
-        argMap['kanal'] -> int, ime kanala
-        argMap['dataFrejm'] -> pandas dataframe, minutni podaci
-        """
-        self.data[argMap['kanal']] = argMap['dataFrejm']
-###############################################################################
     def crtaj(self, ulaz):
         """Eksplicitne naredbe za crtanje zadane sa popisom grafova i vremenskim
         intervalom.
@@ -99,79 +119,41 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.data = {}
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.tmin = ulaz['pocetnoVrijeme']
-        self.tmax = ulaz['zavrsnoVrijeme']
+        self.pocetnoVrijeme = ulaz['pocetnoVrijeme']
+        self.zavrsnoVrijeme = ulaz['zavrsnoVrijeme']
         ###step 1. probaj dohvatiti glavni kanal za crtanje###
         self.gKanal = ulaz['kanalId']
         self.tKontejner = ulaz['tempKontejner']
         #emit zahtjev za podacima, return se vraca u member self.data
         arg = {'kanal': self.gKanal,
-               'od': self.tmin,
-               'do': self.tmax}
+               'od': self.pocetnoVrijeme,
+               'do': self.zavrsnoVrijeme}
         self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
-        if self.gKanal in self.data.keys():
 
+        if self.gKanal in self.data.keys():
             #TODO! ucitaj temperaturu kontejnera ako postoji
             if self.tKontejner is not None:
                 arg = {'kanal': self.tKontejner,
-                       'od': self.tmin,
-                       'do': self.tmax}
+                       'od': self.pocetnoVrijeme,
+                       'do': self.zavrsnoVrijeme}
                 self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
             #kreni ucitavati ostale ako ih ima!
             for programKey in self.dto.dictPomocnih.keys():
                 if programKey not in self.data.keys():
                     arg = {'kanal': programKey,
-                           'od': self.tmin,
-                           'do': self.tmax}
+                           'od': self.pocetnoVrijeme,
+                           'do': self.zavrsnoVrijeme}
                     self.emit(QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'), arg)
 
-            #midline plot
-            frejm = self.data[self.gKanal]
-            x = list(frejm.index)
-            y = list(frejm[u'koncentracija'])
-
-
-            self.axes.plot(x,
-                           y,
-                           linestyle = self.dto.minutniMidline.lineStyle,
-                           linewidth = self.dto.minutniMidline.lineWidth,
-                           color = self.dto.minutniMidline.color,
-                           zorder = self.dto.minutniMidline.zorder,
-                           label = self.dto.minutniMidline.label)
-            #plot tocaka ovisno o flagu i validaciji
-            self.crtaj_scatter_konc(self.dto.minutniVOK, 1000)
-            self.crtaj_scatter_konc(self.dto.minutniVBAD, -1000)
-            self.crtaj_scatter_konc(self.dto.minutniNVOK, 1)
-            self.crtaj_scatter_konc(self.dto.minutniNVBAD, -1)
+            self.crtaj_glavni_graf()
 
             key_set = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
             popis =  {key: self.data[key] for key in key_set}
-            # #crtanje pomocnih grafova
-            # popis = list(self.data.keys())
-            # popis.remove(self.gKanal)
-            # #TODO! makni temperaturu kontenjera sa popisa
-            #
-            # if self.tKontejner:
-            #
-            #     popis.remove(self.tKontejner)
 
-            for key in popis:
-                frejm = self.data[key]
-                x = list(frejm.index)
-                y = list(frejm[u'koncentracija'])
-                self.axes.plot(x,
-                               y,
-                               marker = self.dto.dictPomocnih[key].markerStyle,
-                               markersize = self.dto.dictPomocnih[key].markerSize,
-                               linestyle = self.dto.dictPomocnih[key].lineStyle,
-                               linewidth = self.dto.dictPomocnih[key].lineWidth,
-                               color = self.dto.dictPomocnih[key].color,
-                               zorder = self.dto.dictPomocnih[key].zorder,
-                               label = self.dto.dictPomocnih[key].label)
-
+            self.crtaj_pomocne(popis)
             #set limits and ticks
             self.setup_limits('MINUTNI') #metda definirana u opceniti_canvas.py
-            self.setup_ticks()
+            self.setup_ticks(pomocne_funkcije.pronadji_tickove_minutni(self.pocetnoVrijeme, self.zavrsnoVrijeme))
             self.setup_legend() #metda definirana u opceniti_canvas.py
 
             #toggle minor tickova, i grida
@@ -179,30 +161,10 @@ class Graf(opceniti_canvas.MPLCanvas):
             self.toggle_grid(self.appDto.minutniGrid) #metda definirana u opceniti_canvas.py
             self.toggle_legend(self.appDto.minutniLegend) #metda definirana u opceniti_canvas.py
 
+
             #TODO! crtanje upozorenja ako je temeratura kontejnera izvan granica
-            if self.tKontejner is not None:
-                frejm = self.data[self.tKontejner]
-                frejm = frejm[frejm['flag'] > 0]
-                overlimit = frejm[frejm['koncentracija'] > 30]
-                underlimit = frejm[frejm['koncentracija'] < 15]
-                frejm = overlimit.append(underlimit)
-                x = list(frejm.index)
-                brojLosih = len(x)
-                if brojLosih:
-                    y1, y2 = self.ylim_original
-                    c = y2 - 0.05*abs(y2-y1) #odmak od gornjeg ruba za 5% max raspona
-                    y = [c for i in range(brojLosih)]
-                    self.axes.plot(x,
-                                   y,
-                                   marker = '*',
-                                   color = 'Red',
-                                   linestyle = 'None',
-                                   alpha = 0.4)
-            self.draw()
-
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
-
+            if self.tKontejner in self.data:
+                self.crtaj_oznake_temperature()
         else:
             self.axes.clear()
             self.axes.text(0.5,
@@ -212,17 +174,17 @@ class Graf(opceniti_canvas.MPLCanvas):
                            verticalalignment='center',
                            fontsize = 8,
                            transform = self.axes.transAxes)
-            self.draw()
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
+        self.draw()
+        #promjeni cursor u normalan cursor
+        QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
-    def setup_ticks(self):
+    def setup_ticks(self, tickovi):
         """
         postavljanje pozicije i formata tickova x osi.
         major ticks - svaki puni sat
         minor ticks - svakih 15 minuta (ali bez vrijednosti punog sata)
         """
-        tickovi = pomocne_funkcije.pronadji_tickove_minutni(self.tmin, self.tmax)
+
         self.majorTickLoc = tickovi['majorTickovi']
         self.majorTickLab = tickovi['majorLabeli']
         self.minorTickLoc = tickovi['minorTickovi']
@@ -247,6 +209,7 @@ class Graf(opceniti_canvas.MPLCanvas):
 
         t1 i t2 su timestampovi, ali ih treba adaptirati
         """
+        sekunde = 60
         if self.statusGlavniGraf: #glavni graf mora biti nacrtan
             #konverzija ulaznih vrijednosti u pandas timestampove
             t1 = matplotlib.dates.num2date(t1)
@@ -254,20 +217,20 @@ class Graf(opceniti_canvas.MPLCanvas):
             t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
             t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
             #vremena se zaokruzuju na najblizu minutu (60 sekundi)
-            t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 60)
-            t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 60)
+            t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, sekunde)
+            t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, sekunde)
             t1 = pd.to_datetime(t1)
             t2 = pd.to_datetime(t2)
 
             #osiguranje da se ne preskoce granice glavnog kanala
-            if t1 < self.tmin:
-                t1 = self.tmin
-            if t1 > self.tmax:
-                t1 = self.tmax
-            if t2 < self.tmin:
-                t2 = self.tmin
-            if t2 > self.tmax:
-                t2 = self.tmax
+            if t1 < self.pocetnoVrijeme:
+                t1 = self.pocetnoVrijeme
+            if t1 > self.zavrsnoVrijeme:
+                t1 = self.zavrsnoVrijeme
+            if t2 < self.pocetnoVrijeme:
+                t2 = self.pocetnoVrijeme
+            if t2 > self.zavrsnoVrijeme:
+                t2 = self.zavrsnoVrijeme
 
             #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
             if t1 != t2:
@@ -358,10 +321,10 @@ class Graf(opceniti_canvas.MPLCanvas):
             #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
             xpoint = pd.to_datetime(xpoint)
             #bitno je da zaokruzeno vrijeme nije izvan granica frejma (izbjegavnjanje index errora)
-            if xpoint >= self.tmax:
-                xpoint = self.tmax
-            if xpoint <= self.tmin:
-                xpoint = self.tmin
+            if xpoint >= self.zavrsnoVrijeme:
+                xpoint = self.zavrsnoVrijeme
+            if xpoint <= self.pocetnoVrijeme:
+                xpoint = self.pocetnoVrijeme
 
             #highlight selected point - kooridinate ako nedostaju podaci
             if xpoint in list(self.data[self.gKanal].index):
@@ -444,4 +407,36 @@ class Graf(opceniti_canvas.MPLCanvas):
         self.lastAnnotation = point[0]
         self.statusAnnotation = True
 ###############################################################################
+    def clear_minutni(self):
+        """
+        clear minutnog grafa
+        """
+        #podrska za kontekstni meni za promjenu flaga
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+        self.data = {} #spremnik za frejmove (ucitane)
+
+        self.statusGlavniGraf = False
+        self.statusAnnotation = False
+
+        #kooridinate zadnjeg highlighta
+        self.lastAnnotation = None
+
+        self.axes.clear()
+        self.draw()
+###############################################################################
+    def set_minutni_kanal(self, argMap):
+        """
+        BITNA METODA! - mehanizam s kojim se ucitavaju frejmovi za crtanje.
+        -metoda crtaj trazi od kontrolera podatke
+        -ovo je predvidjeni slot gdje kontroler vraca trazene podatke
+        -ulaz je mapa
+
+        metoda postavlja frejm minutnih podataka u self.__data
+        argMap['kanal'] -> int, ime kanala
+        argMap['dataFrejm'] -> pandas dataframe, minutni podaci
+        """
+        self.data[argMap['kanal']] = argMap['dataFrejm']
+###############################################################################
+
 ###############################################################################

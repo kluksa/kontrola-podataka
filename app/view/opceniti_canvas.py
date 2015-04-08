@@ -17,7 +17,7 @@ import pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
-class MPLCanvas(FigureCanvas):
+class OpcenitiKanvas(FigureCanvas):
     """
     Opcenita klasa za matplotlib canvas
 

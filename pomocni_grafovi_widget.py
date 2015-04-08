@@ -7,7 +7,7 @@ Created on Fri Feb  6 12:53:28 2015
 from PyQt4 import QtGui, QtCore, uic
 
 import table_model
-import dodavanje_pomocnih
+from app.view import dodavanje_pomocnih
 
 ###############################################################################
 ###############################################################################

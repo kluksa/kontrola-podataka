@@ -6,10 +6,13 @@ Created on Fri Oct 31 14:06:55 2014
 @author: User
 """
 import sys
-from PyQt4 import QtGui
 import configparser
+
+from PyQt4 import QtGui
+
 import pomocne_funkcije
-import glavniprozor
+from app.view import glavniprozor
+
 
 config = configparser.ConfigParser()
 try:

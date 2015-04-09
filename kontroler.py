@@ -339,21 +339,23 @@ class Kontroler(QtCore.QObject):
             #spremi mapu u privatni member
             self.mapaMjerenjeIdToOpis = mapa
             #root objekt
-            tree = model_drva.TreeItem(['stanice', None, None], parent = None)
+            tree = model_drva.TreeItem(['stanice', None, None, None], parent = None)
             #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
             stanice = {}
             for i in sorted(list(mapa.keys())):
                 stanica = mapa[i]['postajaNaziv']
                 if stanica not in stanice:
-                    stanice[stanica] = model_drva.TreeItem([stanica, None, None], parent = tree)
+                    stanice[stanica] = model_drva.TreeItem([stanica, None, None, None], parent = tree)
             #za svako individualnu komponentu napravi TreeItem sa odgovarajucim parentom (stanica)
             for i in mapa.keys():
                 stanica = mapa[i]['postajaNaziv'] #parent = stanice[stanica]
                 komponenta = mapa[i]['komponentaNaziv']
-                #mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
+                mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
+                formula = mapa[i]['komponentaFormula']
+                opis = " ".join([formula, '[', mjernaJedinica, ']'])
                 usporedno = mapa[i]['usporednoMjerenje']
                 #data = [komponenta, mjernaJedinica, i]
-                data = [komponenta, usporedno, i]
+                data = [komponenta, usporedno, i, opis]
                 model_drva.TreeItem(data, parent = stanice[stanica]) #kreacija TreeItem objekta
 
             self.modelProgramaMjerenja = model_drva.ModelDrva(tree) #napravi model

@@ -114,6 +114,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150323:::VM:::ispravak bugova (cranje losih zero/span, select zero span bugovi, label zero span grafa, highlight tocke na satnom grafu). Nisam uspio reproducirati bug sa minutnim resizeom, takodjer problem sa x labelima je zbog minor tickova.:::
 20150331:::VM:::izbrisani labele minor tickova za satni i minutni graf, ostali su markeri. Middle click ce napisati tocno vrijeme po potrebi preko annotationa. Dodana opcija za upload minutnih podataka (ispod uploada agregiranih), ali postoji problem. Upload minutnih podataka ne radi kako treba, dobivam nazad "Internal Server Error 500" nakon slanja put requesta.:::
 20150408:::VM:::Dodao dva gumba na koncentracijski panel. Gumb za 'revert' minutnih i satnih izmjena za trenutni dan i kanal te gumb za upload na REST servis.:::
+20150408:::VM:::Preuredio tree model, sada prikazuje formulu i mjernu jedinicu umjesto id kanala mjerenja.:::
 
 
 

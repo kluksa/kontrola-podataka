@@ -133,7 +133,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
             if index.column() == 0:
                 return item.data(0)
             elif index.column() == 1:
-                return item.data(2)
+                return item.data(3)
         else:
             return None
 ###############################################################################
@@ -182,7 +182,8 @@ class ModelDrva(QtCore.QAbstractItemModel):
         headeri
         """
         #headeri = ['Stanica/komponenta', 'Usporedno', 'Program mjerenja']
-        headeri = ['Stanica/komponenta', 'Program mjerenja']
+        #headeri = ['Stanica/komponenta', 'Program mjerenja']
+        headeri = ['Stanica/komponenta', 'Formula']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 

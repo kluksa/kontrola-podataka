@@ -64,35 +64,52 @@ class RESTReader(QtCore.QObject):
         """
         Adapter za ulazni jason string.
         Potrebno je lagano preurediti frame koji se ucitava iz jsona
-        """
-        frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
-        #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
-        noviIndex = frame['vrijeme']
-        frame.index = noviIndex
-        #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
-        podatakId = frame['id']
-        #dohvati koncentraciju
-        koncentracija = frame['vrijednost'].astype(np.float64)
-        koncentracija = koncentracija.map(self.nan_conversion)
-        #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
-        statusString = frame['statusString']
-#        status = frame['statusString']
-#        status = status.map(self.status_string_conversion)
-#        status = status.astype(np.float64)
-        status = 0
-        #adapter za boolean vrijesnost valjan  (buduci flag)
-        valjan = frame['valjan']
-        valjan = valjan.map(self.valjan_conversion)
-        valjan = valjan.astype(np.int64)
 
-        #sklopi izlazni dataframe da odgovara API-u dokumenta
-        df = pd.DataFrame({'koncentracija':koncentracija,
-                           'status':status,
-                           'flag':valjan,
-                           'id':podatakId,
-                           'statusString':statusString})
-        #vrati adaptirani dataframe
-        return df
+        output je dobro pandas dataframe ili None
+        """
+        #TODO! x je string, ali moze biti svasta....
+        if x.startswith('[') and x.endswith(']'): #ulaz je array json objekata '[.....]'
+            frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
+            #ako je json string x prazan, nema definirane stupce... return None
+            if 'vrijeme' not in frame.columns:
+                return None
+            if 'id' not in frame.columns:
+                return None
+            if 'vrijednost' not in frame.columns:
+                return None
+            if 'statusString' not in frame.columns:
+                return None
+            if 'valjan' not in frame.columns:
+                return None
+            #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
+            noviIndex = frame['vrijeme']
+            frame.index = noviIndex
+            #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
+            podatakId = frame['id']
+            #dohvati koncentraciju
+            koncentracija = frame['vrijednost'].astype(np.float64)
+            koncentracija = koncentracija.map(self.nan_conversion)
+            #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
+            statusString = frame['statusString']
+    #        status = frame['statusString']
+    #        status = status.map(self.status_string_conversion)
+    #        status = status.astype(np.float64)
+            status = 0
+            #adapter za boolean vrijesnost valjan  (buduci flag)
+            valjan = frame['valjan']
+            valjan = valjan.map(self.valjan_conversion)
+            valjan = valjan.astype(np.int64)
+
+            #sklopi izlazni dataframe da odgovara API-u dokumenta
+            df = pd.DataFrame({'koncentracija':koncentracija,
+                               'status':status,
+                               'flag':valjan,
+                               'id':podatakId,
+                               'statusString':statusString})
+            #vrati adaptirani dataframe
+            return df
+        else:
+            return None
 ###############################################################################
     def read(self, key = None, date = None):
         """
@@ -110,7 +127,7 @@ class RESTReader(QtCore.QObject):
                 jsonString = self.source.get_sirovi(key, date) #!potencijalni AppExcept!
                 #pretvori u dataframe
                 df = self.adaptiraj_ulazni_json(jsonString)
-                #upisi dataframe u model
+                #upisi dataframe u model (warning, df moze biti None)
                 self.model.set_frame(key = key, frame = df) #!potencijalni AppExcept!
                 #dodaj na popis uspjesno ucitanih date nije danas
                 if date != sada:

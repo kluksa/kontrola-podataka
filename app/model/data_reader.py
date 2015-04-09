@@ -67,6 +67,7 @@ class RESTReader(QtCore.QObject):
 
         output je dobro pandas dataframe ili None
         """
+<<<<<<< Updated upstream:app/model/data_reader.py
         #TODO! x je string, ali moze biti svasta....
         if x.startswith('[') and x.endswith(']'): #ulaz je array json objekata '[.....]'
             frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
@@ -99,6 +100,28 @@ class RESTReader(QtCore.QObject):
             valjan = frame['valjan']
             valjan = valjan.map(self.valjan_conversion)
             valjan = valjan.astype(np.int64)
+=======
+        frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
+
+        #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
+        noviIndex = frame['vrijeme']
+        frame.index = noviIndex
+        #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
+        podatakId = frame['id']
+        #dohvati koncentraciju
+        koncentracija = frame['vrijednost'].astype(np.float64)
+        koncentracija = koncentracija.map(self.nan_conversion)
+        #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
+        statusString = frame['statusString']
+#        status = frame['statusString']
+#        status = status.map(self.status_string_conversion)
+#        status = status.astype(np.float64)
+        status = 0
+        #adapter za boolean vrijesnost valjan  (buduci flag)
+        valjan = frame['valjan']
+        valjan = valjan.map(self.valjan_conversion)
+        valjan = valjan.astype(np.int64)
+>>>>>>> Stashed changes:data_reader.py
 
             #sklopi izlazni dataframe da odgovara API-u dokumenta
             df = pd.DataFrame({'koncentracija':koncentracija,
@@ -126,8 +149,20 @@ class RESTReader(QtCore.QObject):
                 #pokusaj ucitati json string sa REST servisa
                 jsonString = self.source.get_sirovi(key, date) #!potencijalni AppExcept!
                 #pretvori u dataframe
+<<<<<<< Updated upstream:app/model/data_reader.py
                 df = self.adaptiraj_ulazni_json(jsonString)
                 #upisi dataframe u model (warning, df moze biti None)
+=======
+                if jsonString == '[]':
+                    df = pd.DataFrame({'koncentracija':[],
+                           'status':pd.Series(),
+                           'flag':pd.Series(),
+                           'id':key,
+                           'statusString':pd.Series()})
+                else:
+                    df = self.adaptiraj_ulazni_json(jsonString)
+                #upisi dataframe u model
+>>>>>>> Stashed changes:data_reader.py
                 self.model.set_frame(key = key, frame = df) #!potencijalni AppExcept!
                 #dodaj na popis uspjesno ucitanih date nije danas
                 if date != sada:

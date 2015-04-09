@@ -113,6 +113,7 @@ class WebZahtjev(QtCore.QObject):
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             #TODO! ignore empty json string...return what you get
             #assert da je duljina json stringa dovoljna (ako nema podataka, dobivam nazad prazan string)
+            # Nema potrebe za nul string bacati iznimku.
             #assert len(r.text) > 3, 'Bad response, empty json string'
             return r.text
         except AssertionError as e1:
@@ -259,15 +260,15 @@ if __name__ == '__main__':
     """
     try:
         """get programe mjerenja"""
-        r = wz.get_programe_mjerenja()
-        print(r) #works
+#        r = wz.get_programe_mjerenja()
+#        print(r) #works
 
-#        """get sirovi"""
-#        import datetime
-#        t = datetime.datetime.now()
-#        r1 = wz.get_sirovi(162, '2015-02-22')
-#        out = datetime.datetime.now() - t
-#        print(out)
+        """get sirovi"""
+        import datetime
+        t = datetime.datetime.now()
+        r1 = wz.get_sirovi(162, '2015-02-22')
+        out = datetime.datetime.now() - t
+        print(out)
 
 #        """get zero span plitvice ozon"""
 #        r2 = wz.get_zero_span(65, '2015-02-18', 30)

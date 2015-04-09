@@ -5,53 +5,52 @@ Created on Fri Feb 13 12:01:41 2015
 @author: User
 """
 import pandas as pd
-
-import pomocne_funkcije
 from PyQt4 import QtCore, uic
 
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
-base10, form10 = uic.loadUiType('./ui_files/dodavanje_referentnih_zero_span.ui')
+base10, form10 = uic.loadUiType('./app/view/ui_files/dodavanje_referentnih_zero_span.ui')
 class DijalogDodajRefZS(base10, form10):
     """
     Dijalog za dodavanje novih referentnih vrijednosti za ZERO i SPAN.
-    
+
     polja su:
-    
+
     1. program mjerenja
         --> hardcoded (za sada) opisni string
         --> pokazuju na trenutno aktivni glavni kanal.
         --> potencijalno utrpati tree model za izbor kanala??
-    
+
     2. Pocetak primjene
         --> QDateTimeEdit
-        --> izbor vremena od kojega se primjenjuje 
-        
+        --> izbor vremena od kojega se primjenjuje
+
     3. Vrsta
         --> combobox sa izborom ZERO ili SPAN
-        
+
     4. Vrijednost
         --> QLineEdit
         --> nova referentna vrijednost
-        
+
     5. Dozvoljeno odstupanje
         --> QLineEdit
         --> tolerancija odstupanja
         --> potencijalno nebitno, jer koliko sam shvatio server automatski racuna
         tu vrijednost???
     """
-    
+
     def __init__(self, parent = None, opisKanal = None, idKanal = None):
         super(base10, self).__init__(parent)
         self.setupUi(self)
-        
+
         #set int id kanala
         self.idKanal = idKanal
         #set program mjerenja opis
         self.programSelect.setText(opisKanal)
         #set vrijeme da pokazuje trenutak kaada je dijalog inicijaliziran
         self.vrijemeSelect.setDateTime(QtCore.QDateTime.currentDateTime())
-        
+
         self.vrijednostSelect.textEdited.connect(self.check_vrijednost)
 ###############################################################################
     def check_vrijednost(self, x):
@@ -66,7 +65,7 @@ class DijalogDodajRefZS(base10, form10):
     def convert_line_edit_to_float(self, x):
         """
         pretvaranje line edit stringa u float vrijednost
-        
+
         vrati valjani float ako se string da convertat
         vratni None ako se string ne moze prebaciti u float ili ako nema podataka
         """
@@ -94,12 +93,12 @@ class DijalogDodajRefZS(base10, form10):
         vrijeme = pomocne_funkcije.time_to_int(vrijeme)
 
         vrsta = self.vrstaSelect.currentText()[0] #samo prvo slovo stringa.. 'Z' ili 'S'
-               
+
         vrijednost = self.convert_line_edit_to_float(self.vrijednostSelect.text()) #float
-        
-        out = {'vrsta':vrsta, 
-               'vrijednost':vrijednost, 
-               'vrijeme':vrijeme, 
+
+        out = {'vrsta':vrsta,
+               'vrijednost':vrijednost,
+               'vrijeme':vrijeme,
                'kanal':self.idKanal}
         return out
 ###############################################################################

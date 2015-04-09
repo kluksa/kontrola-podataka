@@ -1,9 +1,0 @@
-Date,Time,No,Status,Cert Val,Variance,Actual,NoX,Status,Cert Val,Variance,Actual,No2,Status,Cert Val,Variance,Actual,So2,Status,Cert Val,Variance,Actual,Co,Status,Cert Val,Variance,Actual,O3,Status,Cert Val,Variance,Actual,Zone
-02/06/2014,04:03,,,,,,,,,,,,,,,,AS,0,404,5,-0.11,,,,,,,,,,,GMT
-02/06/2014,08:50,,,,,,,,,,,,,,,,AZ,0,3,5,0.07,,,,,,,,,,,GMT
-02/06/2014,09:50,AZ,0,0,10,5.64,,,,,,,,,,,,,,,,,,,,,,,,,,GMT
-02/06/2014,10:03,AS,0,345,5,332.24,,,,,,,,,,,,,,,,,,,,,,,,,,GMT
-02/06/2014,10:50,,,,,,,,,,,,,,,,,,,,,AZ,0,0,5,-0.28,,,,,,GMT
-02/06/2014,11:03,,,,,,,,,,,,,,,,,,,,,AS,0,13,5,11.39,,,,,,GMT
-02/06/2014,11:50,,,,,,,,,,,,,,,,,,,,,,,,,,AZ,0,0,5,-999.00,GMT
-02/06/2014,12:03,,,,,,,,,,,,,,,,,,,,,,,,,,AS,0,181,5,-999.00,GMT

@@ -14,8 +14,8 @@ from PyQt4 import QtGui, QtCore
 import matplotlib
 import pandas as pd
 
-import pomocne_funkcije
-from app.view import opceniti_canvas
+import app.general.pomocne_funkcije as pomocne_funkcije
+import app.view.opceniti_canvas as opceniti_canvas
 ###############################################################################
 ###############################################################################
 class MinutniKanvas(opceniti_canvas.OpcenitiKanvas):

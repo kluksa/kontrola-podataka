@@ -7,10 +7,10 @@ Created on Fri Feb  6 13:10:01 2015
 
 from PyQt4 import QtGui, uic
 
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
-base9, form9 = uic.loadUiType('./ui_files/opcije_pomocnih.ui')
+base9, form9 = uic.loadUiType('./app/view/ui_files/opcije_pomocnih.ui')
 class OpcijePomocnog(base9, form9):
     """
     Klasa je dijalog preko kojeg se bira i odredjuju postavke pomocnog

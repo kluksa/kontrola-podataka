@@ -12,13 +12,13 @@ import pandas as pd
 import json #json parser
 import logging
 
-import pomocne_funkcije #pomocne funkcije i klase (npr. AppExcept exception...)
-import networking_funkcije #web zahtjev, interface prema REST servisu
-import dokument_model #interni model za zapisivanje podataka u dict pandas datafrejmova
-import data_reader #REST reader/writer
-import agregator #agregator
-import model_drva #pomocne klase za definiranje tree modela programa mjerenja
-import dodaj_ref_zs #dijalog za dodavanje referentnih zero i span vrijednosti
+import app.general.pomocne_funkcije as pomocne_funkcije #pomocne funkcije i klase (npr. AppExcept exception...)
+import app.general.networking_funkcije as networking_funkcije #web zahtjev, interface prema REST servisu
+import app.model.dokument_model as dokument_model #interni model za zapisivanje podataka u dict pandas datafrejmova
+import app.model.data_reader as data_reader #REST reader/writer
+import app.general.agregator as agregator#agregator
+import app.model.model_drva as model_drva #pomocne klase za definiranje tree modela programa mjerenja
+import app.view.dodaj_ref_zs as dodaj_ref_zs #dijalog za dodavanje referentnih zero i span vrijednosti
 ###############################################################################
 ###############################################################################
 class Kontroler(QtCore.QObject):
@@ -339,21 +339,23 @@ class Kontroler(QtCore.QObject):
             #spremi mapu u privatni member
             self.mapaMjerenjeIdToOpis = mapa
             #root objekt
-            tree = model_drva.TreeItem(['stanice', None, None], parent = None)
+            tree = model_drva.TreeItem(['stanice', None, None, None], parent = None)
             #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
             stanice = {}
             for i in sorted(list(mapa.keys())):
                 stanica = mapa[i]['postajaNaziv']
                 if stanica not in stanice:
-                    stanice[stanica] = model_drva.TreeItem([stanica, None, None], parent = tree)
+                    stanice[stanica] = model_drva.TreeItem([stanica, None, None, None], parent = tree)
             #za svako individualnu komponentu napravi TreeItem sa odgovarajucim parentom (stanica)
             for i in mapa.keys():
                 stanica = mapa[i]['postajaNaziv'] #parent = stanice[stanica]
                 komponenta = mapa[i]['komponentaNaziv']
-                #mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
+                mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
+                formula = mapa[i]['komponentaFormula']
+                opis = " ".join([formula, '[', mjernaJedinica, ']'])
                 usporedno = mapa[i]['usporednoMjerenje']
                 #data = [komponenta, mjernaJedinica, i]
-                data = [komponenta, usporedno, i]
+                data = [komponenta, usporedno, i, opis]
                 model_drva.TreeItem(data, parent = stanice[stanica]) #kreacija TreeItem objekta
 
             self.modelProgramaMjerenja = model_drva.ModelDrva(tree) #napravi model

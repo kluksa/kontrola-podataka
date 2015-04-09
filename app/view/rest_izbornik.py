@@ -8,10 +8,10 @@ from PyQt4 import QtGui, QtCore, uic
 import logging
 import datetime #potreban za provjeru da li je izabrani dan u buducnosti
 
-import model_drva #potreban samo za provjeru tipa modela
+import app.model.model_drva as model_drva
 ###############################################################################
 ###############################################################################
-base1, form1 = uic.loadUiType('./ui_files/rest_izbornik.ui')
+base1, form1 = uic.loadUiType('./app/view/ui_files/rest_izbornik.ui')
 class RestIzbornik(base1, form1):
     """
     REST izbornik (gumbi, treeView, kalendar...).

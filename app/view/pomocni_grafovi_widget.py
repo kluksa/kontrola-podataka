@@ -6,12 +6,11 @@ Created on Fri Feb  6 12:53:28 2015
 """
 from PyQt4 import QtGui, QtCore, uic
 
-import table_model
-from app.view import dodavanje_pomocnih
-
+import app.model.table_model as table_model
+import app.view.dodavanje_pomocnih as dodavanje_pomocnih
 ###############################################################################
 ###############################################################################
-base8, form8 = uic.loadUiType('./ui_files/pomocni_grafovi_widget.ui')
+base8, form8 = uic.loadUiType('./app/view/ui_files/pomocni_grafovi_widget.ui')
 class PomocniIzbor(base8, form8):
     """
     Widget se sastoji od QtableView instance i dva gumba (za dodavanje i

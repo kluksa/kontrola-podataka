@@ -15,10 +15,8 @@ import matplotlib
 
 from PyQt4 import QtGui
 import datetime
-from datetime import timedelta
 import pandas as pd
 import numpy as np
-import logging
 
 ###############################################################################
 ###############################################################################
@@ -186,8 +184,8 @@ def prosiri_granice_grafa(tmin, tmax, t):
 
     izlazne vrijednosti su 2 'pomaknuta' pandas timestampa
     """
-    tmin = tmin - timedelta(minutes = t)
-    tmax = tmax + timedelta(minutes = t)
+    tmin = tmin - datetime.timedelta(minutes = t)
+    tmax = tmax + datetime.timedelta(minutes = t)
     tmin = pd.to_datetime(tmin)
     tmax = pd.to_datetime(tmax)
     return tmin, tmax
@@ -199,7 +197,7 @@ def pronadji_tickove_satni(tmin, tmax):
     -tickovi su razmaknuti 1 sat
     vrati dict sa listama lokacija i labela za tickove
     """
-    tmin = tmin - timedelta(minutes = 1)
+    tmin = tmin - datetime.timedelta(minutes = 1)
     tmin = pd.to_datetime(tmin)
     majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'H'))
     majorLabeli = [str(ind.hour)+'h' for ind in majorTickovi]
@@ -226,7 +224,7 @@ def pronadji_tickove_minutni(tmin, tmax):
     funkcija vraca liste tickmarkera (minor i major) i listu tick labela
     za minutni graf.
     """
-    tmin = tmin - timedelta(minutes = 1)
+    tmin = tmin - datetime.timedelta(minutes = 1)
     tmin = pd.to_datetime(tmin)
     majorTickovi = list(pd.date_range(start = tmin, end= tmax, freq = '5Min'))
     majorLabeli = [str(ind.hour)+'h:'+str(ind.minute)+'m' for ind in majorTickovi]
@@ -264,7 +262,7 @@ def zaokruzi_vrijeme(dt_objekt, nSekundi):
         tmin = datetime.datetime.min
         delta = (dt_objekt - tmin).seconds
         zaokruzeno = ((delta + (nSekundi / 2)) // nSekundi) * nSekundi
-        izlaz = dt_objekt + timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
+        izlaz = dt_objekt + datetime.timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
         return izlaz
 ###############################################################################
 def sredi_xtickove_zerospan(timestampovi):

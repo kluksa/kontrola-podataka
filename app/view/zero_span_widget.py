@@ -6,41 +6,40 @@ Created on Fri Feb  6 12:59:14 2015
 """
 
 from PyQt4 import uic
-
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
-base7, form7 = uic.loadUiType('./ui_files/zero_span_widget.ui')
+base7, form7 = uic.loadUiType('./app/view/ui_files/zero_span_widget.ui')
 class ZeroSpanIzbor(base7, form7):
     """
     Opcije za ZERO i SPAN graf (koristi se ista shema)
     """
     def __init__(self, parent = None, defaulti = {}, listHelpera = []):
         """
-        Inicijalizacija sa 
-        
+        Inicijalizacija sa
+
         defaulti
             --> nested dictom opcija grafova
-            
+
         listHelpera
         --> lista koja sadrzi dictove sa konverziju matplotlib vrijednositi
             u smislenije podatke i nazad .. npr '-' : 'Puna linija'
-            
+
         --> struktura liste je definirana na sljedeci nacin po poziciji:
             element 0 : mpl.marker --> opisni marker
             element 1 : opisni marker --> mpl.marker
             element 2 : mpl.linestyle --> opis stila linije
             element 3 : opis stila linije --> mpl.linestyle
             element 4 : agregirani kanal --> dulji opis kanala
-            element 5 : dulji opis kanala --> agregirani kanal            
+            element 5 : dulji opis kanala --> agregirani kanal
         """
         super(base7, self).__init__(parent)
         self.setupUi(self)
-        
+
         markeri = sorted(list(listHelpera[1].keys()))
         linije = sorted(list(listHelpera[3].keys()))
-        
+
         ###MARKER###
         #zero
         self.zeroMarker.addItems(markeri)

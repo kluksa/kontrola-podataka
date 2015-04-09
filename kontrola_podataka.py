@@ -4,14 +4,23 @@
 Created on Fri Oct 31 14:06:55 2014
 
 @author: User
+
+VERZIJE EKSTERNIH MODULA
+-PyQt4 4.11.3
+-pandas 0.15.2
+-numpy 1.9.2rc1
+-matplotlib 1.4.3
+-requests 2.5.3
+
+- standard library python 3.4.3 (sys, configparser...)
+
 """
 import sys
 import configparser
-
 from PyQt4 import QtGui
 
-import pomocne_funkcije
-from app.view import glavniprozor
+import app.general.pomocne_funkcije as pomocne_funkcije
+import app.view.glavniprozor as glavniprozor
 
 
 config = configparser.ConfigParser()

@@ -8,7 +8,7 @@ Created on Wed Jan 21 14:45:37 2015
 import pandas as pd
 from PyQt4 import QtCore
 
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 class DataModel(QtCore.QObject):

@@ -16,12 +16,12 @@ import logging
 
 from PyQt4 import QtCore, uic
 
-from app.view import minutni_canvas, satni_canvas, zero_span_canvas
-
-
+import app.view.minutni_canvas as minutni_canvas
+import app.view.satni_canvas as satni_canvas
+import app.view.zero_span_canvas as zero_span_canvas
 ###############################################################################
 ###############################################################################
-base2, form2 = uic.loadUiType('./ui_files/konc_graf_panel.ui')
+base2, form2 = uic.loadUiType('./app/view/ui_files/konc_graf_panel.ui')
 class KoncPanel(base2, form2):
     """
     Klasa za prikaz grafova
@@ -124,7 +124,7 @@ class KoncPanel(base2, form2):
         logging.info('request pomak dana unazad')
 ###############################################################################
 ###############################################################################
-base3, form3 = uic.loadUiType('./ui_files/zero_span_panel.ui')
+base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')
 class ZeroSpanPanel(base3, form3):
     def __init__(self, konfig, appKonfig, parent = None):
         super(base3, self).__init__(parent)

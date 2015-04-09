@@ -7,19 +7,17 @@ Created on Wed Nov  5 14:20:39 2014
 
 """
 import logging
-
 from PyQt4 import QtCore, QtGui, uic
 
-from app.view import rest_izbornik, glavni_dijalog, grafovi_panel
-import app_dto
-import kontroler
-import auth_login
-
-
-
+import app.view.rest_izbornik as rest_izbornik
+import app.view.grafovi_panel as grafovi_panel
+import app.general.app_dto as app_dto
+import app.control.kontroler as kontroler
+import app.view.auth_login as auth_login
+import app.view.glavni_dijalog as glavni_dijalog
 ###############################################################################
 ###############################################################################
-base, form = uic.loadUiType('./ui_files/display.ui')
+base, form = uic.loadUiType('./app/view/ui_files/display.ui')
 class GlavniProzor(base, form):
     def __init__(self, cfg = None, parent = None):
         super(base, self).__init__(parent)
@@ -111,13 +109,13 @@ class GlavniProzor(base, form):
         """
         Postavljanje ikona za definirane QAkcije (toolbar/menubar...)
         """
-        self.action_exit.setIcon(QtGui.QIcon('./icons/close19.png'))
-        self.action_log_in.setIcon(QtGui.QIcon('./icons/enter3.png'))
-        self.action_log_out.setIcon(QtGui.QIcon('./icons/door9.png'))
-        self.action_reconnect.setIcon(QtGui.QIcon('./icons/cogwheel9.png'))
-        self.action_zoom.setIcon(QtGui.QIcon('./icons/zoom24.png'))
-        self.action_zoom_out.setIcon(QtGui.QIcon('./icons/zoom25.png'))
-        self.action_stil_grafova.setIcon(QtGui.QIcon('./icons/bars7.png'))
+        self.action_exit.setIcon(QtGui.QIcon('./app/view/icons/close19.png'))
+        self.action_log_in.setIcon(QtGui.QIcon('./app/view/icons/enter3.png'))
+        self.action_log_out.setIcon(QtGui.QIcon('./app/view/icons/door9.png'))
+        self.action_reconnect.setIcon(QtGui.QIcon('./app/view/icons/cogwheel9.png'))
+        self.action_zoom.setIcon(QtGui.QIcon('./app/view/icons/zoom24.png'))
+        self.action_zoom_out.setIcon(QtGui.QIcon('./app/view/icons/zoom25.png'))
+        self.action_stil_grafova.setIcon(QtGui.QIcon('./app/view/icons/bars7.png'))
 ###############################################################################
     def setup_signals(self):
         """

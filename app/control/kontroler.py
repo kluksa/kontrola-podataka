@@ -12,13 +12,13 @@ import pandas as pd
 import json #json parser
 import logging
 
-import pomocne_funkcije #pomocne funkcije i klase (npr. AppExcept exception...)
-import networking_funkcije #web zahtjev, interface prema REST servisu
-import dokument_model #interni model za zapisivanje podataka u dict pandas datafrejmova
-import data_reader #REST reader/writer
-import agregator #agregator
-import model_drva #pomocne klase za definiranje tree modela programa mjerenja
-import dodaj_ref_zs #dijalog za dodavanje referentnih zero i span vrijednosti
+import app.general.pomocne_funkcije as pomocne_funkcije #pomocne funkcije i klase (npr. AppExcept exception...)
+import app.general.networking_funkcije as networking_funkcije #web zahtjev, interface prema REST servisu
+import app.model.dokument_model as dokument_model #interni model za zapisivanje podataka u dict pandas datafrejmova
+import app.model.data_reader as data_reader #REST reader/writer
+import app.general.agregator as agregator#agregator
+import app.model.model_drva as model_drva #pomocne klase za definiranje tree modela programa mjerenja
+import app.view.dodaj_ref_zs as dodaj_ref_zs #dijalog za dodavanje referentnih zero i span vrijednosti
 ###############################################################################
 ###############################################################################
 class Kontroler(QtCore.QObject):

@@ -13,8 +13,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
 
-import pomocne_funkcije
-
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 class OpcenitiKanvas(FigureCanvas):

@@ -9,8 +9,9 @@ Klasa (canvas) za prikaz ZERO ili SPAN vrijednosti.
 from PyQt4 import QtCore
 import pandas as pd
 
-import pomocne_funkcije #import pomocnih funkcija
-from app.view import opceniti_canvas
+import app.general.pomocne_funkcije as pomocne_funkcije
+import app.view.opceniti_canvas as opceniti_canvas
+
 from enum import Enum
 
 ###############################################################################

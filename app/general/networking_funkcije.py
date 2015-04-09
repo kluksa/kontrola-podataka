@@ -5,14 +5,13 @@ Created on Wed Jan 21 10:58:46 2015
 @author: User
 """
 from requests.auth import HTTPBasicAuth
-
 import requests
 import logging
 import xml.etree.ElementTree as ET
 from PyQt4 import QtCore
 import pandas as pd
 
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 class WebZahtjev(QtCore.QObject):

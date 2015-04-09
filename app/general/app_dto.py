@@ -6,7 +6,7 @@ Created on Mon Mar  2 14:42:54 2015
 """
 import logging
 
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################

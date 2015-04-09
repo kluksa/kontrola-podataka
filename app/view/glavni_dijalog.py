@@ -6,18 +6,16 @@ Created on Wed Feb  4 10:45:42 2015
 """
 
 import logging
-
 from PyQt4 import QtGui, QtCore, uic
 
-import pomocne_funkcije
-from app.view import glavni_graf_widget
-import zero_span_widget
-import pomocni_grafovi_widget
-
+import app.general.pomocne_funkcije as pomocne_funkcije
+import app.view.glavni_graf_widget as glavni_graf_widget
+import app.view.zero_span_widget as zero_span_widget
+import app.view.pomocni_grafovi_widget as pomocni_grafovi_widget
 
 ###############################################################################
 ###############################################################################
-base5, form5 = uic.loadUiType('./ui_files/glavni_dijalog.ui')
+base5, form5 = uic.loadUiType('./app/view/ui_files/glavni_dijalog.ui')
 class GlavniIzbor(base5, form5):
     """
     Glavni dijalog za izbor opcija grafa
@@ -32,21 +30,21 @@ class GlavniIzbor(base5, form5):
         Inicijalizacija dijaloga
         parent
             --> parent widget prozora, default je None i moze tako ostati
-        defaulti 
+        defaulti
             --> GrafSettingsDTO objekt
             --> definira izgled grafova
-        opiskanala 
-            --> dict sa opisom programa mjerenja 
+        opiskanala
+            --> dict sa opisom programa mjerenja
             --> kljuc je programMjerenjaId pod kojim su opisni podaci
             --> bitno za definiranje labela pomocnih kanala
         stablo sorted(list(self.__opis_to_komponenta.keys()))
-            --> tree model koji sluzi da dodavanje pomocnih kanala 
+            --> tree model koji sluzi da dodavanje pomocnih kanala
             --> tree programa mjerenja (stanica, komponenta, usporedno...)
 
         - Neke akcije su povezane sa promjenama vise grafova (npr. markerSize je
         zajednicki za zero i span markere...)
         - Te akcije se inicijaliziraju sa jedim od defaulta
-        
+
         #TODO!
         Moguce je promjeniti ini file na nacin da inicijalne postavke dijaloga
         ne odgovaraju nacrtanom stanju.
@@ -62,20 +60,20 @@ class GlavniIzbor(base5, form5):
         """
         super(base5, self).__init__(parent)
         self.setupUi(self)
-        
+
         #ZAPAMTI GLAVNE MEMBERE ZA INICIJALIZACIJU
         self.defaulti = defaulti
         self.mapaKanali = opiskanala
         self.drvo = stablo
         ###PRIPREMA ZA INICIJALIZACIJU POJEDINIH WIDGETA###
-        self.definiraj_helper_mape()                
+        self.definiraj_helper_mape()
         #inicijalizacija widgeta za izbor i postavljanje u ciljani layout (vidi pojednine klase za detalje)
         self.glavni = glavni_graf_widget.GrafIzbor(defaulti = self.defaulti, listHelpera = self.konverzije)
         self.glavniLay.addWidget(self.glavni)
-        
+
         self.zs = zero_span_widget.ZeroSpanIzbor(defaulti = self.defaulti, listHelpera = self.konverzije)
         self.zsLay.addWidget(self.zs)
-        
+
         self.pomocni = pomocni_grafovi_widget.PomocniIzbor(defaulti = self.defaulti, stablo = self.drvo, cListe = self.comboListe, opisKanala = self.mapaKanali, listHelpera = self.konverzije)
         self.pomocniLay.addWidget(self.pomocni)
 
@@ -87,75 +85,75 @@ class GlavniIzbor(base5, form5):
         tekst i nazad.
         """
         #STIL MARKERA
-        self.__marker_to_opis = {'None':'Bez markera', 
-                                 'o':'Krug', 
-                                 'v':'Trokut, dolje', 
-                                 '^':'Trokut, gore', 
-                                 '<':'Trokut, lijevo', 
-                                 '>':'Trokut, desno', 
-                                 's':'Kvadrat', 
-                                 'p':'Pentagon', 
-                                 '*':'Zvijezda', 
-                                 'h':'Heksagon', 
-                                 '+':'Plus', 
-                                 'x':'X', 
-                                 'd':'Dijamant', 
-                                 '_':'Horizontalna linija', 
+        self.__marker_to_opis = {'None':'Bez markera',
+                                 'o':'Krug',
+                                 'v':'Trokut, dolje',
+                                 '^':'Trokut, gore',
+                                 '<':'Trokut, lijevo',
+                                 '>':'Trokut, desno',
+                                 's':'Kvadrat',
+                                 'p':'Pentagon',
+                                 '*':'Zvijezda',
+                                 'h':'Heksagon',
+                                 '+':'Plus',
+                                 'x':'X',
+                                 'd':'Dijamant',
+                                 '_':'Horizontalna linija',
                                  '|':'Vertikalna linija'}
 
-        self.__opis_to_marker = {'Bez markera':'None', 
-                                 'Krug':'o', 
-                                 'Trokut, dolje':'v', 
-                                 'Trokut, gore':'^', 
-                                 'Trokut, lijevo':'<', 
-                                 'Trokut, desno':'>', 
-                                 'Kvadrat':'s', 
-                                 'Pentagon':'p', 
-                                 'Zvijezda':'*', 
-                                 'Heksagon':'h', 
-                                 'Plus':'+', 
-                                 'X':'x', 
-                                 'Dijamant':'d', 
-                                 'Horizontalna linija':'_', 
+        self.__opis_to_marker = {'Bez markera':'None',
+                                 'Krug':'o',
+                                 'Trokut, dolje':'v',
+                                 'Trokut, gore':'^',
+                                 'Trokut, lijevo':'<',
+                                 'Trokut, desno':'>',
+                                 'Kvadrat':'s',
+                                 'Pentagon':'p',
+                                 'Zvijezda':'*',
+                                 'Heksagon':'h',
+                                 'Plus':'+',
+                                 'X':'x',
+                                 'Dijamant':'d',
+                                 'Horizontalna linija':'_',
                                  'Vertikalna linija':'|'}
-        
-        #STIL LINIJE                  
-        self.__line_to_opis = {'None':'Bez linije', 
+
+        #STIL LINIJE
+        self.__line_to_opis = {'None':'Bez linije',
                                '-':'Puna linija',
-                               '--':'Dash - Dash', 
-                               '-.':'Dash - Dot', 
+                               '--':'Dash - Dash',
+                               '-.':'Dash - Dot',
                                ':':'Dot'}
-        
-        self.__opis_to_line = {'Bez linije':'None', 
+
+        self.__opis_to_line = {'Bez linije':'None',
                                'Puna linija':'-',
-                               'Dash - Dash':'--', 
-                               'Dash - Dot':'-.', 
+                               'Dash - Dash':'--',
+                               'Dash - Dot':'-.',
                                'Dot':':'}
-        
-        #KOMPONENTA                       
-        self.__komponenta_to_opis = {'min':'Minimum', 
-                                     'max':'Maksimum', 
-                                     'avg':'Srednja vrijednost', 
-                                     'medijan':'Medijan', 
-                                     'q05':'5 percentil', 
+
+        #KOMPONENTA
+        self.__komponenta_to_opis = {'min':'Minimum',
+                                     'max':'Maksimum',
+                                     'avg':'Srednja vrijednost',
+                                     'medijan':'Medijan',
+                                     'q05':'5 percentil',
                                      'q95':'95 percentil'}
-        
-        self.__opis_to_komponenta = {'Minimum':'min', 
-                                     'Maksimum':'max', 
-                                     'Srednja vrijednost':'avg', 
-                                     'Medijan':'medijan', 
-                                     '5 percentil':'q05', 
+
+        self.__opis_to_komponenta = {'Minimum':'min',
+                                     'Maksimum':'max',
+                                     'Srednja vrijednost':'avg',
+                                     'Medijan':'medijan',
+                                     '5 percentil':'q05',
                                      '95 percentil':'q95'}
-        
-        self.comboListe = [sorted(list(self.__opis_to_marker.keys())), 
+
+        self.comboListe = [sorted(list(self.__opis_to_marker.keys())),
                            sorted(list(self.__opis_to_line.keys()))]
-        
-        #zapakiraj u listu          
-        self.konverzije = [self.__marker_to_opis, 
+
+        #zapakiraj u listu
+        self.konverzije = [self.__marker_to_opis,
                            self.__opis_to_marker,
-                           self.__line_to_opis, 
-                           self.__opis_to_line, 
-                           self.__komponenta_to_opis, 
+                           self.__line_to_opis,
+                           self.__opis_to_line,
+                           self.__komponenta_to_opis,
                            self.__opis_to_komponenta]
 ###############################################################################
     def apply_clicked(self, button):
@@ -217,7 +215,7 @@ class GlavniIzbor(base5, form5):
         self.glavni.fillKomponenta2.currentIndexChanged.connect(self.promjena_glavni_fillKomponenta2)
         self.glavni.fillBoja.clicked.connect(self.promjena_glavni_fillBoja)
         self.glavni.fillAlpha.valueChanged.connect(self.promjena_glavni_fillAlpha)
-        
+
         ###dodavanje grafova###
         """
         pomocni_grafovi_widget se sam brine za povezivanje i update grafSettings
@@ -349,7 +347,7 @@ class GlavniIzbor(base5, form5):
             self.zs.warningStil.setEnabled(False)
             self.zs.warningWidth.setEnabled(False)
             self.zs.warningBoja.setEnabled(False)
-            self.zs.warningAlpha.setEnabled(False)        
+            self.zs.warningAlpha.setEnabled(False)
 ###############################################################################
     def promjena_zs_warningStil(self, x):
         ls = self.__opis_to_line[self.zs.warningStil.currentText()]
@@ -389,7 +387,7 @@ class GlavniIzbor(base5, form5):
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.warningBoja)
             #update alpha vrijednost na displayu
-            self.zs.warningAlpha.setValue(a)        
+            self.zs.warningAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_warningAlpha(self, x):
         out = round(x, 2)
@@ -412,7 +410,7 @@ class GlavniIzbor(base5, form5):
         else:
             self.zs.fillBojaOK.setEnabled(False)
             self.zs.fillBojaBAD.setEnabled(False)
-            self.zs.fillAlpha.setEnabled(False)            
+            self.zs.fillAlpha.setEnabled(False)
 ###############################################################################
     def promjena_zs_fillBojaOK(self, x):
         #dohvati boju
@@ -434,7 +432,7 @@ class GlavniIzbor(base5, form5):
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.fillBojaOK)
             #update alpha vrijednost na displayu
-            self.zs.fillAlpha.setValue(a)        
+            self.zs.fillAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_fillBojaBad(self, x):
         #dohvati boju
@@ -569,7 +567,7 @@ class GlavniIzbor(base5, form5):
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.midlineBoja)
             #update alpha vrijednost na displayu
-            self.glavni.midlineAlpha.setValue(a)        
+            self.glavni.midlineAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_midlineAlpha(self, x):
         out = round(x, 2)
@@ -590,7 +588,7 @@ class GlavniIzbor(base5, form5):
             self.glavni.ekstremMarker.setEnabled(False)
             self.glavni.ekstremSize.setEnabled(False)
             self.glavni.ekstremBoja.setEnabled(False)
-            self.glavni.ekstremAlpha.setEnabled(False)            
+            self.glavni.ekstremAlpha.setEnabled(False)
 ###############################################################################
     def promjena_glavni_ekstremMarker(self, x):
         marker = self.__opis_to_marker[self.glavni.ekstremMarker.currentText()]

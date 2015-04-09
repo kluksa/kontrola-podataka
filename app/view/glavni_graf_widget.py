@@ -7,24 +7,23 @@ Created on Fri Feb  6 12:48:25 2015
 
 from PyQt4 import uic
 
-import pomocne_funkcije
-
+import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
-base6, form6 = uic.loadUiType('./ui_files/glavni_graf_widget.ui')
+base6, form6 = uic.loadUiType('./app/view/ui_files/glavni_graf_widget.ui')
 class GrafIzbor(base6, form6):
     """
     Prikaz kontrolnih widgeta za postavljanje opcija glavnog grafa
     npr. boja, tip markera, tip linije, fill, ekstremi itd.
-    
+
     Inicjializira se sa:
     defaulti
         --> dict podataka sa opisom grafova
-    
+
     listHelpera
         --> lista koja sadrzi dictove sa konverziju matplotlib vrijednositi
             u smislenije podatke i nazad .. npr '-' : 'Puna linija'
-            
+
         --> struktura liste je definirana na sljedeci nacin po poziciji:
             element 0 : mpl.marker --> opisni marker
             element 1 : opisni marker --> mpl.marker
@@ -40,8 +39,8 @@ class GrafIzbor(base6, form6):
         markeri = sorted(list(listHelpera[1].keys()))
         linije = sorted(list(listHelpera[3].keys()))
         agKanal = sorted(list(listHelpera[5].keys()))
-        
-        
+
+
         ###marker###
         #sirovi, nevalidirani podatak
         self.normalMarker.addItems(markeri)
@@ -59,7 +58,7 @@ class GrafIzbor(base6, form6):
         self.set_widget_color_style(defaulti.satniVBAD.rgb, defaulti.satniVBAD.alpha, "QPushButton", self.bojaBAD)
         #prozirnost markera
         self.glavniMarkerAlpha.setValue(defaulti.satniVOK.alpha)
-        
+
         ###centralna linija###
         #stil linije
         self.midlineStil.addItems(linije)
@@ -71,7 +70,7 @@ class GrafIzbor(base6, form6):
         self.set_widget_color_style(defaulti.satniMidline.rgb, defaulti.satniMidline.alpha, "QPushButton", self.midlineBoja)
         #prozirnost centralne linije
         self.midlineAlpha.setValue(defaulti.satniMidline.alpha)
-        
+
         ###ekstremi###
         testCrtanja = defaulti.satniEksMin.crtaj
         self.ekstremCrtaj.setChecked(testCrtanja)
@@ -85,7 +84,7 @@ class GrafIzbor(base6, form6):
         self.set_widget_color_style(defaulti.satniEksMin.rgb, defaulti.satniEksMin.alpha, "QPushButton", self.ekstremBoja)
         #prozirnost markera ekstremnih vrijednosti
         self.ekstremAlpha.setValue(defaulti.satniEksMin.alpha)
-        #disable/enable kontrole ovisno o statusu checkboxa        
+        #disable/enable kontrole ovisno o statusu checkboxa
         if testCrtanja:
             self.ekstremMarker.setEnabled(True)
             self.ekstremSize.setEnabled(True)
@@ -96,7 +95,7 @@ class GrafIzbor(base6, form6):
             self.ekstremSize.setEnabled(False)
             self.ekstremBoja.setEnabled(False)
             self.ekstremAlpha.setEnabled(False)
-        
+
         ###fill###
         testCrtanja = defaulti.satniFill.crtaj
         self.fillCrtaj.setChecked(testCrtanja)

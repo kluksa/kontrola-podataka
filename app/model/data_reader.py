@@ -11,7 +11,7 @@ import numpy as np
 import datetime
 from PyQt4 import QtCore
 
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################

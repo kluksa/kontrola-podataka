@@ -6,17 +6,17 @@ Created on Tue Nov  4 15:56:53 2014
 """
 
 from PyQt4 import QtGui, QtCore
-import pomocne_funkcije
+import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
 class PomocniGrafovi(QtCore.QAbstractTableModel):
     """
     Ova klasa je "model" za dinamicki prikaz pomocnih grafova u qtableview widgetu
-        
+
     P.S. imenovanje funkcija odskace od nacina na koji su pisane drugdje, ali
     Qt frejmwork inszistira da se funkcije zovu rowCount,  a ne row_count
-    
+
     P.P.S. za inicijalizaciju su bitne 4 stvari
     1. grafInfo -> treba dati nested listu pomocnih grafova (inace je nested dictionary)
     2. markeri ->lista svih markera koji ulaze u izbor, opisni ('Krug'...)
@@ -25,7 +25,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
 ###############################################################################
     def __init__(self, grafInfo = [], parent = None):
         QtCore.QAbstractTableModel.__init__(self, parent)
-        
+
         #spremi ulaznu mapu u privatni member
         self.grafInfo = grafInfo
         #headeri tablice
@@ -57,12 +57,12 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
         Metoda zaduzena za postavljanje novih vrijednosti u model(editable).
-        
+
         Cilj je delegirati editiranje na posebni dijalog.
         """
         if not index.isValid():
             return False
-        
+
         if role == QtCore.Qt.EditRole:
             row = index.row()
             col = index.column()
@@ -99,7 +99,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         if not index.isValid():
             return None
-        
+
         if role == QtCore.Qt.DisplayRole:
             row = index.row()
             column = index.column()
@@ -111,7 +111,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 value = self.grafInfo[row][3] #stupac "Usporedno"
 
             return value
-        
+
         if role == QtCore.Qt.EditRole:
             row = index.row()
             column = index.column()
@@ -123,7 +123,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 value = self.grafInfo[row][3] #stupac "Usporedno"
 
             return value
-            
+
         if role == QtCore.Qt.DecorationRole:
             row = index.row()
             column = index.column()
@@ -158,12 +158,12 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         #mora se pozvati zbog sinhorizacije view-ova
         self.beginInsertRows(parent, position, position+rows-1)
-        
+
         #insert u podatke
         for i in range(rows):
             value = sto[i]
             self.grafInfo.insert(position, value)
-                
+
         #mora se pozvati zbog sinhorizacije view-ova
         self.endInsertRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti
@@ -178,11 +178,11 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         #mora se pozvati zbog sinhronizacije view-ova
         self.beginRemoveRows(parent, position, position+rows-1)
-        
+
         #sami delete
         for i in range(rows):
             self.grafInfo.pop(position)
-        
+
         #mora se pozvati zbog sinhronizacije view-ova
         self.endRemoveRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti

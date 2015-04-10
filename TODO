@@ -116,6 +116,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150408:::VM:::Dodao dva gumba na koncentracijski panel. Gumb za 'revert' minutnih i satnih izmjena za trenutni dan i kanal te gumb za upload na REST servis.:::
 20150409:::VM:::Preuredio tree model, sada prikazuje formulu i mjernu jedinicu umjesto id kanala mjerenja.:::
 20150409:::VM:::Preradio strukturu projekta (rasporedio sam fileove po folderima da nisu nabacani u root):::
+20150410:::VM:::Refoactor canvasa (sada postoji samo canvas.py), minor fix sa legendom:::
 
 
 

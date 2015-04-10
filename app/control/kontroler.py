@@ -50,6 +50,8 @@ class Kontroler(QtCore.QObject):
         self.kalendarStatus = {} #dict koji prati za svaki kanalId da li su podaci ucitani i/ili spremljeni
         self.brojDana = 30 #max broj dana za zero span graf
         self.drawStatus = [False, False] #status grafa prema panelu [koncPanel, zsPanel]. True ako je graf nacrtan.
+        self.zeroFrejm = None #member sa trenutnim Zero frejmom
+        self.spanFrejm = None #member sa trenutnim Span frejmom
 
         ###povezivanje akcija sa funkcijama###
         self.setup_veze()
@@ -63,81 +65,81 @@ class Kontroler(QtCore.QObject):
         ###ERROR MSG###
         #rest_izbornik
         self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('error_message(PyQt_PyObject)'),
+                     QtCore.SIGNAL('prikazi_error_msg(PyQt_PyObject)'),
                      self.prikazi_error_msg)
 
         ###LOG IN REQUEST###
         self.connect(self.gui,
-                     QtCore.SIGNAL('request_log_in(PyQt_PyObject)'),
+                     QtCore.SIGNAL('user_log_in(PyQt_PyObject)'),
                      self.user_log_in)
 
         ###LOG OUT REQUEST###
         self.connect(self.gui,
-                     QtCore.SIGNAL('request_log_out'),
+                     QtCore.SIGNAL('user_log_out'),
                      self.user_log_out)
 
         ###PROMJENA TABA U DISPLAYU###
         self.connect(self.gui,
-                     QtCore.SIGNAL('tab_promjenjen(PyQt_PyObject)'),
+                     QtCore.SIGNAL('promjena_aktivnog_taba(PyQt_PyObject)'),
                      self.promjena_aktivnog_taba)
 
         ###RECONNECT REQUEST###
         self.connect(self.gui,
-                     QtCore.SIGNAL('request_reconnect'),
+                     QtCore.SIGNAL('reconnect_to_REST'),
                      self.reconnect_to_REST)
 
         ###UPDATE BOJE NA KALENDARU REST IZBORNIKA###
         self.connect(self,
-                     QtCore.SIGNAL('update_boje_kalendara(PyQt_PyObject)'),
+                     QtCore.SIGNAL('refresh_dates(PyQt_PyObject)'),
                      self.gui.restIzbornik.calendarWidget.refresh_dates)
 
         ###GUMBI ZA PREBACIVANJE DANA NAPRIJED/NAZAD###
         #panel sa koncentracijama
         self.connect(self.gui.koncPanel,
-                     QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'),
+                     QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'),
                      self.promjeni_datum)
 
         #naredba rest izborniku da napravi pomak dana
         self.connect(self,
-                     QtCore.SIGNAL('dan_naprjed'),
+                     QtCore.SIGNAL('sljedeci_dan'),
                      self.gui.restIzbornik.sljedeci_dan)
 
         self.connect(self,
-                     QtCore.SIGNAL('dan_nazad'),
+                     QtCore.SIGNAL('prethodni_dan'),
                      self.gui.restIzbornik.prethodni_dan)
 
         ###UPDATE LABELA NA PANELIMA###
         #panel sa koncentracijama
         self.connect(self,
-                     QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'),
+                     QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'),
                      self.gui.koncPanel.change_glavniLabel)
         #panel sa zero/span podacima
         self.connect(self,
-                     QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'),
+                     QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'),
                      self.gui.zsPanel.change_glavniLabel)
         #panel sa koncentracijama, satni label
         self.connect(self,
-                     QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'),
+                     QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'),
                      self.gui.koncPanel.change_satLabel)
 
         ###PRIPREMA PODATAKA ZA CRTANJE (koncentracije)###
         self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'),
+                     QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
                      self.priredi_podatke)
 
         ###PROMJENA BROJA DANA U ZERO/SPAN PANELU###
         self.connect(self.gui.zsPanel,
-                     QtCore.SIGNAL('request_zs_broj_dana_change(PyQt_PyObject)'),
+                     QtCore.SIGNAL('update_zs_broj_dana(PyQt_PyObject)'),
                      self.update_zs_broj_dana)
 
         ###CRTANJE SATNOG GRAFA I INTERAKCIJA###
         #zahtjev satnog canvasa za agregiranim podacima
         self.connect(self.gui.koncPanel.satniGraf,
-                     QtCore.SIGNAL('request_agregirani_frejm(PyQt_PyObject)'),
+                     QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'),
                      self.dohvati_agregirani_frejm)
         #slanje agregiranog frejma nazad satnom canvasu
         self.connect(self,
-                     QtCore.SIGNAL('vrati_agregirani_frejm(PyQt_PyObject)'),
+                     QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'),
                      self.gui.koncPanel.satniGraf.set_agregirani_kanal)
         #zahtjev kontorlora za pocetkom crtanja satnog grafa
         self.connect(self,
@@ -145,11 +147,11 @@ class Kontroler(QtCore.QObject):
                      self.gui.koncPanel.satniGraf.crtaj)
         #pick vremena sa satnog grafa - crtanje minutnog grafa za taj interval
         self.connect(self.gui.koncPanel.satniGraf,
-                     QtCore.SIGNAL('gui_crtaj_minutni_graf(PyQt_PyObject)'),
+                     QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
                      self.crtaj_minutni_graf)
         #promjena flaga na satnom grafu
         self.connect(self.gui.koncPanel.satniGraf,
-                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'),
+                     QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'),
                      self.promjeni_flag)
 
         ###POVRATNA INFORMACIJA DOKUMENTA DA JE DOSLO DO PROMJENE FLAGA###
@@ -160,11 +162,11 @@ class Kontroler(QtCore.QObject):
         ###CRTANJE MINUTNOG GRAFA I INTERAKCIJA###
         #zahtjev minutnoog canvasa za minutnim podacima
         self.connect(self.gui.koncPanel.minutniGraf,
-                     QtCore.SIGNAL('request_minutni_frejm(PyQt_PyObject)'),
+                     QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'),
                      self.dohvati_minutni_frejm)
         #slanje minutnog frejma nazad minutnom canvasu
         self.connect(self,
-                     QtCore.SIGNAL('vrati_minutni_frejm(PyQt_PyObject)'),
+                     QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'),
                      self.gui.koncPanel.minutniGraf.set_minutni_kanal)
         #zahtjev kontorlora za pocetkom crtanja minutnog grafa
         self.connect(self,
@@ -172,50 +174,65 @@ class Kontroler(QtCore.QObject):
                      self.gui.koncPanel.minutniGraf.crtaj)
         #clear minutnog grafa
         self.connect(self,
-                     QtCore.SIGNAL('clear_minutni_graf'),
-                     self.gui.koncPanel.minutniGraf.clear_minutni)
+                     QtCore.SIGNAL('clear_graf'),
+                     self.gui.koncPanel.minutniGraf.clear_graf)
         #promjena flaga na minutnog grafu
         self.connect(self.gui.koncPanel.minutniGraf,
-                     QtCore.SIGNAL('gui_promjena_flaga(PyQt_PyObject)'),
+                     QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'),
                      self.promjeni_flag)
 
         ###CRTANJE ZERO/SPAN GRAFA I INTERAKCIJA###
         #clear zero/span grafova
         self.connect(self,
-                     QtCore.SIGNAL('clearZeroSpan'),
-                     self.gui.zsPanel.zeroGraf.clear_me)
+                     QtCore.SIGNAL('clear_zero_span'),
+                     self.gui.zsPanel.zeroGraf.clear_zero_span)
         self.connect(self,
-                     QtCore.SIGNAL('clearZeroSpan'),
-                     self.gui.zsPanel.spanGraf.clear_me)
+                     QtCore.SIGNAL('clear_zero_span'),
+                     self.gui.zsPanel.spanGraf.clear_zero_span)
         #crtanje zero
         self.connect(self,
                      QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.crtaj)
+        #request zero graf canvasa za podacima
+        self.connect(self.gui.zsPanel.zeroGraf,
+                     QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'),
+                     self.request_zero_frejm)
+        #set zero frejma u canvas
+        self.connect(self,
+                     QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'),
+                     self.gui.zsPanel.zeroGraf.set_zero_span_frejm)
         #crtanje span
         self.connect(self,
                      QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'),
                      self.gui.zsPanel.spanGraf.crtaj)
-
+        #request span graf canvasa za podacima
+        self.connect(self.gui.zsPanel.spanGraf,
+                     QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'),
+                     self.request_span_frejm)
+        #set span frejma u canvas
+        self.connect(self,
+                     QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'),
+                     self.gui.zsPanel.spanGraf.set_zero_span_frejm)
         #setter podataka za tocku na zero grafu
         self.connect(self.gui.zsPanel.zeroGraf,
-                     QtCore.SIGNAL('zero_point_update(PyQt_PyObject)'),
+                     QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),
                      self.gui.zsPanel.prikazi_info_zero)
         #pick tocke na zero grafu - nadji najblizu tocku na span grafu
         self.connect(self.gui.zsPanel.zeroGraf,
-                     QtCore.SIGNAL('zero_point_pick_update(PyQt_PyObject)'),
+                     QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),
                      self.gui.zsPanel.spanGraf.pick_nearest)
         #setter podataka za tocku na span grafu
         self.connect(self.gui.zsPanel.spanGraf,
-                     QtCore.SIGNAL('span_point_update(PyQt_PyObject)'),
+                     QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),
                      self.gui.zsPanel.prikazi_info_span)
         #pick tocke na span grafu - nadji najblizu tocku na zero grafu
         self.connect(self.gui.zsPanel.spanGraf,
-                     QtCore.SIGNAL('span_point_pick_update(PyQt_PyObject)'),
+                     QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.pick_nearest)
 
         #sync zooma po x osi za zero i span graf
         self.connect(self.gui.zsPanel.zeroGraf,
-                     QtCore.SIGNAL('zero_sync_x_zoom(PyQt_PyObject)'),
+                     QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
                      self.gui.zsPanel.spanGraf.sync_x_zoom)
         self.connect(self.gui.zsPanel.spanGraf,
                      QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'),
@@ -223,21 +240,21 @@ class Kontroler(QtCore.QObject):
 
         ###DODAVANJE NOVE ZERO ILI SPAN REFERENTNE VRIJEDNOSTI###
         self.connect(self.gui.zsPanel,
-                     QtCore.SIGNAL('dodaj_novi_zs_ref'),
+                     QtCore.SIGNAL('dodaj_novu_referentnu_vrijednost'),
                      self.dodaj_novu_referentnu_vrijednost)
 
         ###UPLOAD SATNO AGREGIRANIH NA REST SERVIS###
         self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('request_upload_agregirane'),
+                     QtCore.SIGNAL('upload_satno_agregirane'),
                      self.upload_satno_agregirane)
         ###UPLOAD MINUTNIH PODATAKA NA REST SERVIS###
         self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('request_upload_minutne'),
+                     QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
 
         ###PROMJENA IZGLEDA GRAFA###
         self.connect(self.gui,
-                     QtCore.SIGNAL('izgled_grafa_promjenjen'),
+                     QtCore.SIGNAL('apply_promjena_izgleda_grafova'),
                      self.apply_promjena_izgleda_grafova)
 
         ###GUMB NA KONCENTRACIJSKOM PANELU ZA PONISTAVANJE IZMJENA###
@@ -246,9 +263,8 @@ class Kontroler(QtCore.QObject):
                      self.ponisti_izmjene)
         ###GUMB NA KONCENTRACIJSKOM PANELU ZA SPREMANJE NA REST###
         self.connect(self.gui.koncPanel,
-                     QtCore.SIGNAL('upload_na_rest'),
+                     QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
-                     #TODO! moze i agregirane, samo promjeni slot u self.upload_satno_agregirane
 ###############################################################################
     def dohvati_minutni_frejm(self, ulaz):
         """
@@ -267,7 +283,7 @@ class Kontroler(QtCore.QObject):
         if isinstance(frejm, pd.core.frame.DataFrame):
             arg = {'kanal':ulaz['kanal'],
                    'dataFrejm':frejm}
-            self.emit(QtCore.SIGNAL('vrati_minutni_frejm(PyQt_PyObject)'), arg)
+            self.emit(QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'), arg)
 ###############################################################################
     def dohvati_agregirani_frejm(self, mapa):
         """
@@ -291,7 +307,7 @@ class Kontroler(QtCore.QObject):
                 #vrati listu [kanal, agregiraniFrejm] nazad satnom grafu
                 arg = {'kanal': mapa['kanal'],
                        'agregirani': agregiraniFrejm}
-                self.emit(QtCore.SIGNAL('vrati_agregirani_frejm(PyQt_PyObject)'), arg)
+                self.emit(QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'), arg)
 ###############################################################################
     def user_log_in(self, x):
         """
@@ -473,7 +489,7 @@ class Kontroler(QtCore.QObject):
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
                   'datum': self.pickedDate}
 
-        self.emit(QtCore.SIGNAL('update_graf_label(PyQt_PyObject)'), argMap)
+        self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
 ###############################################################################
@@ -482,7 +498,6 @@ class Kontroler(QtCore.QObject):
         funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
         trenutno aktivnog kanala za trenutno izabrani datum.
         """
-        #TODO!
         if self.gKanal is not None and self.pickedDate is not None:
             arg = (self.gKanal, self.pickedDate)
             #reader prati sto je ucitao do sada, pa moramo maknuti referencu sa liste
@@ -520,20 +535,40 @@ class Kontroler(QtCore.QObject):
                         self.crtaj_minutni_graf(self.sat)
                     else:
                         #clear minutni graf ako se datum pomakne
-                        self.emit(QtCore.SIGNAL('clear_minutni_graf'))
+                        self.emit(QtCore.SIGNAL('clear_graf'))
                         #clear izabrani label sata
-                        self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), '')
+                        self.emit(QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'), '')
             except (TypeError, LookupError) as err:
                 self.prikazi_error_msg(err)
+
+###############################################################################
+    def request_span_frejm(self, arg):
+        """
+        Obrada zahtjeva zero canvasa za podacima. Metoda vraca dict sa glavnim kanalom
+        i zero frejmom nazad canvasu.
+        """
+        dat = {'kanal': self.gKanal,
+               'zsFrejm':self.spanFrejm}
+        self.emit(QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'), dat)
+###############################################################################
+    def request_zero_frejm(self, arg):
+        """
+        Obrada zahtjeva zero canvasa za podacima. Metoda vraca dict sa glavnim kanalom
+        i zero frejmom nazad canvasu.
+        """
+        dat = {'kanal': self.gKanal,
+               'zsFrejm':self.zeroFrejm}
+        self.emit(QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'), dat)
 ###############################################################################
     def crtaj_zero_span(self):
         """
         Crtanje zero span podataka.
         1. dohvati podatke sa REST servisa,
         2. update label
-        3. naredi crtanje istih
+        3. spremi frejmove u membere
+        4. naredi crtanje grafova
         """
-        self.emit(QtCore.SIGNAL('clearZeroSpan'))
+        self.emit(QtCore.SIGNAL('clear_zero_span'))
         try:
             if not self.gKanal:
                 raise pomocne_funkcije.AppExcept('Glavni kanal nije izabran, abort')
@@ -544,13 +579,26 @@ class Kontroler(QtCore.QObject):
             raspon = pomocne_funkcije.sync_zero_span_x_os(frejmovi)
 
             if frejmovi != None:
-                argZero = {'frame':frejmovi[0],
-                           'raspon':raspon}
-                argSpan = {'frame':frejmovi[1],
-                           'raspon':raspon}
+                #zapamti frejmove
+                self.zeroFrejm = frejmovi[0]
+                self.spanFrejm = frejmovi[1]
+                #TODO! fix duplicate rows
+                self.zeroFrejm.drop_duplicates(subset='vrijeme',
+                                               take_last = True,
+                                               inplace = True)
+                self.zeroFrejm.sort()
+                self.spanFrejm.drop_duplicates(subset='vrijeme',
+                                               take_last = True,
+                                               inplace = True)
+                self.spanFrejm.sort()
+                #redefinicija argumenata
+                arg = {'kanalId': self.gKanal,
+                       'pocetnoVrijeme':raspon[0],
+                       'zavrsnoVrijeme':raspon[1],
+                       'tempKontejner': None}
                 #emitiraj signal za crtanjem
-                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), argZero)
-                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), argSpan)
+                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), arg)
+                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), arg)
             else:
                 #nema podataka
                 raise pomocne_funkcije.AppExcept('Nema raspolozivih podataka')
@@ -576,7 +624,7 @@ class Kontroler(QtCore.QObject):
             lowLim = highLim - datetime.timedelta(minutes = 59)
             lowLim = pd.to_datetime(lowLim)
             #update labela izabranog sata
-            self.emit(QtCore.SIGNAL('update_sat_label(PyQt_PyObject)'), self.sat)
+            self.emit(QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'), self.sat)
             arg = {'kanalId' : self.gKanal,
                    'pocetnoVrijeme': lowLim,
                    'zavrsnoVrijeme' : highLim,
@@ -798,7 +846,7 @@ class Kontroler(QtCore.QObject):
         """
         Funkcija emitira signal sa podacima o boji za glavni kanal (self.gKanal)
         """
-        self.emit(QtCore.SIGNAL('update_boje_kalendara(PyQt_PyObject)'), self.kalendarStatus[self.gKanal])
+        self.emit(QtCore.SIGNAL('refresh_dates(PyQt_PyObject)'), self.kalendarStatus[self.gKanal])
 ###############################################################################
     def promjeni_datum(self, x):
         """
@@ -807,9 +855,9 @@ class Kontroler(QtCore.QObject):
         prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
         """
         if x == 1:
-            self.emit(QtCore.SIGNAL('dan_naprjed'))
+            self.emit(QtCore.SIGNAL('sljedeci_dan'))
         else:
-            self.emit(QtCore.SIGNAL('dan_nazad'))
+            self.emit(QtCore.SIGNAL('prethodni_dan'))
 ###############################################################################
     def update_zs_broj_dana(self, x):
         """

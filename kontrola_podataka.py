@@ -11,6 +11,7 @@ VERZIJE EKSTERNIH MODULA
 -numpy 1.9.2rc1
 -matplotlib 1.4.3
 -requests 2.5.3
+-enum
 
 - standard library python 3.4.3 (sys, configparser...)
 
@@ -49,6 +50,10 @@ glavniProzor.show()
 sys.exit(aplikacija.exec_())
 
 """
+TODO!
+- enable promjenu temperature kontejnera (promjena raspona)
+- DATA BUG? duplikacija Span podataka.--- vidi vrijeme: 2015-03-26 05:03:00 (4 komada)
+
 potencijalni problemi
 1. unresponsive gui.
 - Implementacija thredova??

@@ -265,22 +265,27 @@ def zaokruzi_vrijeme(dt_objekt, nSekundi):
         izlaz = dt_objekt + datetime.timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
         return izlaz
 ###############################################################################
-def sredi_xtickove_zerospan(timestampovi):
+def pronadji_tickove_zero_span(tmin, tmax):
     """
-    funkcija pretvara listu y vrijednosti zero i span grafa u tickove prema datumu
-    npr. timestamp jedne vrijednosti za zerospan je '2015-02-14 12:34:56'
-    i treba se 'normalizirati' u '14.02' radi kraceg zapisa
+    Funkcija radi tickove za zero i span graf
 
-    input je lista timestampova
+    Dodatno, funkcija adaptira vrijeme npr. timestamp jedne vrijednosti
+    je '2015-02-14 12:34:56' i treba se 'adaptirati' u '14.02' radi kraceg zapisa
+
+    input je lista min i max vrijeme za prikaz (raspon grafa)
     output je lista stringova (labeli za tickove), lista timestampova (tick location)
     """
-    tmin = min(timestampovi)
-    tmax = max(timestampovi)
     raspon = pd.date_range(start = tmin, end = tmax, freq = 'D')
     tickLoc = [pd.to_datetime(i.date())for i in raspon]
     tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
 
-    return tickLoc, tickLab
+    #za sada zanemarimo minor tickove na zero/span grafu, prosljedi prazne liste
+    out = {'majorTickovi':tickLoc,
+           'majorLabeli':tickLab,
+           'minorTickovi':[],
+           'minorLabeli':[]}
+
+    return out
 ###############################################################################
 def sync_zero_span_x_os(lista):
     """

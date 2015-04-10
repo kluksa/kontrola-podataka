@@ -269,9 +269,9 @@ if __name__ == '__main__':
 #        out = datetime.datetime.now() - t
 #        print(out)
 
-#        """get zero span plitvice ozon"""
-#        r2 = wz.get_zero_span(65, '2015-02-18', 30)
-#        print(r2) #works
+        """get zero span plitvice ozon"""
+        r2 = wz.get_zero_span(65, '2015-04-07', 30)
+        print(r2) #works
 
 
 

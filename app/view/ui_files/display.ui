@@ -125,9 +125,15 @@
      <addaction name="action_minutni_span_selector"/>
      <addaction name="action_minutni_legend"/>
     </widget>
+    <widget class="QMenu" name="menu_ZERO_SPAN_graf">
+     <property name="title">
+      <string>&amp;ZERO/SPAN graf</string>
+     </property>
+     <addaction name="action_ZS_legend"/>
+    </widget>
     <addaction name="menu_Satni_graf"/>
     <addaction name="menu_Minutni_graf"/>
-    <addaction name="action_ZERO_SPAN_graf"/>
+    <addaction name="menu_ZERO_SPAN_graf"/>
     <addaction name="separator"/>
     <addaction name="action_zoom"/>
     <addaction name="action_zoom_out"/>
@@ -194,11 +200,6 @@
   <action name="action_exit">
    <property name="text">
     <string>&amp;Exit</string>
-   </property>
-  </action>
-  <action name="action_ZERO_SPAN_graf">
-   <property name="text">
-    <string>&amp;ZERO/SPAN graf</string>
    </property>
   </action>
   <action name="action_satni_grid">
@@ -336,6 +337,17 @@
    </property>
    <property name="toolTip">
     <string>Promjena stila grafova.</string>
+   </property>
+  </action>
+  <action name="action_ZS_legend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Legend</string>
+   </property>
+   <property name="toolTip">
+    <string>Togglelegende za zero i span grafove.</string>
    </property>
   </action>
  </widget>

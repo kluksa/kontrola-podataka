@@ -28,6 +28,8 @@ class AppSettingsDTO():
         self.minutniLegend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
         self.minutniTicks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
         self.minutniSelector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
+        #zero/span graf
+        self.zsLegend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
         #zoom
         self.zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
         """
@@ -39,6 +41,10 @@ class AppSettingsDTO():
         self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
         self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci', 'dhz.skz.rs.satnipodatak', str)
         logging.debug('Inicijalizacija DTO za gui elemente, end')
+###############################################################################
+    def set_zsLegend(self, x):
+        self.zsLegend = x
+        logging.info('Zero i Span legend state promjenjen, nova vrijednost = {0}'.format(x))
 ###############################################################################
     def set_satniGrid(self, x):
         self.satniGrid = x

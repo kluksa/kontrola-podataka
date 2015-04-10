@@ -13,12 +13,9 @@ Wrapper koji sadrzi:
 """
 
 import logging
-
 from PyQt4 import QtCore, uic
 
-import app.view.minutni_canvas as minutni_canvas
-import app.view.satni_canvas as satni_canvas
-import app.view.zero_span_canvas as zero_span_canvas
+import app.view.canvas as canvas
 ###############################################################################
 ###############################################################################
 base2, form2 = uic.loadUiType('./app/view/ui_files/konc_graf_panel.ui')
@@ -61,8 +58,9 @@ class KoncPanel(base2, form2):
         self.setupUi(self)
 
         #inicijalizacija canvasa
-        self.satniGraf = satni_canvas.SatniKanvas(konfig, appKonfig, parent = None)
-        self.minutniGraf = minutni_canvas.MinutniKanvas(konfig, appKonfig, parent = None)
+        self.satniGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.satni.value, parent = None)
+        self.minutniGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.minutni.value, parent = None)
+
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
         self.verticalLayoutMinutni.addWidget(self.minutniGraf)
@@ -80,7 +78,7 @@ class KoncPanel(base2, form2):
     def save_na_rest(self):
         """emitiraj signal kontroleru da spremi podatke za trenutni dan i postaju na
         rest servis"""
-        self.emit(QtCore.SIGNAL('upload_na_rest'))
+        self.emit(QtCore.SIGNAL('upload_minutne_na_REST'))
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """
@@ -113,14 +111,14 @@ class KoncPanel(base2, form2):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan naprjed
         """
-        self.emit(QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'), 1)
+        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), 1)
         logging.info('request pomak dana unaprijed')
 ###############################################################################
     def prebaci_dan_nazad(self):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan nazad
         """
-        self.emit(QtCore.SIGNAL('prebaci_dan(PyQt_PyObject)'), -1)
+        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), -1)
         logging.info('request pomak dana unazad')
 ###############################################################################
 ###############################################################################
@@ -129,10 +127,9 @@ class ZeroSpanPanel(base3, form3):
     def __init__(self, konfig, appKonfig, parent = None):
         super(base3, self).__init__(parent)
         self.setupUi(self)
-        #TODO! nakon inicijalizacije canvasa inicijaliziraj interaction mode
         #inicijalizacija canvasa
-        self.zeroGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, zero_span_canvas.ZeroSpanGraf.Tip.zero, parent = None)
-        self.spanGraf = zero_span_canvas.ZeroSpanGraf(konfig, appKonfig, zero_span_canvas.ZeroSpanGraf.Tip.span, parent = None)
+        self.zeroGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.zero.value, parent = None)
+        self.spanGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.span.value, parent = None)
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
@@ -151,7 +148,7 @@ class ZeroSpanPanel(base3, form3):
         Dodavanje nove referentne vrijednosti za zero/span
         """
         logging.info('Request za dodavanjem nove zero/span referentne vrijednosti')
-        self.emit(QtCore.SIGNAL('dodaj_novi_zs_ref'))
+        self.emit(QtCore.SIGNAL('dodaj_novu_referentnu_vrijednost'))
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """
@@ -178,7 +175,7 @@ class ZeroSpanPanel(base3, form3):
         """
         broj = int(self.brojDana.itemText(x))
         logging.info('request za prikazom drugog broja dana, novi = {0}'.format(str(broj)))
-        self.emit(QtCore.SIGNAL('request_zs_broj_dana_change(PyQt_PyObject)'), broj)
+        self.emit(QtCore.SIGNAL('update_zs_broj_dana(PyQt_PyObject)'), broj)
 ###############################################################################
     def prikazi_info_zero(self, mapa):
         """

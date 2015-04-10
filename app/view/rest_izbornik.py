@@ -52,7 +52,7 @@ class RestIzbornik(base1, form1):
         Emit zahtjev za uploadom agregiranih podataka trenutno aktivnog kanala
         i datuma.
         """
-        self.emit(QtCore.SIGNAL('request_upload_agregirane'))
+        self.emit(QtCore.SIGNAL('upload_satno_agregirane'))
         logging.debug('request za upload agregiranih vrijednosti predan kontroloru')
 ###############################################################################
     def request_upload_minutnih(self, x):
@@ -60,7 +60,7 @@ class RestIzbornik(base1, form1):
         Emit zahtjev za uploadom agregiranih podataka trenutno aktivnog kanala
         i datuma.
         """
-        self.emit(QtCore.SIGNAL('request_upload_minutne'))
+        self.emit(QtCore.SIGNAL('upload_minutne_na_REST'))
         logging.debug('request za upload minutnih vrijednosti predan kontroloru')
 ###############################################################################
     def get_mjerenje_datum(self, x):
@@ -95,7 +95,7 @@ class RestIzbornik(base1, form1):
                     output = {'programMjerenjaId': int(prog),
                               'datumString': dan}
                     #print('Izabrana kombinacija: {0}'.format(output))
-                    self.emit(QtCore.SIGNAL('gui_izbornik_citaj(PyQt_PyObject)'), output)
+                    self.emit(QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'), output)
                     logging.info('izabrana kombinacija kanala i datuma : {0}'.format(str(output)))
                 else:
                     print('Kriva kombinacija, nedostaje program mjerenja.')
@@ -104,7 +104,7 @@ class RestIzbornik(base1, form1):
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n'+str(err)
             logging.error('App exception', exc_info = True)
-            self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'),tekst)
+            self.emit(QtCore.SIGNAL('prikazi_error_msg(PyQt_PyObject)'),tekst)
 ###############################################################################
     def sljedeci_dan(self):
         """

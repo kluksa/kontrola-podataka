@@ -11,59 +11,24 @@ import matplotlib
 import functools
 import pandas as pd
 from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
-from enum import Enum
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas #import specificnog canvasa za Qt
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
 
 import app.general.pomocne_funkcije as pomocne_funkcije
-################################################################################
-################################################################################
-class SatniEnum(Enum):
-    """konstante za satni graf"""
-    tip = 'SATNI'
-    midline = 'avg'
-    minimum = 'min'
-    maksimum = 'max'
-################################################################################
-################################################################################
-class MinutniEnum(Enum):
-    """konstante za minutni graf"""
-    tip = 'MINUTNI'
-    midline = 'koncentracija'
-################################################################################
-################################################################################
-class ZeroEnum(Enum):
-    """konstante za zero graf"""
-    tip = 'ZERO'
-    midline = 'vrijednost'
-    warningLow = 'minDozvoljeno'
-    warningHigh = 'maxDozvoljeno'
-################################################################################
-################################################################################
-class SpanEnum(Enum):
-    """konstante za span graf"""
-    tip = 'SPAN'
-    midline = 'vrijednost'
-    warningLow = 'minDozvoljeno'
-    warningHigh = 'maxDozvoljeno'
-################################################################################
-################################################################################
-class GrafEnum(Enum):
-    """nested enum svih tipova grafova, cilj je inicijalizrati canvas sa jedom
-    od vrijednosti kao tip. (npr. tip = GrafEnum.satni.value)"""
-    satni = SatniEnum
-    minutni = MinutniEnum
-    zero = ZeroEnum
-    span = SpanEnum
+
 ################################################################################
 ################################################################################
 class Kanvas(FigureCanvas):
     """
     Canvas za prikaz i interakciju sa grafovima
     """
-    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
-        """osnovna definicija figure, axes i canvasa"""
+    def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
+        """
+        Canas se inicijalizira sa svojim konfig objektom, mapom pomocnih grafova
+        definiranom u objektu tipa KonfigAplikacije u memberu dictPomocnih.
+        """
+        #osnovna definicija figure, axes i canvasa
         self.fig = Figure(figsize = (width, height), dpi = dpi)
         self.axes = self.fig.add_subplot(111)
         super(Kanvas,self).__init__(self, self.fig)
@@ -73,135 +38,251 @@ class Kanvas(FigureCanvas):
             QtGui.QSizePolicy.Expanding,
             QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        """podrska za kontekstni meni"""
+        #podrska za kontekstni meni
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        """bitni memberi"""
-
-
-        self.dto = konfig #konfig dto objekt
-        self.appDto = appKonfig #app konfig objekt
+        #bitni memberi
+        self.konfig = konfig #konfig dto objekt
+        self.pomocniGrafovi = pomocni
         self.data = {} #prazan dict koji ce sadrzavati frejmove sa podacima
         self.gKanal = None #kanal id glavnog kanala
         self.tKontejner = None #kanal id za temperaturu kontejnera za zadani glavni kanal
         self.pocetnoVrijeme = None #min zadano vrijeme za prikaz
         self.zavrsnoVrijeme = None #max zadano vrijeme za prikaz
-        self.xlim_original = self.axes.get_xlim() #definicija raspona x osi grafa (zoom)
-        self.ylim_original = self.axes.get_ylim() #definicija raspona y osi grafa (zoom)
         self.statusGlavniGraf = False #status glavnog grafa (da li je glavni kanal nacrtan)
         self.statusAnnotation = False #status prikaza annotationa
         self.lastAnnotation = None #kooridinate zadnjeg annotationa
         self.statusHighlight = False #status prikaza oznacene izabrane tocke
         self.lastHighlight = (None, None) #kooridinate zadnjeg highlighta
         self.legenda = None #placeholder za legendu
+        self.highlightSize = 15 #dynamic size za highlight (1.5 puta veci od markera)
+        self.xlim_original = self.axes.get_xlim() #definicija raspona x osi grafa (zoom)
+        self.ylim_original = self.axes.get_ylim() #definicija raspona y osi grafa (zoom)
 
-        #dynamic size za highlight (1.5 puta veci od markera)
-        self.highlightSize = 15
+        self.initialize_interaction() #inicijalni setup za interakciju (pick, zoom, ticks...)
 
-        #Axes labeli
-        self.axes.set_xlabel('Vrijeme')
-
-
-        self.initialize_interaction()
-################################################################################
-    def crtaj(self, ulaz, konfig = None):
+    def initialize_interaction(self, span_func, zoom_func):
         """
-        Glavna metoda za crtanje na canvas. Eksplicitne naredbe za crtanje.
+        Setup inicijalnih postavki interakcije sa grafom (zoom, cursor, span selector, pick)
 
-        Crtanje ide kroz nekoliko koraka:
-        1. reinicijalizacija membera ovisno o ulaznim podacima
-        2. priprema i dohvacanje podataka za crtanje
-        3. crtanje glavnog kanala
-        4. crtanje pomocnih kanala
-        5. crtanje temperature kontejnera
-        6. provjera za crtanje highlighta (markera trenutno izabrane tocke)
-        7. setup granica, tickova, grida, interakcije....
+        Ulazni argumenti:
 
-        ulaz je dict podataka
-        ulaz['kanalId'] --> int ,programMjerenjaId glavnog kanala [int]
-        ulaz['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
-        ulaz['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
-        ulaz['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
+        span_func
+        -referenca na funkciju koja ce biti callback za span selektor
+        -ulazni parametri su 'min' i 'max' vrijednosti x kooridinate raspona.
+
+        zoom_func
+        -referenca na funkciju koja ce biti callback za zoom.
+        -ulazni parametri su matplotlib canvas click eventi 'event_click' i 'event_release'
+        -npr. kooridinate prve tocke su (event_click.xdata, event_click.ydata)
         """
-        ###priprema za crtanje... reset i inicijalizacija membera###
-        self.axes.clear()
-        self.data = {}
+        #caller id za pick callbackove
+        self.cid1 = None
+        self.cid2 = None
+
+        #zoom implement, inicijalizacija rectangle selectora za zoom
+        self.zoomBoxInfo = dict(facecolor = 'yellow',
+                                edgecolor = 'black',
+                                alpha = 0.5,
+                                fill = True)
+        self.zoomSelector = RectangleSelector(self.axes,
+                                              zoom_func,
+                                              drawtype = 'box',
+                                              rectprops = self.zoomBoxInfo)
+        self.zoomSelector.set_active(False)
+
+        #cursor implement, inicijalizacija pomocnih lijija cursora
+        self.cursorAssist = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
+        self.cursorAssist.visible = False
+
+        #span selector, inicijalizacija span selectora (izbor vise tocaka po x osi)
+        self.spanBoxInfo = dict(alpha = 0.3, facecolor = 'yellow')
+        self.spanSelector = SpanSelector(self.axes,
+                                         span_func,
+                                         direction = 'horizontal',
+                                         useblit = True,
+                                         rectprops = self.spanBoxInfo)
+        self.spanSelector.visible = False
+
+
+    def crtaj_scatter(self, x, y, konfig):
+        """
+        pomocna funkcija za crtanje scatter grafova
+        x, y, su liste kooridinata, konfig je cfg objekt sa postavkama grafa
+        """
+        self.axes.plot(x,
+                       y,
+                       marker = konfig.markerStyle,
+                       markersize = konfig.markerSize,
+                       linestyle = 'None',
+                       color = konfig.color,
+                       zorder = konfig.zorder,
+                       label = konfig.label)
+
+    def crtaj_line(self, x, y, konfig):
+        """
+        pomocna funkcija za crtanje line grafova
+        x, y su liste kooridinata, konfig je cfg objekt sa postavkama grafa
+        """
+        self.axes.plot(x,
+                       y,
+                       linestyle = konfig.lineStyle,
+                       linewidth = konfig.lineWidth,
+                       color = konfig.color,
+                       zorder = konfig.zorder,
+                       label = konfig.label)
+
+    def crtaj_fill(self, x, y1, y2, konfig):
+        """
+        pomocna funkcija za crtanje fill grafova
+        x definira x os, y1 i y2 su granice izmedju kojih se sjenca,
+        konfig je cfg objekt sa postavkama grafa"""
+        self.axes.fill_between(x,
+                               y1,
+                               y2,
+                               color = konfig.color,
+                               zorder = konfig.zorder,
+                               label = konfig.label)
+
+    def disconnect_pick_evente(self):
+        """Opceniti disconnect pick eventa. Pick eventi se trebaju odspojiti prilikom
+        zoom akcije i prilikom izbora vise tocaka uz pomoc span selektora (izbjegavanje
+        konfliktnih signala)."""
+        if self.cid1:
+            self.mpl_disconnect(self.cid1)
+            self.cid1 = None
+        if self.cid2:
+            self.mpl_disconnect(self.cid2)
+            self.cid2 = None
+
+    def set_interaction_mode(self, zoom, cursor, span):
+        """
+        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
+        zoom --> boolean
+        cursor --> boolean
+        span --> boolean
+        """
+        #set up pick callbacks ovisno o tipu grafa
+        self.disconnect_pick_evente()
+        self.connect_pick_evente()
+        if zoom:
+            #zoom on, all else off
+            self.zoomSelector.set_active(True)
+            self.cursorAssist.visible = False
+            self.spanSelector.visible = False
+            self.disconnect_pick_evente()
+        else:
+            #zoom off
+            self.zoomSelector.set_active(False)
+            if cursor:
+                self.cursorAssist.visible = True
+            else:
+                self.cursorAssist.visible = False
+            if span:
+                self.spanSelector.visible = True
+                self.disconnect_pick_evente()
+            else:
+                self.spanSelector.visible = False
+
+    def connect_pick_evente(self):
+        """
+        Matplotlib connection ovisno o tipu canvasa. Reimplementiraj za pojedini graf
+        """
+        #TODO! reimmplement
+        pass
+
+    def rect_zoom(self, eclick, erelease):
+        """
+        Primjer callback funkcije za zoom.
+        Callback funkcija za rectangle zoom canvasa. Funkcija lovi click i release
+        evente (rubovi kvadrata) te povecava izabrani dio slike preko cijelog
+        canvasa.
+        """
+        x = sorted([eclick.xdata, erelease.xdata])
+        y = sorted([eclick.ydata, erelease.ydata])
+        #set nove granice osi za sve axese
+        for ax in self.fig.axes:
+            ax.set_xlim(x)
+            ax.set_ylim(y)
+        #redraw
+        self.draw()
+
+    def full_zoom_out(self):
+        """
+        Reset granica x i y osi da pokrivaju isti raspon kao i originalna slika.
+        Full zoom out.
+
+        vrijednosti su spremljene u memberima u obliku tuple
+        self.xlim_original --> (xmin, xmax)
+        self.ylim_original --> (ymin, ymax)
+        """
+        self.axes.set_xlim(self.xlim_original)
+        self.axes.set_ylim(self.ylim_original)
+        #nacrtaj promjenu
+        self.draw()
+
+    def clear_graf(self):
+        """
+        clear grafa
+        """
+        self.data = {} #spremnik za frejmove (ucitane)
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.pocetnoVrijeme = ulaz['pocetnoVrijeme']
-        self.zavrsnoVrijeme = ulaz['zavrsnoVrijeme']
-        self.gKanal = ulaz['kanalId']
-        self.tKontejner = ulaz['tempKontejner']
-
+        self.statusHighlight = False
+        self.lastHighlight = (None, None)
+        self.lastAnnotation = None
+        self.axes.clear()
         #redo Axes labels
         self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel(self.tip)
+        self.draw()
 
-        ###emit zahtjev za podacima glavnog kanala, return se vraca u member self.data
-        arg = {'kanal':self.gKanal,
-               'od':self.pocetnoVrijeme,
-               'do':self.zavrsnoVrijeme}
-        
-        self.emit_request_za_podacima(arg)
-
-        #Provjera za postojanjem podataka glavnog kanala.
-        if self.gKanal in self.data.keys():
-            """temperatura kontejnera i pomocni grafovi se koriste samo kod
-            satnog i minutnog grafa"""
-
-            if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
-                #ucitaj temperaturu kontejnera ako postoji
-                #kreni ucitavati pomocne kanale po potrebi
-                for programKey in self.dto.dictPomocnih.keys():
-                    if programKey not in self.data.keys():
-                        arg = {'kanal':programKey,
-                               'od':self.pocetnoVrijeme,
-                               'do':self.zavrsnoVrijeme}
-                        self.emit_request_za_podacima(arg)
-
-            #naredba za crtanje glavnog grafa
-            self.crtaj_glavni_kanal()
-            #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
-            self.crtaj_pomocne(pomocni)
-
-
-            ###micanje tocaka od rubova, tickovi, legenda...
-            self.setup_limits()
-            self.setup_legend()
-            self.setup_ticks()
-
-            self.toggle_tgl()
-
-            #crtanje temperature kontejnera
-            self.crtaj_oznake_temperature(15,30)
-            #highlight prijasnje tocke
-            if self.statusHighlight:
-                hx, hy = self.lastHighlight
-                if hx in self.data[self.gKanal].index:
-                    #pronadji novu y vrijednosti indeksa
-                    hy = self.data[self.gKanal].loc[hx, self.midline]
-                    self.make_highlight(hx, hy, self.highlightSize)
-                else:
-                    self.statusHighlight = False
-                    self.lastHighlight = (None, None)
-
-            self.draw()
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
-        else:
-            self.axes.clear()
-            self.axes.text(0.5,
-                           0.5,
-                           'Nije moguce pristupiti podacima za trazeni kanal.',
-                           horizontalalignment='center',
-                           verticalalignment='center',
-                           fontsize = 8,
-                           transform = self.axes.transAxes)
-            self.draw()
-            #promjeni cursor u normalan cursor
-            QtGui.QApplication.restoreOverrideCursor()
+    def crtaj(self, ulaz):
+        """
+        Glavna metoda za crtanje grafa. Poziva se nakon sto kontroler prosljedi
+        zahtjev za crtanjem. Reimplementiraj za pojedini canvas.
+        """
+        #TODO! reimplement za svaki canvas odvojeno
+        pass
 ################################################################################
-################################################################################
+class SatniMinutniKanvas(Kanvas):
+    """
+    Kanvas klasa sa zajednickim elementima za satni i minutni graf.
+    """
+    def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
+        super(SatniMinutniKanvas, self).__init__(konfig)
+
+    def crtaj_scatter_value_ovisno_o_flagu(self, komponenta, konfig, flag):
+        """
+        Pomocna funkcija za crtanje scatter tipa grafa (samo tocke).
+        -komponenta je opisni string ( ['min', 'max', 'koncentracija', 'avg'])
+        -konfig je objekt sa postavkama grafa
+        -flag je int vrijednost flaga za razlikovanje validacije ili None (za sve
+        tocke neovisno o flagu)
+
+        Metodu koristi satni i minutni graf jer jedino oni crtaju tocke ovisno
+        o flagu. Flag moze biti None, u tom slucaju se crtaju sve tocke (primjer
+        je crtanje ekstremnih vrijednosti na satnom grafu).
+        """
+        frejm = self.data[self.gKanal]
+        if not flag:
+            frejm = frejm[frejm['flag'] == flag]
+        x = list(frejm.index)
+        #crtaj samo ako ima podataka
+        if len(x):
+            if komponenta == 'min':
+                y = list(frejm['min'])
+            elif komponenta == 'max':
+                y = list(frejm['max'])
+            elif komponenta == 'koncentracija':
+                y = list(frejm['koncentracija'])
+            elif komponenta == 'avg':
+                y = list(frejm['avg'])
+            else:
+                return
+            #naredba za plot
+            self.crtaj_scatter(x, y, konfig)
+            self.statusGlavniGraf = True
+
     def crtaj_pomocne(self, popis):
         """
         Metoda za crtanje pomocnih grafova. Ulazni parametar popis je set id
@@ -211,48 +292,449 @@ class Kanvas(FigureCanvas):
         for key in popis:
             frejm = self.data[key]
             x = list(frejm.index)
-            y = list(frejm[self.midline])
+            y = list(frejm[self.MIDLINE])
             self.axes.plot(x,
                            y,
-                           marker=self.dto.dictPomocnih[key].markerStyle,
-                           markersize=self.dto.dictPomocnih[key].markerSize,
-                           linestyle=self.dto.dictPomocnih[key].lineStyle,
-                           linewidth=self.dto.dictPomocnih[key].lineWidth,
-                           color=self.dto.dictPomocnih[key].color,
-                           zorder=self.dto.dictPomocnih[key].zorder,
-                           label=self.dto.dictPomocnih[key].label)
-################################################################################
+                           marker=self.pomocniGrafovi[key].markerStyle,
+                           markersize=self.pomocniGrafovi[key].markerSize,
+                           linestyle=self.pomocniGrafovi[key].lineStyle,
+                           linewidth=self.pomocniGrafovi[key].lineWidth,
+                           color=self.pomocniGrafovi[key].color,
+                           zorder=self.pomocniGrafovi[key].zorder,
+                           label=self.pomocniGrafovi[key].label)
+
     def crtaj_oznake_temperature(self, tempMin, tempMax):
         """
         Crtanje oznaka za temperaturu kontejnera ako su izvan zadanih granica
         """
+        if self.tKontejner is not None:
+                arg = {'kanal':self.tKontejner,
+                       'od':self.pocetnoVrijeme,
+                       'do':self.zavrsnoVrijeme}
+                self.emit_request_za_podacima(arg)
 
-        if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
-            if self.tKontejner is not None:
-                    arg = {'kanal':self.tKontejner,
-                           'od':self.pocetnoVrijeme,
-                           'do':self.zavrsnoVrijeme}
-                    self.emit_request_za_podacima(arg)
+        if self.tKontejner in self.data.keys():
+            frejm = self.data[self.tKontejner]
+            frejm = frejm[frejm['flag'] > 0]
+            if len(frejm):
+                overlimit = frejm[frejm[self.MIDLINE] > tempMax]
+                underlimit = frejm[frejm[self.MIDLINE] < tempMin]
+                frejm = overlimit.append(underlimit)
+                x = list(frejm.index)
+                brojLosih = len(x)
+                if brojLosih:
+                    y1, y2 = self.ylim_original
+                    c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+                    y = [c for i in range(brojLosih)]
+                    self.axes.plot(x,
+                                   y,
+                                   marker='*',
+                                   color='Red',
+                                   linestyle='None',
+                                   alpha=0.4)
 
-            if self.tKontejner in self.data.keys():
-                frejm = self.data[self.tKontejner]
-                frejm = frejm[frejm['flag'] > 0]
-                if len(frejm):
-                    overlimit = frejm[frejm[self.midline] > tempMax]
-                    underlimit = frejm[frejm[self.midline] < tempMin]
-                    frejm = overlimit.append(underlimit)
-                    x = list(frejm.index)
-                    brojLosih = len(x)
-                    if brojLosih:
-                        y1, y2 = self.ylim_original
-                        c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
-                        y = [c for i in range(brojLosih)]
-                        self.axes.plot(x,
-                                       y,
-                                       marker='*',
-                                       color='Red',
-                                       linestyle='None',
-                                       alpha=0.4)
+    def setup_annotation_offset(self, event):
+        """
+        Funkcija postavlja annotation offset ovisno o polozaju klika na canvas.
+        """
+        size = self.frameSize()
+        x, y = size.width(), size.height()
+        x = x//2
+        y = y//2
+        clickedx = event.x
+        clickedy = event.y
+
+        if clickedx >= x:
+            clickedx = -80
+            if clickedy >= y:
+                clickedy = -30
+            else:
+                clickedy = 30
+        else:
+            clickedx = 30
+            if clickedy >= y:
+                clickedy = -30
+            else:
+                clickedy = 30
+        return (clickedx, clickedy)
+
+    def setup_annotation_text(self, xpoint):
+        #TODO! reimplement metodu za pojedini graf
+        """
+        Definiranje teksta za prikaz annotationa (sto ce biti unutar annotationa).
+        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
+        teksta annotationa.
+        """
+        pass
+#        if xpoint in list(self.data[self.gKanal].index):
+#            if self.tip_grafa is SatniEnum:
+#                yavg = self.data[self.gKanal].loc[xpoint, u'avg']
+#                ymin = self.data[self.gKanal].loc[xpoint, u'min']
+#                ymax = self.data[self.gKanal].loc[xpoint, u'max']
+#                ystatus = self.data[self.gKanal].loc[xpoint, u'status']
+#                ycount = self.data[self.gKanal].loc[xpoint, u'count']
+#                tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+#            elif self.tip_grafa is MinutniEnum:
+#                ykonc = self.data[self.gKanal].loc[xpoint, u'koncentracija']
+#                ystat = self.data[self.gKanal].loc[xpoint, u'status']
+#                yflag = self.data[self.gKanal].loc[xpoint, u'flag']
+#                tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
+#        else:
+#            tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
+#        return tekst
+
+    def annotate_pick(self, point, event):
+        """
+        Mangage annotation za pick event
+        point --> (x, y) tuple tocke
+        event --> matplotlib click event
+        """
+        if self.statusAnnotation:
+            self.annotation.remove()
+            self.statusAnnotation = False
+            if point[0] is not self.lastAnnotation:
+                self.make_annotation(point, event)
+        else:
+            self.make_annotation(point, event)
+        self.draw()
+
+    def make_annotation(self, point, event):
+        """
+        Metoda stvara annotation objekt koji ce se prikazati na grafu.
+        ulazni parametri su:
+        point ---> tocka na grafu
+        event ---> matplotlib event koji je triggerao annotation
+        Annotation instance object, pozicija na grafu.
+        """
+        #set offset annotationa
+        offs = self.setup_annotation_offset(event)
+        #set tekst annotationa
+        tekst = self.setup_annotation_text() #overload metodu za specificni graf
+        self.annotation = self.axes.annotate(
+                    tekst,
+                    xy = point,
+                    xytext = offs,
+                    textcoords = 'offset points',
+                    ha = 'left',
+                    va = 'center',
+                    fontsize = 7,
+                    zorder = 102,
+                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7),
+                    arrowprops = dict(arrowstyle = '->'))
+        self.lastAnnotation = point[0]
+        self.statusAnnotation = True
+
+    def zaokruzi_na_najblize_vrijeme(self, x):
+        """
+        Metoda sluzi za zaokruzivanje vremena tocke na neku mjernu jedinicu.
+        Reimplementiraj za pojedini canvas
+        """
+        #TODO!
+        pass
+#        #zaokruzi na najblizi puni sat (bitno za podudaranje indeksa u frejmu)
+#        if self.tip_grafa is SatniEnum:
+#            xpoint = pomocne_funkcije.zaokruzi_vrijeme(xpoint, 3600)
+#        elif self.tip_grafa is MinutniEnum:
+#            xpoint = pomocne_funkcije.zaokruzi_vrijeme(xpoint, 60)
+
+    def adaptiraj_tocku_od_pick_eventa(self, event):
+        """
+        Metoda je zaduzena da prilagodi podatke iz eventa.
+        Metoda vraca x i y kooridinate tocke.
+        """
+        xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
+        #problem.. rounding offset aware i offset naive datetimes..workaround
+        xpoint = datetime.datetime(xpoint.year,
+                                   xpoint.month,
+                                   xpoint.day,
+                                   xpoint.hour,
+                                   xpoint.minute,
+                                   xpoint.second)
+        self.zaokruzi_na_najblize_vrijeme(xpoint) #round na najblize vrijeme
+        xpoint = pd.to_datetime(xpoint) #konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
+        #pazimo da x vrijednost ne iskace od zadanih granica
+        if xpoint >= self.zavrsnoVrijeme:
+            xpoint = self.zavrsnoVrijeme
+        if xpoint <= self.pocetnoVrijeme:
+            xpoint = self.pocetnoVrijeme
+        #kooridinate ako nedostaju podaci za highlight
+        if xpoint in list(self.data[self.gKanal].index):
+            ypoint = self.data[self.gKanal].loc[xpoint, self.MIDLINE]
+        else:
+            miny = self.data[self.gKanal][self.MIDLINE].min()
+            maxy = self.data[self.gKanal][self.MIDLINE].max()
+            ypoint = (miny + maxy)/2
+
+        return xpoint, ypoint
+
+
+    def on_pick(self, event):
+        """
+        Resolve pick eventa za satni i minutni graf.
+        """
+        #TODO! reimplement za pojedini graf
+        if self.statusGlavniGraf and event.inaxes == self.axes:
+            xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
+            """
+            Ponasanje ovisno o pritisnutom gumbu na misu.
+            """
+            pass
+#            if event.button == 1:
+#                if self.tip_grafa is SatniEnum:
+#                    #left click, naredi crtanje minutnog i highlight tocku
+#                    self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
+#                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
+#            elif event.button == 2:
+#                tekst = self.setup_annotation_text(xpoint)
+#                offset = self.setup_annotation_offset(event)
+#                datacords = (xpoint, ypoint)
+#                self.annotate_pick(datacords, offset, tekst)
+#            elif event.button == 3:
+#                loc = QtGui.QCursor.pos() #lokacija klika
+#                self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
+
+
+    def span_select(self, xmin, xmax):
+        """
+        Primjer callback metode za span selektor.
+        Metoda je povezana sa span selektorom (ako je inicijaliziran).
+        Metoda je zaduzena da prikaze kontekstni dijalog za promjenu flaga
+        na mjestu gdje "releasamo" ljevi klik za satni i minutni graf.
+
+        t1 i t2 su timestampovi, ali ih treba adaptirati iz matplotlib vremena u
+        "zaokruzene" pandas timestampove. (na minutnom grafu se zaokruzuje na najblizu
+        minutu, dok na satnom na najblizi sat)
+        """
+        if self.statusGlavniGraf: #glavni graf mora biti nacrtan
+            #konverzija ulaznih vrijednosti u pandas timestampove
+            t1 = matplotlib.dates.num2date(xmin)
+            t2 = matplotlib.dates.num2date(xmax)
+            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
+            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
+            #vremena se zaokruzuju
+            t1 = self.zaokruzi_na_najblize_vrijeme(t1)
+            t2 = self.zaokruzi_na_najblize_vrijeme(t2)
+            #adapt from datetime.datetime objekta u pandas timestamp
+            t1 = pd.to_datetime(t1)
+            t2 = pd.to_datetime(t2)
+            #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
+            if t1 < self.pocetnoVrijeme:
+                t1 = self.pocetnoVrijeme
+            if t1 > self.zavrsnoVrijeme:
+                t1 = self.zavrsnoVrijeme
+            if t2 < self.pocetnoVrijeme:
+                t2 = self.pocetnoVrijeme
+            if t2 > self.zavrsnoVrijeme:
+                t2 = self.zavrsnoVrijeme
+            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
+            if t1 != t2:
+                #pronadji lokaciju desnog klika u Qt kooridinatama.
+                loc = QtGui.QCursor.pos()
+                self.show_context_menu(loc, t1, t2) #poziv kontekstnog menija
+
+    def show_context_menu(self, pos, tmin, tmax):
+        """
+        Metoda iscrtava kontekstualni meni sa opcijama za promjenom flaga
+        na minutnom i satnom grafu.
+        """
+        #zapamti rubna vremena intervala, trebati ce za druge metode
+        self.__lastTimeMin = tmin
+        self.__lastTimeMax = tmax
+        #definiraj menu i postavi akcije u njega
+        menu = QtGui.QMenu(self)
+        menu.setTitle('Promjeni flag')
+        action1 = QtGui.QAction("Flag: dobar", menu)
+        action2 = QtGui.QAction("Flag: los", menu)
+        menu.addAction(action1)
+        menu.addAction(action2)
+        #povezi akcije menua sa metodama
+        action1.triggered.connect(functools.partial(self.promjena_flaga, flag = 1000))
+        action2.triggered.connect(functools.partial(self.promjena_flaga, flag = -1000))
+        #prikazi menu na definiranoj tocki grafa
+        menu.popup(pos)
+
+    def promjena_flaga_top(self, tmin, tmax, flag):
+        """
+        pakiranje i emit zahtjeva za promjenom flaga
+        """
+        arg = {'od': tmin,
+               'do': tmax,
+               'noviFlag': flag,
+               'kanal': self.gKanal}
+        #generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
+
+
+    def promjena_flaga(self, flag = 1):
+        """
+        Metoda sluzi za promjenu flaga
+        ovisno o keyword argumentu tip.
+        """
+        #TODO! reimplement za pojedni graf (satni treba odmaknuti 59 minuta od donjeg ruba)
+        #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+        self.promjena_flaga_top(tmin, tmax, flag)
+
+
+
+
+
+
+
+#    def toggle_tgl(self):
+#        self.toggle_ticks(self.graf_konfig.Ticks)
+#        self.toggle_grid(self.graf_konfig.Grid)
+#        self.toggle_legend(self.graf_konfig.Legend)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#    def crtaj(self, ulaz, konfig = None):
+#        #reimplement for each canvas
+#        """
+#        Glavna metoda za crtanje na canvas. Eksplicitne naredbe za crtanje.
+#
+#        Crtanje ide kroz nekoliko koraka:
+#        1. reinicijalizacija membera ovisno o ulaznim podacima
+#        2. priprema i dohvacanje podataka za crtanje
+#        3. crtanje glavnog kanala
+#        4. crtanje pomocnih kanala
+#        5. crtanje temperature kontejnera
+#        6. provjera za crtanje highlighta (markera trenutno izabrane tocke)
+#        7. setup granica, tickova, grida, interakcije....
+#
+#        ulaz je dict podataka
+#        ulaz['kanalId'] --> int ,programMjerenjaId glavnog kanala [int]
+#        ulaz['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
+#        ulaz['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
+#        ulaz['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
+#        """
+#        ###priprema za crtanje... reset i inicijalizacija membera###
+#        self.axes.clear()
+#        self.data = {}
+#        self.statusGlavniGraf = False
+#        self.statusAnnotation = False
+#        self.pocetnoVrijeme = ulaz['pocetnoVrijeme']
+#        self.zavrsnoVrijeme = ulaz['zavrsnoVrijeme']
+#        self.gKanal = ulaz['kanalId']
+#        self.tKontejner = ulaz['tempKontejner']
+#
+#        #redo Axes labels
+#        self.axes.set_xlabel('Vrijeme')
+#        self.axes.set_ylabel(self.tip)
+#
+#        ###emit zahtjev za podacima glavnog kanala, return se vraca u member self.data
+#        arg = {'kanal':self.gKanal,
+#               'od':self.pocetnoVrijeme,
+#               'do':self.zavrsnoVrijeme}
+#
+#        self.emit_request_za_podacima(arg)
+#
+#        #Provjera za postojanjem podataka glavnog kanala.
+#        if self.gKanal in self.data.keys():
+#            """temperatura kontejnera i pomocni grafovi se koriste samo kod
+#            satnog i minutnog grafa"""
+#
+#            if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
+#                #ucitaj temperaturu kontejnera ako postoji
+#                #kreni ucitavati pomocne kanale po potrebi
+#                for programKey in self.dto.dictPomocnih.keys():
+#                    if programKey not in self.data.keys():
+#                        arg = {'kanal':programKey,
+#                               'od':self.pocetnoVrijeme,
+#                               'do':self.zavrsnoVrijeme}
+#                        self.emit_request_za_podacima(arg)
+#
+#            #naredba za crtanje glavnog grafa
+#            self.crtaj_glavni_kanal()
+#            #set dostupnih pomocnih kanala za crtanje
+#            pomocni = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
+#            self.crtaj_pomocne(pomocni)
+#
+#
+#            ###micanje tocaka od rubova, tickovi, legenda...
+#            self.setup_limits()
+#            self.setup_legend()
+#            self.setup_ticks()
+#
+#            self.toggle_tgl()
+#
+#            #crtanje temperature kontejnera
+#            self.crtaj_oznake_temperature(15,30)
+#            #highlight prijasnje tocke
+#            if self.statusHighlight:
+#                hx, hy = self.lastHighlight
+#                if hx in self.data[self.gKanal].index:
+#                    #pronadji novu y vrijednosti indeksa
+#                    hy = self.data[self.gKanal].loc[hx, self.midline]
+#                    self.make_highlight(hx, hy, self.highlightSize)
+#                else:
+#                    self.statusHighlight = False
+#                    self.lastHighlight = (None, None)
+#
+#            self.draw()
+#            #promjeni cursor u normalan cursor
+#            QtGui.QApplication.restoreOverrideCursor()
+#        else:
+#            self.axes.clear()
+#            self.axes.text(0.5,
+#                           0.5,
+#                           'Nije moguce pristupiti podacima za trazeni kanal.',
+#                           horizontalalignment='center',
+#                           verticalalignment='center',
+#                           fontsize = 8,
+#                           transform = self.axes.transAxes)
+#            self.draw()
+#            #promjeni cursor u normalan cursor
+#            QtGui.QApplication.restoreOverrideCursor()
+################################################################################
+################################################################################
+################################################################################
+#    def crtaj_oznake_temperature(self, tempMin, tempMax):
+#        """
+#        Crtanje oznaka za temperaturu kontejnera ako su izvan zadanih granica
+#        """
+#
+#        if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
+#            if self.tKontejner is not None:
+#                    arg = {'kanal':self.tKontejner,
+#                           'od':self.pocetnoVrijeme,
+#                           'do':self.zavrsnoVrijeme}
+#                    self.emit_request_za_podacima(arg)
+#
+#            if self.tKontejner in self.data.keys():
+#                frejm = self.data[self.tKontejner]
+#                frejm = frejm[frejm['flag'] > 0]
+#                if len(frejm):
+#                    overlimit = frejm[frejm[self.midline] > tempMax]
+#                    underlimit = frejm[frejm[self.midline] < tempMin]
+#                    frejm = overlimit.append(underlimit)
+#                    x = list(frejm.index)
+#                    brojLosih = len(x)
+#                    if brojLosih:
+#                        y1, y2 = self.ylim_original
+#                        c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+#                        y = [c for i in range(brojLosih)]
+#                        self.axes.plot(x,
+#                                       y,
+#                                       marker='*',
+#                                       color='Red',
+#                                       linestyle='None',
+#                                       alpha=0.4)
 ################################################################################
     def setup_ticks(self):
         """
@@ -275,174 +757,38 @@ class Kanvas(FigureCanvas):
             label.set_rotation(30)
             label.set_fontsize(8)
 ################################################################################
-    def crtaj_scatter(self, x, y, dto):
-        """
-        pomocna funkcija za crtanje scatter grafova
-        x, y, su liste kooridinata, dto je objekt koji sadrzi izgled
-        """
-        self.axes.plot(x,
-                       y,
-                       marker = dto.markerStyle,
-                       markersize = dto.markerSize,
-                       linestyle = 'None',
-                       color = dto.color,
-                       zorder = dto.zorder,
-                       label = dto.label)
+#    def crtaj_scatter_value_ovisno_o_flagu(self, komponenta, konfig, flag):
+#        """
+#        Pomocna funkcija za crtanje scatter tipa grafa (samo tocke).
+#        -komponenta je opisni string ( ['min', 'max', 'koncentracija', 'avg'])
+#        -konfig je objekt sa postavkama grafa
+#        -flag je int vrijednost flaga za razlikovanje validacije ili None (za sve
+#        tocke neovisno o flagu)
+#
+#        Metodu koristi satni i minutni graf jer jedino oni crtaju tocke ovisno
+#        o flagu. Flag moze biti None, u tom slucaju se crtaju sve tocke (primjer
+#        je crtanje ekstremnih vrijednosti na satnom grafu).
+#        """
+#        frejm = self.data[self.gKanal]
+#        if not flag:
+#            frejm = frejm[frejm['flag'] == flag]
+#        x = list(frejm.index)
+#        #crtaj samo ako ima podataka
+#        if len(x):
+#            if komponenta == 'min':
+#                y = list(frejm['min'])
+#            elif komponenta == 'max':
+#                y = list(frejm['max'])
+#            elif komponenta == 'koncentracija':
+#                y = list(frejm['koncentracija'])
+#            elif komponenta == 'avg':
+#                y = list(frejm['avg'])
+#            else:
+#                return
+#            #naredba za plot
+#            self.crtaj_scatter(x, y, konfig)
+#            self.statusGlavniGraf = True
 ################################################################################
-    def crtaj_line(self, x, y, dto):
-        """
-        pomocna funkcija za crtanje line grafova
-        x, y su liste kooridinata, dto je objekt koji sadrzi izgled
-        """
-        self.axes.plot(x,
-                       y,
-                       linestyle = dto.lineStyle,
-                       linewidth = dto.lineWidth,
-                       color = dto.color,
-                       zorder = dto.zorder,
-                       label = dto.label)
-################################################################################
-    def crtaj_fill(self, x, y1, y2, dto):
-        """
-        pomocna funkcija za crtanje fill grafova
-        x definira x os, y1 i y2 su granice izmedju kojih se sjenca,
-        dto je konfig objekt sa opisom boje itd."""
-        self.axes.fill_between(x,
-                               y1,
-                               y2,
-                               color = dto.color,
-                               zorder = dto.zorder,
-                               label = dto.label)
-################################################################################
-    def crtaj_scatter_value(self, komponenta, dto, flag):
-        """
-        Pomocna funkcija za crtanje scatter tipa grafa (samo tocke).
-        -komponenta je opisni string ()
-        -dto je grafDTO objekt
-        -flag je int vrijednost flaga za razlikovanje validacije ili None (za sve
-        tocke neovisno o flagu)
-
-        P.S.
-        Funkcija ne poziva draw() metodu canvasa. Tu metodu bi trebala pozvati glavna
-        funkcija za crtanje.
-        """
-        frejm = self.data[self.gKanal]
-        if flag != None:
-            frejm = frejm[frejm['flag'] == flag]
-        x = list(frejm.index)
-        #crtaj samo ako ima podataka
-        if len(x) > 0:
-            if komponenta == 'min':
-                y = list(frejm['min'])
-            elif komponenta == 'max':
-                y = list(frejm['max'])
-            elif komponenta == 'koncentracija':
-                y = list(frejm['koncentracija'])
-            elif komponenta == 'avg':
-                y = list(frejm['avg'])
-            else:
-                return
-            #naredba za plot
-            self.crtaj_scatter(x, y, dto)
-            self.statusGlavniGraf = True
-################################################################################
-    def initialize_interaction(self):
-        """Setup inicijalnih postavki interakcije sa grafom.
-        (zoom, cursor, span selector, pick)
-        """
-        #caller id za pick callbackove
-        self.cid1 = None
-        self.cid2 = None
-        #definicija izgleda mpl widget elemenata - zoom
-        self.zoomBoxInfo = dict(facecolor = 'yellow',
-                                edgecolor = 'black',
-                                alpha = 0.5,
-                                fill = True)
-        #definicija izgleda mpl widget elemenata - span selector
-        self.spanBoxInfo = dict(alpha = 0.3, facecolor = 'yellow')
-        #zoom implement, inicijalizacija rectangle selectora za zoom
-        self.zoomSelector = RectangleSelector(self.axes,
-                                              self.rect_zoom,
-                                              drawtype = 'box',
-                                              rectprops = self.zoomBoxInfo)
-        self.zoomSelector.set_active(False)
-        #cursor implement, inicijalizacija pomocnih lijija cursora
-        self.cursorAssist = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
-        self.cursorAssist.visible = False
-        #span selector, inicijalizacija span selectora (izbor vise tocaka po x osi)
-        self.spanSelector = SpanSelector(self.axes,
-                                         self.span_select,
-                                         direction = 'horizontal',
-                                         useblit = True,
-                                         rectprops = self.spanBoxInfo)
-        self.spanSelector.visible = False
-################################################################################
-    def rect_zoom(self, eclick, erelease):
-        """
-        Callback funkcija za rectangle zoom canvasa. Funkcija lovi click i release
-        evente (rubovi kvadrata) te povecava izabrani dio slike preko cijelog
-        canvasa.
-        """
-        x = sorted([eclick.xdata, erelease.xdata])
-        y = sorted([eclick.ydata, erelease.ydata])
-        #set nove granice osi za sve axese
-        for ax in self.fig.axes:
-            ax.set_xlim(x)
-            ax.set_ylim(y)
-        #redraw
-        self.draw()
-
-################################################################################
-    def on_pick(self, event):
-        """
-        Resolve pick eventa za satni i minutni graf.
-        """
-        if self.statusGlavniGraf and event.inaxes == self.axes:
-            xpoint = matplotlib.dates.num2date(event.xdata) #datetime.datetime
-            #problem.. rounding offset aware i offset naive datetimes..workaround
-            xpoint = datetime.datetime(xpoint.year,
-                                       xpoint.month,
-                                       xpoint.day,
-                                       xpoint.hour,
-                                       xpoint.minute,
-                                       xpoint.second)
-            #zaokruzi na najblizi puni sat (bitno za podudaranje indeksa u frejmu)
-            if self.tip_grafa is SatniEnum:
-                xpoint = pomocne_funkcije.zaokruzi_vrijeme(xpoint, 3600)
-            elif self.tip_grafa is MinutniEnum:
-                xpoint = pomocne_funkcije.zaokruzi_vrijeme(xpoint, 60)
-            else:
-                raise AttributeError('Krivi tip grafa')
-            #aktualna konverzija iz datetime.datetime objekta u pandas.tislib.Timestamp
-            xpoint = pd.to_datetime(xpoint)
-            #bitno je da zaokruzeno vrijeme nije izvan granica frejma (izbjegavnjanje index errora)
-            if xpoint >= self.zavrsnoVrijeme:
-                xpoint = self.zavrsnoVrijeme
-            if xpoint <= self.pocetnoVrijeme:
-                xpoint = self.pocetnoVrijeme
-            #highlight selected point - kooridinate ako nedostaju podaci
-            if xpoint in list(self.data[self.gKanal].index):
-                ypoint = self.data[self.gKanal].loc[xpoint, self.midline]
-            else:
-                miny = self.data[self.gKanal][self.midline].min()
-                maxy = self.data[self.gKanal][self.midline].max()
-                ypoint = (miny + maxy)/2
-            """
-            Ponasanje ovisno o pritisnutom gumbu na misu.
-            """
-            if event.button == 1:
-                if self.tip_grafa is SatniEnum:
-                    #left click, naredi crtanje minutnog i highlight tocku
-                    self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
-                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-            elif event.button == 2:
-                tekst = self.setup_annotation_text(xpoint)
-                offset = self.setup_annotation_offset(event)
-                datacords = (xpoint, ypoint)
-                self.annotate_pick(datacords, offset, tekst)
-            elif event.button == 3:
-                loc = QtGui.QCursor.pos() #lokacija klika
-                self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
 ################################################################################
     def pick_nearest(self, argList):
         """
@@ -483,135 +829,135 @@ class Kanvas(FigureCanvas):
             self.highlight_pick((x, y), self.highlightSize)
             self.updateaj_labele_na_panelu('normal', newArgList)
 ################################################################################
-    def setup_annotation_offset(self, event):
-        """
-        Funkcija postavlja annotation offset ovisno o polozaju klika na canvas.
-        """
-        size = self.frameSize()
-        x, y = size.width(), size.height()
-        x = x//2
-        y = y//2
-        clickedx = event.x
-        clickedy = event.y
-
-        if clickedx >= x:
-            clickedx = -80
-            if clickedy >= y:
-                clickedy = -30
-            else:
-                clickedy = 30
-        else:
-            clickedx = 30
-            if clickedy >= y:
-                clickedy = -30
-            else:
-                clickedy = 30
-        return (clickedx, clickedy)
+#    def setup_annotation_offset(self, event):
+#        """
+#        Funkcija postavlja annotation offset ovisno o polozaju klika na canvas.
+#        """
+#        size = self.frameSize()
+#        x, y = size.width(), size.height()
+#        x = x//2
+#        y = y//2
+#        clickedx = event.x
+#        clickedy = event.y
+#
+#        if clickedx >= x:
+#            clickedx = -80
+#            if clickedy >= y:
+#                clickedy = -30
+#            else:
+#                clickedy = 30
+#        else:
+#            clickedx = 30
+#            if clickedy >= y:
+#                clickedy = -30
+#            else:
+#                clickedy = 30
+#        return (clickedx, clickedy)
+#################################################################################
+#    def setup_annotation_text(self, xpoint):
+#        """
+#        Definiranje teksta za prikaz annotationa (sto ce biti unutar annotationa).
+#        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
+#        teksta annotationa.
+#        """
+#        if xpoint in list(self.data[self.gKanal].index):
+#            if self.tip_grafa is SatniEnum:
+#                yavg = self.data[self.gKanal].loc[xpoint, u'avg']
+#                ymin = self.data[self.gKanal].loc[xpoint, u'min']
+#                ymax = self.data[self.gKanal].loc[xpoint, u'max']
+#                ystatus = self.data[self.gKanal].loc[xpoint, u'status']
+#                ycount = self.data[self.gKanal].loc[xpoint, u'count']
+#                tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
+#            elif self.tip_grafa is MinutniEnum:
+#                ykonc = self.data[self.gKanal].loc[xpoint, u'koncentracija']
+#                ystat = self.data[self.gKanal].loc[xpoint, u'status']
+#                yflag = self.data[self.gKanal].loc[xpoint, u'flag']
+#                tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
+#        else:
+#            tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
+#        return tekst
+#################################################################################
+#    def span_select(self, xmin, xmax):
+#        """
+#        Metoda je povezana sa span selektorom (ako je inicijaliziran).
+#        Metoda je zaduzena da prikaze kontekstni dijalog za promjenu flaga
+#        na mjestu gdje "releasamo" ljevi klik za satni i minutni graf.
+#
+#        t1 i t2 su timestampovi, ali ih treba adaptirati iz matplotlib vremena u
+#        "zaokruzene" pandas timestampove. (na minutnom grafu se zaokruzuje na najblizu
+#        minutu, dok na satnom na najblizi sat)
+#        """
+#        if self.statusGlavniGraf: #glavni graf mora biti nacrtan
+#            #konverzija ulaznih vrijednosti u pandas timestampove
+#            t1 = matplotlib.dates.num2date(xmin)
+#            t2 = matplotlib.dates.num2date(xmax)
+#            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
+#            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
+#            #vremena se zaokruzuju
+#            if self.tip_grafa is SatniEnum:
+#                t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 3600)
+#                t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 3600)
+#            elif self.tip_grafa is MinutniEnum:
+#                t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 60)
+#                t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 60)
+#            t1 = pd.to_datetime(t1)
+#            t2 = pd.to_datetime(t2)
+#
+#            #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
+#            if t1 < self.pocetnoVrijeme:
+#                t1 = self.pocetnoVrijeme
+#            if t1 > self.zavrsnoVrijeme:
+#                t1 = self.zavrsnoVrijeme
+#            if t2 < self.pocetnoVrijeme:
+#                t2 = self.pocetnoVrijeme
+#            if t2 > self.zavrsnoVrijeme:
+#                t2 = self.zavrsnoVrijeme
+#            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
+#            if t1 != t2:
+#                #pozovi dijalog za promjenu flaga
+#                loc = QtGui.QCursor.pos()
+#                self.show_context_menu(loc, t1, t2)
 ################################################################################
-    def setup_annotation_text(self, xpoint):
-        """
-        Definiranje teksta za prikaz annotationa (sto ce biti unutar annotationa).
-        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
-        teksta annotationa.
-        """
-        if xpoint in list(self.data[self.gKanal].index):
-            if self.tip_grafa is SatniEnum:
-                yavg = self.data[self.gKanal].loc[xpoint, u'avg']
-                ymin = self.data[self.gKanal].loc[xpoint, u'min']
-                ymax = self.data[self.gKanal].loc[xpoint, u'max']
-                ystatus = self.data[self.gKanal].loc[xpoint, u'status']
-                ycount = self.data[self.gKanal].loc[xpoint, u'count']
-                tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
-            elif self.tip_grafa is MinutniEnum:
-                ykonc = self.data[self.gKanal].loc[xpoint, u'koncentracija']
-                ystat = self.data[self.gKanal].loc[xpoint, u'status']
-                yflag = self.data[self.gKanal].loc[xpoint, u'flag']
-                tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
-        else:
-            tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
-        return tekst
+#    def show_context_menu(self, pos, tmin, tmax):
+#        """
+#        Metoda iscrtava kontekstualni meni sa opcijama za promjenom flaga
+#        na minutnom i satnom grafu.
+#        """
+#        #zapamti rubna vremena intervala, trebati ce za druge metode
+#        self.__lastTimeMin = tmin
+#        self.__lastTimeMax = tmax
+#        #definiraj menu i postavi akcije u njega
+#        menu = QtGui.QMenu(self)
+#        menu.setTitle('Promjeni flag')
+#        action1 = QtGui.QAction("Flag: dobar", menu)
+#        action2 = QtGui.QAction("Flag: los", menu)
+#        menu.addAction(action1)
+#        menu.addAction(action2)
+#        #povezi akcije menua sa metodama
+#        action1.triggered.connect(functools.partial(self.promjena_flaga, flag = 1000))
+#        action2.triggered.connect(functools.partial(self.promjena_flaga, flag = -1000))
+#        #prikazi menu na definiranoj tocki grafa
+#        menu.popup(pos)
 ################################################################################
-    def span_select(self, xmin, xmax):
-        """
-        Metoda je povezana sa span selektorom (ako je inicijaliziran).
-        Metoda je zaduzena da prikaze kontekstni dijalog za promjenu flaga
-        na mjestu gdje "releasamo" ljevi klik za satni i minutni graf.
-
-        t1 i t2 su timestampovi, ali ih treba adaptirati iz matplotlib vremena u
-        "zaokruzene" pandas timestampove. (na minutnom grafu se zaokruzuje na najblizu
-        minutu, dok na satnom na najblizi sat)
-        """
-        if self.statusGlavniGraf: #glavni graf mora biti nacrtan
-            #konverzija ulaznih vrijednosti u pandas timestampove
-            t1 = matplotlib.dates.num2date(xmin)
-            t2 = matplotlib.dates.num2date(xmax)
-            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
-            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
-            #vremena se zaokruzuju
-            if self.tip_grafa is SatniEnum:
-                t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 3600)
-                t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 3600)
-            elif self.tip_grafa is MinutniEnum:
-                t1 = pomocne_funkcije.zaokruzi_vrijeme(t1, 60)
-                t2 = pomocne_funkcije.zaokruzi_vrijeme(t2, 60)
-            t1 = pd.to_datetime(t1)
-            t2 = pd.to_datetime(t2)
-
-            #osiguranje da se ne preskoce granice glavnog kanala (izbjegavanje index errora)
-            if t1 < self.pocetnoVrijeme:
-                t1 = self.pocetnoVrijeme
-            if t1 > self.zavrsnoVrijeme:
-                t1 = self.zavrsnoVrijeme
-            if t2 < self.pocetnoVrijeme:
-                t2 = self.pocetnoVrijeme
-            if t2 > self.zavrsnoVrijeme:
-                t2 = self.zavrsnoVrijeme
-            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
-            if t1 != t2:
-                #pozovi dijalog za promjenu flaga
-                loc = QtGui.QCursor.pos()
-                self.show_context_menu(loc, t1, t2)
-################################################################################
-    def show_context_menu(self, pos, tmin, tmax):
-        """
-        Metoda iscrtava kontekstualni meni sa opcijama za promjenom flaga
-        na minutnom i satnom grafu.
-        """
-        #zapamti rubna vremena intervala, trebati ce za druge metode
-        self.__lastTimeMin = tmin
-        self.__lastTimeMax = tmax
-        #definiraj menu i postavi akcije u njega
-        menu = QtGui.QMenu(self)
-        menu.setTitle('Promjeni flag')
-        action1 = QtGui.QAction("Flag: dobar", menu)
-        action2 = QtGui.QAction("Flag: los", menu)
-        menu.addAction(action1)
-        menu.addAction(action2)
-        #povezi akcije menua sa metodama
-        action1.triggered.connect(functools.partial(self.promjena_flaga, flag = 1000))
-        action2.triggered.connect(functools.partial(self.promjena_flaga, flag = -1000))
-        #prikazi menu na definiranoj tocki grafa
-        menu.popup(pos)
-################################################################################
-    def promjena_flaga_top(self, tmin, tmax, flag):
-        arg = {'od': tmin,
-               'do': tmax,
-               'noviFlag': flag,
-               'kanal': self.gKanal}
-        #generalni emit za promjenu flaga
-        self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
-
-        
-    def promjena_flaga(self, flag = 1):
-        """
-        Metoda sluzi za promjenu flaga
-        ovisno o keyword argumentu tip.
-        """
-        #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
-        tmin = self.__lastTimeMin
-        tmax = self.__lastTimeMax
-        self.promjena_flaga_top(tmin, tmax, flag)
-        
+#    def promjena_flaga_top(self, tmin, tmax, flag):
+#        arg = {'od': tmin,
+#               'do': tmax,
+#               'noviFlag': flag,
+#               'kanal': self.gKanal}
+#        #generalni emit za promjenu flaga
+#        self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
+#
+#
+#    def promjena_flaga(self, flag = 1):
+#        """
+#        Metoda sluzi za promjenu flaga
+#        ovisno o keyword argumentu tip.
+#        """
+#        #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
+#        tmin = self.__lastTimeMin
+#        tmax = self.__lastTimeMax
+#        self.promjena_flaga_top(tmin, tmax, flag)
+#
  ################################################################################
     def connect_pick_evente(self):
         """mpl connection ovisno o tipu canvasa. Pick tocke ili pick bilo gdje
@@ -619,59 +965,8 @@ class Kanvas(FigureCanvas):
         pass
 
 ################################################################################
-    def disconnect_pick_evente(self):
-        """Opceniti disconnect pick eventa. Pick eventi se trebaju odspojiti prilikom
-        zoom akcije i prilikom izbora vise tocaka uz pomoc span selektora (izbjegavanje
-        konfliktnih signala)."""
-        if self.cid1 != None:
-            self.mpl_disconnect(self.cid1)
-            self.cid1 = None
-        if self.cid2 != None:
-            self.mpl_disconnect(self.cid2)
-            self.cid2 = None
 ################################################################################
-    def set_interaction_mode(self, zoom, cursor, span):
-        """
-        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
-        zoom --> boolean
-        cursor --> boolean
-        span --> boolean
-        """
-        #set up pick callbacks ovisno o tipu grafa
-        self.disconnect_pick_evente()
-        self.connect_pick_evente()
-        if zoom:
-            #zoom on, all else off
-            self.zoomSelector.set_active(True)
-            self.cursorAssist.visible = False
-            self.spanSelector.visible = False
-            self.disconnect_pick_evente()
-        else:
-            #zoom off
-            self.zoomSelector.set_active(False)
-            if cursor:
-                self.cursorAssist.visible = True
-            else:
-                self.cursorAssist.visible = False
-            if span:
-                self.spanSelector.visible = True
-                self.disconnect_pick_evente()
-            else:
-                self.spanSelector.visible = False
 ################################################################################
-    def full_zoom_out(self):
-        """
-        Reset granica x i y osi da pokrivaju isti raspon kao i originalna slika.
-        Full zoom out.
-
-        vrijednosti su spremljene u memberima u obliku tuple
-        self.xlim_original --> (xmin, xmax)
-        self.ylim_original --> (ymin, ymax)
-        """
-        self.axes.set_xlim(self.xlim_original)
-        self.axes.set_ylim(self.ylim_original)
-        #nacrtaj promjenu
-        self.draw()
 ################################################################################
     def setup_limits(self):
         """
@@ -742,38 +1037,38 @@ class Kanvas(FigureCanvas):
         self.legenda.get_frame().set_alpha(0.8)
 ################################################################################
 ################################################################################
-    def annotate_pick(self, point, offs, tekst):
-        """
-        Mangage annotation za tocku point, na offsetu offs, sa tekstom tekst
-        point - (x, y) tuple
-        offs - (xoff, yoff) tuple
-        tekst - string
-        """
-        if self.statusAnnotation:
-            self.annotation.remove()
-            self.statusAnnotation = False
-            if point[0] != self.lastAnnotation:
-                self.make_annotation(point, offs, tekst)
-        else:
-            self.make_annotation(point, offs, tekst)
-        self.draw()
-################################################################################
-    def make_annotation(self, point, offs, tekst):
-        """Annotation instance object, pozicija na grafu"""
-        self.annotation = self.axes.annotate(
-                    tekst,
-                    xy = point,
-                    xytext = offs,
-                    textcoords = 'offset points',
-                    ha = 'left',
-                    va = 'center',
-                    fontsize = 7,
-                    zorder = 102,
-                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7),
-                    arrowprops = dict(arrowstyle = '->'))
-        self.lastAnnotation = point[0]
-        self.statusAnnotation = True
-################################################################################
+#    def annotate_pick(self, point, offs, tekst):
+#        """
+#        Mangage annotation za tocku point, na offsetu offs, sa tekstom tekst
+#        point - (x, y) tuple
+#        offs - (xoff, yoff) tuple
+#        tekst - string
+#        """
+#        if self.statusAnnotation:
+#            self.annotation.remove()
+#            self.statusAnnotation = False
+#            if point[0] != self.lastAnnotation:
+#                self.make_annotation(point, offs, tekst)
+#        else:
+#            self.make_annotation(point, offs, tekst)
+#        self.draw()
+#################################################################################
+#    def make_annotation(self, point, offs, tekst):
+#        """Annotation instance object, pozicija na grafu"""
+#        self.annotation = self.axes.annotate(
+#                    tekst,
+#                    xy = point,
+#                    xytext = offs,
+#                    textcoords = 'offset points',
+#                    ha = 'left',
+#                    va = 'center',
+#                    fontsize = 7,
+#                    zorder = 102,
+#                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7),
+#                    arrowprops = dict(arrowstyle = '->'))
+#        self.lastAnnotation = point[0]
+#        self.statusAnnotation = True
+#################################################################################
     def highlight_pick(self, tpl, size):
         """
         crta highlight tocku na grafu sa koridinatama tpl = (x, y), velicine size
@@ -803,24 +1098,24 @@ class Kanvas(FigureCanvas):
         self.lastHighlight = (x, y)
         self.statusHighlight = True
 ################################################################################
-    def clear_graf(self):
-        """
-        clear grafa
-        """
-        self.data = {} #spremnik za frejmove (ucitane)
-        self.statusGlavniGraf = False
-        self.statusAnnotation = False
-        self.statusHighlight = False
-        self.lastHighlight = (None, None)
-        self.lastAnnotation = None
-
-        self.axes.clear()
-
-        #redo Axes labels
-        self.axes.set_xlabel('Vrijeme')
-        self.axes.set_ylabel(self.tip)
-
-        self.draw()
+#    def clear_graf(self):
+#        """
+#        clear grafa
+#        """
+#        self.data = {} #spremnik za frejmove (ucitane)
+#        self.statusGlavniGraf = False
+#        self.statusAnnotation = False
+#        self.statusHighlight = False
+#        self.lastHighlight = (None, None)
+#        self.lastAnnotation = None
+#
+#        self.axes.clear()
+#
+#        #redo Axes labels
+#        self.axes.set_xlabel('Vrijeme')
+#        self.axes.set_ylabel(self.tip)
+#
+#        self.draw()
 ################################################################################
     def sync_x_zoom(self, x):
         """
@@ -886,21 +1181,22 @@ class Kanvas(FigureCanvas):
 ################################################################################
 ################################################################################
 
-class SatniMinutniKanvas(Kanvas):
-    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
-        self.tip = 'SATNI'
-        self.midline = 'avg'
-        self.minimum = 'min'
-        self.maksimum = 'max'
+#class SatniMinutniKanvas(Kanvas):
+#    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
+#        self.tip = 'SATNI'
+#        self.midline = 'avg'
+#        self.minimum = 'min'
+#        self.maksimum = 'max'
+#
+#        super(SatniMinutniKanvas, self).__init__(konfig, appKonfig)
+#
+#    def toggle_tgl(self):
+#        self.toggle_ticks(self.graf_konfig.Ticks)
+#        self.toggle_grid(self.graf_konfig.Grid)
+#        self.toggle_legend(self.graf_konfig.Legend)
 
-        super(SatniMinutniKanvas, self).__init__(konfig, appKonfig)
 
-    def toggle_tgl(self):
-        self.toggle_ticks(self.graf_konfig.Ticks)
-        self.toggle_grid(self.graf_konfig.Grid)
-        self.toggle_legend(self.graf_konfig.Legend)
-
-
+#TODO!
 class SatniKanvas(SatniMinutniKanvas):
     def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
         self.graf_konfig = konfig.satni
@@ -910,7 +1206,7 @@ class SatniKanvas(SatniMinutniKanvas):
         self.axes.set_ylabel(SatniEnum.tip.value)
         self.midline = 'avg'
 
-            
+
     def crtaj_glavni_kanal(self):
             #midline
             frejm = self.data[self.gKanal]
@@ -965,8 +1261,8 @@ class SatniKanvas(SatniMinutniKanvas):
                'minorLabeli':minorLabeli}
 
         return out
-    
-    
+
+
     def promjena_flaga(self, flag = 1):
         """
         Metoda sluzi za promjenu flaga
@@ -975,7 +1271,7 @@ class SatniKanvas(SatniMinutniKanvas):
         #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
- 
+
         tmin = tmin - datetime.timedelta(minutes = 59)
         tmin = pd.to_datetime(tmin)
         self.promjena_flaga_top(tmin, tmax, flag)
@@ -1000,7 +1296,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         self.graf_konfig = konfig.minutni
         self.tip = 'MINUTNI'
         self.midline = 'koncentracija'
-        
+
         super(MinutniKanvas, self).__init__(konfig, appKonfig)
         self.axes.set_ylabel(MinutniEnum.tip.value)
         self.midline = 'Koncentracija'
@@ -1243,7 +1539,7 @@ class SpanKanvas(ZeroSpanKanvas):
 
     def crtaj_oznake_temperature(self, tempMin, tempMax):
         pass
-    
+
     def updateaj_labele_na_panelu(self, tip, argList):
         """
         update labela na zero span panelu (istovremeno i trigger za pick najblize
@@ -1257,7 +1553,6 @@ class SpanKanvas(ZeroSpanKanvas):
 
 
 ################################################################################
-
 class ZeroKanvas(ZeroSpanKanvas):
     def __init__(self, konfig, appKonfig,  parent = None, width = 6, height = 5, dpi=100):
         self.tip = 'ZERO'
@@ -1266,10 +1561,9 @@ class ZeroKanvas(ZeroSpanKanvas):
         self.warningHigh = 'maxDozvoljeno'
 
         self.graf_konfig = konfig.zero
-        self.tip_grafa = ZeroEnum
-        
+
         super(ZeroKanvas, self).__init__(konfig, appKonfig)
-        
+
         self.highlightSize = 1.5 * self.dto.zeroVOK.markerSize
         self.axes.xaxis.set_ticks_position('top')
         self.axes.figure.subplots_adjust(bottom = 0.02)
@@ -1329,7 +1623,7 @@ class ZeroKanvas(ZeroSpanKanvas):
         arg (specificni dictionary podataka, ovisno o tipu grafa).
         """
         self.emit(QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'), arg)
-        
+
     def updateaj_labele_na_panelu(self, tip, argList):
         """
         update labela na zero span panelu (istovremeno i trigger za pick najblize

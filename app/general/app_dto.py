@@ -8,177 +8,115 @@ import logging
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 
-###############################################################################
-###############################################################################
-class AppSettingsDTO():
+################################################################################
+class KonfigAplikacije():
     """
-    Storage & config objekt za elemente aplikacije
-    """
-    def __init__(self, cfg):
-        logging.debug('Inicijalizacija DTO za gui elemente, start')
-        #satni graf
-        self.satniGrid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_grid', False, bool)
-        self.satniCursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_cursor', False, bool)
-        self.satniLegend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_legend', False, bool)
-        self.satniTicks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
-        self.satniSelector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
-        #minutni graf
-        self.minutniGrid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_grid', False, bool)
-        self.minutniCursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_cursor', False, bool)
-        self.minutniLegend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
-        self.minutniTicks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
-        self.minutniSelector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
-        #zero/span graf
-        self.zsLegend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
-        #zoom
-        self.zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-        """
-        rest servis info
-        """
-        self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'base_url', 'http://172.20.1.166:9090/SKZ-war/webresources/', str)
-        self.RESTProgramMjerenja = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'program_mjerenja', 'dhz.skz.aqdb.entity.programmjerenja', str)
-        self.RESTSiroviPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'sirovi_podaci', 'dhz.skz.rs.sirovipodaci', str)
-        self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
-        self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci', 'dhz.skz.rs.satnipodatak', str)
-        logging.debug('Inicijalizacija DTO za gui elemente, end')
-###############################################################################
-    def set_zsLegend(self, x):
-        self.zsLegend = x
-        logging.info('Zero i Span legend state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_satniGrid(self, x):
-        self.satniGrid = x
-        logging.info('Satni grid state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_satniCursor(self, x):
-        self.satniCursor = x
-        logging.info('Satni cursor state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_satniLegend(self, x):
-        self.satniLegend = x
-        logging.info('Satni legend state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_satniTicks(self, x):
-        self.satniTicks = x
-        logging.info('Satni ticks state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_satniSelector(self, x):
-        self.satniSelector = x
-        logging.info('Satni span selector state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_minutniGrid(self, x):
-        self.minutniGrid = x
-        logging.info('Minutni grid state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_minutniCursor(self, x):
-        self.minutniCursor = x
-        logging.info('Minutni cursor state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_minutniLegend(self, x):
-        self.minutniLegend = x
-        logging.info('Minutni legend state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_minutniTicks(self, x):
-        self.minutniTicks = x
-        logging.info('Minutni ticks state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_minutniSelector(self, x):
-        self.minutniSelector = x
-        logging.info('Minutni span selector state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_zoom(self, x):
-        self.zoom = x
-        logging.info('Zoom state promjenjen, nova vrijednost = {0}'.format(x))
-###############################################################################
-    def set_RESTBaseUrl(self, x):
-        self.RESTBaseUrl = x
-        logging.info('REST base url promjenjen, novi = {0}'.format(x))
-###############################################################################
-    def set_RESTProgramMjerenja(self, x):
-        self.RESTProgramMjerenja = x
-        logging.info('REST programMjerenja relative url promjenjen, novi = {0}'.format(x))
-###############################################################################
-    def set_RESTSiroviPodaci(self, x):
-        self.RESTSiroviPodaci = x
-        logging.info('REST siroviPodaci relative url promjenjen, novi = {0}'.format(x))
-###############################################################################
-    def set_RESTSatniPodaci(self, x):
-        self.RESTSatniPodaci = x
-        logging.info('REST satniPodaci relative url promjenjen, novi = {0}'.format(x))
-###############################################################################
-    def set_RESTZeroSpan(self, x):
-        self.RESTZeroSpan = x
-        logging.info('REST zerospan relative url promjenjen, novi = {0}'.format(x))
-###############################################################################
-###############################################################################
-class GrafSettingsDTO():
-    """
-    Storage & config objekt u kojem se pohranjuje popis GrafDTO za crtanje
+    Glavni konfiguracijski objekt aplikacije
     """
     def __init__(self, cfg):
         """
-        cfg je instanca configparser objekta sa ucitanim config.ini
+        Inicijalizacija sa cfg configparser objektom.
+
+        Konfig sadrzava podatke za:
+        -satni graf
+        -minutni graf
+        -zero graf
+        -span graf
+        -REST servis
+        -opcenite postavke grafa
         """
         logging.debug('Inicijalizacija DTO za sve grafove, start')
         self.conf = cfg
         #lista dto objekata pomocnih grafova
         self.dictPomocnih = {}
-
         #definicija DTO za satni graf
         self.satni = SatniGrafKonfig(cfg)
         self.minutni = MinutniGrafKonfig(cfg)
         self.zero = ZeroGrafKonfig(cfg)
         self.span = SpanGrafKonfig(cfg)
-        #definicija DTO za minutni graf
-
-        self.satniMidline = GrafDTO(cfg, tip = 'SATNI', podtip = 'midline', oblik = 'line')
-        self.satniVOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'VOK', oblik = 'scatter')
-        self.satniVBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'VBAD', oblik = 'scatter')
-        self.satniNVOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'NVOK', oblik = 'scatter')
-        self.satniNVBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'NVBAD', oblik = 'scatter')
-        self.satniEksMin = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
-        self.satniEksMax = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
-        self.satniFill = GrafDTO(cfg, tip = 'SATNI', podtip = 'fill1', oblik = 'fill')
-
-        self.minutniMidline = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'midline', oblik = 'line')
-        self.minutniVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VOK', oblik = 'scatter')
-        self.minutniVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VBAD', oblik = 'scatter')
-        self.minutniNVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVOK', oblik = 'scatter')
-        self.minutniNVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVBAD', oblik = 'scatter')
-
-        self.zeroMidline = GrafDTO(cfg, tip = 'ZERO', podtip = 'midline', oblik = 'line')
-        self.zeroVOK = GrafDTO(cfg, tip = 'ZERO', podtip = 'VOK', oblik = 'scatter')
-        self.zeroVBAD = GrafDTO(cfg, tip = 'ZERO', podtip = 'VBAD', oblik = 'scatter')
-        self.zeroFill1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill1', oblik = 'fill')
-        self.zeroFill2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill2', oblik = 'fill')
-        self.zeroWarning1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
-        self.zeroWarning2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
-
-        self.spanMidline = GrafDTO(cfg, tip = 'SPAN', podtip = 'midline', oblik = 'line')
-        self.spanVOK = GrafDTO(cfg, tip = 'SPAN', podtip = 'VOK', oblik = 'scatter')
-        self.spanVBAD = GrafDTO(cfg, tip = 'SPAN', podtip = 'VBAD', oblik = 'scatter')
-        self.spanFill1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill1', oblik = 'fill')
-        self.spanFill2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill2', oblik = 'fill')
-        self.spanWarning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
-        self.spanWarning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
-        #definicija DTO za SPAN graf
-
-        #definicija DTO za ZERO graf
-
+        self.REST = RESTKonfig(cfg)
         logging.debug('Inicijalizacija DTO za sve grafove, end')
-###############################################################################
+
     def dodaj_pomocni(self, key):
         name = 'plot' + str(key)
         self.dictPomocnih[key] = GrafDTO(self.conf, tip = 'POMOCNI', podtip = name, oblik = 'plot')
         logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
-###############################################################################
+
     def makni_pomocni(self, key):
         self.dictPomocnih.pop(key)
         logging.info('Pomocni graf maknut, mjerenjeId = {0}'.format(key))
-###############################################################################
-###############################################################################
-class SatniGrafKonfig():
+################################################################################
+class MetaConfig():
+    def __init__(self):
+        """
+        Definira zajednicke metoda za konfig graf klase.
+        """
+        self.Midline = None
+        self.VOK = None
+        self.VBAD = None
+        self.NVOK = None
+        self.NVBAD = None
+        self.EksMin = None
+        self.EksMax = None
+        self.Fill = None
+        self.Grid = False
+        self.Cursor = False
+        self.Legend = False
+        self.Ticks = False
+        self.Selector = False
+        self.Fill1 = None
+        self.Fill2 = None
+        self.Warning1 = None
+        self.Warning2 = None
+        self.Zoom = False
+
+    ###definicije setter metoda za boolean vrijednosti (za toggle).
+    def set_grid(self, x):
+        """boolean setter za prikaz grida"""
+        if isinstance(x, bool):
+            self.Grid = x
+            logging.info('Grid boolean value promjenjen, nova vrijednost = {0}'.format(x))
+
+    def set_cursor(self, x):
+        """boolean setter za prikaz cursora"""
+        if isinstance(x, bool):
+            self.Cursor = x
+            logging.info('Cursor boolean value promjenjen, nova vrijednost = {0}'.format(x))
+
+    def set_legend(self, x):
+        """boolean setter za prikaz legende"""
+        if isinstance(x, bool):
+            self.Legend = x
+            logging.info('Legend boolean value promjenjen, nova vrijednost = {0}'.format(x))
+
+    def set_ticks(self, x):
+        """boolean setter za prikaz minor tickova"""
+        if isinstance(x, bool):
+            self.Ticks = x
+            logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
+
+    def set_selector(self, x):
+        """boolean setter za span selector interakciju sa canvasom (biranje vise tocaka
+        odjednom)"""
+        if isinstance(x, bool):
+            self.Selector = x
+            logging.info('Selector boolean value promjenjen, nova vrijednost = {0}'.format(x))
+
+    def set_zoom(self, x):
+        """boolean setter za zoom interakciju sa canvasom"""
+        if isinstance(x, bool):
+            self.Zoom = x
+            logging.info('Zoom boolean value promjenjen, nova vrijednost = {0}'.format(x))
+################################################################################
+class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        super(SatniGrafKonfig, self).__init__()
+        #konstante
+        self.TIP = 'SATNI'
+        self.MIDLINE = 'avg'
+        self.MINIMUM = 'min'
+        self.MAKSIMUM = 'max'
+        #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'SATNI', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'VOK', oblik = 'scatter')
         self.VBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'VBAD', oblik = 'scatter')
@@ -187,30 +125,41 @@ class SatniGrafKonfig():
         self.EksMin = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
         self.EksMax = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
         self.Fill = GrafDTO(cfg, tip = 'SATNI', podtip = 'fill1', oblik = 'fill')
-
+        #interakcija sa grafom
         self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_grid', False, bool)
         self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_cursor', False, bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_legend', False, bool)
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
-
-
-class MinutniGrafKonfig():
+################################################################################
+class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        super(MinutniGrafKonfig, self).__init__()
+        #konstante
+        self.TIP = 'MINUTNI'
+        self.MIDLINE = 'koncentracija'
+        #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VOK', oblik = 'scatter')
         self.VBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VBAD', oblik = 'scatter')
         self.NVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVOK', oblik = 'scatter')
         self.NVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVBAD', oblik = 'scatter')
-
+        #interakcija sa grafom
         self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_grid', False, bool)
         self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_cursor', False, bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
-
-class ZeroGrafKonfig():
+################################################################################
+class ZeroGrafKonfig(MetaConfig):
     def __init__(self,cfg):
+        super(ZeroGrafKonfig, self).__init__()
+        #konstante
+        self.TIP = 'ZERO'
+        self.MIDLINE = 'vrijednost'
+        self.WARNING_LOW = 'minDozvoljeno'
+        self.WARNING_HIGH = 'maxDozvoljeno'
+        #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'ZERO', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'ZERO', podtip = 'VOK', oblik = 'scatter')
         self.VBAD = GrafDTO(cfg, tip = 'ZERO', podtip = 'VBAD', oblik = 'scatter')
@@ -218,11 +167,18 @@ class ZeroGrafKonfig():
         self.Fill2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill2', oblik = 'fill')
         self.Warning1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
         self.Warning2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
+        #interakcija sa grafom
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
-
-
-class SpanGrafKonfig():
+################################################################################
+class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        super(SpanGrafKonfig, self).__init__()
+        #konstante
+        self.TIP = 'SPAN'
+        self.MIDLINE = 'vrijednost'
+        self.WARNING_LOW = 'minDozvoljeno'
+        self.WARNING_HIGH = 'maxDozvoljeno'
+        #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'SPAN', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'SPAN', podtip = 'VOK', oblik = 'scatter')
         self.VBAD = GrafDTO(cfg, tip = 'SPAN', podtip = 'VBAD', oblik = 'scatter')
@@ -230,15 +186,24 @@ class SpanGrafKonfig():
         self.Fill2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill2', oblik = 'fill')
         self.Warning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
         self.Warning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
+        #interakcija sa grafom
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
-
-
+################################################################################
+class RESTKonfig():
+    def __init__(self, cfg):
+        #konstante za REST
+        self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'base_url', 'http://172.20.1.166:9090/SKZ-war/webresources/', str)
+        self.RESTProgramMjerenja = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'program_mjerenja', 'dhz.skz.aqdb.entity.programmjerenja', str)
+        self.RESTSiroviPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'sirovi_podaci', 'dhz.skz.rs.sirovipodaci', str)
+        self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
+        self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci', 'dhz.skz.rs.satnipodatak', str)
+################################################################################
 class GrafDTO():
     """
     Objekt u kojem se pohranjuju postavke pojedinog grafa.
     Samo se pohranjuje informacija o izgledu grafa (markeri, linije ...)
 
-    ulazni parametri:
+    ulazni parametri za inicijalizaciju:
     cfg
         -instanca configparser objekta
     tip
@@ -250,7 +215,6 @@ class GrafDTO():
         -prvi dio optiona npr. 'midline'
         -dozvoljeni su [midline, ekstrem, VOK, VBAD, NVOK, NVBAD, fill1,
                         fill2, warning]
-
     oblik
         -string
         -oblik grafa za crtanje [plot, line, scatter, fill]
@@ -307,16 +271,16 @@ class GrafDTO():
                 #fill between satnog grafa, izmedju kojih komponenti se sjenca
                 self.komponenta1 = self.init_komponenta1(cfg, self.tip, self.podtip)
                 self.komponenta2 = self.init_komponenta2(cfg, self.tip, self.podtip)
-###############################################################################
+
     def init_label(self, cfg, tip, podtip):
         placeholder = podtip + ' label placeholder'
         podtip = podtip+'_label_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, placeholder, str)
         return str(val)
-###############################################################################
+
     def set_label(self, x):
         self.label = str(x)
-###############################################################################
+
     def init_zorder(self, cfg, tip, podtip):
         podtip = podtip+'_zorder_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 2, int)
@@ -324,17 +288,17 @@ class GrafDTO():
             return int(val)
         else:
             return 2
-###############################################################################
+
     def set_zorder(self, x):
         if self.test_zorder(x):
             self.zorder = x
-###############################################################################
+
     def test_zorder(self, x):
         if x > 1:
             return True
         else:
             return False
-###############################################################################
+
     def init_komponenta1(self, cfg, tip, podtip):
         podtip = podtip+'_komponenta1_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'q05', str)
@@ -342,7 +306,7 @@ class GrafDTO():
             return val
         else:
             return 'q05'
-###############################################################################
+
     def init_komponenta2(self, cfg, tip, podtip):
         podtip = podtip+'_komponenta2_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'q95', str)
@@ -350,23 +314,23 @@ class GrafDTO():
             return val
         else:
             return 'q95'
-###############################################################################
+
     def set_komponenta1(self, x):
         if self.test_fill_komponenta:
             self.komponenta1 = x
             logging.info('Promjena fill komponente za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_komponenta2(self, x):
         if self.test_fill_komponenta:
             self.komponenta2 = x
             logging.info('Promjena fill komponente za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def test_fill_komponenta(self, x):
         if x in self._sveAgregiraneKomponente:
             return True
         else:
             return False
-###############################################################################
+
     def init_rgb(self, cfg, tip, podtip):
         podtip = podtip+'_rgb_'
         rgb = pomocne_funkcije.load_config_item(cfg, tip, podtip, (0,0,255), tuple)
@@ -378,7 +342,7 @@ class GrafDTO():
             return rgb
         else:
             return (0,0,255)
-###############################################################################
+
     def init_alpha(self, cfg, tip, podtip):
         podtip = podtip+'_alpha_'
         alpha = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
@@ -386,12 +350,12 @@ class GrafDTO():
             return alpha
         else:
             return 1.0
-###############################################################################
+
     def init_crtaj(self, cfg, tip, podtip):
         podtip = podtip+'_crtaj_'
         boolCrtaj = pomocne_funkcije.load_config_item(cfg, tip, podtip, True, bool)
         return boolCrtaj
-###############################################################################
+
     def init_markerStyle(self, cfg, tip, podtip):
         podtip = podtip+'_markerStyle_'
         marker = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'o', str)
@@ -399,7 +363,7 @@ class GrafDTO():
             return marker
         else:
             return 'o'
-###############################################################################
+
     def init_markerSize(self, cfg, tip, podtip):
         podtip = podtip+'_markerSize_'
         size = pomocne_funkcije.load_config_item(cfg, tip, podtip, 12, int)
@@ -407,7 +371,7 @@ class GrafDTO():
             return size
         else:
             return 12
-###############################################################################
+
     def init_lineStyle(self, cfg, tip, podtip):
         podtip = podtip+'_lineStyle_'
         stil = pomocne_funkcije.load_config_item(cfg, tip, podtip,'-', str)
@@ -415,7 +379,7 @@ class GrafDTO():
             return stil
         else:
             return '-'
-###############################################################################
+
     def init_lineWidth(self, cfg, tip, podtip):
         podtip = podtip+'_lineWidth_'
         sirina = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
@@ -423,7 +387,7 @@ class GrafDTO():
             return sirina
         else:
             return 1.0
-###############################################################################
+
     def test_rgb(self, x):
         out = True
         for i in x:
@@ -432,71 +396,70 @@ class GrafDTO():
             else:
                 out = (out and False)
         return out
-###############################################################################
+
     def test_alpha(self, x):
         if x >= 0.0 and x<= 1.0:
             return True
         else:
             return False
-###############################################################################
+
     def test_markerStyle(self, x):
         if x in self._sviMarkeri:
             return True
         else:
             return False
-###############################################################################
+
     def test_markerSize(self, x):
         if x > 0:
             return True
         else:
             return False
-###############################################################################
+
     def test_lineStyle(self, x):
         if x in self._sveLinije:
             return True
         else:
             return False
-###############################################################################
+
     def test_lineWidth(self, x):
         if x > 0:
             return True
         else:
             return False
-###############################################################################
+
     def set_alpha(self, x):
         if self.test_alpha(x):
             self.alpha = x
             self.color = pomocne_funkcije.make_color(self.rgb, x)
             logging.info('Promjena alfe za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_rgb(self, x):
         if self.test_rgb(x):
             self.rgb = x
             self.color = pomocne_funkcije.make_color(x, self.alpha)
             logging.info('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_crtaj(self, x):
         self.crtaj = x
         logging.info('Promjena crtaj booleana za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_markerStyle(self, x):
         if self.test_markerStyle(x):
             self.markerStyle = x
             logging.info('Promjena stila markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_markerSize(self, x):
         if self.test_markerSize(x):
             self.markerSize = x
             logging.info('Promjena velicine markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_lineStyle(self, x):
         if self.test_lineStyle(x):
             self.lineStyle = x
             logging.info('Promjena stila linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
+
     def set_lineWidth(self, x):
         if self.test_lineWidth(x):
             self.lineWidth = x
             logging.info('Promjena sirine linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-###############################################################################
-###############################################################################
+################################################################################

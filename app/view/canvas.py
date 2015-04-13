@@ -725,10 +725,11 @@ class Kanvas(FigureCanvas):
         """
         Toggle legende on i off, ovisno o ulaznoj vrijednosti x (boolean)
         """
-        if x and self.statusGlavniGraf:
-            self.legenda.set_visible(True)
-        else:
-            self.legenda.set_visible(False)
+        if self.legenda is not None:
+            if x and self.statusGlavniGraf:
+                self.legenda.set_visible(True)
+            else:
+                self.legenda.set_visible(False)
         self.draw()
 ################################################################################
     def setup_legend(self):

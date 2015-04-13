@@ -58,8 +58,8 @@ class KoncPanel(base2, form2):
         self.setupUi(self)
 
         #inicijalizacija canvasa
-        self.satniGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.satni.value, parent = None)
-        self.minutniGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.minutni.value, parent = None)
+        self.satniGraf = canvas.SatniKanvas(konfig, appKonfig)
+        self.minutniGraf = canvas.MinutniKanvas(konfig, appKonfig)
 
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
@@ -128,8 +128,8 @@ class ZeroSpanPanel(base3, form3):
         super(base3, self).__init__(parent)
         self.setupUi(self)
         #inicijalizacija canvasa
-        self.zeroGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.zero.value, parent = None)
-        self.spanGraf = canvas.Kanvas(konfig, appKonfig, canvas.GrafEnum.span.value, parent = None)
+        self.zeroGraf = canvas.ZeroKanvas(konfig, appKonfig)
+        self.spanGraf = canvas.SpanKanvas(konfig, appKonfig)
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)

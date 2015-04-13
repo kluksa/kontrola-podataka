@@ -190,59 +190,7 @@ def prosiri_granice_grafa(tmin, tmax, t):
     tmax = pd.to_datetime(tmax)
     return tmin, tmax
 ###############################################################################
-def pronadji_tickove_satni(tmin, tmax):
-    """
-    funkcija vraca listu tickmarkera i listu tick labela za satni graf.
-    -vremenski raspon je tmin, tmax
-    -tickovi su razmaknuti 1 sat
-    vrati dict sa listama lokacija i labela za tickove
-    """
-    tmin = tmin - datetime.timedelta(minutes = 1)
-    tmin = pd.to_datetime(tmin)
-    majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'H'))
-    majorLabeli = [str(ind.hour)+'h' for ind in majorTickovi]
-    tempTickovi = list(pd.date_range(start = tmin, end = tmax, freq = '15Min'))
-    minorTickovi = []
-    minorLabeli = []
-    for ind in tempTickovi:
-        if ind not in majorTickovi:
-            #formatiraj vrijeme u sat:min 12:15:00 -> 12h:15m
-            #ftime = str(ind.hour)+'h:'+str(ind.minute)+'m'
-            minorTickovi.append(ind)
-            minorLabeli.append("")
-            #minorLabeli.append(ftime)
 
-    out = {'majorTickovi':majorTickovi,
-           'majorLabeli':majorLabeli,
-           'minorTickovi':minorTickovi,
-           'minorLabeli':minorLabeli}
-
-    return out
-###############################################################################
-def pronadji_tickove_minutni(tmin, tmax):
-    """
-    funkcija vraca liste tickmarkera (minor i major) i listu tick labela
-    za minutni graf.
-    """
-    tmin = tmin - datetime.timedelta(minutes = 1)
-    tmin = pd.to_datetime(tmin)
-    majorTickovi = list(pd.date_range(start = tmin, end= tmax, freq = '5Min'))
-    majorLabeli = [str(ind.hour)+'h:'+str(ind.minute)+'m' for ind in majorTickovi]
-    tempTickovi = list(pd.date_range(start = tmin, end= tmax, freq = 'Min'))
-    minorTickovi = []
-    minorLabeli = []
-    for ind in tempTickovi:
-        if ind not in majorTickovi:
-            minorTickovi.append(ind)
-            #minorLabeli.append(str(ind.minute)+'m')
-            minorLabeli.append("")
-
-    out = {'majorTickovi':majorTickovi,
-           'majorLabeli':majorLabeli,
-           'minorTickovi':minorTickovi,
-           'minorLabeli':minorLabeli}
-
-    return out
 ###############################################################################
 def zaokruzi_vrijeme(dt_objekt, nSekundi):
     """
@@ -265,27 +213,6 @@ def zaokruzi_vrijeme(dt_objekt, nSekundi):
         izlaz = dt_objekt + datetime.timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
         return izlaz
 ###############################################################################
-def pronadji_tickove_zero_span(tmin, tmax):
-    """
-    Funkcija radi tickove za zero i span graf
-
-    Dodatno, funkcija adaptira vrijeme npr. timestamp jedne vrijednosti
-    je '2015-02-14 12:34:56' i treba se 'adaptirati' u '14.02' radi kraceg zapisa
-
-    input je lista min i max vrijeme za prikaz (raspon grafa)
-    output je lista stringova (labeli za tickove), lista timestampova (tick location)
-    """
-    raspon = pd.date_range(start = tmin, end = tmax, freq = 'D')
-    tickLoc = [pd.to_datetime(i.date())for i in raspon]
-    tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
-
-    #za sada zanemarimo minor tickove na zero/span grafu, prosljedi prazne liste
-    out = {'majorTickovi':tickLoc,
-           'majorLabeli':tickLab,
-           'minorTickovi':[],
-           'minorLabeli':[]}
-
-    return out
 ###############################################################################
 def sync_zero_span_x_os(lista):
     """

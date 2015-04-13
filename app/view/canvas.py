@@ -62,11 +62,11 @@ class Kanvas(FigureCanvas):
     """
     Canvas za prikaz i interakciju sa grafovima
     """
-    def __init__(self, konfig, appKonfig, tip, parent = None, width = 6, height = 5, dpi=100):
+    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
         """osnovna definicija figure, axes i canvasa"""
         self.fig = Figure(figsize = (width, height), dpi = dpi)
         self.axes = self.fig.add_subplot(111)
-        FigureCanvas.__init__(self, self.fig)
+        super(Kanvas,self).__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
             self,
@@ -76,7 +76,8 @@ class Kanvas(FigureCanvas):
         """podrska za kontekstni meni"""
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         """bitni memberi"""
-        self.tip_grafa = tip #Enum objekt sa tipom grafa npr. GrafEnum.satni.value
+
+
         self.dto = konfig #konfig dto objekt
         self.appDto = appKonfig #app konfig objekt
         self.data = {} #prazan dict koji ce sadrzavati frejmove sa podacima
@@ -94,32 +95,15 @@ class Kanvas(FigureCanvas):
         self.legenda = None #placeholder za legendu
 
         #dynamic size za highlight (1.5 puta veci od markera)
-        if self.tip_grafa is SpanEnum:
-            self.highlightSize = 1.5 * self.dto.spanVOK.markerSize
-        elif self.tip_grafa is ZeroEnum:
-            self.highlightSize = 1.5 * self.dto.zeroVOK.markerSize
-        elif self.tip_grafa is SatniEnum:
-            self.highlightSize = 1.5 * self.dto.satniVOK.markerSize
-        else:
-            self.highlightSize = 15
+        self.highlightSize = 15
 
         #Axes labeli
         self.axes.set_xlabel('Vrijeme')
-        self.axes.set_ylabel(self.tip_grafa.tip.value)
 
-        if self.tip_grafa is SpanEnum:
-            #prebaci lokaciju tickova
-            self.axes.xaxis.set_ticks_position('top')
-            self.axes.figure.subplots_adjust(bottom = 0.02)
-            self.axes.figure.subplots_adjust(right = 0.98)
-        elif self.tip_grafa is ZeroEnum:
-            self.axes.xaxis.set_ticks_position('bottom')
-            self.axes.figure.subplots_adjust(top = 0.98)
-            self.axes.figure.subplots_adjust(right = 0.98)
 
         self.initialize_interaction()
 ################################################################################
-    def crtaj(self, ulaz):
+    def crtaj(self, ulaz, konfig = None):
         """
         Glavna metoda za crtanje na canvas. Eksplicitne naredbe za crtanje.
 
@@ -150,25 +134,22 @@ class Kanvas(FigureCanvas):
 
         #redo Axes labels
         self.axes.set_xlabel('Vrijeme')
-        self.axes.set_ylabel(self.tip_grafa.tip.value)
+        self.axes.set_ylabel(self.tip)
 
         ###emit zahtjev za podacima glavnog kanala, return se vraca u member self.data
         arg = {'kanal':self.gKanal,
                'od':self.pocetnoVrijeme,
                'do':self.zavrsnoVrijeme}
+        
         self.emit_request_za_podacima(arg)
 
         #Provjera za postojanjem podataka glavnog kanala.
         if self.gKanal in self.data.keys():
             """temperatura kontejnera i pomocni grafovi se koriste samo kod
             satnog i minutnog grafa"""
+
             if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
                 #ucitaj temperaturu kontejnera ako postoji
-                if self.tKontejner is not None:
-                    arg = {'kanal':self.tKontejner,
-                           'od':self.pocetnoVrijeme,
-                           'do':self.zavrsnoVrijeme}
-                    self.emit_request_za_podacima(arg)
                 #kreni ucitavati pomocne kanale po potrebi
                 for programKey in self.dto.dictPomocnih.keys():
                     if programKey not in self.data.keys():
@@ -176,28 +157,21 @@ class Kanvas(FigureCanvas):
                                'od':self.pocetnoVrijeme,
                                'do':self.zavrsnoVrijeme}
                         self.emit_request_za_podacima(arg)
+
             #naredba za crtanje glavnog grafa
             self.crtaj_glavni_kanal()
             #set dostupnih pomocnih kanala za crtanje
             pomocni = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
             self.crtaj_pomocne(pomocni)
 
+
             ###micanje tocaka od rubova, tickovi, legenda...
             self.setup_limits()
-            self.setup_ticks()
             self.setup_legend()
+            self.setup_ticks()
 
-            #toggle minor tickova, i grida
-            if self.tip_grafa is SatniEnum:
-                self.toggle_ticks(self.appDto.satniTicks)
-                self.toggle_grid(self.appDto.satniGrid)
-                self.toggle_legend(self.appDto.satniLegend)
-            elif self.tip_grafa is MinutniEnum:
-                self.toggle_ticks(self.appDto.minutniTicks)
-                self.toggle_grid(self.appDto.minutniGrid)
-                self.toggle_legend(self.appDto.minutniLegend)
-            elif self.tip_grafa is ZeroEnum or self.tip_grafa is SpanEnum:
-                self.toggle_legend(self.appDto.zsLegend)
+            self.toggle_tgl()
+
             #crtanje temperature kontejnera
             self.crtaj_oznake_temperature(15,30)
             #highlight prijasnje tocke
@@ -205,7 +179,7 @@ class Kanvas(FigureCanvas):
                 hx, hy = self.lastHighlight
                 if hx in self.data[self.gKanal].index:
                     #pronadji novu y vrijednosti indeksa
-                    hy = self.data[self.gKanal].loc[hx, self.tip_grafa.midline.value]
+                    hy = self.data[self.gKanal].loc[hx, self.midline]
                     self.make_highlight(hx, hy, self.highlightSize)
                 else:
                     self.statusHighlight = False
@@ -227,102 +201,6 @@ class Kanvas(FigureCanvas):
             #promjeni cursor u normalan cursor
             QtGui.QApplication.restoreOverrideCursor()
 ################################################################################
-    def crtaj_glavni_kanal(self):
-        """
-        Metoda za crtanje komponenti glavnog kanala na canvas (midline, ekstremi, fill...)
-        """
-        if self.tip_grafa is SatniEnum:
-            #midline
-            frejm = self.data[self.gKanal]
-            x = list(frejm.index)
-            y = list(frejm[self.tip_grafa.midline.value])
-            self.crtaj_line(x, y, self.dto.satniMidline)
-            #fill izmedju komponenti
-            if self.dto.satniFill.crtaj:
-                self.crtaj_fill(x,
-                                list(frejm[self.dto.satniFill.komponenta1]),
-                                list(frejm[self.dto.satniFill.komponenta2]),
-                                self.dto.satniFill)
-            #ekstremi min i max
-            if self.dto.satniEksMin.crtaj:
-                self.crtaj_scatter_value(self.tip_grafa.minimum.value, self.dto.satniEksMin, None)
-                self.crtaj_scatter_value(self.tip_grafa.maksimum.value, self.dto.satniEksMax, None)
-            #plot tocaka ovisno o flagu i validaciji
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.satniVOK, 1000)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.satniVBAD, -1000)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.satniNVOK, 1)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.satniNVBAD, -1)
-            self.statusGlavniGraf = True
-        elif self.tip_grafa is MinutniEnum:
-            #midline plot
-            frejm = self.data[self.gKanal]
-            x = list(frejm.index)
-            y = list(frejm[self.tip_grafa.midline.value])
-            self.crtaj_line(x, y, self.dto.minutniMidline)
-            #plot tocaka ovisno o flagu i validaciji
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.minutniVOK, 1000)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.minutniVBAD, -1000)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.minutniNVOK, 1)
-            self.crtaj_scatter_value(self.tip_grafa.midline.value, self.dto.minutniNVBAD, -1)
-            self.statusGlavniGraf = True
-        elif self.tip_grafa is ZeroEnum:
-            #priprema podataka za crtanje
-            tocke = self.pripremi_zero_span_podatke_za_crtanje()
-            #midline (plot je drugacije definiran zbog pickera)
-            self.axes.plot(tocke['x'],
-                           tocke['y'],
-                           linestyle = self.dto.zeroMidline.lineStyle,
-                           linewidth = self.dto.zeroMidline.lineWidth,
-                           color = self.dto.zeroMidline.color,
-                           zorder = self.dto.zeroMidline.zorder,
-                           label = self.dto.zeroMidline.label,
-                           picker = 5)
-            #ok values
-            if len(tocke['xok']) > 0:
-                self.crtaj_scatter(tocke['xok'], tocke['yok'], self.dto.zeroVOK)
-            #bad values
-            if len(tocke['xbad']) > 0:
-                self.crtaj_scatter(tocke['xbad'], tocke['ybad'], self.dto.zeroVBAD)
-            #warning lines?
-            if self.dto.zeroWarning1.crtaj:
-                self.crtaj_line(tocke['x'], tocke['warningUp'], self.dto.zeroWarning1)
-                self.crtaj_line(tocke['x'], tocke['warningLow'], self.dto.zeroWarning2)
-            #fill
-            ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
-            if self.dto.zeroFill1.crtaj:
-                self.crtaj_fill(tocke['x'], tocke['warningLow'], tocke['warningUp'], self.dto.zeroFill1)
-                self.crtaj_fill(tocke['x'], tocke['warningUp'], hedge, self.dto.zeroFill2)
-                self.crtaj_fill(tocke['x'], ledge, tocke['warningLow'], self.dto.zeroFill2)
-            self.statusGlavniGraf = True
-        elif self.tip_grafa is SpanEnum:
-            #priprema podataka za crtanje
-            tocke = self.pripremi_zero_span_podatke_za_crtanje()
-            #midline (plot je drugacije definiran zbog pickera)
-            self.axes.plot(tocke['x'],
-                           tocke['y'],
-                           linestyle = self.dto.spanMidline.lineStyle,
-                           linewidth = self.dto.spanMidline.lineWidth,
-                           color = self.dto.spanMidline.color,
-                           zorder = self.dto.spanMidline.zorder,
-                           label = self.dto.spanMidline.label,
-                           picker = 5)
-            #ok values
-            if len(tocke['xok']) > 0:
-                self.crtaj_scatter(tocke['xok'], tocke['yok'], self.dto.spanVOK)
-            #bad values
-            if len(tocke['xbad']) > 0:
-                self.crtaj_scatter(tocke['xbad'], tocke['ybad'], self.dto.spanVBAD)
-            #warning lines?
-            if self.dto.zeroWarning1.crtaj:
-                self.crtaj_line(tocke['x'], tocke['warningUp'], self.dto.spanWarning1)
-                self.crtaj_line(tocke['x'], tocke['warningLow'], self.dto.spanWarning2)
-            #fill
-            ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
-            if self.dto.zeroFill1.crtaj:
-                self.crtaj_fill(tocke['x'], tocke['warningLow'], tocke['warningUp'], self.dto.spanFill1)
-                self.crtaj_fill(tocke['x'], tocke['warningUp'], hedge, self.dto.spanFill2)
-                self.crtaj_fill(tocke['x'], ledge, tocke['warningLow'], self.dto.spanFill2)
-            self.statusGlavniGraf = True
 ################################################################################
     def crtaj_pomocne(self, popis):
         """
@@ -333,7 +211,7 @@ class Kanvas(FigureCanvas):
         for key in popis:
             frejm = self.data[key]
             x = list(frejm.index)
-            y = list(frejm[self.tip_grafa.midline.value])
+            y = list(frejm[self.midline])
             self.axes.plot(x,
                            y,
                            marker=self.dto.dictPomocnih[key].markerStyle,
@@ -348,13 +226,20 @@ class Kanvas(FigureCanvas):
         """
         Crtanje oznaka za temperaturu kontejnera ako su izvan zadanih granica
         """
+
         if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
+            if self.tKontejner is not None:
+                    arg = {'kanal':self.tKontejner,
+                           'od':self.pocetnoVrijeme,
+                           'do':self.zavrsnoVrijeme}
+                    self.emit_request_za_podacima(arg)
+
             if self.tKontejner in self.data.keys():
                 frejm = self.data[self.tKontejner]
                 frejm = frejm[frejm['flag'] > 0]
                 if len(frejm):
-                    overlimit = frejm[frejm[self.tip_grafa.midline.value] > tempMax]
-                    underlimit = frejm[frejm[self.tip_grafa.midline.value] < tempMin]
+                    overlimit = frejm[frejm[self.midline] > tempMax]
+                    underlimit = frejm[frejm[self.midline] < tempMin]
                     frejm = overlimit.append(underlimit)
                     x = list(frejm.index)
                     brojLosih = len(x)
@@ -373,12 +258,7 @@ class Kanvas(FigureCanvas):
         """
         Postavljanje pozicije i formata tickova x osi.
         """
-        if self.tip_grafa is SatniEnum:
-            tickovi = pomocne_funkcije.pronadji_tickove_satni(self.pocetnoVrijeme, self.zavrsnoVrijeme)
-        elif self.tip_grafa is MinutniEnum:
-            tickovi = pomocne_funkcije.pronadji_tickove_minutni(self.pocetnoVrijeme, self.zavrsnoVrijeme)
-        elif self.tip_grafa is ZeroEnum or self.tip_grafa is SpanEnum:
-            tickovi = pomocne_funkcije.pronadji_tickove_zero_span(self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        tickovi = self.pronadji_tickove()
 
         self.majorTickLoc = tickovi['majorTickovi']
         self.majorTickLab = tickovi['majorLabeli']
@@ -433,43 +313,6 @@ class Kanvas(FigureCanvas):
                                color = dto.color,
                                zorder = dto.zorder,
                                label = dto.label)
-################################################################################
-    def pripremi_zero_span_podatke_za_crtanje(self):
-        """Pripremanje podataka za crtanje zero/span. Funkcija vraca dictionary
-        sa podacima koji se dalje koriste za crtanje"""
-        #priprema podataka za crtanje
-        frejm = self.data[self.gKanal]
-        x = list(frejm.index) #svi indeksi
-        y = list(frejm[self.tip_grafa.midline.value]) #sve vrijednosti
-        warningUp = list(frejm[self.tip_grafa.warningHigh.value]) #warning up
-        warningLow = list(frejm[self.tip_grafa.warningLow.value]) #warning low
-        #pronalazak samo ok tocaka
-        tempfrejm = self.data[self.gKanal].copy()
-        okTocke = tempfrejm[tempfrejm[self.tip_grafa.midline.value] <= tempfrejm[self.tip_grafa.warningHigh.value]]
-        okTocke = okTocke[okTocke[self.tip_grafa.midline.value] >= okTocke[self.tip_grafa.warningLow.value]]
-        xok = list(okTocke.index)
-        yok = list(okTocke[self.tip_grafa.midline.value])
-        #pronalazak losih tocaka
-        tempfrejm = self.data[self.gKanal].copy()
-        badOver = tempfrejm[tempfrejm[self.tip_grafa.midline.value] > tempfrejm[self.tip_grafa.warningHigh.value]]
-        tempfrejm = self.data[self.gKanal].copy()
-        badUnder = tempfrejm[tempfrejm[self.tip_grafa.midline.value] < tempfrejm[self.tip_grafa.warningLow.value]]
-        badTocke = badUnder.append(badOver)
-        badTocke.sort()
-        badTocke.drop_duplicates(subset='vrijeme',
-                                 take_last=True,
-                                 inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
-        xbad = list(badTocke.index)
-        ybad = list(badTocke[self.tip_grafa.midline.value])
-
-        return {'x':x,
-                'y':y,
-                'warningUp':warningUp,
-                'warningLow':warningLow,
-                'xok':xok,
-                'yok':yok,
-                'xbad':xbad,
-                'ybad':ybad}
 ################################################################################
     def crtaj_scatter_value(self, komponenta, dto, flag):
         """
@@ -549,9 +392,6 @@ class Kanvas(FigureCanvas):
         #redraw
         self.draw()
 
-        #sinhronizacija zooma x osi zero i span grafa.
-        if self.tip_grafa is ZeroEnum or self.tip_grafa is SpanEnum:
-            self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), x)
 ################################################################################
     def on_pick(self, event):
         """
@@ -582,10 +422,10 @@ class Kanvas(FigureCanvas):
                 xpoint = self.pocetnoVrijeme
             #highlight selected point - kooridinate ako nedostaju podaci
             if xpoint in list(self.data[self.gKanal].index):
-                ypoint = self.data[self.gKanal].loc[xpoint, self.tip_grafa.midline.value]
+                ypoint = self.data[self.gKanal].loc[xpoint, self.midline]
             else:
-                miny = self.data[self.gKanal][self.tip_grafa.midline.value].min()
-                maxy = self.data[self.gKanal][self.tip_grafa.midline.value].max()
+                miny = self.data[self.gKanal][self.midline].min()
+                maxy = self.data[self.gKanal][self.midline].max()
                 ypoint = (miny + maxy)/2
             """
             Ponasanje ovisno o pritisnutom gumbu na misu.
@@ -604,38 +444,6 @@ class Kanvas(FigureCanvas):
                 loc = QtGui.QCursor.pos() #lokacija klika
                 self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
 ################################################################################
-    def on_pick_point(self, event):
-        """
-        Callback za pick na ZERO ili SPAN grafu.
-        """
-        #definiraj x i y preko izabrane tocke
-        x = self.data[self.gKanal].index[event.ind[0]]
-        y = self.data[self.gKanal].loc[x, self.tip_grafa.midline.value]
-        minD = self.data[self.gKanal].loc[x, self.tip_grafa.warningLow.value]
-        maxD = self.data[self.gKanal].loc[x, self.tip_grafa.warningHigh.value]
-        # ako postoje vise istih indeksa, uzmi zadnji
-        if type(y) is pd.core.series.Series:
-            y = y[-1]
-            minD = minD[-1]
-            maxD = maxD[-1]
-        if y >= minD and y<= maxD:
-            status = 'Dobar'
-        else:
-            status = 'Ne valja'
-
-        if event.mouseevent.button == 1 or event.mouseevent.button == 2:
-            #left click or middle click
-            #update labels
-            argList = {'xtocka': str(x),
-                       'ytocka': str(y),
-                       'minDozvoljenoOdstupanje': str(minD),
-                       'maxDozvoljenoOdstupanje': str(maxD),
-                       'status': str(status)}
-            #highlight tocku
-            self.highlight_pick((x, y), self.highlightSize)
-            #emit update vrijednosti
-            self.updateaj_labele_na_panelu('pick', argList)
-################################################################################
     def pick_nearest(self, argList):
         """
         Nakon sto netko na komplementarnom grafu izabere index, pronadji najblizi
@@ -652,9 +460,9 @@ class Kanvas(FigureCanvas):
         if self.statusGlavniGraf:
             ind = pomocne_funkcije.pronadji_najblizi_time_indeks(self.data[self.gKanal].index, argList['xtocka'])
             x = self.data[self.gKanal].index[ind]
-            y = self.data[self.gKanal].loc[x, self.tip_grafa.midline.value]
-            minD = self.data[self.gKanal].loc[x, self.tip_grafa.warningLow.value]
-            maxD = self.data[self.gKanal].loc[x, self.tip_grafa.warningHigh.value]
+            y = self.data[self.gKanal].loc[x, self.midline]
+            minD = self.data[self.gKanal].loc[x, self.warningLow]
+            maxD = self.data[self.gKanal].loc[x, self.warningHigh]
             # ako postoje vise istih indeksa, uzmi zadnji
             if type(y) is pd.core.series.Series:
                 y = y[-1]
@@ -674,24 +482,6 @@ class Kanvas(FigureCanvas):
 
             self.highlight_pick((x, y), self.highlightSize)
             self.updateaj_labele_na_panelu('normal', newArgList)
-################################################################################
-    def updateaj_labele_na_panelu(self, tip, argList):
-        """
-        update labela na zero span panelu (istovremeno i trigger za pick najblize
-        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
-        """
-        if self.tip_grafa is ZeroEnum:
-            if tip =='pick':
-                self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argList)
-                self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argList)
-            else:
-                self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argList)
-        elif self.tip_grafa is SpanEnum:
-            if tip == 'pick':
-                self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argList)
-                self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argList)
-            else:
-                self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argList)
 ################################################################################
     def setup_annotation_offset(self, event):
         """
@@ -803,7 +593,16 @@ class Kanvas(FigureCanvas):
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
 ################################################################################
-    def promjena_flaga(self, flag = None):
+    def promjena_flaga_top(self, tmin, tmax, flag):
+        arg = {'od': tmin,
+               'do': tmax,
+               'noviFlag': flag,
+               'kanal': self.gKanal}
+        #generalni emit za promjenu flaga
+        self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
+
+        
+    def promjena_flaga(self, flag = 1):
         """
         Metoda sluzi za promjenu flaga
         ovisno o keyword argumentu tip.
@@ -811,27 +610,14 @@ class Kanvas(FigureCanvas):
         #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
         tmin = self.__lastTimeMin
         tmax = self.__lastTimeMax
-        if self.tip_grafa is SatniEnum:
-            #pomak slicea da uhvati sve ciljane minutne podatke
-            tmin = tmin - datetime.timedelta(minutes = 59)
-            tmin = pd.to_datetime(tmin)
-        if flag != None:
-            arg = {'od': tmin,
-                   'do': tmax,
-                   'noviFlag': flag,
-                   'kanal': self.gKanal}
-            #generalni emit za promjenu flaga
-            self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
-################################################################################
+        self.promjena_flaga_top(tmin, tmax, flag)
+        
+ ################################################################################
     def connect_pick_evente(self):
         """mpl connection ovisno o tipu canvasa. Pick tocke ili pick bilo gdje
         na grafu."""
-        if self.tip_grafa is SatniEnum or self.tip_grafa is MinutniEnum:
-            self.cid1 = self.mpl_connect('button_press_event', self.on_pick)
-        elif self.tip_grafa is ZeroEnum or self.tip_grafa is SpanEnum:
-            self.cid2 = self.mpl_connect('pick_event', self.on_pick_point)
-        else:
-            raise AttributeError('Pogresni tip grafa')
+        pass
+
 ################################################################################
     def disconnect_pick_evente(self):
         """Opceniti disconnect pick eventa. Pick eventi se trebaju odspojiti prilikom
@@ -954,22 +740,6 @@ class Kanvas(FigureCanvas):
                                         fancybox = True)
         self.legenda.get_frame().set_alpha(0.8)
 ################################################################################
-    def emit_request_za_podacima(self, arg):
-        """
-        Slanje zahtjeva za podacima. Kontroler vraca trazene podatke u member
-        self.data. Opis zahtjeva (sto se tocno trazi) zadan je preko ulaznog argumenta
-        arg (specificni dictionary podataka, ovisno o tipu grafa).
-        """
-        if self.tip_grafa is SatniEnum:
-            self.emit(QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'), arg)
-        elif self.tip_grafa is MinutniEnum:
-            self.emit(QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'), arg)
-        elif self.tip_grafa is ZeroEnum:
-            self.emit(QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'), arg)
-        elif self.tip_grafa is SpanEnum:
-            self.emit(QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'), arg)
-        else:
-            raise AttributeError('Pogresni tip grafa')
 ################################################################################
     def annotate_pick(self, point, offs, tekst):
         """
@@ -1047,7 +817,7 @@ class Kanvas(FigureCanvas):
 
         #redo Axes labels
         self.axes.set_xlabel('Vrijeme')
-        self.axes.set_ylabel(self.tip_grafa.tip.value)
+        self.axes.set_ylabel(self.tip)
 
         self.draw()
 ################################################################################
@@ -1114,3 +884,461 @@ class Kanvas(FigureCanvas):
         self.data[ulaz['kanal']] = ulaz['zsFrejm']
 ################################################################################
 ################################################################################
+
+class SatniMinutniKanvas(Kanvas):
+    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
+        self.tip = 'SATNI'
+        self.midline = 'avg'
+        self.minimum = 'min'
+        self.maksimum = 'max'
+
+        super(SatniMinutniKanvas, self).__init__(konfig, appKonfig)
+
+    def toggle_tgl(self):
+        self.toggle_ticks(self.graf_konfig.Ticks)
+        self.toggle_grid(self.graf_konfig.Grid)
+        self.toggle_legend(self.graf_konfig.Legend)
+
+
+class SatniKanvas(SatniMinutniKanvas):
+    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
+        self.graf_konfig = konfig.satni
+        self.tip_grafa = SatniEnum
+        super(SatniKanvas, self).__init__(konfig, appKonfig)
+        self.highlightSize = 1.5 * self.graf_konfig.VOK.markerSize
+        self.axes.set_ylabel(SatniEnum.tip.value)
+        self.midline = 'avg'
+
+            
+    def crtaj_glavni_kanal(self):
+            #midline
+            frejm = self.data[self.gKanal]
+            x = list(frejm.index)
+            y = list(frejm[self.midline])
+            self.crtaj_line(x, y, self.dto.satniMidline)
+            #fill izmedju komponenti
+            if self.dto.satniFill.crtaj:
+                self.crtaj_fill(x,
+                                list(frejm[self.dto.satniFill.komponenta1]),
+                                list(frejm[self.dto.satniFill.komponenta2]),
+                                self.dto.satniFill)
+            #ekstremi min i max
+            if self.dto.satniEksMin.crtaj:
+                self.crtaj_scatter_value(self.minimum, self.dto.satniEksMin, None)
+                self.crtaj_scatter_value(self.maksimum, self.dto.satniEksMax, None)
+            #plot tocaka ovisno o flagu i validaciji
+            self.crtaj_scatter_value(self.midline, self.dto.satniVOK, 1000)
+            self.crtaj_scatter_value(self.midline, self.dto.satniVBAD, -1000)
+            self.crtaj_scatter_value(self.midline, self.dto.satniNVOK, 1)
+            self.crtaj_scatter_value(self.midline, self.dto.satniNVBAD, -1)
+            self.statusGlavniGraf = True
+
+
+    def pronadji_tickove(self):
+        """
+        funkcija vraca listu tickmarkera i listu tick labela za satni graf.
+        -vremenski raspon je tmin, tmax
+        -tickovi su razmaknuti 1 sat
+        vrati dict sa listama lokacija i labela za tickove
+        """
+        tmin = self.pocetnoVrijeme
+        tmax = self.zavrsnoVrijeme
+        tmin = tmin - datetime.timedelta(minutes = 1)
+        tmin = pd.to_datetime(tmin)
+        majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'H'))
+        majorLabeli = [str(ind.hour)+'h' for ind in majorTickovi]
+        tempTickovi = list(pd.date_range(start = tmin, end = tmax, freq = '15Min'))
+        minorTickovi = []
+        minorLabeli = []
+        for ind in tempTickovi:
+            if ind not in majorTickovi:
+                #formatiraj vrijeme u sat:min 12:15:00 -> 12h:15m
+                #ftime = str(ind.hour)+'h:'+str(ind.minute)+'m'
+                minorTickovi.append(ind)
+                minorLabeli.append("")
+                #minorLabeli.append(ftime)
+
+        out = {'majorTickovi':majorTickovi,
+               'majorLabeli':majorLabeli,
+               'minorTickovi':minorTickovi,
+               'minorLabeli':minorLabeli}
+
+        return out
+    
+    
+    def promjena_flaga(self, flag = 1):
+        """
+        Metoda sluzi za promjenu flaga
+        ovisno o keyword argumentu tip.
+        """
+        #dohvati rubove intervala (spremljeni su u membere prilikom poziva dijaloga)
+        tmin = self.__lastTimeMin
+        tmax = self.__lastTimeMax
+ 
+        tmin = tmin - datetime.timedelta(minutes = 59)
+        tmin = pd.to_datetime(tmin)
+        self.promjena_flaga_top(tmin, tmax, flag)
+# #########################################
+
+
+    def connect_pick_evente(self):
+        self.cid1 = self.mpl_connect('button_press_event', self.on_pick)
+
+    def emit_request_za_podacima(self, arg):
+        """
+        Slanje zahtjeva za podacima. Kontroler vraca trazene podatke u member
+        self.data. Opis zahtjeva (sto se tocno trazi) zadan je preko ulaznog argumenta
+        arg (specificni dictionary podataka, ovisno o tipu grafa).
+        """
+        self.emit(QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'), arg)
+
+
+class MinutniKanvas(SatniMinutniKanvas):
+    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
+        self.tip_grafa = MinutniEnum
+        self.graf_konfig = konfig.minutni
+        self.tip = 'MINUTNI'
+        self.midline = 'koncentracija'
+        
+        super(MinutniKanvas, self).__init__(konfig, appKonfig)
+        self.axes.set_ylabel(MinutniEnum.tip.value)
+        self.midline = 'Koncentracija'
+
+
+    def crtaj_glavni_kanal(self):
+            #midline plot
+            frejm = self.data[self.gKanal]
+            x = list(frejm.index)
+            y = list(frejm[self.midline])
+            self.crtaj_line(x, y, self.dto.minutniMidline)
+            #plot tocaka ovisno o flagu i validaciji
+            self.crtaj_scatter_value(self.midline, self.graf_konfig.VOK, 1000)
+            self.crtaj_scatter_value(self.midline, self.graf_konfig.VBAD, -1000)
+            self.crtaj_scatter_value(self.midline, self.graf_konfig.NVOK, 1)
+            self.crtaj_scatter_value(self.midline, self.graf_konfig.NVBAD, -1)
+            self.statusGlavniGraf = True
+
+    def pronadji_tickove(self):
+        """
+        funkcija vraca liste tickmarkera (minor i major) i listu tick labela
+        za minutni graf.
+        """
+        tmin = self.pocetnoVrijeme
+        tmax = self.zavrsnoVrijeme
+
+        tmin = tmin - datetime.timedelta(minutes = 1)
+        tmin = pd.to_datetime(tmin)
+        majorTickovi = list(pd.date_range(start = tmin, end= tmax, freq = '5Min'))
+        majorLabeli = [str(ind.hour)+'h:'+str(ind.minute)+'m' for ind in majorTickovi]
+        tempTickovi = list(pd.date_range(start = tmin, end= tmax, freq = 'Min'))
+        minorTickovi = []
+        minorLabeli = []
+        for ind in tempTickovi:
+            if ind not in majorTickovi:
+                minorTickovi.append(ind)
+                #minorLabeli.append(str(ind.minute)+'m')
+                minorLabeli.append("")
+
+        out = {'majorTickovi':majorTickovi,
+               'majorLabeli':majorLabeli,
+               'minorTickovi':minorTickovi,
+               'minorLabeli':minorLabeli}
+
+        return out
+
+    def connect_pick_evente(self):
+        self.cid1 = self.mpl_connect('button_press_event', self.on_pick)
+
+    def emit_request_za_podacima(self, arg):
+        """
+        Slanje zahtjeva za podacima. Kontroler vraca trazene podatke u member
+        self.data. Opis zahtjeva (sto se tocno trazi) zadan je preko ulaznog argumenta
+        arg (specificni dictionary podataka, ovisno o tipu grafa).
+        """
+        self.emit(QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'), arg)
+
+class ZeroSpanKanvas(Kanvas):
+    def __init__(self, konfig, appKonfig, parent = None, width = 6, height = 5, dpi=100):
+        super(ZeroSpanKanvas, self).__init__(konfig, appKonfig)
+        self.midline = 'Vrijednost'
+
+
+
+
+    def pronadji_tickove(self):
+        """
+        Funkcija radi tickove za zero i span graf
+
+        Dodatno, funkcija adaptira vrijeme npr. timestamp jedne vrijednosti
+        je '2015-02-14 12:34:56' i treba se 'adaptirati' u '14.02' radi kraceg zapisa
+
+        input je lista min i max vrijeme za prikaz (raspon grafa)
+        output je lista stringova (labeli za tickove), lista timestampova (tick location)
+        """
+        tmin = self.pocetnoVrijeme
+        tmax = self.zavrsnoVrijeme
+
+        raspon = pd.date_range(start = tmin, end = tmax, freq = 'D')
+        tickLoc = [pd.to_datetime(i.date())for i in raspon]
+        tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
+
+        #za sada zanemarimo minor tickove na zero/span grafu, prosljedi prazne liste
+        out = {'majorTickovi':tickLoc,
+               'majorLabeli':tickLab,
+               'minorTickovi':[],
+               'minorLabeli':[]}
+
+        return out
+
+    def pripremi_zero_span_podatke_za_crtanje(self):
+        """Pripremanje podataka za crtanje zero/span. Funkcija vraca dictionary
+        sa podacima koji se dalje koriste za crtanje"""
+        #priprema podataka za crtanje
+        frejm = self.data[self.gKanal]
+        x = list(frejm.index) #svi indeksi
+        y = list(frejm[self.midline]) #sve vrijednosti
+        warningUp = list(frejm[self.warningHigh]) #warning up
+        warningLow = list(frejm[self.warningLow]) #warning low
+        #pronalazak samo ok tocaka
+        tempfrejm = self.data[self.gKanal].copy()
+        okTocke = tempfrejm[tempfrejm[self.midline] <= tempfrejm[self.warningHigh]]
+        okTocke = okTocke[okTocke[self.midline] >= okTocke[self.warningLow]]
+        xok = list(okTocke.index)
+        yok = list(okTocke[self.midline])
+        #pronalazak losih tocaka
+        tempfrejm = self.data[self.gKanal].copy()
+        badOver = tempfrejm[tempfrejm[self.midline] > tempfrejm[self.warningHigh]]
+        tempfrejm = self.data[self.gKanal].copy()
+        badUnder = tempfrejm[tempfrejm[self.midline] < tempfrejm[self.warningLow]]
+        badTocke = badUnder.append(badOver)
+        badTocke.sort()
+        badTocke.drop_duplicates(subset='vrijeme',
+                                 take_last=True,
+                                 inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
+        xbad = list(badTocke.index)
+        ybad = list(badTocke[self.midline])
+
+        return {'x':x,
+                'y':y,
+                'warningUp':warningUp,
+                'warningLow':warningLow,
+                'xok':xok,
+                'yok':yok,
+                'xbad':xbad,
+                'ybad':ybad}
+
+    def rect_zoom(self, eclick, erelease):
+        super(ZeroSpanKanvas,self).rect_zoom(eclick, erelease)
+        self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), sorted([eclick.xdata, erelease.xdata]))
+
+    def on_pick_point(self, event):
+        """
+        Callback za pick na ZERO ili SPAN grafu.
+        """
+        #definiraj x i y preko izabrane tocke
+        x = self.data[self.gKanal].index[event.ind[0]]
+        y = self.data[self.gKanal].loc[x, self.midline]
+        minD = self.data[self.gKanal].loc[x, self.warningLow]
+        maxD = self.data[self.gKanal].loc[x, self.warningHigh]
+        # ako postoje vise istih indeksa, uzmi zadnji
+        if type(y) is pd.core.series.Series:
+            y = y[-1]
+            minD = minD[-1]
+            maxD = maxD[-1]
+        if y >= minD and y<= maxD:
+            status = 'Dobar'
+        else:
+            status = 'Ne valja'
+
+        if event.mouseevent.button == 1 or event.mouseevent.button == 2:
+            #left click or middle click
+            #update labels
+            argList = {'xtocka': str(x),
+                       'ytocka': str(y),
+                       'minDozvoljenoOdstupanje': str(minD),
+                       'maxDozvoljenoOdstupanje': str(maxD),
+                       'status': str(status)}
+            #highlight tocku
+            self.highlight_pick((x, y), self.highlightSize)
+            #emit update vrijednosti
+            self.updateaj_labele_na_panelu('pick', argList)
+
+    def connect_pick_evente(self):
+        self.cid2 = self.mpl_connect('pick_event', self.on_pick_point)
+
+    def toggle_tgl(self):
+        self.toggle_legend(self.graf_konfig.Legend)
+
+################################################################################
+
+################################################################################
+class SpanKanvas(ZeroSpanKanvas):
+    def __init__(self, konfig, appKonfig,  parent = None, width = 6, height = 5, dpi=100):
+        self.graf_konfig = konfig.span
+        self.tip_grafa = SpanEnum
+        self.tip = 'SPAN'
+        self.midline = 'vrijednost'
+        self.warningLow = 'minDozvoljeno'
+        self.warningHigh = 'maxDozvoljeno'
+        super(SpanKanvas, self).__init__(konfig, appKonfig)
+        self.highlightSize = 1.5 * self.dto.spanVOK.markerSize
+        self.axes.xaxis.set_ticks_position('top')
+        self.axes.figure.subplots_adjust(bottom = 0.02)
+        self.axes.figure.subplots_adjust(right = 0.98)
+        self.axes.set_ylabel(SpanEnum.tip.value)
+
+
+
+    def crtaj_glavni_kanal(self):
+        #priprema podataka za crtanje
+        tocke = self.pripremi_zero_span_podatke_za_crtanje()
+
+        linestyle = self.dto.spanMidline.lineStyle
+        linewidth =  self.dto.spanMidline.lineWidth
+        color = self.dto.spanMidline.color
+        zorder = self.dto.spanMidline.zorder
+        label = self.dto.spanMidline.label
+        vok = self.dto.spanVOK
+        vbad = self.dto.spanVBAD
+        warning1 = self.dto.spanWarning1
+        warning2 = self.dto.spanWarning2
+        fill1 = self.dto.spanFill1
+        fill2 = self.dto.spanFill2
+
+        #midline (plot je drugacije definiran zbog pickera)
+        self.axes.plot(tocke['x'],
+                       tocke['y'],
+                       linestyle = linestyle,
+                       linewidth = linewidth,
+                       color = color,
+                       zorder = zorder,
+                       label = label,
+                       picker = 5)
+        #ok values
+        if len(tocke['xok']) > 0:
+            self.crtaj_scatter(tocke['xok'], tocke['yok'], vok)
+        #bad values
+        if len(tocke['xbad']) > 0:
+            self.crtaj_scatter(tocke['xbad'], tocke['ybad'], vbad)
+
+        if warning1.crtaj:
+            self.crtaj_line(tocke['x'], tocke['warningUp'], warning1)
+            self.crtaj_line(tocke['x'], tocke['warningLow'], warning2)
+        #fill
+        ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
+        if fill1.crtaj:
+            self.crtaj_fill(tocke['x'], tocke['warningLow'], tocke['warningUp'], fill1)
+            self.crtaj_fill(tocke['x'], tocke['warningUp'], hedge, fill2)
+            self.crtaj_fill(tocke['x'], ledge, tocke['warningLow'], fill2)
+        self.statusGlavniGraf = True
+
+    def emit_request_za_podacima(self, arg):
+        """
+        Slanje zahtjeva za podacima. Kontroler vraca trazene podatke u member
+        self.data. Opis zahtjeva (sto se tocno trazi) zadan je preko ulaznog argumenta
+        arg (specificni dictionary podataka, ovisno o tipu grafa).
+        """
+        self.emit(QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'), arg)
+
+    def crtaj_oznake_temperature(self, tempMin, tempMax):
+        pass
+    
+    def updateaj_labele_na_panelu(self, tip, argList):
+        """
+        update labela na zero span panelu (istovremeno i trigger za pick najblize
+        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
+        """
+        if tip == 'pick':
+            self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argList)
+            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argList)
+        else:
+            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argList)
+
+
+################################################################################
+
+class ZeroKanvas(ZeroSpanKanvas):
+    def __init__(self, konfig, appKonfig,  parent = None, width = 6, height = 5, dpi=100):
+        self.tip = 'ZERO'
+        self.midline = 'vrijednost'
+        self.warningLow = 'minDozvoljeno'
+        self.warningHigh = 'maxDozvoljeno'
+
+        self.graf_konfig = konfig.zero
+        self.tip_grafa = ZeroEnum
+        
+        super(ZeroKanvas, self).__init__(konfig, appKonfig)
+        
+        self.highlightSize = 1.5 * self.dto.zeroVOK.markerSize
+        self.axes.xaxis.set_ticks_position('top')
+        self.axes.figure.subplots_adjust(bottom = 0.02)
+        self.axes.figure.subplots_adjust(right = 0.98)
+        self.axes.set_ylabel(ZeroEnum.tip.value)
+
+
+
+
+    def crtaj_glavni_kanal(self):
+        #priprema podataka za crtanje
+        tocke = self.pripremi_zero_span_podatke_za_crtanje()
+
+        linestyle = self.dto.zeroMidline.lineStyle
+        linewidth =  self.dto.zeroMidline.lineWidth
+        color = self.dto.zeroMidline.color
+        zorder = self.dto.zeroMidline.zorder
+        label = self.dto.zeroMidline.label
+        vok = self.dto.zeroVOK
+        vbad = self.dto.zeroVBAD
+        warning1 = self.dto.zeroWarning1
+        warning2 = self.dto.zeroWarning2
+        fill1 = self.dto.zeroFill1
+        fill2 = self.dto.zeroFill2
+
+        #midline (plot je drugacije definiran zbog pickera)
+        self.axes.plot(tocke['x'],
+                       tocke['y'],
+                       linestyle = linestyle,
+                       linewidth = linewidth,
+                       color = color,
+                       zorder = zorder,
+                       label = label,
+                       picker = 5)
+        #ok values
+        if len(tocke['xok']) > 0:
+            self.crtaj_scatter(tocke['xok'], tocke['yok'], vok)
+        #bad values
+        if len(tocke['xbad']) > 0:
+            self.crtaj_scatter(tocke['xbad'], tocke['ybad'], vbad)
+
+        if warning1.crtaj:
+            self.crtaj_line(tocke['x'], tocke['warningUp'], warning1)
+            self.crtaj_line(tocke['x'], tocke['warningLow'], warning2)
+        #fill
+        ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
+        if fill1.crtaj:
+            self.crtaj_fill(tocke['x'], tocke['warningLow'], tocke['warningUp'], fill1)
+            self.crtaj_fill(tocke['x'], tocke['warningUp'], hedge, fill2)
+            self.crtaj_fill(tocke['x'], ledge, tocke['warningLow'], fill2)
+        self.statusGlavniGraf = True
+
+    def emit_request_za_podacima(self, arg):
+        """
+        Slanje zahtjeva za podacima. Kontroler vraca trazene podatke u member
+        self.data. Opis zahtjeva (sto se tocno trazi) zadan je preko ulaznog argumenta
+        arg (specificni dictionary podataka, ovisno o tipu grafa).
+        """
+        self.emit(QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'), arg)
+        
+    def updateaj_labele_na_panelu(self, tip, argList):
+        """
+        update labela na zero span panelu (istovremeno i trigger za pick najblize
+        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
+        """
+        if tip =='pick':
+            self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argList)
+            self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argList)
+        else:
+            self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argList)
+
+################################################################################
+

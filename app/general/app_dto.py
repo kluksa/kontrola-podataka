@@ -125,6 +125,12 @@ class GrafSettingsDTO():
         self.dictPomocnih = {}
 
         #definicija DTO za satni graf
+        self.satni = SatniGrafKonfig(cfg)
+        self.minutni = MinutniGrafKonfig(cfg)
+        self.zero = ZeroGrafKonfig(cfg)
+        self.span = SpanGrafKonfig(cfg)
+        #definicija DTO za minutni graf
+
         self.satniMidline = GrafDTO(cfg, tip = 'SATNI', podtip = 'midline', oblik = 'line')
         self.satniVOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'VOK', oblik = 'scatter')
         self.satniVBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'VBAD', oblik = 'scatter')
@@ -134,23 +140,12 @@ class GrafSettingsDTO():
         self.satniEksMax = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
         self.satniFill = GrafDTO(cfg, tip = 'SATNI', podtip = 'fill1', oblik = 'fill')
 
-        #definicija DTO za minutni graf
         self.minutniMidline = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'midline', oblik = 'line')
         self.minutniVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VOK', oblik = 'scatter')
         self.minutniVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VBAD', oblik = 'scatter')
         self.minutniNVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVOK', oblik = 'scatter')
         self.minutniNVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVBAD', oblik = 'scatter')
 
-        #definicija DTO za SPAN graf
-        self.spanMidline = GrafDTO(cfg, tip = 'SPAN', podtip = 'midline', oblik = 'line')
-        self.spanVOK = GrafDTO(cfg, tip = 'SPAN', podtip = 'VOK', oblik = 'scatter')
-        self.spanVBAD = GrafDTO(cfg, tip = 'SPAN', podtip = 'VBAD', oblik = 'scatter')
-        self.spanFill1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill1', oblik = 'fill')
-        self.spanFill2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill2', oblik = 'fill')
-        self.spanWarning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
-        self.spanWarning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
-
-        #definicija DTO za ZERO graf
         self.zeroMidline = GrafDTO(cfg, tip = 'ZERO', podtip = 'midline', oblik = 'line')
         self.zeroVOK = GrafDTO(cfg, tip = 'ZERO', podtip = 'VOK', oblik = 'scatter')
         self.zeroVBAD = GrafDTO(cfg, tip = 'ZERO', podtip = 'VBAD', oblik = 'scatter')
@@ -158,6 +153,17 @@ class GrafSettingsDTO():
         self.zeroFill2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill2', oblik = 'fill')
         self.zeroWarning1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
         self.zeroWarning2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
+
+        self.spanMidline = GrafDTO(cfg, tip = 'SPAN', podtip = 'midline', oblik = 'line')
+        self.spanVOK = GrafDTO(cfg, tip = 'SPAN', podtip = 'VOK', oblik = 'scatter')
+        self.spanVBAD = GrafDTO(cfg, tip = 'SPAN', podtip = 'VBAD', oblik = 'scatter')
+        self.spanFill1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill1', oblik = 'fill')
+        self.spanFill2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill2', oblik = 'fill')
+        self.spanWarning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
+        self.spanWarning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
+        #definicija DTO za SPAN graf
+
+        #definicija DTO za ZERO graf
 
         logging.debug('Inicijalizacija DTO za sve grafove, end')
 ###############################################################################
@@ -171,6 +177,62 @@ class GrafSettingsDTO():
         logging.info('Pomocni graf maknut, mjerenjeId = {0}'.format(key))
 ###############################################################################
 ###############################################################################
+class SatniGrafKonfig():
+    def __init__(self, cfg):
+        self.Midline = GrafDTO(cfg, tip = 'SATNI', podtip = 'midline', oblik = 'line')
+        self.VOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'VOK', oblik = 'scatter')
+        self.VBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'VBAD', oblik = 'scatter')
+        self.NVOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'NVOK', oblik = 'scatter')
+        self.NVBAD = GrafDTO(cfg, tip = 'SATNI', podtip = 'NVBAD', oblik = 'scatter')
+        self.EksMin = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
+        self.EksMax = GrafDTO(cfg, tip = 'SATNI', podtip = 'ekstrem', oblik = 'scatter')
+        self.Fill = GrafDTO(cfg, tip = 'SATNI', podtip = 'fill1', oblik = 'fill')
+
+        self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_grid', False, bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_cursor', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_legend', False, bool)
+        self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
+        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
+
+
+class MinutniGrafKonfig():
+    def __init__(self, cfg):
+        self.Midline = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'midline', oblik = 'line')
+        self.VOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VOK', oblik = 'scatter')
+        self.VBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VBAD', oblik = 'scatter')
+        self.NVOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVOK', oblik = 'scatter')
+        self.NVBAD = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'NVBAD', oblik = 'scatter')
+
+        self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_grid', False, bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_cursor', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
+        self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
+        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
+
+class ZeroGrafKonfig():
+    def __init__(self,cfg):
+        self.Midline = GrafDTO(cfg, tip = 'ZERO', podtip = 'midline', oblik = 'line')
+        self.VOK = GrafDTO(cfg, tip = 'ZERO', podtip = 'VOK', oblik = 'scatter')
+        self.VBAD = GrafDTO(cfg, tip = 'ZERO', podtip = 'VBAD', oblik = 'scatter')
+        self.Fill1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill1', oblik = 'fill')
+        self.Fill2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'fill2', oblik = 'fill')
+        self.Warning1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
+        self.Warning2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+
+
+class SpanGrafKonfig():
+    def __init__(self, cfg):
+        self.Midline = GrafDTO(cfg, tip = 'SPAN', podtip = 'midline', oblik = 'line')
+        self.VOK = GrafDTO(cfg, tip = 'SPAN', podtip = 'VOK', oblik = 'scatter')
+        self.VBAD = GrafDTO(cfg, tip = 'SPAN', podtip = 'VBAD', oblik = 'scatter')
+        self.Fill1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill1', oblik = 'fill')
+        self.Fill2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'fill2', oblik = 'fill')
+        self.Warning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
+        self.Warning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+
+
 class GrafDTO():
     """
     Objekt u kojem se pohranjuju postavke pojedinog grafa.

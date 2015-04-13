@@ -38,7 +38,7 @@ filename = config.get('LOG_SETUP', 'file', fallback='applog.log')
 filemode = config.get('LOG_SETUP', 'mode', fallback='a')
 level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
 #setup logging
-pomocne_funkcije.setup_logging(file = filename, mode = filemode, lvl=level)
+#pomocne_funkcije.setup_logging(file = filename, mode = filemode, lvl=level)
 
 #instancira QApplication objekt i starta main event loop
 aplikacija = QtGui.QApplication(sys.argv)

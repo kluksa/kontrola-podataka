@@ -190,8 +190,6 @@ def prosiri_granice_grafa(tmin, tmax, t):
     tmax = pd.to_datetime(tmax)
     return tmin, tmax
 ###############################################################################
-
-###############################################################################
 def zaokruzi_vrijeme(dt_objekt, nSekundi):
     """
     Funkcija zaokruzuje zlazni datetime objekt na najblize vrijeme zadano

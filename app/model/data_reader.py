@@ -65,59 +65,56 @@ class RESTReader(QtCore.QObject):
         Adapter za ulazni jason string.
         Potrebno je lagano preurediti frame koji se ucitava iz jsona
 
-        output je dobro pandas dataframe ili None
+        output je pandas dataframe (prazan frame ako nema podataka)
         """
-        #TODO! x je string, ali moze biti svasta....
-        if x.startswith('[') and x.endswith(']'): #ulaz je array json objekata '[.....]'
+        try:
+            #parse json i provjeri da li su svi relevantni stupci na broju
             frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
-            #ako je json string x prazan, nema definirane stupce... return None
-            if 'vrijeme' not in frame.columns:
-                return None
-            if 'id' not in frame.columns:
-                return None
-            if 'vrijednost' not in frame.columns:
-                return None
-            if 'statusString' not in frame.columns:
-                return None
-            if 'valjan' not in frame.columns:
-                return None
-            #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
-            noviIndex = frame['vrijeme']
-            frame.index = noviIndex
-            #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
-            podatakId = frame['id']
-            #dohvati koncentraciju
-            koncentracija = frame['vrijednost'].astype(np.float64)
-            koncentracija = koncentracija.map(self.nan_conversion)
-            #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
-            statusString = frame['statusString']
-    #        status = frame['statusString']
-    #        status = status.map(self.status_string_conversion)
-    #        status = status.astype(np.float64)
-            status = 0
-            #adapter za boolean vrijesnost valjan  (buduci flag)
-            valjan = frame['valjan']
-            valjan = valjan.map(self.valjan_conversion)
-            valjan = valjan.astype(np.int64)
+            assert 'vrijeme' in frame.columns, 'ERROR - Nedostaje stupac: "vrijeme"'
+            assert 'id' in frame.columns, 'ERROR - Nedostaje stupac: "id"'
+            assert 'vrijednost' in frame.columns, 'ERROR - Nedostaje stupac: "vrijednost'
+            assert 'statusString' in frame.columns, 'ERROR - Nedostaje stupac: "statusString"'
+            assert 'valjan' in frame.columns, 'ERROR - Nedostaje stupac: "valjan"'
+        except (ValueError, AssertionError):
+            #javi error signalom kontroleru da nesto nije u redu?
+            logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)
+            #ako nesto prodje po krivu prosljedi dobro formatirani prazan dataframe dalje
+            frame = pd.DataFrame( columns = ['vrijeme','id','vrijednost','statusString','valjan'] )
+            frame.index = frame['vrijeme'].astype('datetime64[ns]')
 
-            #sklopi izlazni dataframe da odgovara API-u dokumenta
-            df = pd.DataFrame({'koncentracija':koncentracija,
-                               'status':status,
-                               'flag':valjan,
-                               'id':podatakId,
-                               'statusString':statusString})
-            #vrati adaptirani dataframe
-            return df
-        else:
-            return None
+        #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
+        noviIndex = frame['vrijeme']
+        frame.index = noviIndex
+        #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
+        podatakId = frame['id']
+        #dohvati koncentraciju
+        koncentracija = frame['vrijednost'].astype(np.float64)
+        koncentracija = koncentracija.map(self.nan_conversion)
+        #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
+        statusString = frame['statusString']
+#        status = frame['statusString']
+#        status = status.map(self.status_string_conversion)
+#        status = status.astype(np.float64)
+        status = 0
+        #adapter za boolean vrijesnost valjan  (buduci flag)
+        valjan = frame['valjan']
+        valjan = valjan.map(self.valjan_conversion)
+        valjan = valjan.astype(np.int64)
+
+        #sklopi izlazni dataframe da odgovara API-u dokumenta
+        df = pd.DataFrame({'koncentracija':koncentracija,
+                           'status':status,
+                           'flag':valjan,
+                           'id':podatakId,
+                           'statusString':statusString})
+        #vrati adaptirani dataframe
+        return df
 ###############################################################################
     def read(self, key = None, date = None):
         """
+        ucitavanje json podataka sa rest servisa.
         key je programMjerenja
         date je trazeni datum
-
-        vraca True ako je upis u model prosao OK,
-        False u suprotnom slucaju
         """
         sada = datetime.datetime.now()
         sada = str(sada.date()) #samo trenutni datum u string formatu
@@ -127,13 +124,13 @@ class RESTReader(QtCore.QObject):
                 jsonString = self.source.get_sirovi(key, date) #!potencijalni AppExcept!
                 #pretvori u dataframe
                 df = self.adaptiraj_ulazni_json(jsonString)
-                #upisi dataframe u model (warning, df moze biti None)
-                self.model.set_frame(key = key, frame = df) #!potencijalni AppExcept!
+                #upisi frejm u model
+                self.model.set_frame(key = key, frame = df)
                 #dodaj na popis uspjesno ucitanih date nije danas
-                if date != sada:
-                    #dodaj na ucitane samo ako je datum manji od danas (reload trenutnog dana je moguc)
+                if date is not sada and len(df):
+                    #dodaj na uspjesno ucitane samo ako je datum manji od danas
+                    #i ako frejm nije prazan
                     self.uspjesnoUcitani.append((key, date))
-                pass
             except pomocne_funkcije.AppExcept as err:
                 """
                 Moguci razlozi za Exception

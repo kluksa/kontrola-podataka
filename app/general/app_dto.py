@@ -116,6 +116,9 @@ class SatniGrafKonfig(MetaConfig):
         self.MIDLINE = 'avg'
         self.MINIMUM = 'min'
         self.MAKSIMUM = 'max'
+        self.STATUS = 'status'
+        self.COUNT = 'count'
+        self.FLAG = 'flag'
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'SATNI', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'SATNI', podtip = 'VOK', oblik = 'scatter')
@@ -138,6 +141,8 @@ class MinutniGrafKonfig(MetaConfig):
         #konstante
         self.TIP = 'MINUTNI'
         self.MIDLINE = 'koncentracija'
+        self.STATUS = 'status'
+        self.FLAG = 'flag'
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'midline', oblik = 'line')
         self.VOK = GrafDTO(cfg, tip = 'MINUTNI', podtip = 'VOK', oblik = 'scatter')
@@ -168,7 +173,11 @@ class ZeroGrafKonfig(MetaConfig):
         self.Warning1 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
         self.Warning2 = GrafDTO(cfg, tip = 'ZERO', podtip = 'warning', oblik = 'line')
         #interakcija sa grafom
+        self.Grid = False
+        self.Cursor = False
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+        self.Ticks = False
+        self.Selector = False
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -187,7 +196,11 @@ class SpanGrafKonfig(MetaConfig):
         self.Warning1 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
         self.Warning2 = GrafDTO(cfg, tip = 'SPAN', podtip = 'warning', oblik = 'line')
         #interakcija sa grafom
+        self.Grid = False
+        self.Cursor = False
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+        self.Ticks = False
+        self.Selector = False
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):

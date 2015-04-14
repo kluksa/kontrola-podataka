@@ -62,6 +62,7 @@ class Kontroler(QtCore.QObject):
         Povezivanje emitiranih signala iz raznih dijelova aplikacije sa
         funkcijama koje definiraju tok programa.
         """
+        #TODO! promjena kod signala....provjeri sve od pocetka...
         ###ERROR MSG###
         #rest_izbornik
         self.connect(self.gui.restIzbornik,
@@ -417,6 +418,7 @@ class Kontroler(QtCore.QObject):
         #QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
 ###############################################################################
     def priredi_podatke(self, mapa):
+        #TODO! razbij na manje djelove
         """
         Funkcija analizira zahtjev preuzet u obliku mape
         {'programMjerenjaId':int, 'datumString':'YYYY-MM-DD'}

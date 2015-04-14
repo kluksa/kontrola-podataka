@@ -183,12 +183,13 @@ class WebZahtjev(QtCore.QObject):
             #request
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
-            if r.text != '[]':
-                zeroFrejm, spanFrejm = self.convert_zero_span(r.text)
-                return [zeroFrejm, spanFrejm]
-            else:
-                print('prazan json ', programMjerenja,' - ', datum)
-
+            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            return r.text
+#            if r.text != '[]':
+#                zeroFrejm, spanFrejm = self.convert_zero_span(r.text)
+#                return [zeroFrejm, spanFrejm]
+#            else:
+#                print('prazan json ', programMjerenja,' - ', datum)
         except requests.exceptions.RequestException as e1:
             tekst = 'WebZahtjev.get_zero_span:Request fail (http error, timeout...).\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1
@@ -203,6 +204,7 @@ class WebZahtjev(QtCore.QObject):
         """
         Pretvori json string u dva datafrejma (zeroFrejm, spanFrejm)
         """
+        #TODO! prebaci u reader/kontroler/pomocne_funkcije
         frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['vrijeme'])
         spanFrejm = frejm[frejm['vrsta'] == "S"]
         zeroFrejm = frejm[frejm['vrsta'] == "Z"]
@@ -241,40 +243,3 @@ class WebZahtjev(QtCore.QObject):
             raise pomocne_funkcije.AppExcept(tekst) from e2
 ###############################################################################
 ###############################################################################
-if __name__ == '__main__':
-    #definiranje baze i resursa
-    #baza = "http://172.20.1.166:9090/SKZ-war/webresources/"
-    baza = "http://172.20.0.179:8080/SKZ-war/webresources/"
-    resursi = {"siroviPodaci":"dhz.skz.rs.sirovipodaci",
-                "programMjerenja":"dhz.skz.aqdb.entity.programmjerenja",
-                "zerospan":"dhz.skz.rs.zerospan",
-                "satniPodaci":"dhz.skz.rs.satnipodatak"}
-    aut = ("t1", "t1")
-
-    #inicijalizacija WebZahtjev objekta
-    wz = WebZahtjev(baza, resursi, aut)
-    """
-    u principu, pozovi metodu unutar try bloka, ako se nesto slomi,
-    exception ce se re-raisati kao Exception sa opisom gdje i sto je puklo.
-    """
-    try:
-        """get programe mjerenja"""
-        r = wz.get_programe_mjerenja()
-        print(r) #works
-
-#        """get sirovi"""
-#        import datetime
-#        t = datetime.datetime.now()
-#        r1 = wz.get_sirovi(162, '2015-02-22')
-#        out = datetime.datetime.now() - t
-#        print(out)
-
-        """get zero span plitvice ozon"""
-        r2 = wz.get_zero_span(65, '2015-04-07', 30)
-        print(r2) #works
-
-
-
-    except Exception as e:
-        print(e) #vraca tekst exceptiona
-        print(repr(e))

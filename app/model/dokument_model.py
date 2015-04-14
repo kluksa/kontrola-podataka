@@ -81,8 +81,6 @@ class DataModel(QtCore.QObject):
             assert isinstance(tmax, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
             #napravi kopiju cijelog frejma
             df = self.data[key].copy()
-            #TODO! sort dataframe
-            df.sort_index(inplace = True)
             #za svaki slucaj provjeri da li je min i max ok, ako nije zamjeni ih
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
@@ -90,7 +88,7 @@ class DataModel(QtCore.QObject):
             df = df[df.index >= tmin]
             #makni sve podatke koji su veci od tMax
             df = df[df.index <= tmax]
-            #vrati dobiveni slice
+            #vrati dobiveni slice - potencijalo prazan dataframe
             return df
         except (LookupError, TypeError, AssertionError) as e1:
             tekst = 'DataModel.get_frame:Lookup/Type fail.\n{0}'.format(e1)

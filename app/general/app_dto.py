@@ -27,7 +27,7 @@ class KonfigAplikacije():
         """
         logging.debug('Inicijalizacija DTO za sve grafove, start')
         self.conf = cfg
-        #lista dto objekata pomocnih grafova
+        #mapa dto objekata pomocnih grafova - spremljnih pod kljucem programMjerenjaId
         self.dictPomocnih = {}
         #definicija DTO za satni graf
         self.satni = SatniGrafKonfig(cfg)
@@ -72,41 +72,35 @@ class MetaConfig():
 
     ###definicije setter metoda za boolean vrijednosti (za toggle).
     def set_grid(self, x):
-        """boolean setter za prikaz grida"""
-        if isinstance(x, bool):
-            self.Grid = x
-            logging.info('Grid boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        """boolean setter za prikaz cursora"""
+        self.Grid = x
+        logging.info('Grid boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
     def set_cursor(self, x):
         """boolean setter za prikaz cursora"""
-        if isinstance(x, bool):
-            self.Cursor = x
-            logging.info('Cursor boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        self.Cursor = x
+        logging.info('Cursor boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
     def set_legend(self, x):
         """boolean setter za prikaz legende"""
-        if isinstance(x, bool):
-            self.Legend = x
-            logging.info('Legend boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        self.Legend = x
+        logging.info('Legend boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
     def set_ticks(self, x):
         """boolean setter za prikaz minor tickova"""
-        if isinstance(x, bool):
-            self.Ticks = x
-            logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        self.Ticks = x
+        logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
     def set_selector(self, x):
         """boolean setter za span selector interakciju sa canvasom (biranje vise tocaka
         odjednom)"""
-        if isinstance(x, bool):
-            self.Selector = x
-            logging.info('Selector boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        self.Selector = x
+        logging.info('Selector boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
     def set_zoom(self, x):
         """boolean setter za zoom interakciju sa canvasom"""
-        if isinstance(x, bool):
-            self.Zoom = x
-            logging.info('Zoom boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        self.Zoom = x
+        logging.info('Zoom boolean value promjenjen, nova vrijednost = {0}'.format(x))
 ################################################################################
 class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -134,6 +128,7 @@ class SatniGrafKonfig(MetaConfig):
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_legend', False, bool)
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
+        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -155,6 +150,7 @@ class MinutniGrafKonfig(MetaConfig):
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
+        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):
     def __init__(self,cfg):
@@ -178,6 +174,7 @@ class ZeroGrafKonfig(MetaConfig):
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
         self.Ticks = False
         self.Selector = False
+        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -201,6 +198,7 @@ class SpanGrafKonfig(MetaConfig):
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
         self.Ticks = False
         self.Selector = False
+        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):

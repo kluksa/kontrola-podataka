@@ -19,7 +19,7 @@ class PomocniIzbor(base8, form8):
     inicijalizacija sa ulaznim keyword argumentima:
 
     defaulti
-        --> GrafSettingsDTO objekt
+        --> konfiguracijski objekt aplikacije
 
     stablo
         --> instanca tree modela programa mjerenja

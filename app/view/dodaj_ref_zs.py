@@ -20,7 +20,6 @@ class DijalogDodajRefZS(base10, form10):
     1. program mjerenja
         --> hardcoded (za sada) opisni string
         --> pokazuju na trenutno aktivni glavni kanal.
-        --> potencijalno utrpati tree model za izbor kanala??
 
     2. Pocetak primjene
         --> QDateTimeEdit

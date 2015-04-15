@@ -50,16 +50,17 @@ class KoncPanel(base2, form2):
     self.satniGraf --> instanca satnog canvasa
     self.minutniGraf --> instanca minutnog canvasa
     """
-    def __init__(self, konfig, appKonfig, parent = None):
+    def __init__(self, konfig, parent = None):
         """
-        init ide sa appSettings zbog inicijalne postavke interakcije sa grafovima
+        za inicijalizaciju panela potreban je konfig objekt aplikacije (konfig)
         """
         super(base2, self).__init__(parent)
         self.setupUi(self)
 
-        #inicijalizacija canvasa
-        self.satniGraf = canvas.SatniKanvas(konfig, appKonfig)
-        self.minutniGraf = canvas.MinutniKanvas(konfig, appKonfig)
+        #inicijalizacija canvasa (samo sa djelom konfiga koji je potreban za
+        #funkcioniranje klase i sa mapom pomocnih kanala)
+        self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig.pomocni)
+        self.minutniGraf = canvas.MinutniKanvas(konfig.minutni, konfig.pomocni)
 
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)
@@ -124,22 +125,20 @@ class KoncPanel(base2, form2):
 ###############################################################################
 base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')
 class ZeroSpanPanel(base3, form3):
-    def __init__(self, konfig, appKonfig, parent = None):
+    def __init__(self, konfig, parent = None):
+        """
+        inicijalizacija sa konfig objektom aplikacije
+        """
         super(base3, self).__init__(parent)
         self.setupUi(self)
-        #inicijalizacija canvasa
-        self.zeroGraf = canvas.ZeroKanvas(konfig, appKonfig)
-        self.spanGraf = canvas.SpanKanvas(konfig, appKonfig)
+        #inicijalizacija canvasa (pomocni nisu potrebni)
+        self.zeroGraf = canvas.ZeroKanvas(konfig.zero)
+        self.spanGraf = canvas.SpanKanvas(konfig.span)
         #dodavanje canvasa u layout panela
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
 
-        self.veze()
-###############################################################################
-    def veze(self):
-        """
-        povezivanje akcija widgeta sa funkcijama
-        """
+        #povezivanje akcija widgeta sa funkcijama
         self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.dodajZSRef.clicked.connect(self.dodaj_novu_zs_ref_vrijednost)
 ###############################################################################

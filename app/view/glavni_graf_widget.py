@@ -18,7 +18,7 @@ class GrafIzbor(base6, form6):
 
     Inicjializira se sa:
     defaulti
-        --> dict podataka sa opisom grafova
+        --> konfiguracijski objekt aplikacije (podaci o grafovima)
 
     listHelpera
         --> lista koja sadrzi dictove sa konverziju matplotlib vrijednositi
@@ -32,7 +32,7 @@ class GrafIzbor(base6, form6):
             element 4 : agregirani kanal --> dulji opis kanala
             element 5 : dulji opis kanala --> agregirani kanal
     """
-    def __init__(self, parent = None, defaulti = {}, listHelpera = []):
+    def __init__(self, parent = None, defaulti = None, listHelpera = []):
         super(base6, self).__init__(parent)
         self.setupUi(self)
 
@@ -44,48 +44,47 @@ class GrafIzbor(base6, form6):
         ###marker###
         #sirovi, nevalidirani podatak
         self.normalMarker.addItems(markeri)
-        normal = listHelpera[0][defaulti.satniNVOK.markerStyle]
+        normal = listHelpera[0][defaulti.satni.NVOK.markerStyle]
         self.normalMarker.setCurrentIndex(self.normalMarker.findText(normal))
         #validirani podatak
         self.validanMarker.addItems(markeri)
-        validan = listHelpera[0][defaulti.satniVOK.markerStyle]
+        validan = listHelpera[0][defaulti.satni.VOK.markerStyle]
         self.validanMarker.setCurrentIndex(self.validanMarker.findText(validan))
         #velicina markera
-        self.glavniMarkerSize.setValue(defaulti.satniNVOK.markerSize)
+        self.glavniMarkerSize.setValue(defaulti.satni.NVOK.markerSize)
         #boja dobro flagiranih podataka
-        self.set_widget_color_style(defaulti.satniVOK.rgb, defaulti.satniVOK.alpha, "QPushButton", self.bojaOK)
+        self.set_widget_color_style(defaulti.satni.VOK.rgb, defaulti.satni.VOK.alpha, "QPushButton", self.bojaOK)
         #boja lose flagiranih podataka
-        self.set_widget_color_style(defaulti.satniVBAD.rgb, defaulti.satniVBAD.alpha, "QPushButton", self.bojaBAD)
+        self.set_widget_color_style(defaulti.satni.VBAD.rgb, defaulti.satni.VBAD.alpha, "QPushButton", self.bojaBAD)
         #prozirnost markera
-        self.glavniMarkerAlpha.setValue(defaulti.satniVOK.alpha)
+        self.glavniMarkerAlpha.setValue(defaulti.satni.VOK.alpha)
 
         ###centralna linija###
         #stil linije
         self.midlineStil.addItems(linije)
-        ml = listHelpera[2][defaulti.satniMidline.lineStyle]
+        ml = listHelpera[2][defaulti.satni.Midline.lineStyle]
         self.midlineStil.setCurrentIndex(self.midlineStil.findText(ml))
         #sirina centralne linije
-        self.midlineWidth.setValue(defaulti.satniMidline.lineWidth)
+        self.midlineWidth.setValue(defaulti.satni.Midline.lineWidth)
         #boja centralne linije
-        self.set_widget_color_style(defaulti.satniMidline.rgb, defaulti.satniMidline.alpha, "QPushButton", self.midlineBoja)
+        self.set_widget_color_style(defaulti.satni.Midline.rgb, defaulti.satni.Midline.alpha, "QPushButton", self.midlineBoja)
         #prozirnost centralne linije
-        self.midlineAlpha.setValue(defaulti.satniMidline.alpha)
+        self.midlineAlpha.setValue(defaulti.satni.Midline.alpha)
 
         ###ekstremi###
-        testCrtanja = defaulti.satniEksMin.crtaj
-        self.ekstremCrtaj.setChecked(testCrtanja)
+        self.ekstremCrtaj.setChecked(defaulti.satni.EksMin.crtaj)
         #stil markera ekstremnih vrijednosti
         self.ekstremMarker.addItems(markeri)
-        e = listHelpera[0][defaulti.satniEksMin.markerStyle]
+        e = listHelpera[0][defaulti.satni.EksMin.markerStyle]
         self.ekstremMarker.setCurrentIndex(self.ekstremMarker.findText(e))
         #velicina markera ekstremnih vrijednosti
-        self.ekstremSize.setValue(defaulti.satniEksMin.markerSize)
+        self.ekstremSize.setValue(defaulti.satni.EksMin.markerSize)
         #boja markera ekstremnih vrijednosti
-        self.set_widget_color_style(defaulti.satniEksMin.rgb, defaulti.satniEksMin.alpha, "QPushButton", self.ekstremBoja)
+        self.set_widget_color_style(defaulti.satni.EksMin.rgb, defaulti.satni.EksMin.alpha, "QPushButton", self.ekstremBoja)
         #prozirnost markera ekstremnih vrijednosti
-        self.ekstremAlpha.setValue(defaulti.satniEksMin.alpha)
+        self.ekstremAlpha.setValue(defaulti.satni.EksMin.alpha)
         #disable/enable kontrole ovisno o statusu checkboxa
-        if testCrtanja:
+        if defaulti.satni.EksMin.crtaj:
             self.ekstremMarker.setEnabled(True)
             self.ekstremSize.setEnabled(True)
             self.ekstremBoja.setEnabled(True)
@@ -97,22 +96,21 @@ class GrafIzbor(base6, form6):
             self.ekstremAlpha.setEnabled(False)
 
         ###fill###
-        testCrtanja = defaulti.satniFill.crtaj
-        self.fillCrtaj.setChecked(testCrtanja)
+        self.fillCrtaj.setChecked(defaulti.satni.Fill.crtaj)
         #izbor komponente1
         self.fillKomponenta1.addItems(agKanal)
-        k1 = listHelpera[4][defaulti.satniFill.komponenta1]
+        k1 = listHelpera[4][defaulti.satni.Fill.komponenta1]
         self.fillKomponenta1.setCurrentIndex(self.fillKomponenta1.findText(k1))
         #izbor komponente2
         self.fillKomponenta2.addItems(agKanal)
-        k2 = listHelpera[4][defaulti.satniFill.komponenta2]
+        k2 = listHelpera[4][defaulti.satni.Fill.komponenta2]
         self.fillKomponenta2.setCurrentIndex(self.fillKomponenta2.findText(k2))
         #izbor boje filla
-        self.set_widget_color_style(defaulti.satniFill.rgb, defaulti.satniFill.alpha, "QPushButton", self.fillBoja)
+        self.set_widget_color_style(defaulti.satni.Fill.rgb, defaulti.satni.Fill.alpha, "QPushButton", self.fillBoja)
         #izbor prozirnosti filla
-        self.fillAlpha.setValue(defaulti.satniFill.alpha)
+        self.fillAlpha.setValue(defaulti.satni.Fill.alpha)
         #enable/disable ovisno o statusu crtanja
-        if testCrtanja:
+        if defaulti.satni.Fill.crtaj:
             self.fillKomponenta1.setEnabled(True)
             self.fillKomponenta2.setEnabled(True)
             self.fillBoja.setEnabled(True)

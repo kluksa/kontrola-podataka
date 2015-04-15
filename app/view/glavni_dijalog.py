@@ -31,8 +31,8 @@ class GlavniIzbor(base5, form5):
         parent
             --> parent widget prozora, default je None i moze tako ostati
         defaulti
-            --> GrafSettingsDTO objekt
-            --> definira izgled grafova
+            --> konfiguracijski objekt aplikacije
+            --> definira izgled grafova svih grafova
         opiskanala
             --> dict sa opisom programa mjerenja
             --> kljuc je programMjerenjaId pod kojim su opisni podaci
@@ -224,26 +224,30 @@ class GlavniIzbor(base5, form5):
         """
 ###############################################################################
     def promjena_zs_zeroMarker(self, x):
+        """Promjena tipa markera za zero graf"""
         marker = self.__opis_to_marker[self.zs.zeroMarker.currentText()]
-        self.defaulti.zeroVOK.set_markerStyle(marker)
-        self.defaulti.zeroVBAD.set_markerStyle(marker)
+        self.defaulti.zero.VOK.set_markerStyle(marker)
+        self.defaulti.zero.VBAD.set_markerStyle(marker)
 ###############################################################################
     def promjena_zs_spanMarker(self, x):
+        """Promjena tipa markera za span graf"""
         marker = self.__opis_to_marker[self.zs.spanMarker.currentText()]
-        self.defaulti.spanVOK.set_markerStyle(marker)
-        self.defaulti.spanVBAD.set_markerStyle(marker)
+        self.defaulti.span.VOK.set_markerStyle(marker)
+        self.defaulti.span.VBAD.set_markerStyle(marker)
 ###############################################################################
     def promjena_zs_markerSize(self, x):
+        """Promjena velicine markera za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroVOK.set_markerSize(out)
-        self.defaulti.zeroVBAD.set_markerSize(out)
-        self.defaulti.spanVOK.set_markerSize(out)
-        self.defaulti.spanVBAD.set_markerSize(out)
+        self.defaulti.zero.VOK.set_markerSize(out)
+        self.defaulti.zero.VBAD.set_markerSize(out)
+        self.defaulti.span.VOK.set_markerSize(out)
+        self.defaulti.span.VBAD.set_markerSize(out)
 ###############################################################################
     def promjena_zs_bojaOK(self, x):
+        """Promjena boje markera za 'dobre' vrijednosti zero i span grafa"""
         #dohvati boju
-        rgb = self.defaulti.zeroVOK.rgb
-        a = self.defaulti.zeroVOK.alpha
+        rgb = self.defaulti.zero.VOK.rgb
+        a = self.defaulti.zero.VOK.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -253,19 +257,20 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroVOK.set_rgb(rgb)
-            self.defaulti.zeroVOK.set_alpha(a)
-            self.defaulti.spanVOK.set_rgb(rgb)
-            self.defaulti.spanVOK.set_alpha(a)
+            self.defaulti.zero.VOK.set_rgb(rgb)
+            self.defaulti.zero.VOK.set_alpha(a)
+            self.defaulti.span.VOK.set_rgb(rgb)
+            self.defaulti.span.VOK.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.bojaOK)
             #update alpha vrijednost na displayu
             self.zs.markerAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_bojaBAD(self, x):
+        """Promjena boje markera za 'lose' vrijednosti zero i span grafa"""
         #dohvati boju
-        rgb = self.defaulti.zeroVBAD.rgb
-        a = self.defaulti.zeroVBAD.alpha
+        rgb = self.defaulti.zero.VBAD.rgb
+        a = self.defaulti.zero.VBAD.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -275,39 +280,43 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroVBAD.set_rgb(rgb)
-            self.defaulti.zeroVBAD.set_alpha(a)
-            self.defaulti.spanVBAD.set_rgb(rgb)
-            self.defaulti.spanVBAD.set_alpha(a)
+            self.defaulti.zero.VBAD.set_rgb(rgb)
+            self.defaulti.zero.VBAD.set_alpha(a)
+            self.defaulti.span.VBAD.set_rgb(rgb)
+            self.defaulti.span.VBAD.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.bojaBAD)
             #update alpha vrijednost na displayu
             self.zs.markerAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_markerAlpha(self, x):
+        """Promjena transparentnosti markera za vrijednosti zero i span grafa"""
         out = round(x, 2)
-        self.defaulti.zeroVOK.set_alpha(out)
-        self.defaulti.zeroVBAD.set_alpha(out)
-        self.defaulti.spanVOK.set_alpha(out)
-        self.defaulti.spanVBAD.set_alpha(out)
+        self.defaulti.zero.VOK.set_alpha(out)
+        self.defaulti.zero.VBAD.set_alpha(out)
+        self.defaulti.span.VOK.set_alpha(out)
+        self.defaulti.span.VBAD.set_alpha(out)
         #promjeni boju gumba
-        self.zs.set_widget_color_style(self.defaulti.zeroVOK.rgb, out, "QPushButton", self.zs.bojaOK)
-        self.zs.set_widget_color_style(self.defaulti.zeroVBAD.rgb, out, "QPushButton", self.zs.bojaBAD)
+        self.zs.set_widget_color_style(self.defaulti.zero.VOK.rgb, out, "QPushButton", self.zs.bojaOK)
+        self.zs.set_widget_color_style(self.defaulti.zero.VBAD.rgb, out, "QPushButton", self.zs.bojaBAD)
 ###############################################################################
     def promjena_zs_midlineStil(self ,x):
+        """Promjena stila centralne linije za zero i span graf"""
         ls = self.__opis_to_line[self.zs.midlineStil.currentText()]
-        self.defaulti.zeroMidline.set_lineStyle(ls)
-        self.defaulti.spanMidline.set_lineStyle(ls)
+        self.defaulti.zero.Midline.set_lineStyle(ls)
+        self.defaulti.span.Midline.set_lineStyle(ls)
 ###############################################################################
     def promjena_zs_midlineWidth(self, x):
+        """Promjena sirine centralne linije za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroMidline.set_lineWidth(out)
-        self.defaulti.spanMidline.set_lineWidth(out)
+        self.defaulti.zero.Midline.set_lineWidth(out)
+        self.defaulti.span.Midline.set_lineWidth(out)
 ###############################################################################
     def promjena_zs_midlineBoja(self, x):
+        """Promjena boje centralne linije za zero i span graf"""
         #dohvati boju
-        rgb = self.defaulti.zeroMidline.rgb
-        a = self.defaulti.zeroMidline.alpha
+        rgb = self.defaulti.zero.Midline.rgb
+        a = self.defaulti.zero.Midline.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -317,27 +326,29 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroMidline.set_rgb(rgb)
-            self.defaulti.zeroMidline.set_alpha(a)
-            self.defaulti.spanMidline.set_rgb(rgb)
-            self.defaulti.spanMidline.set_alpha(a)
+            self.defaulti.zero.Midline.set_rgb(rgb)
+            self.defaulti.zero.Midline.set_alpha(a)
+            self.defaulti.span.Midline.set_rgb(rgb)
+            self.defaulti.span.Midline.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.midlineBoja)
             #update alpha vrijednost na displayu
             self.zs.midlineAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_midlineAlpha(self, x):
+        """Promjena transparentnosti centralne linije za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroMidline.set_alpha(out)
-        self.defaulti.spanMidline.set_alpha(out)
+        self.defaulti.zero.Midline.set_alpha(out)
+        self.defaulti.span.Midline.set_alpha(out)
         #promjena boje gumba
-        self.zs.set_widget_color_style(self.defaulti.zeroMidline.rgb, out, "QPushButton", self.zs.midlineAlpha)
+        self.zs.set_widget_color_style(self.defaulti.zero.Midline.rgb, out, "QPushButton", self.zs.midlineAlpha)
 ###############################################################################
     def promjena_zs_warningCrtaj(self, x):
-        self.defaulti.zeroWarning1.set_crtaj(x)
-        self.defaulti.zeroWarning2.set_crtaj(x)
-        self.defaulti.spanWarning1.set_crtaj(x)
-        self.defaulti.spanWarning2.set_crtaj(x)
+        """Toggle opcije za crtanje granicnih linija za zero i span graf"""
+        self.defaulti.zero.Warning1.set_crtaj(x)
+        self.defaulti.zero.Warning2.set_crtaj(x)
+        self.defaulti.span.Warning1.set_crtaj(x)
+        self.defaulti.span.Warning2.set_crtaj(x)
         if x:
             self.zs.warningStil.setEnabled(True)
             self.zs.warningWidth.setEnabled(True)
@@ -350,23 +361,26 @@ class GlavniIzbor(base5, form5):
             self.zs.warningAlpha.setEnabled(False)
 ###############################################################################
     def promjena_zs_warningStil(self, x):
+        """Promjena stila granicnih linija za zero i span graf"""
         ls = self.__opis_to_line[self.zs.warningStil.currentText()]
-        self.defaulti.zeroWarning1.set_lineStyle(ls)
-        self.defaulti.zeroWarning2.set_lineStyle(ls)
-        self.defaulti.spanWarning1.set_lineStyle(ls)
-        self.defaulti.spanWarning2.set_lineStyle(ls)
+        self.defaulti.zero.Warning1.set_lineStyle(ls)
+        self.defaulti.zero.Warning2.set_lineStyle(ls)
+        self.defaulti.span.Warning1.set_lineStyle(ls)
+        self.defaulti.span.Warning2.set_lineStyle(ls)
 ###############################################################################
     def promjena_zs_warningWidth(self, x):
+        """Promjena sirine granicnih linija za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroWarning1.set_lineWidth(out)
-        self.defaulti.zeroWarning2.set_lineWidth(out)
-        self.defaulti.spanWarning1.set_lineWidth(out)
-        self.defaulti.spanWarning2.set_lineWidth(out)
+        self.defaulti.zero.Warning1.set_lineWidth(out)
+        self.defaulti.zero.Warning2.set_lineWidth(out)
+        self.defaulti.span.Warning1.set_lineWidth(out)
+        self.defaulti.span.Warning2.set_lineWidth(out)
 ###############################################################################
     def promjena_zs_warningBoja(self, x):
+        """Promjena boje warning linija za zero i span graf"""
         #dohvati boju
-        rgb = self.defaulti.zeroWarning1.rgb
-        a = self.defaulti.zeroWarning1.alpha
+        rgb = self.defaulti.zero.Warning1.rgb
+        a = self.defaulti.zero.Warning1.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -376,33 +390,35 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroWarning1.set_rgb(rgb)
-            self.defaulti.zeroWarning1.set_alpha(a)
-            self.defaulti.zeroWarning2.set_rgb(rgb)
-            self.defaulti.zeroWarning2.set_alpha(a)
-            self.defaulti.spanWarning1.set_rgb(rgb)
-            self.defaulti.spanWarning1.set_alpha(a)
-            self.defaulti.spanWarning2.set_rgb(rgb)
-            self.defaulti.spanWarning2.set_alpha(a)
+            self.defaulti.zero.Warning1.set_rgb(rgb)
+            self.defaulti.zero.Warning1.set_alpha(a)
+            self.defaulti.zero.Warning2.set_rgb(rgb)
+            self.defaulti.zero.Warning2.set_alpha(a)
+            self.defaulti.span.Warning1.set_rgb(rgb)
+            self.defaulti.span.Warning1.set_alpha(a)
+            self.defaulti.span.Warning2.set_rgb(rgb)
+            self.defaulti.span.Warning2.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.warningBoja)
             #update alpha vrijednost na displayu
             self.zs.warningAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_warningAlpha(self, x):
+        """Promjena transparentnosti granicnih linija za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroWarning1.set_alpha(out)
-        self.defaulti.zeroWarning2.set_alpha(out)
-        self.defaulti.spanWarning1.set_alpha(out)
-        self.defaulti.spanWarning2.set_alpha(out)
+        self.defaulti.zero.Warning1.set_alpha(out)
+        self.defaulti.zero.Warning2.set_alpha(out)
+        self.defaulti.span.Warning1.set_alpha(out)
+        self.defaulti.span.Warning2.set_alpha(out)
         #promjeni boju gumba
-        self.zs.set_widget_color_style(self.defaulti.zeroWarning1.rgb, out, "QPushButton", self.zs.warningAlpha)
+        self.zs.set_widget_color_style(self.defaulti.zero.Warning1.rgb, out, "QPushButton", self.zs.warningAlpha)
 ###############################################################################
     def promjena_zs_fillCrtaj(self, x):
-        self.defaulti.zeroFill1.set_crtaj(x)
-        self.defaulti.zeroFill2.set_crtaj(x)
-        self.defaulti.spanFill1.set_crtaj(x)
-        self.defaulti.spanFill2.set_crtaj(x)
+        """Toggle crtanja sjencanih dijelova za zero i span graf"""
+        self.defaulti.zero.Fill1.set_crtaj(x)
+        self.defaulti.zero.Fill2.set_crtaj(x)
+        self.defaulti.span.Fill1.set_crtaj(x)
+        self.defaulti.span.Fill2.set_crtaj(x)
         if x:
             self.zs.fillBojaOK.setEnabled(True)
             self.zs.fillBojaBAD.setEnabled(True)
@@ -413,9 +429,11 @@ class GlavniIzbor(base5, form5):
             self.zs.fillAlpha.setEnabled(False)
 ###############################################################################
     def promjena_zs_fillBojaOK(self, x):
+        """Promjena boje za fill izmedju warning linija za zero i span graf.
+        (dobre vrijednosti)"""
         #dohvati boju
-        rgb = self.defaulti.zeroFill1.rgb
-        a = self.defaulti.zeroFill1.alpha
+        rgb = self.defaulti.zero.Fill1.rgb
+        a = self.defaulti.zero.Fill1.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -425,19 +443,21 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroFill1.set_rgb(rgb)
-            self.defaulti.zeroFill1.set_alpha(a)
-            self.defaulti.spanFill1.set_rgb(rgb)
-            self.defaulti.spanFill1.set_alpha(a)
+            self.defaulti.zero.Fill1.set_rgb(rgb)
+            self.defaulti.zero.Fill1.set_alpha(a)
+            self.defaulti.span.Fill1.set_rgb(rgb)
+            self.defaulti.span.Fill1.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.fillBojaOK)
             #update alpha vrijednost na displayu
             self.zs.fillAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_fillBojaBad(self, x):
+        """Promjena boje za fill izvan warning linija za zero i span graf.
+        (lose vrijednosti)"""
         #dohvati boju
-        rgb = self.defaulti.zeroFill2.rgb
-        a = self.defaulti.zeroFill2.alpha
+        rgb = self.defaulti.zero.Fill2.rgb
+        a = self.defaulti.zero.Fill2.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -447,46 +467,59 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.zeroFill2.set_rgb(rgb)
-            self.defaulti.zeroFill2.set_alpha(a)
-            self.defaulti.spanFill2.set_rgb(rgb)
-            self.defaulti.spanFill2.set_alpha(a)
+            self.defaulti.zero.Fill2.set_rgb(rgb)
+            self.defaulti.zero.Fill2.set_alpha(a)
+            self.defaulti.span.Fill2.set_rgb(rgb)
+            self.defaulti.span.Fill2.set_alpha(a)
             #promjeni boju gumba
             self.zs.set_widget_color_style(rgb, a, "QPushButton", self.zs.fillBojaBAD)
             #update alpha vrijednost na displayu
             self.zs.fillAlpha.setValue(a)
 ###############################################################################
     def promjena_zs_fillAlpha(self, x):
+        """Promjena transparentnosti sjencanih podrucja za zero i span graf"""
         out = round(x, 2)
-        self.defaulti.zeroFill1.set_alpha(out)
-        self.defaulti.zeroFill2.set_alpha(out)
-        self.defaulti.spanFill1.set_alpha(out)
-        self.defaulti.spanFill2.set_alpha(out)
+        self.defaulti.zero.Fill1.set_alpha(out)
+        self.defaulti.zero.Fill2.set_alpha(out)
+        self.defaulti.span.Fill1.set_alpha(out)
+        self.defaulti.span.Fill2.set_alpha(out)
         #update color na gumbu
-        self.zs.set_widget_color_style(self.defaulti.zeroFill1.rgb, out, "QPushButton", self.zs.fillBojaOK)
-        self.zs.set_widget_color_style(self.defaulti.zeroFill2.rgb, out, "QPushButton", self.zs.fillBojaBAD)
+        self.zs.set_widget_color_style(self.defaulti.zero.Fill1.rgb, out, "QPushButton", self.zs.fillBojaOK)
+        self.zs.set_widget_color_style(self.defaulti.zero.Fill2.rgb, out, "QPushButton", self.zs.fillBojaBAD)
 ###############################################################################
     def promjena_glavni_normalMarker(self, x):
+        """Promjena tipa markera za satni i minutni graf. Marker je za nevalidirane podatke."""
         marker = self.__opis_to_marker[self.glavni.normalMarker.currentText()]
-        self.defaulti.satniNVOK.set_markerStyle(marker)
-        self.defaulti.satniNVBAD.set_markerStyle(marker)
+        self.defaulti.satni.NVOK.set_markerStyle(marker)
+        self.defaulti.satni.NVBAD.set_markerStyle(marker)
+        self.defaulti.minutni.NVOK.set_markerStyle(marker)
+        self.defaulti.minutni.NVBAD.set_markerStyle(marker)
 ###############################################################################
     def promjena_glavni_validanMarker(self, x):
+        """Promjena tipa markera za satni i minutni graf. Marker je za validirane podatke."""
         marker = self.__opis_to_marker[self.glavni.validanMarker.currentText()]
-        self.defaulti.satniVOK.set_markerStyle(marker)
-        self.defaulti.satniVBAD.set_markerStyle(marker)
+        self.defaulti.satni.VOK.set_markerStyle(marker)
+        self.defaulti.satni.VBAD.set_markerStyle(marker)
+        self.defaulti.minutni.VOK.set_markerStyle(marker)
+        self.defaulti.minutni.VBAD.set_markerStyle(marker)
 ###############################################################################
     def promjena_glavni_markerSize(self, x):
+        """Promjena velicine markera za satni i minutni graf"""
         out = int(x)
-        self.defaulti.satniVOK.set_markerSize(out)
-        self.defaulti.satniNVOK.set_markerSize(out)
-        self.defaulti.satniVBAD.set_markerSize(out)
-        self.defaulti.satniNVBAD.set_markerSize(out)
+        self.defaulti.satni.VOK.set_markerSize(out)
+        self.defaulti.satni.NVOK.set_markerSize(out)
+        self.defaulti.satni.VBAD.set_markerSize(out)
+        self.defaulti.satni.NVBAD.set_markerSize(out)
+        self.defaulti.minutni.VOK.set_markerSize(out)
+        self.defaulti.minutni.NVOK.set_markerSize(out)
+        self.defaulti.minutni.VBAD.set_markerSize(out)
+        self.defaulti.minutni.NVBAD.set_markerSize(out)
 ###############################################################################
     def promjena_glavni_bojaOK(self, x):
+        """Promjena boje dobro flagiranih podataka na satnom i minutnom grafu"""
         #dohvati boju
-        rgb = self.defaulti.satniVOK.rgb
-        a = self.defaulti.satniVOK.alpha
+        rgb = self.defaulti.satni.VOK.rgb
+        a = self.defaulti.satni.VOK.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -496,19 +529,24 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.satniVOK.set_rgb(rgb)
-            self.defaulti.satniVOK.set_alpha(a)
-            self.defaulti.satniNVOK.set_rgb(rgb)
-            self.defaulti.satniNVOK.set_alpha(a)
+            self.defaulti.satni.VOK.set_rgb(rgb)
+            self.defaulti.satni.VOK.set_alpha(a)
+            self.defaulti.satni.NVOK.set_rgb(rgb)
+            self.defaulti.satni.NVOK.set_alpha(a)
+            self.defaulti.minutni.VOK.set_rgb(rgb)
+            self.defaulti.minutni.VOK.set_alpha(a)
+            self.defaulti.minutni.NVOK.set_rgb(rgb)
+            self.defaulti.minutni.NVOK.set_alpha(a)
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.bojaOK)
             #update alpha vrijednost na displayu
             self.glavni.glavniMarkerAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_bojaBAD(self, x):
+        """Promjena boje lose flagiranih podataka na satnom i minutnom grafu"""
         #dohvati boju
-        rgb = self.defaulti.satniVBAD.rgb
-        a = self.defaulti.satniVBAD.alpha
+        rgb = self.defaulti.satni.VBAD.rgb
+        a = self.defaulti.satni.VBAD.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -518,39 +556,52 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.satniVBAD.set_rgb(rgb)
-            self.defaulti.satniVBAD.set_alpha(a)
-            self.defaulti.satniNVBAD.set_rgb(rgb)
-            self.defaulti.satniNVBAD.set_alpha(a)
+            self.defaulti.satni.VBAD.set_rgb(rgb)
+            self.defaulti.satni.VBAD.set_alpha(a)
+            self.defaulti.satni.NVBAD.set_rgb(rgb)
+            self.defaulti.satni.NVBAD.set_alpha(a)
+            self.defaulti.minutni.VBAD.set_rgb(rgb)
+            self.defaulti.minutni.VBAD.set_alpha(a)
+            self.defaulti.minutni.NVBAD.set_rgb(rgb)
+            self.defaulti.minutni.NVBAD.set_alpha(a)
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.bojaBAD)
             #update alpha vrijednost na displayu
             self.glavni.glavniMarkerAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_markerAlpha(self, x):
+        """Promjena transparentnosti markera na satnom i minutnom grafu.
+        Samo za 'midline' tocke (srednje vrijednosti koncentracije)."""
         out = round(x, 2)
-        self.defaulti.satniVOK.set_alpha(out)
-        self.defaulti.satniNVOK.set_alpha(out)
-        self.defaulti.satniVBAD.set_alpha(out)
-        self.defaulti.satniNVBAD.set_alpha(out)
+        self.defaulti.satni.VOK.set_alpha(out)
+        self.defaulti.satni.NVOK.set_alpha(out)
+        self.defaulti.satni.VBAD.set_alpha(out)
+        self.defaulti.satni.NVBAD.set_alpha(out)
+        self.defaulti.minutni.VOK.set_alpha(out)
+        self.defaulti.minutni.NVOK.set_alpha(out)
+        self.defaulti.minutni.VBAD.set_alpha(out)
+        self.defaulti.minutni.NVBAD.set_alpha(out)
         #podesi boje na gumbima
-        self.glavni.set_widget_color_style(self.defaulti.satniVOK.rgb, out, "QPushButton", self.glavni.bojaOK)
-        self.glavni.set_widget_color_style(self.defaulti.satniVBAD.rgb, out, "QPushButton", self.glavni.bojaBAD)
+        self.glavni.set_widget_color_style(self.defaulti.satni.VOK.rgb, out, "QPushButton", self.glavni.bojaOK)
+        self.glavni.set_widget_color_style(self.defaulti.satni.VBAD.rgb, out, "QPushButton", self.glavni.bojaBAD)
 ###############################################################################
     def promjena_glavni_midlineStil(self, x):
+        """Promjena stila centralne linije za satni i minutni graf"""
         ls = self.__opis_to_line[self.glavni.midlineStil.currentText()]
-        self.defaulti.satniMidline.set_lineStyle(ls)
-        self.defaulti.minutniMidline.set_lineStyle(ls)
+        self.defaulti.satni.Midline.set_lineStyle(ls)
+        self.defaulti.minutni.Midline.set_lineStyle(ls)
 ###############################################################################
     def promjena_glavni_midlineWidth(self, x):
+        """Promjena sirine centralne linije za satni i minutni graf"""
         out = round(x, 2)
-        self.defaulti.satniMidline.set_lineWidth(out)
-        self.defaulti.minutniMidline.set_lineWidth(out)
+        self.defaulti.satni.Midline.set_lineWidth(out)
+        self.defaulti.minutni.Midline.set_lineWidth(out)
 ###############################################################################
     def promjena_glavni_midlineBoja(self, x):
+        """Promjena boje centralne linije za satni i minutni graf"""
         #dohvati boju
-        rgb = self.defaulti.satniMidline.rgb
-        a = self.defaulti.satniMidline.alpha
+        rgb = self.defaulti.satni.Midline.rgb
+        a = self.defaulti.satni.Midline.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -560,25 +611,27 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.satniMidline.set_rgb(rgb)
-            self.defaulti.satniMidline.set_alpha(a)
-            self.defaulti.minutniMidline.set_rgb(rgb)
-            self.defaulti.minutniMidline.set_alpha(a)
+            self.defaulti.satni.Midline.set_rgb(rgb)
+            self.defaulti.satni.Midline.set_alpha(a)
+            self.defaulti.minutni.Midline.set_rgb(rgb)
+            self.defaulti.minutni.Midline.set_alpha(a)
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.midlineBoja)
             #update alpha vrijednost na displayu
             self.glavni.midlineAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_midlineAlpha(self, x):
+        """Promjena transparentnosti centralne linije za satni i minutni graf"""
         out = round(x, 2)
-        self.defaulti.satniMidline.set_alpha(out)
-        self.defaulti.minutniMidline.set_alpha(out)
+        self.defaulti.satni.Midline.set_alpha(out)
+        self.defaulti.minutni.Midline.set_alpha(out)
         #promjeni boju gumba
-        self.glavni.set_widget_color_style(self.defaulti.satniMidline.rgb, out, "QPushButton", self.glavni.midlineBoja)
+        self.glavni.set_widget_color_style(self.defaulti.satni.Midline.rgb, out, "QPushButton", self.glavni.midlineBoja)
 ###############################################################################
     def promjena_glavni_ekstremCrtaj(self, x):
-        self.defaulti.satniEksMin.set_crtaj(x)
-        self.defaulti.satniEksMax.set_crtaj(x)
+        """Toggle crtanja ekstremnih vrijednosti za satni graf"""
+        self.defaulti.satni.EksMin.set_crtaj(x)
+        self.defaulti.satni.EksMax.set_crtaj(x)
         if x:
             self.glavni.ekstremMarker.setEnabled(True)
             self.glavni.ekstremSize.setEnabled(True)
@@ -591,19 +644,22 @@ class GlavniIzbor(base5, form5):
             self.glavni.ekstremAlpha.setEnabled(False)
 ###############################################################################
     def promjena_glavni_ekstremMarker(self, x):
+        """Promjena tipa markera za ekstremne vrijednosti za satni graf"""
         marker = self.__opis_to_marker[self.glavni.ekstremMarker.currentText()]
-        self.defaulti.satniEksMin.set_markerStyle(marker)
-        self.defaulti.satniEksMax.set_markerStyle(marker)
+        self.defaulti.satni.EksMin.set_markerStyle(marker)
+        self.defaulti.satni.EksMax.set_markerStyle(marker)
 ###############################################################################
     def promjena_glavni_ekstremSize(self, x):
+        """Promjena velicine markera za ekstremne vrijednosti za satni graf"""
         out = int(x)
-        self.defaulti.satniEksMin.set_markerSize(out)
-        self.defaulti.satniEksMax.set_markerSize(out)
+        self.defaulti.satni.EksMin.set_markerSize(out)
+        self.defaulti.satni.EksMax.set_markerSize(out)
 ###############################################################################
     def promjena_glavni_ekstremBoja(self, x):
+        """Promjena boje markera za ekstremne vrijednosti za satni graf"""
         #dohvati boju
-        rgb = self.defaulti.satniEksMin.rgb
-        a = self.defaulti.satniEksMin.alpha
+        rgb = self.defaulti.satni.EksMin.rgb
+        a = self.defaulti.satni.EksMin.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -613,24 +669,26 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost za min i max ekstreme
-            self.defaulti.satniEksMin.set_rgb(rgb)
-            self.defaulti.satniEksMin.set_alpha(a)
-            self.defaulti.satniEksMax.set_rgb(rgb)
-            self.defaulti.satniEksMax.set_alpha(a)
+            self.defaulti.satni.EksMin.set_rgb(rgb)
+            self.defaulti.satni.EksMin.set_alpha(a)
+            self.defaulti.satni.EksMax.set_rgb(rgb)
+            self.defaulti.satni.EksMax.set_alpha(a)
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.ekstremBoja)
             #update alpha vrijednost na displayu
             self.glavni.ekstremAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_ekstremAlpha(self, x):
+        """Promjena transparentnosti markera za ekstremne vrijednosti za satni graf"""
         out = round(x, 2)
-        self.defaulti.satniEksMin.set_alpha(out)
-        self.defaulti.satniEksMax.set_alpha(out)
+        self.defaulti.satni.EksMin.set_alpha(out)
+        self.defaulti.satni.EksMax.set_alpha(out)
         #promjeni boju gumba
-        self.glavni.set_widget_color_style(self.defaulti.satniEksMin.rgb, out, "QPushButton", self.glavni.ekstremBoja)
+        self.glavni.set_widget_color_style(self.defaulti.satni.EksMin.rgb, out, "QPushButton", self.glavni.ekstremBoja)
 ###############################################################################
     def promjena_glavni_fillCrtaj(self, x):
-        self.defaulti.satniFill.set_crtaj(x)
+        """Toggle crtanja osjencanog dijela na satnom grafu"""
+        self.defaulti.satni.Fill.set_crtaj(x)
         if x:
             self.glavni.fillKomponenta1.setEnabled(True)
             self.glavni.fillKomponenta2.setEnabled(True)
@@ -643,17 +701,20 @@ class GlavniIzbor(base5, form5):
             self.glavni.fillAlpha.setEnabled(False)
 ###############################################################################
     def promjena_glavni_fillKomponenta1(self, x):
+        """Promjena komponente za sjencanje (avg, min, max, q05, q95) na satnom grafu"""
         komp = self.__opis_to_komponenta[self.glavni.fillKomponenta1.currentText()]
-        self.defaulti.satniFill.set_komponenta1(komp)
+        self.defaulti.satni.Fill.set_komponenta1(komp)
 ###############################################################################
     def promjena_glavni_fillKomponenta2(self, x):
+        """Promjena komponente za sjencanje (avg, min, max, q05, q95) na satnom grafu"""
         komp = self.__opis_to_komponenta[self.glavni.fillKomponenta2.currentText()]
-        self.defaulti.satniFill.set_komponenta2(komp)
+        self.defaulti.satni.Fill.set_komponenta2(komp)
 ###############################################################################
     def promjena_glavni_fillBoja(self, x):
+        """Promjena boje osjencanog dijela na satnom grafu"""
         #dohvati boju filla
-        rgb = self.defaulti.satniFill.rgb
-        a = self.defaulti.satniFill.alpha
+        rgb = self.defaulti.satni.Fill.rgb
+        a = self.defaulti.satni.Fill.alpha
         #convert u QColor zbog dijaloga
         boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
         #poziv dijaloga
@@ -663,17 +724,18 @@ class GlavniIzbor(base5, form5):
             color = QtGui.QColor.fromRgba(color)
             rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
             #set vrijednost
-            self.defaulti.satniFill.set_rgb(rgb)
-            self.defaulti.satniFill.set_alpha(a)
+            self.defaulti.satni.Fill.set_rgb(rgb)
+            self.defaulti.satni.Fill.set_alpha(a)
             #promjeni boju gumba
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.fillBoja)
             #update alpha vrijednost na displayu
             self.glavni.fillAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_fillAlpha(self, x):
+        """Promjena transparentnosti osjencanog dijela na satnom grafu"""
         out = round(x, 2)
-        self.defaulti.satniFill.set_alpha(out)
+        self.defaulti.satni.Fill.set_alpha(out)
         #promjeni boju gumba
-        self.glavni.set_widget_color_style(self.defaulti.satniFill.rgb, out, "QPushButton", self.glavni.fillBoja)
+        self.glavni.set_widget_color_style(self.defaulti.satni.Fill.rgb, out, "QPushButton", self.glavni.fillBoja)
 ###############################################################################
 ###############################################################################

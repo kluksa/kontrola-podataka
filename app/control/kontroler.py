@@ -62,7 +62,6 @@ class Kontroler(QtCore.QObject):
         Povezivanje emitiranih signala iz raznih dijelova aplikacije sa
         funkcijama koje definiraju tok programa.
         """
-        #TODO! promjena kod signala....provjeri sve od pocetka...
         ###ERROR MSG###
         #rest_izbornik
         self.connect(self.gui.restIzbornik,
@@ -123,6 +122,7 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'),
                      self.gui.koncPanel.change_satLabel)
 
+        #TODO! bitno
         ###PRIPREMA PODATAKA ZA CRTANJE (koncentracije)###
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
@@ -133,19 +133,20 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('update_zs_broj_dana(PyQt_PyObject)'),
                      self.update_zs_broj_dana)
 
+        #TODO! change this
         ###CRTANJE SATNOG GRAFA I INTERAKCIJA###
-        #zahtjev satnog canvasa za agregiranim podacima
-        self.connect(self.gui.koncPanel.satniGraf,
-                     QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'),
-                     self.dohvati_agregirani_frejm)
-        #slanje agregiranog frejma nazad satnom canvasu
-        self.connect(self,
-                     QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'),
-                     self.gui.koncPanel.satniGraf.set_agregirani_kanal)
-        #zahtjev kontorlora za pocetkom crtanja satnog grafa
-        self.connect(self,
-                     QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'),
-                     self.gui.koncPanel.satniGraf.crtaj)
+#        #zahtjev satnog canvasa za agregiranim podacima
+#        self.connect(self.gui.koncPanel.satniGraf,
+#                     QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'),
+#                     self.dohvati_agregirani_frejm)
+#        #slanje agregiranog frejma nazad satnom canvasu
+#        self.connect(self,
+#                     QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'),
+#                     self.gui.koncPanel.satniGraf.set_agregirani_kanal)
+#        #zahtjev kontorlora za pocetkom crtanja satnog grafa
+#        self.connect(self,
+#                     QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'),
+#                     self.gui.koncPanel.satniGraf.crtaj)
         #pick vremena sa satnog grafa - crtanje minutnog grafa za taj interval
         self.connect(self.gui.koncPanel.satniGraf,
                      QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
@@ -159,61 +160,62 @@ class Kontroler(QtCore.QObject):
         self.connect(self.dokument,
                      QtCore.SIGNAL('model_flag_changed'),
                      self.crtaj_satni_graf)
-
+        #TODO! change this as well direktni poziv na crtanje
         ###CRTANJE MINUTNOG GRAFA I INTERAKCIJA###
-        #zahtjev minutnoog canvasa za minutnim podacima
-        self.connect(self.gui.koncPanel.minutniGraf,
-                     QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'),
-                     self.dohvati_minutni_frejm)
-        #slanje minutnog frejma nazad minutnom canvasu
-        self.connect(self,
-                     QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'),
-                     self.gui.koncPanel.minutniGraf.set_minutni_kanal)
-        #zahtjev kontorlora za pocetkom crtanja minutnog grafa
-        self.connect(self,
-                     QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),
-                     self.gui.koncPanel.minutniGraf.crtaj)
-        #clear minutnog grafa
-        self.connect(self,
-                     QtCore.SIGNAL('clear_graf'),
-                     self.gui.koncPanel.minutniGraf.clear_graf)
+#        #zahtjev minutnoog canvasa za minutnim podacima
+#        self.connect(self.gui.koncPanel.minutniGraf,
+#                     QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'),
+#                     self.dohvati_minutni_frejm)
+#        #slanje minutnog frejma nazad minutnom canvasu
+#        self.connect(self,
+#                     QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'),
+#                     self.gui.koncPanel.minutniGraf.set_minutni_kanal)
+#        #zahtjev kontorlora za pocetkom crtanja minutnog grafa
+#        self.connect(self,
+#                     QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),
+#                     self.gui.koncPanel.minutniGraf.crtaj)
+#        #clear minutnog grafa
+#        self.connect(self,
+#                     QtCore.SIGNAL('clear_graf'),
+#                     self.gui.koncPanel.minutniGraf.clear_graf)
         #promjena flaga na minutnog grafu
         self.connect(self.gui.koncPanel.minutniGraf,
                      QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'),
                      self.promjeni_flag)
 
+        #TODO! change nacina crtanja zero i span grafa
         ###CRTANJE ZERO/SPAN GRAFA I INTERAKCIJA###
         #clear zero/span grafova
-        self.connect(self,
-                     QtCore.SIGNAL('clear_zero_span'),
-                     self.gui.zsPanel.zeroGraf.clear_zero_span)
-        self.connect(self,
-                     QtCore.SIGNAL('clear_zero_span'),
-                     self.gui.zsPanel.spanGraf.clear_zero_span)
-        #crtanje zero
-        self.connect(self,
-                     QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'),
-                     self.gui.zsPanel.zeroGraf.crtaj)
-        #request zero graf canvasa za podacima
-        self.connect(self.gui.zsPanel.zeroGraf,
-                     QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'),
-                     self.request_zero_frejm)
-        #set zero frejma u canvas
-        self.connect(self,
-                     QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'),
-                     self.gui.zsPanel.zeroGraf.set_zero_span_frejm)
-        #crtanje span
-        self.connect(self,
-                     QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'),
-                     self.gui.zsPanel.spanGraf.crtaj)
-        #request span graf canvasa za podacima
-        self.connect(self.gui.zsPanel.spanGraf,
-                     QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'),
-                     self.request_span_frejm)
-        #set span frejma u canvas
-        self.connect(self,
-                     QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'),
-                     self.gui.zsPanel.spanGraf.set_zero_span_frejm)
+#        self.connect(self,
+#                     QtCore.SIGNAL('clear_zero_span'),
+#                     self.gui.zsPanel.zeroGraf.clear_zero_span)
+#        self.connect(self,
+#                     QtCore.SIGNAL('clear_zero_span'),
+#                     self.gui.zsPanel.spanGraf.clear_zero_span)
+#        #crtanje zero
+#        self.connect(self,
+#                     QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'),
+#                     self.gui.zsPanel.zeroGraf.crtaj)
+#        #request zero graf canvasa za podacima
+#        self.connect(self.gui.zsPanel.zeroGraf,
+#                     QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'),
+#                     self.request_zero_frejm)
+#        #set zero frejma u canvas
+#        self.connect(self,
+#                     QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'),
+#                     self.gui.zsPanel.zeroGraf.set_zero_span_frejm)
+#        #crtanje span
+#        self.connect(self,
+#                     QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'),
+#                     self.gui.zsPanel.spanGraf.crtaj)
+#        #request span graf canvasa za podacima
+#        self.connect(self.gui.zsPanel.spanGraf,
+#                     QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'),
+#                     self.request_span_frejm)
+#        #set span frejma u canvas
+#        self.connect(self,
+#                     QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'),
+#                     self.gui.zsPanel.spanGraf.set_zero_span_frejm)
         #setter podataka za tocku na zero grafu
         self.connect(self.gui.zsPanel.zeroGraf,
                      QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),
@@ -230,7 +232,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel.spanGraf,
                      QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.pick_nearest)
-
         #sync zooma po x osi za zero i span graf
         self.connect(self.gui.zsPanel.zeroGraf,
                      QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
@@ -243,7 +244,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel,
                      QtCore.SIGNAL('dodaj_novu_referentnu_vrijednost'),
                      self.dodaj_novu_referentnu_vrijednost)
-
         ###UPLOAD SATNO AGREGIRANIH NA REST SERVIS###
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('upload_satno_agregirane'),
@@ -252,12 +252,10 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
-
         ###PROMJENA IZGLEDA GRAFA###
         self.connect(self.gui,
                      QtCore.SIGNAL('apply_promjena_izgleda_grafova'),
                      self.apply_promjena_izgleda_grafova)
-
         ###GUMB NA KONCENTRACIJSKOM PANELU ZA PONISTAVANJE IZMJENA###
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('ponisti_izmjene'),
@@ -280,11 +278,9 @@ class Kontroler(QtCore.QObject):
         except pomocne_funkcije.AppExcept:
             logging.error('App exception.', exc_info = True)
             frejm = None
-        #test za ispravnost vracenog frejma
-        if isinstance(frejm, pd.core.frame.DataFrame):
-            arg = {'kanal':ulaz['kanal'],
-                   'dataFrejm':frejm}
-            self.emit(QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'), arg)
+            #TODO! napravi token dataframe
+
+        return frejm
 ###############################################################################
     def dohvati_agregirani_frejm(self, mapa):
         """
@@ -333,11 +329,11 @@ class Kontroler(QtCore.QObject):
         njemu.
         """
         #dohvati podatke o rest servisu
-        baseurl = str(self.gui.appSettings.RESTBaseUrl)
-        resursi = {'siroviPodaci':str(self.gui.appSettings.RESTSiroviPodaci),
-                   'programMjerenja':str(self.gui.appSettings.RESTProgramMjerenja),
-                   'zerospan':str(self.gui.appSettings.RESTZeroSpan),
-                   'satniPodaci':str(self.gui.appSettings.RESTSatniPodaci)}
+        baseurl = str(self.gui.konfiguracija.REST.RESTBaseUrl)
+        resursi = {'siroviPodaci':str(self.gui.konfiguracija.REST.RESTSiroviPodaci),
+                   'programMjerenja':str(self.gui.konfiguracija.REST.RESTProgramMjerenja),
+                   'zerospan':str(self.gui.konfiguracija.REST.RESTZeroSpan),
+                   'satniPodaci':str(self.gui.konfiguracija.REST.RESTSatniPodaci)}
         #inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
         #inicijalizacija REST readera

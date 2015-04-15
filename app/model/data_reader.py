@@ -67,6 +67,10 @@ class RESTReader(QtCore.QObject):
 
         output je pandas dataframe (prazan frame ako nema podataka)
         """
+        #prazan dobro formatirani dataframe
+        df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
+        df.index = df['id'].astype('datetime64[ns]')
+
         try:
             #parse json i provjeri da li su svi relevantni stupci na broju
             frame = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
@@ -75,38 +79,33 @@ class RESTReader(QtCore.QObject):
             assert 'vrijednost' in frame.columns, 'ERROR - Nedostaje stupac: "vrijednost'
             assert 'statusString' in frame.columns, 'ERROR - Nedostaje stupac: "statusString"'
             assert 'valjan' in frame.columns, 'ERROR - Nedostaje stupac: "valjan"'
+            #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
+            noviIndex = frame['vrijeme']
+            frame.index = noviIndex
+            #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
+            podatakId = frame['id']
+            #dohvati koncentraciju, zamjeni niske koncentracije sa np.nan
+            koncentracija = frame['vrijednost'].astype(np.float64)
+            koncentracija = koncentracija.map(self.nan_conversion)
+            #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
+            statusString = frame['statusString']
+            status = 0
+            #adapter za boolean vrijesnost valjan  (buduci flag)
+            valjan = frame['valjan']
+            valjan = valjan.map(self.valjan_conversion)
+            valjan = valjan.astype(np.int64)
+
+            #sklopi izlazni dataframe da odgovara API-u dokumenta
+            df = pd.DataFrame({'koncentracija':koncentracija,
+                               'status':status,
+                               'flag':valjan,
+                               'id':podatakId,
+                               'statusString':statusString})
+
         except (ValueError, AssertionError):
             #javi error signalom kontroleru da nesto nije u redu?
             logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)
-            #ako nesto prodje po krivu prosljedi dobro formatirani prazan dataframe dalje
-            frame = pd.DataFrame( columns = ['vrijeme','id','vrijednost','statusString','valjan'] )
-            frame.index = frame['vrijeme'].astype('datetime64[ns]')
 
-        #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
-        noviIndex = frame['vrijeme']
-        frame.index = noviIndex
-        #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
-        podatakId = frame['id']
-        #dohvati koncentraciju
-        koncentracija = frame['vrijednost'].astype(np.float64)
-        koncentracija = koncentracija.map(self.nan_conversion)
-        #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
-        statusString = frame['statusString']
-#        status = frame['statusString']
-#        status = status.map(self.status_string_conversion)
-#        status = status.astype(np.float64)
-        status = 0
-        #adapter za boolean vrijesnost valjan  (buduci flag)
-        valjan = frame['valjan']
-        valjan = valjan.map(self.valjan_conversion)
-        valjan = valjan.astype(np.int64)
-
-        #sklopi izlazni dataframe da odgovara API-u dokumenta
-        df = pd.DataFrame({'koncentracija':koncentracija,
-                           'status':status,
-                           'flag':valjan,
-                           'id':podatakId,
-                           'statusString':statusString})
         #vrati adaptirani dataframe
         return df
 ###############################################################################

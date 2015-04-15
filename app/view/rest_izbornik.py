@@ -37,13 +37,10 @@ class RestIzbornik(base1, form1):
         self.uploadAgregirane.clicked.connect(self.request_upload_agregiranih)
         #upload minutne gumb
         self.uploadMinutne.clicked.connect(self.request_upload_minutnih)
-
         #doubleclick/enter na kalendar
         self.calendarWidget.activated.connect(self.get_mjerenje_datum)
-
         #single click/select na kalendar
         self.calendarWidget.clicked.connect(self.get_mjerenje_datum)
-
         #doubleclick/enter na element u treeViewu (program mjerenja)
         self.treeView.activated.connect(self.get_mjerenje_datum)
 ###############################################################################
@@ -97,10 +94,6 @@ class RestIzbornik(base1, form1):
                     #print('Izabrana kombinacija: {0}'.format(output))
                     self.emit(QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'), output)
                     logging.info('izabrana kombinacija kanala i datuma : {0}'.format(str(output)))
-                else:
-                    print('Kriva kombinacija, nedostaje program mjerenja.')
-            else:
-                print('Kriva kombinacija, dan je u buducnosti ili programi mjerenja nisu ucitani.')
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n'+str(err)
             logging.error('App exception', exc_info = True)

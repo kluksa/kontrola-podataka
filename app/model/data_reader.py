@@ -69,16 +69,16 @@ class RESTReader(QtCore.QObject):
         """
         #prazan dobro formatirani dataframe
         df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
-        df.index = df['id'].astype('datetime64[ns]')
+        df = df.set_index(df['id'].astype('datetime64[ns]'))
 
         try:
             #parse json i provjeri da li su svi relevantni stupci na broju
             df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
-            assert 'vrijeme' in frame.columns, 'ERROR - Nedostaje stupac: "vrijeme"'
-            assert 'id' in frame.columns, 'ERROR - Nedostaje stupac: "id"'
-            assert 'vrijednost' in frame.columns, 'ERROR - Nedostaje stupac: "vrijednost'
-            assert 'statusString' in frame.columns, 'ERROR - Nedostaje stupac: "statusString"'
-            assert 'valjan' in frame.columns, 'ERROR - Nedostaje stupac: "valjan"'
+            assert 'vrijeme' in df.columns, 'ERROR - Nedostaje stupac: "vrijeme"'
+            assert 'id' in df.columns, 'ERROR - Nedostaje stupac: "id"'
+            assert 'vrijednost' in df.columns, 'ERROR - Nedostaje stupac: "vrijednost'
+            assert 'statusString' in df.columns, 'ERROR - Nedostaje stupac: "statusString"'
+            assert 'valjan' in df.columns, 'ERROR - Nedostaje stupac: "valjan"'
 
             df = df.set_index(df['vrijeme'])
             df['status'] = pd.Series(0, df.index)

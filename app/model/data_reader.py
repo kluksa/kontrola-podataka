@@ -53,7 +53,6 @@ class RESTReader(object):
         #prazan dobro formatirani dataframe
         df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
         df = df.set_index(df['id'].astype('datetime64[ns]'))
-
         try:
             #parse json i provjeri da li su svi relevantni stupci na broju
             df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
@@ -65,9 +64,10 @@ class RESTReader(object):
 
             df = df.set_index(df['vrijeme'])
             df['status'] = pd.Series(0, df.index)
-            df.rename(columns={'vrijednost' : 'koncentracija'})
-            df['vrijednost'] = df['vrijednost'].map(self.nan_conversion)
-            df['valjan'] = df['valjan'].map(self.valjan_conversion)
+            df.rename(columns={'vrijednost' : 'koncentracija', 'valjan' : 'flag'}, inplace = True)
+            df['koncentracija'] = df['koncentracija'].map(self.nan_conversion)
+            df['flag'] = df['flag'].map(self.valjan_conversion)
+            df.drop('vrijeme', inplace = True, axis = 1) #drop column vrijeme
         except (ValueError, TypeError, AssertionError):
             #javi error signalom kontroleru da nesto nije u redu?
             logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)

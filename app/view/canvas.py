@@ -492,14 +492,14 @@ class SatniMinutniKanvas(Kanvas):
         """
         Metoda stvara annotation objekt koji ce se prikazati na grafu.
         ulazni parametri su:
-        point ---> tocka na grafu
+        point ---> tocka na grafu ,tuple (x, y)
         event ---> matplotlib event koji je triggerao annotation
         Annotation instance object, pozicija na grafu.
         """
         #set offset annotationa
         offs = self.setup_annotation_offset(event)
         #set tekst annotationa
-        tekst = self.setup_annotation_text() #overload metodu za specificni graf
+        tekst = self.setup_annotation_text(point[0]) #overload metodu za specificni graf
         self.annotation = self.axes.annotate(
                     tekst,
                     xy = point,
@@ -726,14 +726,14 @@ class SatniKanvas(SatniMinutniKanvas):
                             self.konfig.Fill)
         #ekstremi min i max
         if self.konfig.EksMin.crtaj:
-            self.crtaj_scatter_value_ovisno_o_flagu(self.MINIMUM, self.konfig.EksMin, None)
-            self.crtaj_scatter_value_ovisno_o_flagu(self.MAKSIMUM, self.konfig.EksMax, None)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MINIMUM, self.konfig.EksMin, None)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MAKSIMUM, self.konfig.EksMax, None)
 
         #plot tocaka ovisno o flagu i validaciji
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.VOK, 1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.VBAD, -1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.NVOK, 1)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.NVBAD, -1)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
         self.statusGlavniGraf = True
 
     def setup_limits(self):
@@ -976,10 +976,10 @@ class MinutniKanvas(SatniMinutniKanvas):
         y = list(frejm[self.konfig.MIDLINE])
         self.crtaj_line(x, y, self.konfig.Midline)
         #plot tocaka ovisno o flagu i validaciji
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.VOK, 1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.VBAD, -1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.NVOK, 1)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.MIDLINE, self.konfig.NVBAD, -1)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
         self.statusGlavniGraf = True
 
     def setup_limits(self):

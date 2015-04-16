@@ -409,6 +409,8 @@ class Kontroler(QtCore.QObject):
                 tmin = self.pocetnoVrijeme,
                 tmax = self.zavrsnoVrijeme)
             #naredba za crtanje satnog grafa
+            #TODO!
+            #print(self.agregiraniFrejmovi[self.gKanal])
             self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
             #promjena labela u panelima sa grafovima, opis
             try:
@@ -534,7 +536,7 @@ class Kontroler(QtCore.QObject):
                    'zavrsnoVrijeme' : highLim,
                    'tempKontejner'  : self.tKontejnerId}
             #naredba za dohvacanje podataka
-            self.frejmovi = self.dokument.dohvati_frejmove(
+            self.frejmovi = self.dokument.dohvati_minutne_frejmove(
                 lista = self.sviBitniKanali,
                 tmin = self.pocetnoVrijeme,
                 tmax = self.zavrsnoVrijeme)

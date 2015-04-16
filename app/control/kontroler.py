@@ -92,40 +92,11 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('reconnect_to_REST'),
                      self.reconnect_to_REST)
 
-#TODO!
-        ###UPDATE BOJE NA KALENDARU REST IZBORNIKA###
-        self.connect(self,
-                     QtCore.SIGNAL('refresh_dates(PyQt_PyObject)'),
-                     self.gui.restIzbornik.calendarWidget.refresh_dates)
-
         ###GUMBI ZA PREBACIVANJE DANA NAPRIJED/NAZAD###
         #panel sa koncentracijama
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'),
                      self.promjeni_datum)
-
-        #naredba rest izborniku da napravi pomak dana
-        self.connect(self,
-                     QtCore.SIGNAL('sljedeci_dan'),
-                     self.gui.restIzbornik.sljedeci_dan)
-
-        self.connect(self,
-                     QtCore.SIGNAL('prethodni_dan'),
-                     self.gui.restIzbornik.prethodni_dan)
-
-        ###UPDATE LABELA NA PANELIMA###
-        #panel sa koncentracijama
-        self.connect(self,
-                     QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'),
-                     self.gui.koncPanel.change_glavniLabel)
-        #panel sa zero/span podacima
-        self.connect(self,
-                     QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'),
-                     self.gui.zsPanel.change_glavniLabel)
-        #panel sa koncentracijama, satni label
-        self.connect(self,
-                     QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'),
-                     self.gui.koncPanel.change_satLabel)
 
         ###PRIPREMA PODATAKA ZA CRTANJE (koncentracije)###
         self.connect(self.gui.restIzbornik,
@@ -157,7 +128,6 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'),
                      self.promjeni_flag)
 
-        #TODO! change nacina crtanja zero i span grafa
         ###CRTANJE ZERO/SPAN GRAFA I INTERAKCIJA###
         #setter podataka za tocku na zero grafu
         self.connect(self.gui.zsPanel.zeroGraf,
@@ -397,6 +367,9 @@ class Kontroler(QtCore.QObject):
         #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
                   'datum': self.pickedDate}
+        self.gui.koncPanel.change_glavniLabel(argMap)
+        self.gui.zsPanel.change_glavniLabel(argMap)
+
         self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
@@ -451,8 +424,8 @@ class Kontroler(QtCore.QObject):
                     else:
                         #clear minutni graf ako se datum pomakne
                         self.gui.koncPanel.minutniGraf.clear_graf()
-                        #clear izabrani label sata
-                        self.emit(QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'), '')
+                        #clear izabrani label sata (prosljedi prazan string)
+                        self.gui.koncPanel.change_satLabel('')
             except (TypeError, LookupError) as err:
                 self.prikazi_error_msg(err)
 ###############################################################################
@@ -547,7 +520,7 @@ class Kontroler(QtCore.QObject):
             lowLim = highLim - datetime.timedelta(minutes = 59)
             lowLim = pd.to_datetime(lowLim)
             #update labela izabranog sata
-            self.emit(QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'), self.sat)
+            self.gui.koncPanel.change_satLabel(self.sat)
             arg = {'kanalId' : self.gKanal,
                    'pocetnoVrijeme': lowLim,
                    'zavrsnoVrijeme' : highLim,
@@ -767,9 +740,9 @@ class Kontroler(QtCore.QObject):
         prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
         """
         if x == 1:
-            self.emit(QtCore.SIGNAL('sljedeci_dan'))
+            self.gui.restIzbornik.sljedeci_dan
         else:
-            self.emit(QtCore.SIGNAL('prethodni_dan'))
+            self.gui.restIzbornik.prethodni_dan
 ###############################################################################
     def update_zs_broj_dana(self, x):
         """

@@ -18,11 +18,43 @@ VERZIJE EKSTERNIH MODULA
 """
 import sys
 import configparser
+import logging
 from PyQt4 import QtGui
 
-import app.general.pomocne_funkcije as pomocne_funkcije
 import app.view.glavniprozor as glavniprozor
 
+def setup_logging(file='applog.log', mode='a', lvl='INFO'):
+    """
+    pattern of use:
+    ovo je top modul, za sve child module koristi se isti logger sve dok
+    su u istom procesu (konzoli). U child modulima dovoljno je samo importati
+    logging module te bilo gdje pozvati logging.info('msg') (ili neku slicnu
+    metodu za dodavanje u log).
+    """
+    DOZVOLJENI = {'DEBUG': logging.DEBUG,
+                  'INFO': logging.INFO,
+                  'WARNING': logging.WARNING,
+                  'ERROR':logging.ERROR,
+                  'CRITICAL': logging.CRITICAL}
+    #lvl parametar
+    if lvl in DOZVOLJENI:
+        lvl = DOZVOLJENI[lvl]
+    else:
+        lvl = logging.ERROR
+    #filemode
+    if mode not in ['a','w']:
+        mode = 'a'
+    try:
+        logging.basicConfig(level = lvl,
+                            filename = file,
+                            filemode = mode,
+                            format = '{levelname}:::{asctime}:::{module}:::{funcName}:::{message}',
+                            style = '{')
+    except OSError as err:
+        print('Error prilikom konfiguracije logera.', err)
+        print('Application exit')
+        #ugasi interpreter...exit iz programa.
+        exit()
 
 config = configparser.ConfigParser()
 try:
@@ -38,7 +70,7 @@ filename = config.get('LOG_SETUP', 'file', fallback='applog.log')
 filemode = config.get('LOG_SETUP', 'mode', fallback='a')
 level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
 #setup logging
-#pomocne_funkcije.setup_logging(file = filename, mode = filemode, lvl=level)
+#setup_logging(file = filename, mode = filemode, lvl=level)
 
 #instancira QApplication objekt i starta main event loop
 aplikacija = QtGui.QApplication(sys.argv)

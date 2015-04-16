@@ -14,13 +14,12 @@ import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
-class RESTReader():
+class RESTReader(object):
     """
     implementacija REST json citaca
     obavezno instanciraj citac sa modelom
     """
     def __init__(self, source = None):
-        QtCore.QObject.__init__(self)
         #instanca Web zahtjeva za rest servise
         self.source = source
 ###############################################################################

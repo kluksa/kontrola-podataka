@@ -3,17 +3,19 @@
 Created on Thu Apr  9 12:27:25 2015
 
 @author: DHMZ-Milic
+
+P.S. super() radi probleme, uzrok je potencijalo u cinjenici da klase nisu subklasa
+object.
 """
 import datetime
 import matplotlib
 import functools
 import pandas as pd
+import numpy as np
 from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas #import specificnog canvasa za Qt
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
-
-import app.general.pomocne_funkcije as pomocne_funkcije
 
 ################################################################################
 ################################################################################
@@ -29,8 +31,10 @@ class Kanvas(FigureCanvas):
         #osnovna definicija figure, axes i canvasa
         self.fig = Figure(figsize = (width, height), dpi = dpi)
         self.axes = self.fig.add_subplot(111)
-        #FigureCanvas.__init__(self, self.fig)
-        super(Kanvas,self).__init__(self, self.fig)
+        #TODO!
+        """super potencijalno radi probleme ako klase nemaju object kao base class"""
+        FigureCanvas.__init__(self, self.fig)
+#        super(Kanvas,self).__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
             self,
@@ -263,7 +267,6 @@ class Kanvas(FigureCanvas):
         self.lastAnnotation = None
         self.axes.clear()
         #redo Axes labels
-        self.axes.set_xlabel('Vrijeme')
         self.axes.set_ylabel(self.konfig.TIP)
         self.draw()
 
@@ -296,6 +299,44 @@ class Kanvas(FigureCanvas):
                                         fancybox = True)
         self.legenda.get_frame().set_alpha(0.8)
 
+    def prosiri_granice_grafa(self, tmin, tmax, t):
+        """
+        Funkcija 'pomice' rubove intervala [tmin, tmax] na [tmin-t, tmax+t].
+        Koristi se da se malo prosiri canvas na kojem se crtaju podaci tako da
+        rubne tocke nisu na samom rubu canvasa.
+
+        -> t je integer, broj minuta
+        -> tmin, tmax su pandas timestampovi (pandas.tslib.Timestamp)
+
+        izlazne vrijednosti su 2 'pomaknuta' pandas timestampa
+        """
+        tmin = tmin - datetime.timedelta(minutes = t)
+        tmax = tmax + datetime.timedelta(minutes = t)
+        tmin = pd.to_datetime(tmin)
+        tmax = pd.to_datetime(tmax)
+        return tmin, tmax
+
+    def zaokruzi_vrijeme(self, dt_objekt, nSekundi):
+        """
+        Funkcija zaokruzuje zlazni datetime objekt na najblize vrijeme zadano
+        sa nSekundi.
+
+        dt_objekt -> ulaz je datetime.datetime objekt
+        nSekundi -> broj sekundi na koje se zaokruzuje, npr.
+            60 - minuta
+            3600 - sat
+
+        izlaz je datetime.datetime objekt ili None (po defaultu)
+        """
+        if dt_objekt == None:
+            return None
+        else:
+            tmin = datetime.datetime.min
+            delta = (dt_objekt - tmin).seconds
+            zaokruzeno = ((delta + (nSekundi / 2)) // nSekundi) * nSekundi
+            izlaz = dt_objekt + datetime.timedelta(0, zaokruzeno-delta, -dt_objekt.microsecond)
+            return izlaz
+
     def crtaj(self, frejmovi, mapaParametara):
         """
         Glavna metoda za crtanje grafa.
@@ -312,7 +353,8 @@ class SatniMinutniKanvas(Kanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala.
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniMinutniKanvas, self).__init__(self, konfig)
+        Kanvas.__init__(self, konfig)
+        #super(SatniMinutniKanvas, self).__init__(self, konfig)
         self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
 
     def connect_pick_evente(self):
@@ -598,7 +640,8 @@ class SatniKanvas(SatniMinutniKanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniKanvas, self).__init__(self, konfig, pomocni)
+        SatniMinutniKanvas.__init__(self, konfig, pomocni)
+        #super(SatniKanvas, self).__init__(self, konfig, pomocni)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
@@ -700,7 +743,7 @@ class SatniKanvas(SatniMinutniKanvas):
         radi implementacije zoom out metode.
         """
         #odmakni x granice za specificni interval ovisno o tipu
-        tmin, tmax = pomocne_funkcije.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 60)
+        tmin, tmax = self.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 60)
         #set granice za max zoom out
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
@@ -764,7 +807,7 @@ class SatniKanvas(SatniMinutniKanvas):
         Metoda sluzi za zaokruzivanje vremena zadanog ulaznim parametrom xpoint na
         najblizi puni sat.
         """
-        return pomocne_funkcije.zaokruzi_vrijeme(xpoint, 3600)
+        return self.zaokruzi_vrijeme(xpoint, 3600)
 
     def highlight_pick(self, tpl, size):
         """
@@ -864,7 +907,8 @@ class MinutniKanvas(SatniMinutniKanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniKanvas, self).__init__(self, konfig, pomocni)
+        SatniMinutniKanvas.__init__(self, konfig, pomocni)
+        #super(MinutniKanvas, self).__init__(self, konfig, pomocni)
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
@@ -945,7 +989,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         radi implementacije zoom out metode.
         """
         #odmakni x granice za specificni interval ovisno o tipu
-        tmin, tmax = pomocne_funkcije.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 5)
+        tmin, tmax = self.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 5)
         #set granice za max zoom out
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
@@ -1006,7 +1050,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         Metoda sluzi za zaokruzivanje vremena zadanog ulaznim parametrom xpoint na
         najblizu punu minutu.
         """
-        return pomocne_funkcije.zaokruzi_vrijeme(xpoint, 60)
+        return self.zaokruzi_vrijeme(xpoint, 60)
 
     def on_pick(self, event):
         """
@@ -1029,7 +1073,26 @@ class ZeroSpanKanvas(Kanvas):
     Inicijalizacija sa konfig objektom
     """
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(ZeroSpanKanvas, self).__init__(self, konfig)
+        Kanvas.__init__(self, konfig)
+        #super(ZeroSpanKanvas, self).__init__(self, konfig)
+
+    def pronadji_najblizi_time_indeks(self, lista, vrijednost):
+        """
+        Helper funkcija za pronalazak najblizeg indeksa (po vrijednosti) od zadane
+        vrijednosti.
+        Pretpostavka:
+        -lista je pandas dataframe indeks (pandas timestampovi)
+        -vrijednost je takodjer pandas timestamp
+        """
+        #1 sklepaj np.array od liste
+        inList = np.array(lista)
+        #2 sklepaj konstanti np.array sa vrijednosti iste duljine kao i ulazna lista
+        const = [vrijednost for i in range(len(lista))]
+        const = np.array(const, dtype = 'datetime64[ns]') #tip mora odgovarati
+        #oduzmi dvije liste teprimjeni apsolutnu vrijednost na ostatak.
+        #minimum tako dobivene liste je najbliza vrijednost
+        return (np.abs(inList - const)).argmin()
+
 
     def connect_pick_evente(self):
         """connect canvas pick point event sa metodom self.on_pick"""
@@ -1054,11 +1117,11 @@ class ZeroSpanKanvas(Kanvas):
                    'status': str(status)}
         """
         if self.statusGlavniGraf:
-            ind = pomocne_funkcije.pronadji_najblizi_time_indeks(self.data[self.gKanal].index, argList['xtocka'])
-            x = self.data[self.gKanal].index[ind]
-            y = self.data[self.gKanal].loc[x, self.konfig.MIDLINE]
-            minD = self.data[self.gKanal].loc[x, self.konfig.WARNING_LOW]
-            maxD = self.data[self.gKanal].loc[x, self.konfig.WARNING_HIGH]
+            ind = self.pronadji_najblizi_time_indeks(self.data.index, argList['xtocka'])
+            x = self.data.index[ind]
+            y = self.data.loc[x, self.konfig.MIDLINE]
+            minD = self.data.loc[x, self.konfig.WARNING_LOW]
+            maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
             # ako postoje vise istih indeksa, uzmi zadnji
             if type(y) is pd.core.series.Series:
                 y = y[-1]
@@ -1077,17 +1140,6 @@ class ZeroSpanKanvas(Kanvas):
 
             self.highlight_pick((x, y), self.highlightSize)
             self.updateaj_labele_na_panelu('normal', newArgMap)
-
-    def updateaj_labele_na_panelu(self, tip, argMap):
-        """
-        update labela na zero span panelu (istovremeno i trigger za pick najblize
-        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
-        """
-        if tip == 'pick':
-            self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argMap)
-            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argMap)
-        else:
-            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argMap)
 
     def pronadji_tickove(self):
         """
@@ -1129,7 +1181,7 @@ class ZeroSpanKanvas(Kanvas):
         #pronalazak losih tocaka
         tempfrejm = self.data.copy()
         badOver = tempfrejm[tempfrejm[self.konfig.MIDLINE] > tempfrejm[self.konfig.WARNING_HIGH]]
-        tempfrejm = self.data[self.gKanal].copy()
+        tempfrejm = self.data.copy()
         badUnder = tempfrejm[tempfrejm[self.konfig.MIDLINE] < tempfrejm[self.konfig.WARNING_LOW]]
         badTocke = badUnder.append(badOver)
         badTocke.sort()
@@ -1150,10 +1202,18 @@ class ZeroSpanKanvas(Kanvas):
 
     def rect_zoom(self, eclick, erelease):
         """
-        Pozovi rect_zoom metodu parent klase i emitiraj signal za sinhronizacijom
-        raspona x osi.
+        Callback funkcija za rectangle zoom canvasa. Funkcija lovi click i release
+        evente (rubovi kvadrata) te povecava izabrani dio slike preko cijelog
+        canvasa. overloaded za zero i span graf
         """
-        super(ZeroSpanKanvas,self).rect_zoom(eclick, erelease)
+        x = sorted([eclick.xdata, erelease.xdata])
+        y = sorted([eclick.ydata, erelease.ydata])
+        #set nove granice osi za sve axese
+        for ax in self.fig.axes:
+            ax.set_xlim(x)
+            ax.set_ylim(y)
+        #redraw
+        self.draw()
         self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), sorted([eclick.xdata, erelease.xdata]))
 
     def sync_x_zoom(self, x):
@@ -1214,10 +1274,10 @@ class ZeroSpanKanvas(Kanvas):
         Callback za pick na ZERO ili SPAN grafu.
         """
         #definiraj x i y preko izabrane tocke
-        x = self.data[self.gKanal].index[event.ind[0]]
-        y = self.data[self.gKanal].loc[x, self.konfig.MIDLINE]
-        minD = self.data[self.gKanal].loc[x, self.konfig.WARNING_LOW]
-        maxD = self.data[self.gKanal].loc[x, self.konfig.WARNING_HIGH]
+        x = self.data.index[event.ind[0]]
+        y = self.data.loc[x, self.konfig.MIDLINE]
+        minD = self.data.loc[x, self.konfig.WARNING_LOW]
+        maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
         # ako postoje vise istih indeksa, uzmi zadnji
         if type(y) is pd.core.series.Series:
             y = y[-1]
@@ -1248,7 +1308,7 @@ class ZeroSpanKanvas(Kanvas):
         radi implementacije zoom out metode.
         """
         #dohvati trenutne granice x osi
-        tmin, tmax = pomocne_funkcije.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 1440)
+        tmin, tmax = self.prosiri_granice_grafa(self.pocetnoVrijeme, self.zavrsnoVrijeme, 1440)
         #set granice za max zoom out
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
@@ -1334,10 +1394,12 @@ class ZeroSpanKanvas(Kanvas):
 class ZeroKanvas(ZeroSpanKanvas):
     """specificna implementacija Zero canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(ZeroKanvas, self).__init__(self, konfig)
+        ZeroSpanKanvas.__init__(self, konfig)
+        #super(ZeroKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('bottom')
-        self.axes.figure.subplots_adjust(top = 0.02)
+        self.axes.figure.subplots_adjust(top = 0.92)
+        self.axes.figure.subplots_adjust(bottom = 0.2)
         self.axes.figure.subplots_adjust(right = 0.98)
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
@@ -1346,13 +1408,26 @@ class ZeroKanvas(ZeroSpanKanvas):
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
 
+    def updateaj_labele_na_panelu(self, tip, argMap):
+        """
+        update labela na zero span panelu (istovremeno i trigger za pick najblize
+        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
+        """
+        if tip == 'pick':
+            self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argMap)
+            self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argMap)
+        else:
+            self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argMap)
+
 ################################################################################
 class SpanKanvas(ZeroSpanKanvas):
     """specificna implementacija span canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(SpanKanvas, self).__init__(self, konfig)
+        ZeroSpanKanvas.__init__(self, konfig)
+        #super(SpanKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('top')
+        self.axes.figure.subplots_adjust(top = 0.92)
         self.axes.figure.subplots_adjust(bottom = 0.02)
         self.axes.figure.subplots_adjust(right = 0.98)
         self.axes.set_ylabel(self.konfig.TIP)
@@ -1361,4 +1436,15 @@ class SpanKanvas(ZeroSpanKanvas):
         self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
+
+    def updateaj_labele_na_panelu(self, tip, argMap):
+        """
+        update labela na zero span panelu (istovremeno i trigger za pick najblize
+        tocke na drugom canvasu, npr. click na zero canvasu triggera span canvas...)
+        """
+        if tip == 'pick':
+            self.emit(QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),argMap)
+            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argMap)
+        else:
+            self.emit(QtCore.SIGNAL('prikazi_info_span(PyQt_PyObject)'),argMap)
 ################################################################################

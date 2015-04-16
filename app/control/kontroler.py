@@ -212,9 +212,9 @@ class Kontroler(QtCore.QObject):
         self.restReader = data_reader.RESTReader(source = self.webZahtjev)
         #postavljanje readera u model
         self.dokument.set_reader(self.restReader)
-        #visak, treba direktni poziv preko self.WebZahtjev
-#        #inicijalizacija REST writera agregiranih podataka
-#        self.restWriter = data_reader.RESTWriterAgregiranih(source = self.webZahtjev)
+        #TODO! visak, treba direktni poziv preko self.WebZahtjev
+        #inicijalizacija REST writera agregiranih podataka
+        self.restWriter = data_reader.RESTWriterAgregiranih(source = self.webZahtjev)
 ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -339,7 +339,7 @@ class Kontroler(QtCore.QObject):
             try:
                 if self.cache_test(key = kanal, date = self.pickedDate):
                     #citanje pojedinog kanala (ukljucujuci i pomocne)
-                    self.dokument.read(key = kanal, date = self.pickedDate)
+                    self.dokument.citaj(key = kanal, date = self.pickedDate)
                     #update kalendarStatus
                     self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
                     #dodaj glavni kanal u setGlavnihKanala
@@ -359,12 +359,16 @@ class Kontroler(QtCore.QObject):
         metoda priprema kontolor za crtanje, priprema podatke, updatea labele na
         panelima i pokrece proces crtanja.
         """
+        #ovo potencijalno traje... wait cursor
+        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         #reinicijalizacija membera (self.gKanal, self.pocetnoVrijeme....)
         self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
         #update lebele na panelima (informacija o kanalu i datumu)
         #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
+        #restore wait cursora
+        QtGui.QApplication.restoreOverrideCursor()
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
                   'datum': self.pickedDate}
         self.gui.koncPanel.change_glavniLabel(argMap)
@@ -445,9 +449,8 @@ class Kontroler(QtCore.QObject):
         assert 'vrsta' in frejm.columns
         assert 'vrijeme' in frejm.columns
         assert 'vrijednost' in frejm.columns
-        assert 'minDozvoljenoOdstupanje' in frejm.columns
-        assert 'maxDozvoljenoOdstupanje' in frejm.columns
-        assert 'status' in frejm.columns
+        assert 'minDozvoljeno' in frejm.columns
+        assert 'maxDozvoljeno' in frejm.columns
 
         zeroFrejm = frejm[frejm['vrsta'] == "Z"]
         spanFrejm = frejm[frejm['vrsta'] == "S"]
@@ -469,16 +472,19 @@ class Kontroler(QtCore.QObject):
         -Nacrtaj ako ima podataka
         """
         #clear grafove
-        self.zsPanel.zeroGraf.clear_zero_span()
-        self.zsPanel.zeroGraf.clear_zero_span()
+        self.gui.zsPanel.zeroGraf.clear_zero_span()
+        self.gui.zsPanel.zeroGraf.clear_zero_span()
 
         #provjeri da li je izabran glavni kanal i datum.
         if self.gKanal is not None and self.pickedDate is not None:
             try:
+                #promjeni cursor u wait cursor
+                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                #dohvati frejmove
                 self.zeroFrejm, self.spanFrejm = self.dohvati_zero_span()
                 #nastavi dalje samo ako oba frejma nisu prazna
                 if len(self.zeroFrejm) > 0 or len(self.spanFrejm) > 0:
-                    raspon = pomocne_funkcije.sync_zero_span_x_os(self.zeroFrejm, self.spanFrejm)
+                    raspon = self.sync_zero_span_x_os(self.zeroFrejm, self.spanFrejm)
                     #fix duplicate rows (if any)
                     self.zeroFrejm.drop_duplicates(subset='vrijeme',
                                                    take_last = True,
@@ -506,6 +512,8 @@ class Kontroler(QtCore.QObject):
             except (TypeError, ValueError, AssertionError):
                 #mofuci fail za lose formatirani json string
                 logging.error('greska kod parsanja json stringa za zero i span.', exc_info = True)
+            finally:
+                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 ###############################################################################
     def crtaj_minutni_graf(self, izabrani_sat):
         """
@@ -595,7 +603,7 @@ class Kontroler(QtCore.QObject):
                 frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
                 assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_minutne_to_REST:Assert fail, frame pogresnog tipa'
                 if len(frejm):
-                    testValidacije = frejm['flag'].map(pomocne_funkcije.test_stupnja_validacije)
+                    testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
                     lenSvih = len(testValidacije)
                     lenDobrih = len(testValidacije[testValidacije == True])
                     if lenSvih == lenDobrih:
@@ -622,7 +630,7 @@ class Kontroler(QtCore.QObject):
                         output['vrijeme'] = frejm.index
                         output['vrijednost'] = frejm['koncentracija']
                         output['id'] = frejm['id']
-                        output['valjan'] = frejm['flag'].map(pomocne_funkcije.int_to_boolean)
+                        output['valjan'] = frejm['flag'].map(self.int_to_boolean)
                         #konverzija output frejma u json string
                         jstring = output.to_json(orient = 'records')
                         #upload uz pomoc rest writera
@@ -655,7 +663,7 @@ class Kontroler(QtCore.QObject):
                 frejm = self.dokument.get_agregirani_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
                 if len(frejm):
                     #provjeri stupanj validacije agregiranog frejma
-                    testValidacije = frejm[u'flag'].map(pomocne_funkcije.test_stupnja_validacije)
+                    testValidacije = frejm[u'flag'].map(self.test_stupnja_validacije)
                     lenSvih = len(testValidacije)
                     lenDobrih = len(testValidacije[testValidacije == True])
 
@@ -683,7 +691,7 @@ class Kontroler(QtCore.QObject):
                         output['vrijeme'] = frejm.index
                         output['vrijednost'] = frejm['avg']
                         output['status'] = frejm['status']
-                        output['obuhvat'] = frejm['count'].map(pomocne_funkcije.agregirani_count_to_postotak)
+                        output['obuhvat'] = frejm['count'].map(self.agregirani_count_to_postotak)
                         #konverzija output frejma u json string
                         jstring = output.to_json(orient = 'records')
                         #upload uz pomoc rest writera
@@ -731,7 +739,8 @@ class Kontroler(QtCore.QObject):
 
         P.S. izdvojeno van kao funkcija samo radi citljivosti.
         """
-        self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+        if self.gKanal in self.kalendarStatus:
+            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
 ###############################################################################
     def promjeni_datum(self, x):
         """
@@ -791,26 +800,6 @@ class Kontroler(QtCore.QObject):
         """
         self.dokument.change_flag(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'], flag = ulaz['noviFlag'])
 ###############################################################################
-    def exit_check(self):
-        """
-        Funkcija sluzi za provjeru spremljenog rada prije izlaska iz aplikacije.
-
-        provjerava za svaki ucitani glavni kanal, datume ucitanih i datume
-        uspjesno spremljenih na REST.
-
-        Funkcija vraca boolean ovisno o jednakosti skupova datuma.
-
-        poziva ga glavniprozor.py - u overloadanoj metodi za izlaz iz aplikacije
-        """
-        out = True
-        for kanal in self.setGlavnihKanala:
-            if set(self.kalendarStatus[kanal]['ok']) == set(self.kalendarStatus[kanal]['bad']):
-                out = out and True
-            else:
-                out = out and False
-        #return rezultat (upozori da neki podaci NISU spremljeni na REST)
-        return out
-###############################################################################
     def get_kanal_temp_kontenjera(self):
         """
         iz dicta programa mjerenja i glavnog kanala dohvati programMjerenjaId
@@ -823,5 +812,47 @@ class Kontroler(QtCore.QObject):
                 if self.mapaMjerenjeIdToOpis[key]['komponentaNaziv'] == 'Temperatura kontejnera':
                     if key is not self.gKanal:
                         return key
+###############################################################################
+    def sync_zero_span_x_os(self, frejm1, frejm2):
+        """
+        Metoda sluzi za definiciju raspona x osi za zero i span graf
+        ulaz su 2 datafrejma
+        izlaz je vremenski raspon x osi
+        """
+        min1 = min(frejm1.index)
+        min2 = min(frejm2.index)
+        max1 = max(frejm1.index)
+        max2 = max(frejm2.index)
+
+        return [min(min1, min2), max(max1, max2)]
+###############################################################################
+    def int_to_boolean(self, x):
+        """
+        ako je x vrijednost veca ili jednaka 0 vraca True,
+        ako nije, vraca False
+
+        Primarno sluzi kao adapter za flag vrijednost mintnih podataka prilikom uploada
+        podataka na rest
+        """
+        if x >= 0:
+            return True
+        else:
+            return False
+###############################################################################
+    def test_stupnja_validacije(self, x):
+        """
+        Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000. Bitno za
+        provjeru validacije stupca flag (da li su svi podaci validirani)
+        """
+        if abs(x) == 1000:
+            return True
+        else:
+            return False
+###############################################################################
+    def agregirani_count_to_postotak(self, x):
+        """
+        Pomocna funkcija za racunanje obuhvata agregiranih podataka
+        """
+        return int(x*100/60)
 ###############################################################################
 ###############################################################################

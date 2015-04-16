@@ -55,14 +55,14 @@ class DataModel(QtCore.QObject):
         """
         self.agregator = agreg
 ###############################################################################
-    def citaj(self, *args, **kwargs):
+    def citaj(self, key = None, date = None):
         """
-        -prvi argument je kljuc pod kojim ce se spremiti podaci u mapu self.data
-        -ostali pozicijski i keyword argumenti se prosljedjuju citacu
+        -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
+        -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
 
         Ovisno o tipu citaca koji je trenutno aktivan, razlikuje se i poziv metode
         """
-        kljuc, df = self.citac.read(*args, **kwargs)
+        kljuc, df = self.citac.read(key = key, date = date)
         if len(df):
             self.set_frame(key = kljuc, frame = df)
 ###############################################################################

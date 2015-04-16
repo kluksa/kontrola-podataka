@@ -341,7 +341,7 @@ class GlavniIzbor(base5, form5):
         self.defaulti.zero.Midline.set_alpha(out)
         self.defaulti.span.Midline.set_alpha(out)
         #promjena boje gumba
-        self.zs.set_widget_color_style(self.defaulti.zero.Midline.rgb, out, "QPushButton", self.zs.midlineAlpha)
+        self.zs.set_widget_color_style(self.defaulti.zero.Midline.rgb, out, "QPushButton", self.zs.midlineBoja)
 ###############################################################################
     def promjena_zs_warningCrtaj(self, x):
         """Toggle opcije za crtanje granicnih linija za zero i span graf"""
@@ -411,7 +411,7 @@ class GlavniIzbor(base5, form5):
         self.defaulti.span.Warning1.set_alpha(out)
         self.defaulti.span.Warning2.set_alpha(out)
         #promjeni boju gumba
-        self.zs.set_widget_color_style(self.defaulti.zero.Warning1.rgb, out, "QPushButton", self.zs.warningAlpha)
+        self.zs.set_widget_color_style(self.defaulti.zero.Warning1.rgb, out, "QPushButton", self.zs.warningBoja)
 ###############################################################################
     def promjena_zs_fillCrtaj(self, x):
         """Toggle crtanja sjencanih dijelova za zero i span graf"""

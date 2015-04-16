@@ -171,7 +171,7 @@ class ZeroGrafKonfig(MetaConfig):
         #interakcija sa grafom
         self.Grid = False
         self.Cursor = False
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZERO_legend', False, bool)
         self.Ticks = False
         self.Selector = False
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
@@ -195,7 +195,7 @@ class SpanGrafKonfig(MetaConfig):
         #interakcija sa grafom
         self.Grid = False
         self.Cursor = False
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZS_legend', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_SPAN_legend', False, bool)
         self.Ticks = False
         self.Selector = False
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)

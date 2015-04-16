@@ -162,7 +162,7 @@ class GlavniProzor(base, form):
         """
         Overloadani signal za gasenje aplikacije. Dodatna potvrda za izlaz.
         """
-        saveState = self.kontrola.exit_check()
+        saveState = self.exit_check()
         if not saveState:
             reply=QtGui.QMessageBox.question(
                 self,
@@ -179,12 +179,33 @@ class GlavniProzor(base, form):
             #izlaz iz aplikacije bez dodatnog pitanja.
             event.accept()
 ###############################################################################
+    def exit_check(self):
+        """
+        Funkcija sluzi za provjeru spremljenog rada prije izlaska iz aplikacije.
+
+        provjerava za svaki ucitani glavni kanal, datume ucitanih i datume
+        uspjesno spremljenih na REST.
+
+        Funkcija vraca boolean ovisno o jednakosti skupova datuma.
+
+        poziva ga glavniprozor.py - u overloadanoj metodi za izlaz iz aplikacije
+        """
+        out = True #default je sve u redu
+        for kanal in self.kontrola.setGlavnihKanala:
+            if kanal in self.kontrola.kalendarStatus:
+                if set(self.kontrola.kalendarStatus[kanal]['ok']) == set(self.kontrola.kalendarStatus[kanal]['bad']):
+                    out = out and True
+                else:
+                    out = out and False
+        #return rezultat (upozori da neki podaci NISU spremljeni na REST)
+        return out
+###############################################################################
     def promjeni_stil_grafova(self):
         opis = self.kontrola.mapaMjerenjeIdToOpis
         drvo = self.kontrola.modelProgramaMjerenja
         if opis != None and drvo != None:
             logging.info('Pozvan dijalog za promjenu stila grafova')
-            dijalog = glavni_dijalog.GlavniIzbor(defaulti = self.grafSettings, opiskanala = opis, stablo = drvo, parent = self)
+            dijalog = glavni_dijalog.GlavniIzbor(defaulti = self.konfiguracija, opiskanala = opis, stablo = drvo, parent = self)
 
             #connect apply gumb
             self.connect(dijalog,
@@ -265,7 +286,7 @@ class GlavniProzor(base, form):
 ###############################################################################
     def request_satni_ticks_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.set_ticks(x)
+        self.konfiguracija.satni.set_ticks(x)
         self.koncPanel.satniGraf.toggle_ticks(x)
 ###############################################################################
     def request_satni_span_toggle(self, x):

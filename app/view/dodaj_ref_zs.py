@@ -6,8 +6,6 @@ Created on Fri Feb 13 12:01:41 2015
 """
 import pandas as pd
 from PyQt4 import QtCore, uic
-
-import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 base10, form10 = uic.loadUiType('./app/view/ui_files/dodavanje_referentnih_zero_span.ui')
@@ -89,7 +87,7 @@ class DijalogDodajRefZS(base10, form10):
         #convert u pandas.tslib.Timestamp
         vrijeme = pd.to_datetime(vrijeme)
         #convert u unix timestamp
-        vrijeme = pomocne_funkcije.time_to_int(vrijeme)
+        vrijeme = self.time_to_int(vrijeme)
 
         vrsta = self.vrstaSelect.currentText()[0] #samo prvo slovo stringa.. 'Z' ili 'S'
 
@@ -100,5 +98,22 @@ class DijalogDodajRefZS(base10, form10):
                'vrijeme':vrijeme,
                'kanal':self.idKanal}
         return out
+###############################################################################
+    def time_to_int(self, x):
+        """
+        Funkcija pretvara vrijeme x (pandas.tslib.Timestamp) u unix timestamp
+
+        testirano sa:
+        http://www.onlineconversion.com/unix_time.htm
+
+        bilo koji pandas timestamp definiran rucno preko string reprezentacije ili
+        programski (npr.funkcij pandas.tslib.Timestamp.now() ) vraca int koji
+        odgovara zadanom vremenu.
+
+        BITNO!
+        based on seconds since standard epoch of 1/1/1970
+        vrijeme je u GMT
+        """
+        return x.value / 1000000000
 ###############################################################################
 ###############################################################################

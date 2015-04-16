@@ -59,8 +59,8 @@ class KoncPanel(base2, form2):
 
         #inicijalizacija canvasa (samo sa djelom konfiga koji je potreban za
         #funkcioniranje klase i sa mapom pomocnih kanala)
-        self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig.pomocni)
-        self.minutniGraf = canvas.MinutniKanvas(konfig.minutni, konfig.pomocni)
+        self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig.dictPomocnih)
+        self.minutniGraf = canvas.MinutniKanvas(konfig.minutni, konfig.dictPomocnih)
 
         #dodavanje canvasa u layout panela
         self.verticalLayoutSatni.addWidget(self.satniGraf)

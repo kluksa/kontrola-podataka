@@ -8,26 +8,21 @@ Created on Wed Dec 17 15:18:10 2014
 import logging
 import pandas as pd
 import numpy as np
-import datetime
 from PyQt4 import QtCore
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################
-class RESTReader(QtCore.QObject):
+class RESTReader():
     """
     implementacija REST json citaca
     obavezno instanciraj citac sa modelom
     """
-    def __init__(self, model = None, source = None):
+    def __init__(self, source = None):
         QtCore.QObject.__init__(self)
-        #instance of model
-        self.model = model
         #instanca Web zahtjeva za rest servise
         self.source = source
-        #cache uspjesnih zahtjeva za citanjem podataka
-        self.uspjesnoUcitani = []
 ###############################################################################
     def valjan_conversion(self, x):
         """
@@ -38,17 +33,6 @@ class RESTReader(QtCore.QObject):
             return 1
         else:
             return -1
-###############################################################################
-    def status_string_conversion(self, x):
-        """
-        Adapter, funkcija uzima string vrijednost status stringa i pretvara je
-        u ????
-        U nedostatku bolje ideje... string je formata 'a;b;c;d'
-        funkcija ce vratiti int(d)
-        """
-        ind = x.rfind(';')
-        x = x[ind+1:]
-        return int(x)
 ###############################################################################
     def nan_conversion(self, x):
         """
@@ -85,34 +69,9 @@ class RESTReader(QtCore.QObject):
             df.rename(columns={'vrijednost' : 'koncentracija'})
             df['vrijednost'] = df['vrijednost'].map(self.nan_conversion)
             df['valjan'] = df['valjan'].map(self.valjan_conversion)
-
-            # #zamjeni index u pandas timestamp (prebaci stupac vrijeme u index)
-            # noviIndex = frame['vrijeme']
-            # frame.index = noviIndex
-            # #sacuvaj originalni id podatka (pod kojim je spremljen u bazu)
-            # podatakId = frame['id']
-            # #dohvati koncentraciju, zamjeni niske koncentracije sa np.nan
-            # koncentracija = frame['vrijednost'].astype(np.float64)
-            # koncentracija = koncentracija.map(self.nan_conversion)
-            # #dohvati status i adaptiraj ga (sacuvaj i originalnu kopiju)
-            # statusString = frame['statusString']
-            # status = 0
-            # #adapter za boolean vrijesnost valjan  (buduci flag)
-            # valjan = frame['valjan']
-            # valjan = valjan.map(self.valjan_conversion)
-            # valjan = valjan.astype(np.int64)
-            #
-            # #sklopi izlazni dataframe da odgovara API-u dokumenta
-            # df = pd.DataFrame({'koncentracija':koncentracija,
-            #                    'status':status,
-            #                    'flag':valjan,
-            #                    'id':podatakId,
-            #                    'statusString':statusString})
-
-        except (ValueError, AssertionError):
+        except (ValueError, TypeError, AssertionError):
             #javi error signalom kontroleru da nesto nije u redu?
             logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)
-
         #vrati adaptirani dataframe
         return df
 ###############################################################################
@@ -121,37 +80,23 @@ class RESTReader(QtCore.QObject):
         ucitavanje json podataka sa rest servisa.
         key je programMjerenja
         date je trazeni datum
+
+        P.S. self.source.get_sirovi(key, date) moze raisati exception (usljed loseg
+        requesta, loseg responsea...), ali dopustamo da se pogreska propagira
+        iznad
         """
-        sada = datetime.datetime.now()
-        sada = str(sada.date()) #samo trenutni datum u string formatu
-        if (key, date) not in self.uspjesnoUcitani:
-            try:
-                #pokusaj ucitati json string sa REST servisa
-                jsonString = self.source.get_sirovi(key, date) #!potencijalni AppExcept!
-                #pretvori u dataframe
-                df = self.adaptiraj_ulazni_json(jsonString)
-                #upisi frejm u model
-                self.model.set_frame(key = key, frame = df)
-                #dodaj na popis uspjesno ucitanih date nije danas
-                if date is not sada and len(df):
-                    #dodaj na uspjesno ucitane samo ako je datum manji od danas
-                    #i ako frejm nije prazan
-                    self.uspjesnoUcitani.append((key, date))
-            except pomocne_funkcije.AppExcept as err:
-                """
-                Moguci razlozi za Exception
-                - prilikom ucitavanja jsona (self.source.get_sirovi)
-                - prilikom upisa datafrejma u model (self.model.set_frame)
-                """
-                logging.error('read data fail', exc_info = True)
-                #potrebno je javiti problem kontroleru aplikacije
-                self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
+        #pokusaj ucitati json string sa REST servisa
+        jsonString = self.source.get_sirovi(key, date)
+        #pretvori u dataframe
+        df = self.adaptiraj_ulazni_json(jsonString)
+        return key, df
 ###############################################################################
 ###############################################################################
 class RESTWriterAgregiranih(QtCore.QObject):
     """
     Klasa zaduzena za updateanje agregiranih podataka na REST web servis
     """
+    #TODO! visak... prebaciti funkcionalnost direktno na kontroler direktnim pozivom
     def __init__(self, source = None):
         #instanca Web zahtjeva za rest servise
         QtCore.QObject.__init__(self)

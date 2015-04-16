@@ -12,7 +12,7 @@ class Agregator(object):
 
         """
         pass
-    
+
     """
     def pomocnih funkcija za agregator
     ulaz --> numpy array ili neka lista
@@ -30,12 +30,12 @@ class Agregator(object):
             if abs(ind) != 1000:
                 #postoji barem jedan minutni podatak koji nije validiran
                 total = False
-        
+
         if total == True:
             return 1000 #slucaj kada su svi minutni validirani
         else:
             return 1 #slucaj kada postoje nevalidirani podaci
-            
+
     def my_mean(self, x):
         #mean, srednja vrjednost
         if len(x) == 0:
@@ -60,25 +60,25 @@ class Agregator(object):
             return np.NaN
         return np.max(x)
 
-    
+
     def h_q05(self, x):
         #5 percentil podataka
         if len(x) == 0:
             return np.NaN
         return np.percentile(x,5)
-        
+
     def h_q50(self, x):
         #median
         if len(x) == 0:
             return np.NaN
         return np.percentile(x,50)
-        
+
     def h_q95(self, x):
         #95 percentil podataka
         if len(x) == 0:
             return np.NaN
         return np.percentile(x,95)
-    
+
     def h_binary_or(self, x):
         #binarni or liste
         if len(x) == 0:
@@ -88,14 +88,14 @@ class Agregator(object):
         for i in x:
             result = result | int(i)
         return result
-        
+
     def h_size(self, x):
         #broj podataka
         if len(x) == 0:
             return np.NaN
         return len(x)
-    
-    def agregiraj_kanal(self, frejm):
+
+    def agregiraj(self, frejm):
         """
         input- pandasdataframe (datetime index, koncentracija, status, flag)
         output - pandas dataframe (datetime index, hrpa agregiranih vrijednosti)
@@ -104,22 +104,22 @@ class Agregator(object):
         #tj. postupak u slucaju da agregatoru netko prosljedi prazan slice
         if len(frejm) == 0:
             return None
-        
+
         agregirani = pd.DataFrame()
-        
+
         """
         ukupni broj podataka koji postoje
         """
         #izbaci sve indekse gdje je koncentracija NaN
         df = frejm[np.isnan(frejm[u'koncentracija']) == False]
-        
+
         tempDf = df.copy()
         #uzmi samo pandas series koncentracije
         dfKonc = tempDf[u'koncentracija']
         #resample series, prebroji koliko ima podataka
         temp = dfKonc.resample('H', how = self.h_size, closed = 'right', label = 'right')
         agregirani[u'broj podataka'] = temp
-        
+
         """
         agregirani status
         """
@@ -127,7 +127,7 @@ class Agregator(object):
         dfStatus = tempDf[u'status']
         temp = dfStatus.resample('H', how = self.h_binary_or, closed = 'right', label = 'right')
         agregirani[u'status'] = temp
-        
+
         """
         test validacije
         """
@@ -135,14 +135,14 @@ class Agregator(object):
         dfFlag = tempDf[u'flag']
         temp = dfFlag.resample('H', how = self.test_validacije, closed = 'right', label = 'right')
         agregirani[u'flag'] = temp
-        
+
         """
         -definicija funkcija koje nas zanimaju
         -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
         """
         listaFunkcijaIme = [u'avg', u'std', u'min', u'max', u'q05', u'median', u'q95', u'count']
         listaFunkcija = [self.my_mean, self.my_std, self.my_min, self.my_max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
-        
+
         """
         -kopija originalnog frejma
         -samo stupac koncentracije gdje je flag veci od 0
@@ -150,7 +150,7 @@ class Agregator(object):
         tempDf = df.copy()
         tempDf = tempDf[tempDf[u'flag']>=0]
         tempDf = tempDf[u'koncentracija']
-        
+
         """
         -glavna petlja za agregiranje
         -loop preko lista funkcija
@@ -160,13 +160,13 @@ class Agregator(object):
             temp = temp.resample('H', how = listaFunkcija[i], closed = 'right', label = 'right')
             temp.name = listaFunkcijaIme[i]
             agregirani[temp.name] = temp
-        
+
         """
         ???
         -iz agregiranih makni sve gdje je broj podataka np.NaN
         -desava se kada nedostaju mjerenja u sredini intervala
         """
-        
+
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
 
         #treba testirati kako prati status validiranih
@@ -184,7 +184,7 @@ class Agregator(object):
                     agregirani.loc[i, u'flag'] = -1000
                 else:
                     agregirani.loc[i,u'flag'] = -1
-                    
+
         """
         Problem prilikom agregiranja. ako sve indekse unutar jednog sata prebacimo
         da su lose, funkcije koje racunaju srednje vrijednosti isl. ne reazlikuju
@@ -204,12 +204,12 @@ class Agregator(object):
                 agregirani.loc[i, u'count'] = 0
                 agregirani.loc[i, u'median'] = 0
                 agregirani.loc[i, u'std'] = 0
-                
-                
-               
+
+
+
         return agregirani
-        
-    def agregiraj(self, frejmovi):
+
+    def agregiraj_frejmove(self, frejmovi):
         """
         agregiraj rezultat kanal po kanal i spremaj u dict
         """
@@ -217,5 +217,5 @@ class Agregator(object):
         for i in frejmovi:
             frejm = frejmovi[i]
             rezultat[i] = self.agregiraj_kanal(frejm)
-            
+
         return rezultat

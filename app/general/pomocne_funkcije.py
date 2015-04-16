@@ -212,15 +212,15 @@ def zaokruzi_vrijeme(dt_objekt, nSekundi):
         return izlaz
 ###############################################################################
 ###############################################################################
-def sync_zero_span_x_os(lista):
+def sync_zero_span_x_os(frejm1, frejm2):
     """
-    ulaz je lista od 2 datafrejma
+    ulaz su 2 datafrejma
     izlaz je vremenski raspon x osi
     """
-    min1 = min(lista[0].index)
-    min2 = min(lista[1].index)
-    max1 = max(lista[0].index)
-    max2 = max(lista[1].index)
+    min1 = min(frejm1.index)
+    min2 = min(frejm2.index)
+    max1 = max(frejm1.index)
+    max2 = max(frejm2.index)
 
     return [min(min1, min2), max(max1, max2)]
 ###############################################################################
@@ -318,3 +318,18 @@ def int_to_boolean(x):
     else:
         return False
 ###############################################################################
+def test_stupnja_validacije(x):
+    """
+    Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000. Bitno za
+    provjeru validacije stupca flag (da li su svi podaci validirani)
+    """
+    if abs(x) == 1000:
+        return True
+    else:
+        return False
+###############################################################################
+def agregirani_count_to_postotak(x):
+    """
+    Pomocna funkcija za racunanje obuhvata agregiranih podataka
+    """
+    return int(x*100/60)

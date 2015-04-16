@@ -4,7 +4,6 @@ Created on Thu Jan 22 09:52:37 2015
 
 @author: User
 """
-
 from PyQt4 import QtCore, QtGui
 import datetime #python datetime objekt, potreban za timedelta isl.
 import pandas as pd
@@ -30,10 +29,12 @@ class Kontroler(QtCore.QObject):
     def __init__(self, parent = None, gui = None):
         logging.debug('inicijalizacija kontrolora, start')
         QtCore.QObject.__init__(self, parent)
-        ###inicijalizacija dokumenta###
-        self.dokument = dokument_model.DataModel()
         ###incijalizacija satnog agregatora podataka###
         self.satniAgregator = agregator.Agregator()
+        ###inicijalizacija dokumenta###
+        self.dokument = dokument_model.DataModel()
+        #postavljanje agregatora u model
+        self.dokument.set_agregator(self.satniAgregator)
         #gui element - instanca displaya
         self.gui = gui
         ###definiranje pomocnih membera###
@@ -52,7 +53,10 @@ class Kontroler(QtCore.QObject):
         self.drawStatus = [False, False] #status grafa prema panelu [koncPanel, zsPanel]. True ako je graf nacrtan.
         self.zeroFrejm = None #member sa trenutnim Zero frejmom
         self.spanFrejm = None #member sa trenutnim Span frejmom
-
+        self.cache = [] #member zaduzen da zapisuje sve odradjene zahtjeve za podacima
+        self.sviBitniKanali = [] #lista potrebnih programMjerenjaId (kanala) za crtanje. Refresh za svaki izbor kanala i datuma.
+        self.frejmovi = {} #mapa aktualnih frejmova (programMjerenjaId:slajs)
+        self.agregiraniFrejmovi = {} #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
         ###povezivanje akcija sa funkcijama###
         self.setup_veze()
         logging.debug('inicijalizacija kontrolora, end')
@@ -88,6 +92,7 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('reconnect_to_REST'),
                      self.reconnect_to_REST)
 
+#TODO!
         ###UPDATE BOJE NA KALENDARU REST IZBORNIKA###
         self.connect(self,
                      QtCore.SIGNAL('refresh_dates(PyQt_PyObject)'),
@@ -122,7 +127,6 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'),
                      self.gui.koncPanel.change_satLabel)
 
-        #TODO! bitno
         ###PRIPREMA PODATAKA ZA CRTANJE (koncentracije)###
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
@@ -133,20 +137,7 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('update_zs_broj_dana(PyQt_PyObject)'),
                      self.update_zs_broj_dana)
 
-        #TODO! change this
         ###CRTANJE SATNOG GRAFA I INTERAKCIJA###
-#        #zahtjev satnog canvasa za agregiranim podacima
-#        self.connect(self.gui.koncPanel.satniGraf,
-#                     QtCore.SIGNAL('dohvati_agregirani_frejm(PyQt_PyObject)'),
-#                     self.dohvati_agregirani_frejm)
-#        #slanje agregiranog frejma nazad satnom canvasu
-#        self.connect(self,
-#                     QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'),
-#                     self.gui.koncPanel.satniGraf.set_agregirani_kanal)
-#        #zahtjev kontorlora za pocetkom crtanja satnog grafa
-#        self.connect(self,
-#                     QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'),
-#                     self.gui.koncPanel.satniGraf.crtaj)
         #pick vremena sa satnog grafa - crtanje minutnog grafa za taj interval
         self.connect(self.gui.koncPanel.satniGraf,
                      QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
@@ -160,24 +151,7 @@ class Kontroler(QtCore.QObject):
         self.connect(self.dokument,
                      QtCore.SIGNAL('model_flag_changed'),
                      self.crtaj_satni_graf)
-        #TODO! change this as well direktni poziv na crtanje
         ###CRTANJE MINUTNOG GRAFA I INTERAKCIJA###
-#        #zahtjev minutnoog canvasa za minutnim podacima
-#        self.connect(self.gui.koncPanel.minutniGraf,
-#                     QtCore.SIGNAL('dohvati_minutni_frejm(PyQt_PyObject)'),
-#                     self.dohvati_minutni_frejm)
-#        #slanje minutnog frejma nazad minutnom canvasu
-#        self.connect(self,
-#                     QtCore.SIGNAL('set_minutni_kanal(PyQt_PyObject)'),
-#                     self.gui.koncPanel.minutniGraf.set_minutni_kanal)
-#        #zahtjev kontorlora za pocetkom crtanja minutnog grafa
-#        self.connect(self,
-#                     QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),
-#                     self.gui.koncPanel.minutniGraf.crtaj)
-#        #clear minutnog grafa
-#        self.connect(self,
-#                     QtCore.SIGNAL('clear_graf'),
-#                     self.gui.koncPanel.minutniGraf.clear_graf)
         #promjena flaga na minutnog grafu
         self.connect(self.gui.koncPanel.minutniGraf,
                      QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'),
@@ -185,37 +159,6 @@ class Kontroler(QtCore.QObject):
 
         #TODO! change nacina crtanja zero i span grafa
         ###CRTANJE ZERO/SPAN GRAFA I INTERAKCIJA###
-        #clear zero/span grafova
-#        self.connect(self,
-#                     QtCore.SIGNAL('clear_zero_span'),
-#                     self.gui.zsPanel.zeroGraf.clear_zero_span)
-#        self.connect(self,
-#                     QtCore.SIGNAL('clear_zero_span'),
-#                     self.gui.zsPanel.spanGraf.clear_zero_span)
-#        #crtanje zero
-#        self.connect(self,
-#                     QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'),
-#                     self.gui.zsPanel.zeroGraf.crtaj)
-#        #request zero graf canvasa za podacima
-#        self.connect(self.gui.zsPanel.zeroGraf,
-#                     QtCore.SIGNAL('request_zero_frejm(PyQt_PyObject)'),
-#                     self.request_zero_frejm)
-#        #set zero frejma u canvas
-#        self.connect(self,
-#                     QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'),
-#                     self.gui.zsPanel.zeroGraf.set_zero_span_frejm)
-#        #crtanje span
-#        self.connect(self,
-#                     QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'),
-#                     self.gui.zsPanel.spanGraf.crtaj)
-#        #request span graf canvasa za podacima
-#        self.connect(self.gui.zsPanel.spanGraf,
-#                     QtCore.SIGNAL('request_span_frejm(PyQt_PyObject)'),
-#                     self.request_span_frejm)
-#        #set span frejma u canvas
-#        self.connect(self,
-#                     QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'),
-#                     self.gui.zsPanel.spanGraf.set_zero_span_frejm)
         #setter podataka za tocku na zero grafu
         self.connect(self.gui.zsPanel.zeroGraf,
                      QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),
@@ -265,47 +208,6 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
 ###############################################################################
-    def dohvati_minutni_frejm(self, ulaz):
-        """
-        Bitna metoda za crtanje minutnih podataka
-        ulaz je mapa sa 3 elementa
-        ulaz['kanal'] - id glavnog kanala mjerenja (int)
-        ulaz['od'] - tmin (pandas timestamp)
-        ulaz['do'] - tmax (pandas timestamp)
-        """
-        try:
-            frejm = self.dokument.get_frame(key = ulaz['kanal'], tmin = ulaz['od'], tmax = ulaz['do'])
-        except pomocne_funkcije.AppExcept:
-            logging.error('App exception.', exc_info = True)
-            frejm = None
-            #TODO! napravi token dataframe
-
-        return frejm
-###############################################################################
-    def dohvati_agregirani_frejm(self, mapa):
-        """
-        Bitna metoda za crtanje satno agregiranih podataka.
-        ulaz je mapa sa 3 elementa
-        mapa['kanal'] - id glavnog kanala (int)
-        mapa['od'] - tmin, (pandas timestamp)
-        mapa['do'] - tmax, (pandas timestamp)
-        """
-        try:
-            frejm = self.dokument.get_frame(key = mapa['kanal'], tmin = mapa['od'], tmax = mapa['do'])
-        except pomocne_funkcije.AppExcept:
-            logging.error('App exception.', exc_info = True)
-            frejm = None
-        #test za ispravnost vracenog frejma
-        if isinstance(frejm, pd.core.frame.DataFrame):
-            #agregiraj frejm
-            agregiraniFrejm = self.satniAgregator.agregiraj_kanal(frejm)
-            #agregator ce vratiti None ako mu se prosljedi prazan frejm
-            if isinstance(agregiraniFrejm, pd.core.frame.DataFrame):
-                #vrati listu [kanal, agregiraniFrejm] nazad satnom grafu
-                arg = {'kanal': mapa['kanal'],
-                       'agregirani': agregiraniFrejm}
-                self.emit(QtCore.SIGNAL('set_agregirani_kanal(PyQt_PyObject)'), arg)
-###############################################################################
     def user_log_in(self, x):
         """
         - postavi podatke u self.appAuth
@@ -337,9 +239,12 @@ class Kontroler(QtCore.QObject):
         #inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
         #inicijalizacija REST readera
-        self.restReader = data_reader.RESTReader(model = self.dokument, source = self.webZahtjev)
-        #inicijalizacija REST writera agregiranih podataka
-        self.restWriter = data_reader.RESTWriterAgregiranih(source = self.webZahtjev)
+        self.restReader = data_reader.RESTReader(source = self.webZahtjev)
+        #postavljanje readera u model
+        self.dokument.set_reader(self.restReader)
+        #visak, treba direktni poziv preko self.WebZahtjev
+#        #inicijalizacija REST writera agregiranih podataka
+#        self.restWriter = data_reader.RESTWriterAgregiranih(source = self.webZahtjev)
 ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -389,10 +294,8 @@ class Kontroler(QtCore.QObject):
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         #inicijalizacija objekata
         self.initialize_web_and_rest_interface()
-
         #konstruiraj tree model programa mjerenja
         self.konstruiraj_tree_model()
-
         #postavi tree model u ciljani tree view widget na display
         if self.modelProgramaMjerenja != None:
             self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
@@ -400,7 +303,6 @@ class Kontroler(QtCore.QObject):
             logging.info('Tree model programa mjerenja uspjesno postavljen')
         else:
             logging.info('Tree model programa mjerenja nije uspjesno postavljen')
-
         #vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
@@ -411,29 +313,13 @@ class Kontroler(QtCore.QObject):
         #vrati izgled cursora nazad na normalni nakon exceptiona
         QtGui.QApplication.restoreOverrideCursor()
         #prikazi information dialog sa pogreskom
-        #QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
+        QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom rada', str(poruka))
 ###############################################################################
-    def priredi_podatke(self, mapa):
-        #TODO! razbij na manje djelove
+    def pripremi_membere_prije_ucitavanja_zahtjeva(self, mapa):
         """
         Funkcija analizira zahtjev preuzet u obliku mape
         {'programMjerenjaId':int, 'datumString':'YYYY-MM-DD'}
-        te radi 4 bitne stvari:
-
-        1. provjerava da li je zahtjev pomaknuo "fokus" sa prikazanih podataka
-            - preciznije, usporedjuje membere self.gKanal, self.pickedDate
-              sa nadolazecim zahtjevom
-        2. Ucitava podatke sa REST servisa u dokument (priprema lokalnu kopiju za rad)
-            - rest citac 'pamti' da li je vec obradio isti zahtjev pa se ucitava
-              samo ako je potrebno
-            - rest citac namjerno nece zapamtiti trenutni dan
-        3. Postavlja odredjene membere potrebne za daljnji rad
-            - self.gKanal --> trenutni glavni kanal za crtanje (programMjerenjaId)
-            - self.pocetnoVrijeme --> donji vremenski rub datuma (datum 00:01:00)
-            - self.zavrsnoVrijeme --> gornji vremenski rub datuma (datum +1 dan 00:00:00)
-            - self.pickedDate --> trenutno izabrani dan
-        4. Pokrece proces crtanja
-
+        i reinicijalizira odredjene membere kontorlora.
         """
         #reset status crtanja
         self.drawStatus = [False, False]
@@ -447,60 +333,84 @@ class Kontroler(QtCore.QObject):
         #za svaki slucaj, pobrinimo se da su varijable pandas.tslib.Timestamp
         self.zavrsnoVrijeme = pd.to_datetime(self.zavrsnoVrijeme)
         self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
-        sviBitniKanali = []
-        sviBitniKanali.append(self.gKanal)
         #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
         self.tKontejnerId = self.get_kanal_temp_kontenjera()
+###############################################################################
+    def cache_test(self, key = None, date = None):
+        """
+        Provjera da li je zahtjev prije odradjen prije pokusaja ponovnog citanja.
+        Funckija vraca True ako je potrebno ucitati frejm.
+        """
+        sada = datetime.datetime.now()
+        sada = str(sada.date())
+        if (key, date) not in self.cache:
+            return True
+        else:
+            if date is sada:
+                return True
+            else:
+                return False
+###############################################################################
+    def ucitaj_podatke_ako_nisu_prije_ucitani(self):
+        """
+        Metoda usporedjuje argumente zahtjeva sa 'cacheom' vec odradjenih zahtjeva.
+        Ako zahtjev nije prije odradjen, ucitava se u dokument.
+        """
+        self.sviBitniKanali = [] #varijabla sa listom svih programMjerenjaId koje treba ucitati
+        self.sviBitniKanali.append(self.gKanal) #dodaj glavni kanal na popis
+        #ako za stanicu postoji temperatura kontejnera, dodaj i taj kanal
         if self.tKontejnerId is not None:
-            sviBitniKanali.append(self.tKontejnerId)
-
-        #prati koji su sve glavni kanali izabrani!!!
-        self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
+            self.sviBitniKanali.append(self.tKontejnerId)
         #pronadji sve ostale kanale potrebne za crtanje
-        for key in self.gui.grafSettings.dictPomocnih:
-            sviBitniKanali.append(key)
-        #lista svih koji se nisu uspjeli ucitati
-        notUcitani = []
-        #pokusaj ucitati sve bitne kanale (glavni + pomocni kanali
-        for kanal in sviBitniKanali:
+        for key in self.gui.konfiguracija.dictPomocnih:
+            self.sviBitniKanali.append(key)
+        #kreni ucitavati po potrebi
+        for kanal in self.sviBitniKanali:
             try:
-                #citanje pojedinog kanala (ukljucujuci i pomocne)
-                self.restReader.read(key = kanal, date = datum)
-                #update kalendarStatus
-                self.update_kalendarStatus(kanal, datum, 'ucitani')
-            except pomocne_funkcije.AppExcept as e1:
+                if self.cache_test(key = kanal, date = self.pickedDate):
+                    #citanje pojedinog kanala (ukljucujuci i pomocne)
+                    self.dokument.read(key = kanal, date = self.pickedDate)
+                    #update kalendarStatus
+                    self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
+                    #dodaj glavni kanal u setGlavnihKanala
+                    self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
+                    #dodaj argumente readera u cache
+                    self.cache.append((kanal, self.pickedDate))
+            except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info = True)
-                #dodaj listu [kanal, datum] u listu notUcitani
-                notUcitani.append([kanal, datum, e1])
         #update boju na kalendaru ovisno o ucitanim podacima
         self.promjena_boje_kalendara()
-        if len(notUcitani) > 0:
-            #neki se nisu ucitali u dokument, informiraj koirsnika
-            msg = 'Sljedeci kanali nisu ucitani:\n'
-            for i in notUcitani:
-                msg = msg + str(notUcitani[i][0])+','
-            #prokazi informacijski dijalog ?
-            self.prikazi_error_msg(msg)
+###############################################################################
+    def priredi_podatke(self, mapa):
+        """
+        Funkcija analizira zahtjev preuzet u obliku mape
+        {'programMjerenjaId':int, 'datumString':'YYYY-MM-DD'}
 
-        #update lebele na panelima (povratna informacija koji je kanal aktivan i za koje vrijeme)
+        metoda priprema kontolor za crtanje, priprema podatke, updatea labele na
+        panelima i pokrece proces crtanja.
+        """
+        #reinicijalizacija membera (self.gKanal, self.pocetnoVrijeme....)
+        self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
+        #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
+        self.ucitaj_podatke_ako_nisu_prije_ucitani()
+        #update lebele na panelima (informacija o kanalu i datumu)
         #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
                   'datum': self.pickedDate}
-
         self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
 ###############################################################################
     def ponisti_izmjene(self):
         """
-        funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
+        Funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
         trenutno aktivnog kanala za trenutno izabrani datum.
         """
         if self.gKanal is not None and self.pickedDate is not None:
             arg = (self.gKanal, self.pickedDate)
-            #reader prati sto je ucitao do sada, pa moramo maknuti referencu sa liste
-            if arg in self.restReader.uspjesnoUcitani:
-                self.restReader.uspjesnoUcitani.remove(arg)
+            #cache prati sto je ucitao do sada, pa moramo maknuti referencu sa liste
+            if arg in self.cache:
+                self.cache.remove(arg)
             mapa = {'programMjerenjaId':self.gKanal,
                     'datumString':self.pickedDate}
             #pokreni postupak kao da je kombinacija datuma i kanala prvi puta izabrana
@@ -516,7 +426,13 @@ class Kontroler(QtCore.QObject):
                    'pocetnoVrijeme': self.pocetnoVrijeme,
                    'zavrsnoVrijeme' : self.zavrsnoVrijeme,
                    'tempKontejner'  : self.tKontejnerId}
-            self.emit(QtCore.SIGNAL('nacrtaj_satni_graf(PyQt_PyObject)'), arg)
+            #relevantni agregirani frejmovi za satni graf
+            self.agregiraniFrejmovi = self.dokument.dohvati_agregirane_frejmove(
+                lista = self.sviBitniKanali,
+                tmin = self.pocetnoVrijeme,
+                tmax = self.zavrsnoVrijeme)
+            #naredba za crtanje satnog grafa
+            self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
             #promjena labela u panelima sa grafovima, opis
             try:
                 """
@@ -528,93 +444,102 @@ class Kontroler(QtCore.QObject):
                 dva grafa mogu prikazivati razlicite kanale i/ili datume), moramo
                 "clearati" graf ili narediti ponovno crtanje minutnog grafa.
                 """
-                if self.sat != None:
+                if self.sat is not None:
                     if (self.sat >= self.pocetnoVrijeme and self.sat <= self.zavrsnoVrijeme):
+                        #nacrtaj minutni graf
                         self.crtaj_minutni_graf(self.sat)
                     else:
                         #clear minutni graf ako se datum pomakne
-                        self.emit(QtCore.SIGNAL('clear_graf'))
+                        self.gui.koncPanel.minutniGraf.clear_graf()
                         #clear izabrani label sata
                         self.emit(QtCore.SIGNAL('change_satLabel(PyQt_PyObject)'), '')
             except (TypeError, LookupError) as err:
                 self.prikazi_error_msg(err)
+###############################################################################
+    def dohvati_zero_span(self):
+        """
+        Za ulazni json string, convert i vrati zero i span frejm.
+        Moguci exceptioni su:
+        ArrtibuteError --> self.webZahtjev mozda nije inicijaliziran i ne postoji
+        pomocne_funkcije.AppExcept --> fail prilikom ucitavanja json stringa sa REST
+        AssertionError --> los format ulaznog frejma
+        ValueError, TypeError --> krivi argumenti za json parser ili los json
+        """
+        jsonText = self.webZahtjev.get_zero_span(self.gKanal, self.pickedDate, self.brojDana)
+        frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['vrijeme'])
 
-###############################################################################
-    def request_span_frejm(self, arg):
-        """
-        Obrada zahtjeva zero canvasa za podacima. Metoda vraca dict sa glavnim kanalom
-        i zero frejmom nazad canvasu.
-        """
-        dat = {'kanal': self.gKanal,
-               'zsFrejm':self.spanFrejm}
-        self.emit(QtCore.SIGNAL('set_span_frejm(PyQt_PyObject)'), dat)
-###############################################################################
-    def request_zero_frejm(self, arg):
-        """
-        Obrada zahtjeva zero canvasa za podacima. Metoda vraca dict sa glavnim kanalom
-        i zero frejmom nazad canvasu.
-        """
-        dat = {'kanal': self.gKanal,
-               'zsFrejm':self.zeroFrejm}
-        self.emit(QtCore.SIGNAL('set_zero_frejm(PyQt_PyObject)'), dat)
+        #test za strukturu frejma
+        assert 'vrsta' in frejm.columns
+        assert 'vrijeme' in frejm.columns
+        assert 'vrijednost' in frejm.columns
+        assert 'minDozvoljenoOdstupanje' in frejm.columns
+        assert 'maxDozvoljenoOdstupanje' in frejm.columns
+        assert 'status' in frejm.columns
+
+        zeroFrejm = frejm[frejm['vrsta'] == "Z"]
+        spanFrejm = frejm[frejm['vrsta'] == "S"]
+        zeroFrejm = zeroFrejm.set_index(zeroFrejm['vrijeme'])
+        spanFrejm = spanFrejm.set_index(spanFrejm['vrijeme'])
+
+        #kontrola za besmislene vrijednosti (tipa -999)
+        zeroFrejm = zeroFrejm[zeroFrejm['vrijednost'] > -998.0]
+        spanFrejm = spanFrejm[spanFrejm['vrijednost'] > -998.0]
+
+        return zeroFrejm, spanFrejm
 ###############################################################################
     def crtaj_zero_span(self):
         """
         Crtanje zero span podataka.
-        1. dohvati podatke sa REST servisa,
-        2. update label
-        3. spremi frejmove u membere
-        4. naredi crtanje grafova
+
+        -Clear podataka
+        -Dohvati podatke sa REST servisa
+        -Nacrtaj ako ima podataka
         """
-        self.emit(QtCore.SIGNAL('clear_zero_span'))
-        try:
-            if not self.gKanal:
-                raise pomocne_funkcije.AppExcept('Glavni kanal nije izabran, abort')
-            #dokvati listu [zeroFrejm, spanFrejm]
-            frejmovi = self.webZahtjev.get_zero_span(self.gKanal, self.pickedDate, self.brojDana)
+        #clear grafove
+        self.zsPanel.zeroGraf.clear_zero_span()
+        self.zsPanel.zeroGraf.clear_zero_span()
 
-            #sync max raspona x osi (vremena)
-            raspon = pomocne_funkcije.sync_zero_span_x_os(frejmovi)
-
-            if frejmovi != None:
-                #zapamti frejmove
-                self.zeroFrejm = frejmovi[0]
-                self.spanFrejm = frejmovi[1]
-                #TODO! fix duplicate rows
-                self.zeroFrejm.drop_duplicates(subset='vrijeme',
-                                               take_last = True,
-                                               inplace = True)
-                self.zeroFrejm.sort()
-                self.spanFrejm.drop_duplicates(subset='vrijeme',
-                                               take_last = True,
-                                               inplace = True)
-                self.spanFrejm.sort()
-                #redefinicija argumenata
-                arg = {'kanalId': self.gKanal,
-                       'pocetnoVrijeme':raspon[0],
-                       'zavrsnoVrijeme':raspon[1],
-                       'tempKontejner': None}
-                #emitiraj signal za crtanjem
-                self.emit(QtCore.SIGNAL('crtaj_zero(PyQt_PyObject)'), arg)
-                self.emit(QtCore.SIGNAL('crtaj_span(PyQt_PyObject)'), arg)
-            else:
-                #nema podataka
-                raise pomocne_funkcije.AppExcept('Nema raspolozivih podataka')
-
-        except pomocne_funkcije.AppExcept as err:
-            logging.error('Problem kod ucitavanje zero/span sa REST servisa.', exc_info = True)
-            opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err)
-            self.prikazi_error_msg(opis)
-        except AttributeError as err2:
-            logging.error('web interface nije incijaliziran, Potrebno se ulogirati.', exc_info = True)
-            opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.'+ str(err2)
-            self.prikazi_error_msg(opis)
+        #provjeri da li je izabran glavni kanal i datum.
+        if self.gKanal is not None and self.pickedDate is not None:
+            try:
+                self.zeroFrejm, self.spanFrejm = self.dohvati_zero_span()
+                #nastavi dalje samo ako oba frejma nisu prazna
+                if len(self.zeroFrejm) > 0 or len(self.spanFrejm) > 0:
+                    raspon = pomocne_funkcije.sync_zero_span_x_os(self.zeroFrejm, self.spanFrejm)
+                    #fix duplicate rows (if any)
+                    self.zeroFrejm.drop_duplicates(subset='vrijeme',
+                                                   take_last = True,
+                                                   inplace = True)
+                    self.zeroFrejm.sort()
+                    self.spanFrejm.drop_duplicates(subset='vrijeme',
+                                                   take_last = True,
+                                                   inplace = True)
+                    self.spanFrejm.sort()
+                    #redefinicija argumenata
+                    arg = {'kanalId': self.gKanal,
+                           'pocetnoVrijeme':raspon[0],
+                           'zavrsnoVrijeme':raspon[1]}
+                    #naredi crtanje
+                    self.gui.zsPanel.zeroGraf.crtaj(self.zeroFrejm, arg)
+                    self.gui.zsPanel.spanGraf.crtaj(self.spanFrejm, arg)
+            except pomocne_funkcije.AppExcept as err1:
+                #sluzi da hvata lose requestove
+                logging.error('Problem kod ucitavanje zero/span sa REST servisa.', exc_info = True)
+                opis = 'Problem kod ucitavanja Zero/Span podataka sa REST servisa.' + str(err1)
+                self.prikazi_error_msg(opis)
+            except AttributeError:
+                #moguci fail ako se funkcija pozove prije inicijalizacije REST interfacea.
+                logging.error('web interface nije incijaliziran, Potrebno se ulogirati.', exc_info = True)
+            except (TypeError, ValueError, AssertionError):
+                #mofuci fail za lose formatirani json string
+                logging.error('greska kod parsanja json stringa za zero i span.', exc_info = True)
 ###############################################################################
     def crtaj_minutni_graf(self, izabrani_sat):
         """
+        Funkcija crta minutni graf za izabrani sat.
         Ova funkcija se brine za pravilni odgovor na ljevi klik tocke na satno
-         agregiranom grafu. Za zadani sat, odredjuje rubove intervala te salje
-        dobro zadani zahtjev za crtanjem minutnom canvasu.
+        agregiranom grafu. Za zadani sat, odredjuje rubove intervala te
+        poziva crtanje minutnog grafa.
         """
         self.sat = izabrani_sat
         if self.sat <= self.zavrsnoVrijeme and self.sat >=self.pocetnoVrijeme:
@@ -627,7 +552,13 @@ class Kontroler(QtCore.QObject):
                    'pocetnoVrijeme': lowLim,
                    'zavrsnoVrijeme' : highLim,
                    'tempKontejner'  : self.tKontejnerId}
-            self.emit(QtCore.SIGNAL('nacrtaj_minutni_graf(PyQt_PyObject)'),arg)
+            #naredba za dohvacanje podataka
+            self.frejmovi = self.dokument.dohvati_frejmove(
+                lista = self.sviBitniKanali,
+                tmin = self.pocetnoVrijeme,
+                tmax = self.zavrsnoVrijeme)
+            #naredba za crtanje
+            self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg)
 ###############################################################################
     def dodaj_novu_referentnu_vrijednost(self):
         """
@@ -691,7 +622,7 @@ class Kontroler(QtCore.QObject):
                 frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
                 assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_minutne_to_REST:Assert fail, frame pogresnog tipa'
                 if len(frejm):
-                    testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
+                    testValidacije = frejm['flag'].map(pomocne_funkcije.test_stupnja_validacije)
                     lenSvih = len(testValidacije)
                     lenDobrih = len(testValidacije[testValidacije == True])
                     if lenSvih == lenDobrih:
@@ -747,16 +678,11 @@ class Kontroler(QtCore.QObject):
                 #promjeni cursor u wait cursor
                 QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
-                #dohvati frame iz dokumenta
-                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
-
-                assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_agregirane_to_REST:Assert fail, frame pogresnog tipa'
+                #dohvati agregirani frame iz dokumenta
+                frejm = self.dokument.get_agregirani_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
                 if len(frejm):
-                    #agregiraj podatke
-                    agregirani = self.satniAgregator.agregiraj_kanal(frejm)
-
                     #provjeri stupanj validacije agregiranog frejma
-                    testValidacije = agregirani[u'flag'].map(self.test_stupnja_validacije)
+                    testValidacije = frejm[u'flag'].map(pomocne_funkcije.test_stupnja_validacije)
                     lenSvih = len(testValidacije)
                     lenDobrih = len(testValidacije[testValidacije == True])
 
@@ -778,13 +704,13 @@ class Kontroler(QtCore.QObject):
                         #ponovno prebaci na wait cursor
                         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
                         #napravi prazan dataframe indeksiran na isti nacin kao agregirani
-                        output = pd.DataFrame(index = agregirani.index)
+                        output = pd.DataFrame(index = frejm.index)
                         #dodaj trazene stupce u output frejm
                         output['programMjerenjaId'] = int(self.gKanal)
-                        output['vrijeme'] = agregirani.index
-                        output['vrijednost'] = agregirani['avg']
-                        output['status'] = agregirani['status']
-                        output['obuhvat'] = agregirani['count'].map(self.agregirani_count_to_postotak)
+                        output['vrijeme'] = frejm.index
+                        output['vrijednost'] = frejm['avg']
+                        output['status'] = frejm['status']
+                        output['obuhvat'] = frejm['count'].map(pomocne_funkcije.agregirani_count_to_postotak)
                         #konverzija output frejma u json string
                         jstring = output.to_json(orient = 'records')
                         #upload uz pomoc rest writera
@@ -792,7 +718,6 @@ class Kontroler(QtCore.QObject):
                         #update status kalendara
                         self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
                         self.promjena_boje_kalendara()
-
                 #vrati izgled cursora nazad na normalni
                 QtGui.QApplication.restoreOverrideCursor()
             except AssertionError as e1:
@@ -804,21 +729,6 @@ class Kontroler(QtCore.QObject):
             finally:
                 #vrati izgled cursora nazad na normalni
                 QtGui.QApplication.restoreOverrideCursor()
-###############################################################################
-    def test_stupnja_validacije(self, x):
-        """
-        Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000.
-        """
-        if abs(x) == 1000:
-            return True
-        else:
-            return False
-###############################################################################
-    def agregirani_count_to_postotak(self, x):
-        """
-        Pomocna funkcija za racunanje obuhvata agregiranih podataka
-        """
-        return int(x*100/60)
 ###############################################################################
     def update_kalendarStatus(self, progMjer, datum, tip):
         """
@@ -842,9 +752,13 @@ class Kontroler(QtCore.QObject):
 ###############################################################################
     def promjena_boje_kalendara(self):
         """
-        Funkcija emitira signal sa podacima o boji za glavni kanal (self.gKanal)
+        Funkcija mjenja boju kalendara ovisno o podacima za glavni kanal.
+        self.kalendarStatus je mapa koja za svaki kanal prati koji su datumi
+        ucitani, a koji su spremljeni na REST servis.
+
+        P.S. izdvojeno van kao funkcija samo radi citljivosti.
         """
-        self.emit(QtCore.SIGNAL('refresh_dates(PyQt_PyObject)'), self.kalendarStatus[self.gKanal])
+        self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
 ###############################################################################
     def promjeni_datum(self, x):
         """

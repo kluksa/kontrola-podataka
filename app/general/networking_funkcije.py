@@ -185,11 +185,6 @@ class WebZahtjev(QtCore.QObject):
             assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             return r.text
-#            if r.text != '[]':
-#                zeroFrejm, spanFrejm = self.convert_zero_span(r.text)
-#                return [zeroFrejm, spanFrejm]
-#            else:
-#                print('prazan json ', programMjerenja,' - ', datum)
         except requests.exceptions.RequestException as e1:
             tekst = 'WebZahtjev.get_zero_span:Request fail (http error, timeout...).\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1
@@ -199,23 +194,6 @@ class WebZahtjev(QtCore.QObject):
         except Exception as e3:
             tekst = 'WebZahtjev.get_zero_span:exception. {0}'.format(e3)
             raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
-    def convert_zero_span(self, jsonText):
-        """
-        Pretvori json string u dva datafrejma (zeroFrejm, spanFrejm)
-        """
-        #TODO! prebaci u reader/kontroler/pomocne_funkcije
-        frejm = pd.read_json(jsonText, orient = 'records', convert_dates = ['vrijeme'])
-        spanFrejm = frejm[frejm['vrsta'] == "S"]
-        zeroFrejm = frejm[frejm['vrsta'] == "Z"]
-        spanFrejm.index = spanFrejm['vrijeme']
-        zeroFrejm.index = zeroFrejm['vrijeme']
-
-        #kontrola za besmislene vrijednosti (tipa -999)
-        zeroFrejm = zeroFrejm[zeroFrejm['vrijednost'] > -998.0]
-        spanFrejm = spanFrejm[spanFrejm['vrijednost'] > -998.0]
-
-        return zeroFrejm, spanFrejm
 ###############################################################################
     def upload_ref_vrijednost_zs(self, jS, kanal):
         """

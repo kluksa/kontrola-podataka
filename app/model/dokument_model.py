@@ -13,6 +13,8 @@ import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 class DataModel(QtCore.QObject):
     """
+    Subklasan QtCore.QObject radi emita u metodi self.change_flag()
+
     Data model aplikacije
     Podaci se spremaju u mapu datafrejmova {programMjerenja:DataFrame,...}
     programMjerenja je tipa int - vezan za programMjerenjaId u bazi
@@ -28,11 +30,43 @@ class DataModel(QtCore.QObject):
         -"statusString" -->dtype : string
     """
 ###############################################################################
-    def __init__(self, parent = None):
+    def __init__(self, reader = None, agregator = None, parent = None):
         QtCore.QObject.__init__(self, parent)
         self.data = {}
+        self.citac = reader
+        self.agregator = agregator
 ###############################################################################
-    def dataframe_structure_test(self, frame = None):
+    def set_reader(self, reader):
+        """
+        Setter objekta citaca u model.
+        citac mora definirati:
+
+        metodu: read(*args, **kwargs)
+            -uzima varijiablini broj ulaznih podataka
+            -MORA vratiti tuple
+                (kljuc pod kojim se podatak zapisuje u dokument, dobro formatirani dataframe)
+        """
+        self.citac = reader
+###############################################################################
+    def set_agregator(self, agreg):
+        """
+        Setter objekta agregatora u model. Agregator mora imati metodu agregiraj
+        koja uzima 'minutni' frejm i vraca satno agregirani frame.
+        """
+        self.agregator = agreg
+###############################################################################
+    def citaj(self, *args, **kwargs):
+        """
+        -prvi argument je kljuc pod kojim ce se spremiti podaci u mapu self.data
+        -ostali pozicijski i keyword argumenti se prosljedjuju citacu
+
+        Ovisno o tipu citaca koji je trenutno aktivan, razlikuje se i poziv metode
+        """
+        kljuc, df = self.citac.read(*args, **kwargs)
+        if len(df):
+            self.set_frame(key = kljuc, frame = df)
+###############################################################################
+    def dataframe_structure_test(self, frame):
         """provjera da li je dataframe dobre strukture"""
         assert type(frame) == pd.core.frame.DataFrame, 'Assert fail, ulaz nije DataFrame objekt'
         assert type(frame.index) == pd.tseries.index.DatetimeIndex, 'Assert fail, DataFrame nema vremenski indeks'
@@ -73,17 +107,39 @@ class DataModel(QtCore.QObject):
             tekst = 'DataModel.set_frame:Assert fail.\n{0}'.format(e)
             raise pomocne_funkcije.AppExcept(tekst) from e
 ###############################################################################
+    def dohvati_minutne_frejmove(self, lista = None, tmin = None, tmax = None):
+        """
+        Funkcija vraca mapu minutnih slajsova. Ulazni parametar je lista kljuceva
+        i vremenske granice slajsa.
+        """
+        out = {}
+        for kljuc in lista:
+            if kljuc in self.data.keys():
+                out[kljuc] = self.get_frame(key = kljuc, tmin = tmin, tmax = tmax)
+        return out
+###############################################################################
+    def dohvati_agregirane_frejmove(self, lista = None, tmin = None, tmax = None):
+        """
+        Funkcija vraca mapu minutnih slajsova. Ulazni parametar je lista kljuceva
+        i vremenske granice slajsa.
+        """
+        out = {}
+        for kljuc in lista:
+            if kljuc in self.data.keys():
+                out[kljuc] = self.get_agregirani_frame(key = kljuc, tmin = tmin, tmax = tmax)
+        return out
+###############################################################################
     def get_frame(self, key = None, tmin = None, tmax = None):
         """funkcija dohvaca trazeni slice frejma"""
         try:
             assert key != None, 'dokument.get_frame:Assert fail, key = None'
             assert isinstance(tmin, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
             assert isinstance(tmax, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
-            #napravi kopiju cijelog frejma
-            df = self.data[key].copy()
             #za svaki slucaj provjeri da li je min i max ok, ako nije zamjeni ih
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
+            #napravi kopiju cijelog frejma
+            df = self.data[key].copy()
             #makni sve podatke koji su manji od donje granice
             df = df[df.index >= tmin]
             #makni sve podatke koji su veci od tMax
@@ -93,6 +149,11 @@ class DataModel(QtCore.QObject):
         except (LookupError, TypeError, AssertionError) as e1:
             tekst = 'DataModel.get_frame:Lookup/Type fail.\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1
+###############################################################################
+    def get_agregirani_frame(self, key = None, tmin = None, tmax = None):
+        """metoda dohvaca trazeni slajs, agregira ga te vraca agregirani frejm"""
+        frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
+        return self.agregator.agregiraj(frejm)
 ###############################################################################
     def notify_about_change(self):
         """Funkcija emitira specificni signal da je doslo do promjene u flaga."""

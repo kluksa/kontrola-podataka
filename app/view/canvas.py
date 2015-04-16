@@ -29,6 +29,7 @@ class Kanvas(FigureCanvas):
         #osnovna definicija figure, axes i canvasa
         self.fig = Figure(figsize = (width, height), dpi = dpi)
         self.axes = self.fig.add_subplot(111)
+        #FigureCanvas.__init__(self, self.fig)
         super(Kanvas,self).__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
@@ -311,7 +312,7 @@ class SatniMinutniKanvas(Kanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala.
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniMinutniKanvas, self).__init__(konfig)
+        super(SatniMinutniKanvas, self).__init__(self, konfig)
         self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
 
     def connect_pick_evente(self):
@@ -597,7 +598,7 @@ class SatniKanvas(SatniMinutniKanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniKanvas, self).__init__(konfig, pomocni)
+        super(SatniKanvas, self).__init__(self, konfig, pomocni)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
@@ -863,7 +864,7 @@ class MinutniKanvas(SatniMinutniKanvas):
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        super(SatniKanvas, self).__init__(konfig, pomocni)
+        super(SatniKanvas, self).__init__(self, konfig, pomocni)
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
@@ -1028,7 +1029,7 @@ class ZeroSpanKanvas(Kanvas):
     Inicijalizacija sa konfig objektom
     """
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(ZeroSpanKanvas, self).__init__(konfig)
+        super(ZeroSpanKanvas, self).__init__(self, konfig)
 
     def connect_pick_evente(self):
         """connect canvas pick point event sa metodom self.on_pick"""
@@ -1333,7 +1334,7 @@ class ZeroSpanKanvas(Kanvas):
 class ZeroKanvas(ZeroSpanKanvas):
     """specificna implementacija Zero canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(ZeroKanvas, self).__init__(konfig)
+        super(ZeroKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('bottom')
         self.axes.figure.subplots_adjust(top = 0.02)
@@ -1349,7 +1350,7 @@ class ZeroKanvas(ZeroSpanKanvas):
 class SpanKanvas(ZeroSpanKanvas):
     """specificna implementacija span canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
-        super(SpanKanvas, self).__init__(konfig)
+        super(SpanKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('top')
         self.axes.figure.subplots_adjust(bottom = 0.02)

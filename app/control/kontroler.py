@@ -3,11 +3,6 @@
 Created on Thu Jan 22 09:52:37 2015
 
 @author: User
-
-#TODO!
-- satni i minutni graf imaju isti zoom y osi pa y graf je malo zbijen.
-ERROR PRONADJEN--- dokument minutnom vraca cijeli dnevni slajs za crtanje, ali ga
-onda graf cropa ali samo po x osi...
 """
 from PyQt4 import QtCore, QtGui
 import datetime #python datetime objekt, potreban za timedelta isl.
@@ -217,9 +212,10 @@ class Kontroler(QtCore.QObject):
         self.restReader = data_reader.RESTReader(source = self.webZahtjev)
         #postavljanje readera u model
         self.dokument.set_reader(self.restReader)
-        #TODO! visak, treba direktni poziv preko self.WebZahtjev
         #inicijalizacija REST writera agregiranih podataka
-        self.restWriter = data_reader.RESTWriterAgregiranih(source = self.webZahtjev)
+        self.restWriter = data_reader.RESTWriter(source = self.webZahtjev)
+        #postavljanje writera u model
+        self.dokument.set_writer(self.restWriter)
 ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -355,7 +351,6 @@ class Kontroler(QtCore.QObject):
             except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info = True)
         #update boju na kalendaru ovisno o ucitanim podacima
-        print(self.cache)
         self.promjena_boje_kalendara()
 ###############################################################################
     def priredi_podatke(self, mapa):
@@ -602,123 +597,93 @@ class Kontroler(QtCore.QObject):
 ###############################################################################
     def upload_minutne_na_REST(self):
         """
-        Dohvati trenutno aktivni kanal i vrijeme adaptiraj i upload na REST
+        Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na
+        REST servis.
+        Pitaj za potvrdu odluke sa spremanje podataka, prije nego krene upload.
         """
         if self.gKanal != None and self.pickedDate != None:
-            try:
-                #promjeni cursor u wait cursor
-                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                #dohvati frame iz dokumenta
-                frejm = self.dokument.get_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
-                assert type(frejm) == pd.core.frame.DataFrame, 'Kontroler.upload_minutne_to_REST:Assert fail, frame pogresnog tipa'
-                if len(frejm):
-                    testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
-                    lenSvih = len(testValidacije)
-                    lenDobrih = len(testValidacije[testValidacije == True])
-                    if lenSvih == lenDobrih:
-                        msg = msg = 'Spremi minutne podatke od ' + str(self.gKanal) + ':' + str(self.pocetnoVrijeme.date()) + ' na REST web servis?'
-                    else:
-                        msg = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
-                        #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
-                        raise AssertionError(msg)
-
-                    #privremeno vrati izgled cursora nazad na normalni
+            #prompt izbora za spremanje filea, question
+            msg = " ".join(['Spremi minutne podatke od',
+                            str(self.gKanal),
+                            ':',
+                            self.pickedDate,
+                            'na REST web servis?'])
+            odgovor = QtGui.QMessageBox.question(self.gui,
+                                                 "Potvrdi upload na REST servis",
+                                                 msg,
+                                                 QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+            if odgovor == QtGui.QMessageBox.Yes:
+                try:
+                    #promjeni cursor u wait cursor
+                    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                    #reci dokumentu da spremi minutne podatke na rest za zadani kanal i datum
+                    self.dokument.persist_minutne_podatke(key = self.gKanal, date = self.pickedDate)
+                    #update status kalendara
+                    self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+                    self.promjena_boje_kalendara()
+                    #report success
+                    msg = " ".join(['Minutni podaci za',
+                                    str(self.gKanal),
+                                    ':',
+                                    self.pickedDate,
+                                    'su spremljeni na REST servis.'])
+                    self.prikazi_error_msg(msg)
+                except (Exception, pomocne_funkcije.AppExcept):
+                    logging.error('Error prilikom uploada na rest servis', exc_info = True)
+                    msg = 'Podaci nisu spremljeni na REST servis. Doslo je do pogreske prilikom rada.'
+                    #report fail
+                    self.prikazi_error_msg(msg)
+                finally:
+                    #vrati izgled cursora nazad na normalni
                     QtGui.QApplication.restoreOverrideCursor()
-                    #prompt izbora za spremanje filea, question
-                    odgovor = QtGui.QMessageBox.question(self.gui,
-                                                         "Potvrdi upload na REST servis",
-                                                         msg,
-                                                         QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-                    if odgovor == QtGui.QMessageBox.Yes:
-                        #ponovno prebaci na wait cursor
-                        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                        #napravi prazan dataframe indeksiran na isti nacin kao agregirani
-                        output = pd.DataFrame(index = frejm.index)
-                        #dodaj trazene stupce u output frejm
-
-                        output['vrijeme'] = frejm.index
-                        output['vrijednost'] = frejm['koncentracija']
-                        output['id'] = frejm['id']
-                        output['valjan'] = frejm['flag'].map(self.int_to_boolean)
-                        #konverzija output frejma u json string
-                        jstring = output.to_json(orient = 'records')
-                        #upload uz pomoc rest writera
-                        self.restWriter.upload_minutne(jso = jstring)
-                        #update status kalendara
-                        self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
-                        self.promjena_boje_kalendara()
-                #vrati izgled cursora nazad na normalni
-                QtGui.QApplication.restoreOverrideCursor()
-            except AssertionError as e1:
-                logging.error('Nema podataka ili svi nisu validirani.', exc_info = True)
-                self.prikazi_error_msg(e1)
-            except pomocne_funkcije.AppExcept as e2:
-                logging.error('Error prilikom uploada na rest servis', exc_info = True)
-                self.prikazi_error_msg(e2)
-            finally:
-                #vrati izgled cursora nazad na normalni
-                QtGui.QApplication.restoreOverrideCursor()
+        else:
+            msg = 'Nije moguce spremiti minutne podatke na REST jer nije izabran glavni kanal i datum.'
+            self.prikazi_error_msg(msg)
 ###############################################################################
     def upload_satno_agregirane(self):
         """
-        Dohvati trenutno aktivni kanal i vrijeme, agregiraj i upload na rest
+        Za trenutno aktivni kanal i datum, spremi slajs agregiranog frejma na
+        REST servis.
+        Pitaj za potvrdu odluke sa spremanje podataka, prije nego krene upload.
         """
         if self.gKanal != None and self.pickedDate != None:
-            try:
-                #promjeni cursor u wait cursor
-                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-
-                #dohvati agregirani frame iz dokumenta
-                frejm = self.dokument.get_agregirani_frame(key = self.gKanal, tmin = self.pocetnoVrijeme, tmax = self.zavrsnoVrijeme)
-                if len(frejm):
-                    #provjeri stupanj validacije agregiranog frejma
-                    testValidacije = frejm[u'flag'].map(self.test_stupnja_validacije)
-                    lenSvih = len(testValidacije)
-                    lenDobrih = len(testValidacije[testValidacije == True])
-
-                    if lenSvih == lenDobrih:
-                        msg = msg = 'Spremi agregirane podatke od ' + str(self.gKanal) + ':' + str(self.pocetnoVrijeme.date()) + ' na REST web servis?'
-                    else:
-                        msg = 'Neki podaci nisu validirani.\nNije moguce spremiti agregirane podatke na REST servis.'
-                        #raise assertion error (izbaciti ce dijalog sa informacijom da nije moguce spremiti podatke)
-                        raise AssertionError(msg)
-
-                    #privremeno vrati izgled cursora nazad na normalni
+            #prompt izbora za spremanje filea, question
+            msg = " ".join(['Spremi agregirane podatke od',
+                            str(self.gKanal),
+                            ':',
+                            self.pickedDate,
+                            'na REST web servis?'])
+            odgovor = QtGui.QMessageBox.question(self.gui,
+                                                 "Potvrdi upload na REST servis",
+                                                 msg,
+                                                 QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+            if odgovor == QtGui.QMessageBox.Yes:
+                try:
+                    #promjeni cursor u wait cursor
+                    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                    #reci dokumentu da spremi minutne podatke na rest za zadani kanal i datum
+                    self.dokument.persist_agregirane_podatke(key = self.gKanal, date = self.pickedDate)
+                    #update status kalendara
+                    self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+                    self.promjena_boje_kalendara()
+                    #report sucess
+                    msg = " ".join(['Agregirani podaci za',
+                                    str(self.gKanal),
+                                    ':',
+                                    self.pickedDate,
+                                    'su spremljeni na REST servis.'])
+                    self.prikazi_error_msg(msg)
+                except (Exception, pomocne_funkcije.AppExcept):
+                    logging.error('Error prilikom uploada na rest servis', exc_info = True)
+                    #report fail
+                    msg = 'Podaci nisu spremljeni na REST servis. Doslo je do pogreske prilikom rada.'
+                    self.prikazi_error_msg(msg)
+                finally:
+                    #vrati izgled cursora nazad na normalni
                     QtGui.QApplication.restoreOverrideCursor()
-                    #prompt izbora za spremanje filea, question
-                    odgovor = QtGui.QMessageBox.question(self.gui,
-                                                         "Potvrdi upload na REST servis",
-                                                         msg,
-                                                         QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-                    if odgovor == QtGui.QMessageBox.Yes:
-                        #ponovno prebaci na wait cursor
-                        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                        #napravi prazan dataframe indeksiran na isti nacin kao agregirani
-                        output = pd.DataFrame(index = frejm.index)
-                        #dodaj trazene stupce u output frejm
-                        output['programMjerenjaId'] = int(self.gKanal)
-                        output['vrijeme'] = frejm.index
-                        output['vrijednost'] = frejm['avg']
-                        output['status'] = frejm['status']
-                        output['obuhvat'] = frejm['count'].map(self.agregirani_count_to_postotak)
-                        #konverzija output frejma u json string
-                        jstring = output.to_json(orient = 'records')
-                        #upload uz pomoc rest writera
-                        self.restWriter.upload_agregirane(jso = jstring)
-                        #update status kalendara
-                        self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
-                        self.promjena_boje_kalendara()
-                #vrati izgled cursora nazad na normalni
-                QtGui.QApplication.restoreOverrideCursor()
-            except AssertionError as e1:
-                logging.error('Nema podataka ili svi nisu validirani.', exc_info = True)
-                self.prikazi_error_msg(e1)
-            except pomocne_funkcije.AppExcept as e2:
-                logging.error('Error prilikom uploada na rest servis', exc_info = True)
-                self.prikazi_error_msg(e2)
-            finally:
-                #vrati izgled cursora nazad na normalni
-                QtGui.QApplication.restoreOverrideCursor()
+        else:
+            msg = 'Nije moguce spremiti agregirane podatke na REST jer nije izabran glavni kanal i datum.'
+            self.prikazi_error_msg(msg)
 ###############################################################################
     def update_kalendarStatus(self, progMjer, datum, tip):
         """
@@ -834,34 +799,5 @@ class Kontroler(QtCore.QObject):
         max2 = max(frejm2.index)
 
         return [min(min1, min2), max(max1, max2)]
-###############################################################################
-    def int_to_boolean(self, x):
-        """
-        ako je x vrijednost veca ili jednaka 0 vraca True,
-        ako nije, vraca False
-
-        Primarno sluzi kao adapter za flag vrijednost mintnih podataka prilikom uploada
-        podataka na rest
-        """
-        if x >= 0:
-            return True
-        else:
-            return False
-###############################################################################
-    def test_stupnja_validacije(self, x):
-        """
-        Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000. Bitno za
-        provjeru validacije stupca flag (da li su svi podaci validirani)
-        """
-        if abs(x) == 1000:
-            return True
-        else:
-            return False
-###############################################################################
-    def agregirani_count_to_postotak(self, x):
-        """
-        Pomocna funkcija za racunanje obuhvata agregiranih podataka
-        """
-        return int(x*100/60)
 ###############################################################################
 ###############################################################################

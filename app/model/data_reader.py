@@ -92,44 +92,86 @@ class RESTReader(object):
         return key, df
 ###############################################################################
 ###############################################################################
-class RESTWriterAgregiranih(QtCore.QObject):
+class RESTWriter(object):
     """
     Klasa zaduzena za updateanje agregiranih podataka na REST web servis
     """
-    #TODO! Na krivom mjestu... prebaciti funkcionalnost direktno na kontroler direktnim pozivom
     def __init__(self, source = None):
         #instanca Web zahtjeva za rest servise
-        QtCore.QObject.__init__(self)
         self.source = source
 
-    def upload_agregirane(self, jso = None):
+    def write_minutni(self, key = None, date = None, frejm = None):
         """
-        Ova funkcija zaduzena je za upisivanje json stringa agregiranih u REST web servis.
-        """
-        try:
-            self.source.upload_json_agregiranih(jso)
-        except pomocne_funkcije.AppExcept as err:
-            """
-            Moguci razlozi za Exception
-            -prilikom uploada na REST
-            """
-            logging.error('write data fail', exc_info = True)
-            #potrebno je javiti problem kontroleru aplikacije
-            self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
+        Write metoda za upis minutnih podataka na REST servis
 
-    def upload_minutne(self, jso = None):
+        key --> kanal
+        date --> string, datum formata 'YYYY-MM-DD'
+        frejm --> slajs minutnog frejma
         """
-        Ova funkcija zaduzena je za upisivanje json stringa minutnih u REST web servis.
+        #test da li su svi stupci u frejmu
+        assert 'id' in frejm.columns, 'ERROR - Nedostaje stupac: "id"'
+        assert 'koncentracija' in frejm.columns, 'ERROR - Nedostaje stupac: "koncentracija'
+        assert 'statusString' in frejm.columns, 'ERROR - Nedostaje stupac: "statusString"'
+        assert 'flag' in frejm.columns, 'ERROR - Nedostaje stupac: "flag"'
+        assert 'status' in frejm.columns, 'ERROR - Nedostaje stupac: "status"'
+        #rename i adapt frejm
+        frejm['vrijeme'] = frejm.index
+        frejm.rename(columns={'koncentracija':'vrijednost', 'flag':'valjan'}, inplace = True)
+        frejm['valjan'] = frejm['valjan'].map(self.int_to_boolean) #TODO! missing func... check kontroler
+        frejm.drop('status', inplace = True, axis = 1) #drop column status
+        #convert to json string uz pomoc pandasa
+        jstring = frejm.to_json(orient = 'records')
+        #upload uz pomoc self.source objekta (networking_funkcjie.WebZahtjev)
+        self.source.upload_json_minutnih(jstring)
+
+    def write_agregirani(self, key = None, date = None, frejm = None):
         """
-        try:
-            self.source.upload_json_minutnih(jso)
-        except pomocne_funkcije.AppExcept as err:
-            """
-            Moguci razlozi za Exception
-            -prilikom uploada na REST
-            """
-            logging.error('write data fail', exc_info = True)
-            #potrebno je javiti problem kontroleru aplikacije
-            self.emit(QtCore.SIGNAL('error_message(PyQt_PyObject)'), err)
+        Write metoda za upis agregiranih podataka na REST servis
+
+        key --> kanal
+        date --> string, datum formata 'YYYY-MM-DD'
+        frejm --> slajs minutnog frejma
+        """
+        #test da li su svi stupci u frejmu
+        assert 'broj podataka' in frejm.columns, 'ERROR - Nedostaje stupac: "broj podataka"'
+        assert 'status' in frejm.columns, 'ERROR - Nedostaje stupac: "status"'
+        assert 'flag' in frejm.columns, 'ERROR - Nedostaje stupac: "flag"'
+        assert 'avg' in frejm.columns, 'ERROR - Nedostaje stupac: "avg"'
+        assert 'std' in frejm.columns, 'ERROR - Nedostaje stupac: "std"'
+        assert 'min' in frejm.columns, 'ERROR - Nedostaje stupac: "min"'
+        assert 'max' in frejm.columns, 'ERROR - Nedostaje stupac: "max"'
+        assert 'q05' in frejm.columns, 'ERROR - Nedostaje stupac: "q05"'
+        assert 'q95' in frejm.columns, 'ERROR - Nedostaje stupac: "q95"'
+        assert 'median' in frejm.columns, 'ERROR - Nedostaje stupac: "median"'
+        assert 'count' in frejm.columns, 'ERROR - Nedostaje stupac: "count"'
+        #rename and adapt frejm
+        #frejm.drop([], inplace = True, axis = 1) #drop nebitne stupce
+        frejm = frejm[['avg','status','count']] #zadrzi samo te stupce
+        frejm['vrijeme'] = frejm.index
+        frejm['programMjerenjaId'] = pd.Series(key, index=frejm.index)
+        frejm.rename(columns = {'avg':'vrijednost', 'count':'obuhvat'}, inplace = True)
+        frejm['obuhvat'] = frejm['obuhvat'].map(self.agregirani_count_to_postotak)
+        #convert to json string uz pomoc pandasa
+        jstring = frejm.to_json(orient = 'records')
+        #upload uz pomoc self.source objekta (networking_funkcije.WebZahtjev)
+        self.source.upload_json_agregiranih(jstring)
+
+    def agregirani_count_to_postotak(self, x):
+        """
+        Pomocna funkcija za racunanje obuhvata agregiranih podataka
+        P.S. definiran kao funkcija za koristenje u metodi map
+        """
+        return int(x*100/60)
+
+    def int_to_boolean(self, x):
+        """
+        Pomocna funkcija koja adaptira stupac 'valjan' (integeri) u boolean
+        vrijednost. Ako je x vrijednost veca ili jednaka 0 vraca True,
+        ako nije, vraca False
+        """
+        if x >= 0:
+            return True
+        else:
+            return False
 ###############################################################################
 ###############################################################################

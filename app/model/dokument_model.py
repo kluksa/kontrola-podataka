@@ -6,6 +6,7 @@ Created on Wed Jan 21 14:45:37 2015
 """
 
 import pandas as pd
+import datetime
 from PyQt4 import QtCore
 
 import app.general.pomocne_funkcije as pomocne_funkcije
@@ -30,19 +31,39 @@ class DataModel(QtCore.QObject):
         -"statusString" -->dtype : string
     """
 ###############################################################################
-    def __init__(self, reader = None, agregator = None, parent = None):
+    def __init__(self, reader = None, writer = None, agregator = None, parent = None):
         QtCore.QObject.__init__(self, parent)
         self.data = {}
         self.citac = reader
+        self.pisac = writer
         self.agregator = agregator
+###############################################################################
+    def set_writer(self, writer):
+        """
+        Setter objekta writera u model.
+        writer mora definirati metode:
+
+        write_minutni(key = None, date = None, frejm = None)
+            key --> kanal
+            date --> string, datum formata 'YYYY-MM-DD'
+            frejm --> slajs minutnog frejma
+
+        write_agregirani(key = None, date = None, frejm = None)
+            key --> kanal
+            date --> string, datum formata 'YYYY-MM-DD'
+            frejm --> slajs agregiranog frejma
+        """
+        self.pisac = writer
 ###############################################################################
     def set_reader(self, reader):
         """
         Setter objekta citaca u model.
         citac mora definirati:
 
-        metodu: read(*args, **kwargs)
-            -uzima varijiablini broj ulaznih podataka
+        metodu: read(key = None, date = None)
+            -uzima 2 keyword argumenta
+            key --> kanal
+            date --> datum string formata 'YYYY-MM-DD'
             -MORA vratiti tuple
                 (kljuc pod kojim se podatak zapisuje u dokument, dobro formatirani dataframe)
         """
@@ -55,18 +76,66 @@ class DataModel(QtCore.QObject):
         """
         self.agregator = agreg
 ###############################################################################
+    def persist_minutne_podatke(self, key = None, date = None):
+        """
+        -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
+        -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
+        """
+        #adapt time da uhvatis slajs (tmin, tmax)
+        t = pd.to_datetime(date)
+        tmin = t + datetime.timedelta(minutes=1)
+        tmax = t + datetime.timedelta(days=1)
+        #dohvati trazeni slajs
+        frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
+        #provjeri da li su svi unutar slajsa validirani
+        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
+        lenSvih = len(testValidacije)
+        lenDobrih = len(testValidacije[testValidacije == True])
+        if lenSvih == lenDobrih:
+            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
+            raise pomocne_funkcije.AppExcept(tekst)
+        #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
+        if len(frejm):
+            self.pisac.write_minutni(key = key, date = date, frejm = frejm)
+        else:
+            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
+            raise pomocne_funkcije.AppExcept(tekst)
+###############################################################################
+    def persist_agregirane_podatke(self, key = None, date = None):
+        """
+        -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
+        -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
+        """
+        #adapt time da uhvatis slajs (tmin, tmax)
+        t = pd.to_datetime(date)
+        tmin = t + datetime.timedelta(minutes=1)
+        tmax = t + datetime.timedelta(days=1)
+        #dohvati agergirani slajs
+        frejm = self.get_agregirani_frame(key = key, tmin = tmin, tmax = tmax)
+        #provjeri da li su svi unutar slajsa validirani
+        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
+        lenSvih = len(testValidacije)
+        lenDobrih = len(testValidacije[testValidacije == True])
+        if lenSvih == lenDobrih:
+            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti agregirane podatke na REST servis.'
+            raise pomocne_funkcije.AppExcept(tekst)
+        #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
+        if len(frejm):
+            self.pisac.write_agregirani(key = key, date = date, frejm = frejm)
+        else:
+            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
+            raise pomocne_funkcije.AppExcept(tekst)
+###############################################################################
     def citaj(self, key = None, date = None):
         """
         -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
         -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
-
-        Ovisno o tipu citaca koji je trenutno aktivan, razlikuje se i poziv metode
         """
         kljuc, df = self.citac.read(key = key, date = date)
         if len(df):
             self.set_frame(key = kljuc, frame = df)
         else:
-            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani'])
+            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
             raise pomocne_funkcije.AppExcept(tekst)
 ###############################################################################
     def dataframe_structure_test(self, frame):
@@ -174,5 +243,15 @@ class DataModel(QtCore.QObject):
         except (LookupError, TypeError) as e1:
             tekst = 'DataModel.change_flag:Lookup/Type fail.\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1
+###############################################################################
+    def test_stupnja_validacije(self, x):
+        """
+        Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000. Bitno za
+        provjeru validacije stupca flag (da li su svi podaci validirani).
+        """
+        if abs(x) == 1000:
+            return True
+        else:
+            return False
 ###############################################################################
 ###############################################################################

@@ -3,6 +3,9 @@
 Created on Thu Jan 22 09:52:37 2015
 
 @author: User
+
+#TODO!
+- satni i minutni graf imaju isti zoom y osi pa y graf je malo zbijen.
 """
 from PyQt4 import QtCore, QtGui
 import datetime #python datetime objekt, potreban za timedelta isl.
@@ -345,10 +348,12 @@ class Kontroler(QtCore.QObject):
                     #dodaj glavni kanal u setGlavnihKanala
                     self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
                     #dodaj argumente readera u cache
-                    self.cache.append((kanal, self.pickedDate))
+                    if (kanal, self.pickedDate) not in self.cache:
+                        self.cache.append((kanal, self.pickedDate))
             except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info = True)
         #update boju na kalendaru ovisno o ucitanim podacima
+        print(self.cache)
         self.promjena_boje_kalendara()
 ###############################################################################
     def priredi_podatke(self, mapa):
@@ -369,6 +374,7 @@ class Kontroler(QtCore.QObject):
         #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
         #restore wait cursora
         QtGui.QApplication.restoreOverrideCursor()
+
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
                   'datum': self.pickedDate}
         self.gui.koncPanel.change_glavniLabel(argMap)
@@ -514,7 +520,7 @@ class Kontroler(QtCore.QObject):
                 #mofuci fail za lose formatirani json string
                 logging.error('greska kod parsanja json stringa za zero i span.', exc_info = True)
             finally:
-                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                QtGui.QApplication.restoreOverrideCursor()
 ###############################################################################
     def crtaj_minutni_graf(self, izabrani_sat):
         """

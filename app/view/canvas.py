@@ -6,11 +6,6 @@ Created on Thu Apr  9 12:27:25 2015
 
 P.S. super() radi probleme, uzrok je potencijalo u cinjenici da klase nisu subklasa
 object.
-
-#TODO!
-- satni graf gubi highlight prilikom redrawa - highlight tocka se treba
-nacrtati ako je unutar postojeceg raspona
-- satni i minutni graf imaju isti zoom y osi pa y graf je malo zbijen.
 """
 import datetime
 import matplotlib
@@ -266,8 +261,8 @@ class Kanvas(FigureCanvas):
         self.data = {} #spremnik za frejmove (ucitane)
         self.statusGlavniGraf = False
         self.statusAnnotation = False
-        self.statusHighlight = False
-        self.lastHighlight = (None, None)
+        #self.statusHighlight = False
+        #self.lastHighlight = (None, None)
         self.lastAnnotation = None
         self.axes.clear()
         #redo Axes labels
@@ -671,6 +666,7 @@ class SatniKanvas(SatniMinutniKanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         -mapaParametara['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
         """
+        #TODO! check za y os
         #clear prethodnog grafa, reinicijalizacija membera
         self.clear_graf()
         self.data = frejmovi
@@ -1229,20 +1225,6 @@ class ZeroSpanKanvas(Kanvas):
             ax.set_xlim(x)
         self.draw()
 
-    def clear_zero_span(self):
-        """
-        clear grafa i replace sa porukom da nema dostupnih podataka
-        """
-        self.clear_graf()
-        self.axes.text(0.5,
-                       0.5,
-                       'Nije moguce pristupiti podacima',
-                       horizontalalignment='center',
-                       verticalalignment='center',
-                       fontsize = 8,
-                       transform = self.axes.transAxes)
-        self.draw()
-
     def highlight_pick(self, tpl, size):
         """
         naredba za crtanje highlight tocke na grafu na koridinatama
@@ -1374,19 +1356,50 @@ class ZeroSpanKanvas(Kanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
         self.clear_graf()
+        self.statusHighlight = False
+        self.lastHighlight = (None, None)
+        argMap = {'xtocka':'',
+                  'ytocka':'',
+                  'minDozvoljenoOdstupanje':'',
+                  'maxDozvoljenoOdstupanje':'',
+                  'status':''}
+        self.updateaj_labele_na_panelu('normal', argMap)
+
         self.data = frejm
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
         self.gKanal = mapaParametara['kanalId']
 
         self.crtaj_glavni_kanal()
-        #TODO! funkcija nije gotova...
+
         self.setup_ticks()
         self.setup_limits()
         self.setup_legend()
 
         #toggle legende
         self.toggle_tgl()
+        self.draw()
+
+    def clear_zero_span(self):
+        """
+        clear grafa i replace sa porukom da nema dostupnih podataka
+        """
+        self.clear_graf()
+        self.statusHighlight = False
+        self.lastHighlight = (None, None)
+        argMap = {'xtocka':'',
+                  'ytocka':'',
+                  'minDozvoljenoOdstupanje':'',
+                  'maxDozvoljenoOdstupanje':'',
+                  'status':''}
+        self.updateaj_labele_na_panelu('normal', argMap)
+        self.axes.text(0.5,
+                       0.5,
+                       'Nije moguce pristupiti podacima',
+                       horizontalalignment='center',
+                       verticalalignment='center',
+                       fontsize = 8,
+                       transform = self.axes.transAxes)
         self.draw()
 
     def span_select(self, tmin, tmax):
@@ -1402,8 +1415,8 @@ class ZeroKanvas(ZeroSpanKanvas):
         #super(ZeroKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('bottom')
-        self.axes.figure.subplots_adjust(top = 0.92)
-        self.axes.figure.subplots_adjust(bottom = 0.2)
+        self.axes.figure.subplots_adjust(top = 0.98)
+        self.axes.figure.subplots_adjust(bottom = 0.08)
         self.axes.figure.subplots_adjust(right = 0.98)
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
@@ -1422,7 +1435,6 @@ class ZeroKanvas(ZeroSpanKanvas):
             self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argMap)
         else:
             self.emit(QtCore.SIGNAL('prikazi_info_zero(PyQt_PyObject)'),argMap)
-
 ################################################################################
 class SpanKanvas(ZeroSpanKanvas):
     """specificna implementacija span canvasa"""

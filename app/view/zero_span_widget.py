@@ -11,11 +11,14 @@ import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 base7, form7 = uic.loadUiType('./app/view/ui_files/zero_span_widget.ui')
+
+
 class ZeroSpanIzbor(base7, form7):
     """
     Opcije za ZERO i SPAN graf (koristi se ista shema)
     """
-    def __init__(self, parent = None, defaulti = None, listHelpera = []):
+
+    def __init__(self, parent=None, defaulti=None, listHelpera=[]):
         """
         Inicijalizacija sa
 
@@ -41,7 +44,7 @@ class ZeroSpanIzbor(base7, form7):
         linije = sorted(list(listHelpera[3].keys()))
 
         ###MARKER###
-        #zero
+        # zero
         self.zeroMarker.addItems(markeri)
         mk = listHelpera[0][defaulti.zero.VOK.markerStyle]
         self.zeroMarker.setCurrentIndex(self.zeroMarker.findText(mk))
@@ -65,7 +68,8 @@ class ZeroSpanIzbor(base7, form7):
         #sirina linije
         self.midlineWidth.setValue(defaulti.zero.Midline.lineWidth)
         #boja centralne linije
-        self.set_widget_color_style(defaulti.zero.Midline.rgb, defaulti.zero.Midline.alpha, "QPushButton", self.midlineBoja)
+        self.set_widget_color_style(defaulti.zero.Midline.rgb, defaulti.zero.Midline.alpha, "QPushButton",
+                                    self.midlineBoja)
         #alpha vrijednost centralne linije
         self.midlineAlpha.setValue(defaulti.zero.Midline.alpha)
         ###warning lnija###
@@ -76,7 +80,8 @@ class ZeroSpanIzbor(base7, form7):
         #sirina linije
         self.warningWidth.setValue(defaulti.zero.Warning1.lineWidth)
         #boja linije
-        self.set_widget_color_style(defaulti.zero.Warning1.rgb, defaulti.zero.Warning1.alpha, "QPushButton", self.warningBoja)
+        self.set_widget_color_style(defaulti.zero.Warning1.rgb, defaulti.zero.Warning1.alpha, "QPushButton",
+                                    self.warningBoja)
         #prozirnost
         self.warningAlpha.setValue(defaulti.zero.Warning1.alpha)
         #test za crtanje
@@ -108,18 +113,19 @@ class ZeroSpanIzbor(base7, form7):
             self.fillBojaOK.setEnabled(False)
             self.fillBojaBAD.setEnabled(False)
             self.fillAlpha.setEnabled(False)
-###############################################################################
+        ###############################################################################
+
     def set_widget_color_style(self, rgb, a, tip, target):
         """
         izrada stila widgeta
         tip - qwidget tip, npr "QPushButton"
         target - instanca widgeta kojem mjenjamo stil
         """
-        #get string name of target object
+        # get string name of target object
         name = str(target.objectName())
         #napravi stil
-        stil = pomocne_funkcije.rgba_to_style_string(rgb, a , tip, name)
+        stil = pomocne_funkcije.rgba_to_style_string(rgb, a, tip, name)
         #set stil u target
         target.setStyleSheet(stil)
-###############################################################################
-###############################################################################
+        ###############################################################################
+        ###############################################################################

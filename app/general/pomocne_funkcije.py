@@ -79,7 +79,7 @@ def normalize_rgb(rgbTuple):
     - ulaz je rgbTuple npr. (0,255,0)
     """
     r, g, b = rgbTuple
-    return (r/255, g/255, b/255)
+    return r/255, g/255, b/255
 ###############################################################################
 def make_color(rgb, a):
     """

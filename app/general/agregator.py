@@ -5,6 +5,7 @@ Agregator dio
 import pandas as pd
 import numpy as np
 
+
 class Agregator(object):
     def __init__(self):
         """
@@ -18,6 +19,7 @@ class Agregator(object):
     ulaz --> numpy array ili neka lista
     izlaz --> broj
     """
+
     def test_validacije(self, x):
         """
         test da li su svi unutar intervala validirani
@@ -28,69 +30,69 @@ class Agregator(object):
         total = True
         for ind in x:
             if abs(ind) != 1000:
-                #postoji barem jedan minutni podatak koji nije validiran
+                # postoji barem jedan minutni podatak koji nije validiran
                 total = False
 
-        if total == True:
-            return 1000 #slucaj kada su svi minutni validirani
+        if total:
+            return 1000  # slucaj kada su svi minutni validirani
         else:
-            return 1 #slucaj kada postoje nevalidirani podaci
+            return 1  # slucaj kada postoje nevalidirani podaci
 
     def my_mean(self, x):
-        #mean, srednja vrjednost
+        # mean, srednja vrjednost
         if len(x) == 0:
             return np.NaN
         return np.mean(x)
 
     def my_std(self, x):
-        #standardna devijacija
+        # standardna devijacija
         if len(x) == 0:
             return np.NaN
         return np.std(x)
 
     def my_min(self, x):
-        #min
+        # min
         if len(x) == 0:
             return np.NaN
         return np.min(x)
 
     def my_max(self, x):
-        #max
+        # max
         if len(x) == 0:
             return np.NaN
         return np.max(x)
 
 
     def h_q05(self, x):
-        #5 percentil podataka
+        # 5 percentil podataka
         if len(x) == 0:
             return np.NaN
-        return np.percentile(x,5)
+        return np.percentile(x, 5)
 
     def h_q50(self, x):
-        #median
+        # median
         if len(x) == 0:
             return np.NaN
-        return np.percentile(x,50)
+        return np.percentile(x, 50)
 
     def h_q95(self, x):
-        #95 percentil podataka
+        # 95 percentil podataka
         if len(x) == 0:
             return np.NaN
-        return np.percentile(x,95)
+        return np.percentile(x, 95)
 
     def h_binary_or(self, x):
-        #binarni or liste
+        # binarni or liste
         if len(x) == 0:
             #za prazni interval, vrati -1 (ocita greska)
             return np.NaN
         result = 0
         for i in x:
-            result = result | int(i)
+            result |= int(i)
         return result
 
     def h_size(self, x):
-        #broj podataka
+        # broj podataka
         if len(x) == 0:
             return np.NaN
         return len(x)
@@ -100,21 +102,21 @@ class Agregator(object):
         input- pandasdataframe (datetime index, koncentracija, status, flag)
         output - pandas dataframe (datetime index, hrpa agregiranih vrijednosti)
         """
-        #provjera da li ulazni frame ima podataka
+        # provjera da li ulazni frame ima podataka
         #tj. postupak u slucaju da agregatoru netko prosljedi prazan slice
         if len(frejm) == 0:
             #vrati dobro formatirani prazan dataframe
-            df = pd.DataFrame(columns = ['broj podataka',
-                                         'status',
-                                         'flag',
-                                         'avg',
-                                         'std',
-                                         'min',
-                                         'max',
-                                         'q05',
-                                         'median',
-                                         'q95',
-                                         'count'])
+            df = pd.DataFrame(columns=['broj podataka',
+                                       'status',
+                                       'flag',
+                                       'avg',
+                                       'std',
+                                       'min',
+                                       'max',
+                                       'q05',
+                                       'median',
+                                       'q95',
+                                       'count'])
             df = df.set_index(df['flag'].astype('datetime64[ns]'))
 
             return None
@@ -131,7 +133,7 @@ class Agregator(object):
         #uzmi samo pandas series koncentracije
         dfKonc = tempDf[u'koncentracija']
         #resample series, prebroji koliko ima podataka
-        temp = dfKonc.resample('H', how = self.h_size, closed = 'right', label = 'right')
+        temp = dfKonc.resample('H', how=self.h_size, closed='right', label='right')
         agregirani[u'broj podataka'] = temp
 
         """
@@ -139,7 +141,7 @@ class Agregator(object):
         """
         tempDf = df.copy()
         dfStatus = tempDf[u'status']
-        temp = dfStatus.resample('H', how = self.h_binary_or, closed = 'right', label = 'right')
+        temp = dfStatus.resample('H', how=self.h_binary_or, closed='right', label='right')
         agregirani[u'status'] = temp
 
         """
@@ -147,7 +149,7 @@ class Agregator(object):
         """
         tempDf = df.copy()
         dfFlag = tempDf[u'flag']
-        temp = dfFlag.resample('H', how = self.test_validacije, closed = 'right', label = 'right')
+        temp = dfFlag.resample('H', how=self.test_validacije, closed='right', label='right')
         agregirani[u'flag'] = temp
 
         """
@@ -155,14 +157,15 @@ class Agregator(object):
         -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
         """
         listaFunkcijaIme = [u'avg', u'std', u'min', u'max', u'q05', u'median', u'q95', u'count']
-        listaFunkcija = [self.my_mean, self.my_std, self.my_min, self.my_max, self.h_q05, self.h_q50, self.h_q95, self.h_size]
+        listaFunkcija = [self.my_mean, self.my_std, self.my_min, self.my_max, self.h_q05, self.h_q50, self.h_q95,
+                         self.h_size]
 
         """
         -kopija originalnog frejma
         -samo stupac koncentracije gdje je flag veci od 0
         """
         tempDf = df.copy()
-        tempDf = tempDf[tempDf[u'flag']>=0]
+        tempDf = tempDf[tempDf[u'flag'] >= 0]
         tempDf = tempDf[u'koncentracija']
 
         """
@@ -171,7 +174,7 @@ class Agregator(object):
         """
         for i in list(range(len(listaFunkcija))):
             temp = tempDf.copy()
-            temp = temp.resample('H', how = listaFunkcija[i], closed = 'right', label = 'right')
+            temp = temp.resample('H', how=listaFunkcija[i], closed='right', label='right')
             temp.name = listaFunkcijaIme[i]
             agregirani[temp.name] = temp
 
@@ -193,11 +196,11 @@ class Agregator(object):
         -ako nije... flagaj interval kao nevaljan...umetni placeholder vrijednosti
         """
         for i in agregirani.index:
-            if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i,u'count']<45:
+            if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i, u'count'] < 45:
                 if agregirani.loc[i, u'flag'] == 1000:
                     agregirani.loc[i, u'flag'] = -1000
                 else:
-                    agregirani.loc[i,u'flag'] = -1
+                    agregirani.loc[i, u'flag'] = -1
 
         """
         Problem prilikom agregiranja. ako sve indekse unutar jednog sata prebacimo
@@ -218,8 +221,6 @@ class Agregator(object):
                 agregirani.loc[i, u'count'] = 0
                 agregirani.loc[i, u'median'] = 0
                 agregirani.loc[i, u'std'] = 0
-
-
 
         return agregirani
 

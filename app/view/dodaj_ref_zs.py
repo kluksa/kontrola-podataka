@@ -9,6 +9,8 @@ from PyQt4 import QtCore, uic
 ###############################################################################
 ###############################################################################
 base10, form10 = uic.loadUiType('./app/view/ui_files/dodavanje_referentnih_zero_span.ui')
+
+
 class DijalogDodajRefZS(base10, form10):
     """
     Dijalog za dodavanje novih referentnih vrijednosti za ZERO i SPAN.
@@ -37,11 +39,11 @@ class DijalogDodajRefZS(base10, form10):
         tu vrijednost???
     """
 
-    def __init__(self, parent = None, opisKanal = None, idKanal = None):
+    def __init__(self, parent=None, opisKanal=None, idKanal=None):
         super(base10, self).__init__(parent)
         self.setupUi(self)
 
-        #set int id kanala
+        # set int id kanala
         self.idKanal = idKanal
         #set program mjerenja opis
         self.programSelect.setText(opisKanal)
@@ -49,7 +51,8 @@ class DijalogDodajRefZS(base10, form10):
         self.vrijemeSelect.setDateTime(QtCore.QDateTime.currentDateTime())
 
         self.vrijednostSelect.textEdited.connect(self.check_vrijednost)
-###############################################################################
+
+    ###############################################################################
     def check_vrijednost(self, x):
         """
         provjera ispravnosti unosa vrijednosti... samo smisleni brojevi
@@ -58,7 +61,8 @@ class DijalogDodajRefZS(base10, form10):
         test = self.convert_line_edit_to_float(x)
         if not test:
             self.vrijednostSelect.setStyleSheet('color : red')
-###############################################################################
+        ###############################################################################
+
     def convert_line_edit_to_float(self, x):
         """
         pretvaranje line edit stringa u float vrijednost
@@ -75,12 +79,13 @@ class DijalogDodajRefZS(base10, form10):
                 return None
         else:
             return None
-###############################################################################
+        ###############################################################################
+
     def vrati_postavke(self):
         """
         mehanizam kojim dijalog vraca postavke
         """
-        #QDateTime objekt
+        # QDateTime objekt
         vrijeme = self.vrijemeSelect.dateTime()
         #convert to python datetime
         vrijeme = vrijeme.toPyDateTime()
@@ -89,16 +94,17 @@ class DijalogDodajRefZS(base10, form10):
         #convert u unix timestamp
         vrijeme = self.time_to_int(vrijeme)
 
-        vrsta = self.vrstaSelect.currentText()[0] #samo prvo slovo stringa.. 'Z' ili 'S'
+        vrsta = self.vrstaSelect.currentText()[0]  #samo prvo slovo stringa.. 'Z' ili 'S'
 
-        vrijednost = self.convert_line_edit_to_float(self.vrijednostSelect.text()) #float
+        vrijednost = self.convert_line_edit_to_float(self.vrijednostSelect.text())  #float
 
-        out = {'vrsta':vrsta,
-               'vrijednost':vrijednost,
-               'vrijeme':vrijeme,
-               'kanal':self.idKanal}
+        out = {'vrsta': vrsta,
+               'vrijednost': vrijednost,
+               'vrijeme': vrijeme,
+               'kanal': self.idKanal}
         return out
-###############################################################################
+
+    ###############################################################################
     def time_to_int(self, x):
         """
         Funkcija pretvara vrijeme x (pandas.tslib.Timestamp) u unix timestamp
@@ -115,5 +121,5 @@ class DijalogDodajRefZS(base10, form10):
         vrijeme je u GMT
         """
         return x.value / 1000000000
-###############################################################################
-###############################################################################
+        ###############################################################################
+        ###############################################################################

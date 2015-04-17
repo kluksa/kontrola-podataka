@@ -135,7 +135,7 @@ class WebZahtjev(QtCore.QObject):
         payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
-            assert x != None, 'Ulazni parametar je None, json string nije zadan.'
+            assert x is not None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(x) > 0, 'Ulazni json string je prazan'
             r = requests.put(url, params = payload, data = x, headers = headers, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
@@ -156,7 +156,7 @@ class WebZahtjev(QtCore.QObject):
         payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
-            assert x != None, 'Ulazni parametar je None, json string nije zadan.'
+            assert x is not None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(x) > 0, 'Ulazni json string je prazan'
             r = requests.put(url, params = payload, data = x, headers = headers, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
@@ -209,7 +209,7 @@ class WebZahtjev(QtCore.QObject):
         payload = {"id":"putZeroSpanReferentnuVrijednost", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
-            assert jS != None, 'Ulazni parametar je None, json string nije zadan.'
+            assert jS is not None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(jS) > 0, 'Ulazni json string je prazan'
             r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)

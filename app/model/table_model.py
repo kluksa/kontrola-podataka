@@ -22,23 +22,25 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
     2. markeri ->lista svih markera koji ulaze u izbor, opisni ('Krug'...)
     3. linije ->lista svih stilova linija, opisni ('Dash-Dot'...)
     """
-###############################################################################
-    def __init__(self, grafInfo = [], parent = None):
+    ###############################################################################
+    def __init__(self, grafInfo=[], parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent)
 
-        #spremi ulaznu mapu u privatni member
+        # spremi ulaznu mapu u privatni member
         self.grafInfo = grafInfo
         #headeri tablice
         self.headeri = ['Postaja', 'Komponenta', 'Usporedno']
-###############################################################################
-    def rowCount(self, parent = QtCore.QModelIndex()):
+
+    ###############################################################################
+    def rowCount(self, parent=QtCore.QModelIndex()):
         """
         Nuzna metoda za rad klase
         -vraca informaciju o broju redaka display djelu
         """
         return len(self.grafInfo)
-###############################################################################
-    def columnCount(self, parent = QtCore.QModelIndex()):
+
+    ###############################################################################
+    def columnCount(self, parent=QtCore.QModelIndex()):
         """
         Nuzna metoda za rad klase
         -vraca informaciju o broju stupaca display djelu
@@ -46,14 +48,16 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
             ['Postaja', 'Komponenta', 'Usporedno']
         """
         return 3
-###############################################################################
+
+    ###############################################################################
     def flags(self, index):
         """
         -vraca van stanje svakog indeksa u prikazu tablice.
         -enabled, selectable i editable
         """
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
-###############################################################################
+
+    ###############################################################################
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
         Metoda zaduzena za postavljanje novih vrijednosti u model(editable).
@@ -66,8 +70,8 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.EditRole:
             row = index.row()
             col = index.column()
-            if col == 0: #promjena Postaje
-                self.grafInfo[row][1] = value #promjeni Postaju
+            if col == 0:  # promjena Postaje
+                self.grafInfo[row][1] = value  #promjeni Postaju
                 #promjeni i programMjerenjaId
                 postaja = self.grafInfo[1]
                 komponenta = self.grafInfo[2]
@@ -75,23 +79,24 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 self.grafInfo[row][0] = self.pomocnaMapa[postaja][komponenta][usporedno]
                 return True
             elif col == 1:
-                self.grafInfo[row][2] = value #promjeni komponentu
-                self.grafInfo[row][11] = value #promjeni i label
-                #promjeni i programMjerenjaId
+                self.grafInfo[row][2] = value  # promjeni komponentu
+                self.grafInfo[row][11] = value  # promjeni i label
+                # promjeni i programMjerenjaId
                 postaja = self.grafInfo[1]
                 komponenta = self.grafInfo[2]
                 usporedno = self.grafInfo[3]
                 self.grafInfo[row][0] = self.pomocnaMapa[postaja][komponenta][usporedno]
                 return True
             elif col == 2:
-                self.grafInfo[row][3] = value #promjeni usporedno
-                #promjeni i programMjerenjaId
+                self.grafInfo[row][3] = value  # promjeni usporedno
+                # promjeni i programMjerenjaId
                 postaja = self.grafInfo[1]
                 komponenta = self.grafInfo[2]
                 usporedno = self.grafInfo[3]
                 self.grafInfo[row][0] = self.pomocnaMapa[postaja][komponenta][usporedno]
                 return True
-###############################################################################
+            ###############################################################################
+
     def data(self, index, role):
         """
         Nuzna metoda za rad klase
@@ -104,11 +109,11 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
             row = index.row()
             column = index.column()
             if column == 0:
-                value = self.grafInfo[row][1] #stupac "Postaja"
+                value = self.grafInfo[row][1]  # stupac "Postaja"
             elif column == 1:
-                value = self.grafInfo[row][2] #stupac "Komponenta"
+                value = self.grafInfo[row][2]  # stupac "Komponenta"
             elif column == 2:
-                value = self.grafInfo[row][3] #stupac "Usporedno"
+                value = self.grafInfo[row][3]  # stupac "Usporedno"
 
             return value
 
@@ -116,11 +121,11 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
             row = index.row()
             column = index.column()
             if column == 0:
-                value = self.grafInfo[row][1] #stupac "Postaja"
+                value = self.grafInfo[row][1]  # stupac "Postaja"
             elif column == 1:
-                value = self.grafInfo[row][2] #stupac "Komponenta"
+                value = self.grafInfo[row][2]  # stupac "Komponenta"
             elif column == 2:
-                value = self.grafInfo[row][3] #stupac "Usporedno"
+                value = self.grafInfo[row][3]  # stupac "Usporedno"
 
             return value
 
@@ -128,17 +133,18 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
             row = index.row()
             column = index.column()
             if column == 0:
-                #na stupcima 1 (komponenta)
+                # na stupcima 1 (komponenta)
                 rgb = self.grafInfo[row][8]
                 alpha = self.grafInfo[row][9]
                 #stvaranje tocne nijanse kao QColor
                 boja = pomocne_funkcije.default_color_to_qcolor(rgb, alpha)
                 #izrada pixmapa i ikone koju dodajemo kao ukras
-                pixmap = QtGui.QPixmap(20,20)
+                pixmap = QtGui.QPixmap(20, 20)
                 pixmap.fill(boja)
                 icon = QtGui.QIcon(pixmap)
                 return icon
-###############################################################################
+            ###############################################################################
+
     def headerData(self, section, orientation, role):
         """
         Metoda postavlja headere u tablicu
@@ -148,16 +154,17 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 return self.headeri[section]
             else:
                 return section
-###############################################################################
-    def insertRows(self, position, rows, parent = QtCore.QModelIndex(), sto = None):
+            ###############################################################################
+
+    def insertRows(self, position, rows, parent=QtCore.QModelIndex(), sto=None):
         """
         metoda za umetanje redova u tablicu
         insert na poziciji : position
         broj redova za insertanje : rows
         parent = defaultni q model index
         """
-        #mora se pozvati zbog sinhorizacije view-ova
-        self.beginInsertRows(parent, position, position+rows-1)
+        # mora se pozvati zbog sinhorizacije view-ova
+        self.beginInsertRows(parent, position, position + rows - 1)
 
         #insert u podatke
         for i in range(rows):
@@ -168,16 +175,17 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         self.endInsertRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti
         return True
-###############################################################################
-    def removeRows(self, position, rows, parent = QtCore.QModelIndex()):
+
+    ###############################################################################
+    def removeRows(self, position, rows, parent=QtCore.QModelIndex()):
         """
         metoda za brisanje redova iz tablice
         delete na poziciji : position
         broj redova za delete : rows
         parent = defaultni q model index
         """
-        #mora se pozvati zbog sinhronizacije view-ova
-        self.beginRemoveRows(parent, position, position+rows-1)
+        # mora se pozvati zbog sinhronizacije view-ova
+        self.beginRemoveRows(parent, position, position + rows - 1)
 
         #sami delete
         for i in range(rows):
@@ -187,7 +195,8 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         self.endRemoveRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti
         return True
-###############################################################################
+
+    ###############################################################################
     def vrati_nested_listu(self):
         """
         funkcija vraca nested listu koja sadrzi podatke u modelu

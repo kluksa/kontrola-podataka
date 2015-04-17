@@ -6,11 +6,10 @@ Created on Wed Dec 17 15:18:10 2014
 @author: User
 """
 import logging
+
 import pandas as pd
 import numpy as np
-from PyQt4 import QtCore
 
-import app.general.pomocne_funkcije as pomocne_funkcije
 
 ###############################################################################
 ###############################################################################

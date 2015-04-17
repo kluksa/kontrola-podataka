@@ -204,7 +204,7 @@ class DataModel(QtCore.QObject):
     def get_frame(self, key = None, tmin = None, tmax = None):
         """funkcija dohvaca trazeni slice frejma"""
         try:
-            assert key != None, 'dokument.get_frame:Assert fail, key = None'
+            assert key is not None, 'dokument.get_frame:Assert fail, key = None'
             assert isinstance(tmin, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
             assert isinstance(tmax, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
             #za svaki slucaj provjeri da li je min i max ok, ako nije zamjeni ih

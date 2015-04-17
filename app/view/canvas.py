@@ -327,7 +327,7 @@ class Kanvas(FigureCanvas):
 
         izlaz je datetime.datetime objekt ili None (po defaultu)
         """
-        if dt_objekt == None:
+        if dt_objekt is None:
             return None
         else:
             tmin = datetime.datetime.min
@@ -445,8 +445,8 @@ class SatniMinutniKanvas(Kanvas):
         """
         size = self.frameSize()
         x, y = size.width(), size.height()
-        x = x//2
-        y = y//2
+        x //= 2
+        y //= 2
         clickedx = event.x
         clickedy = event.y
 
@@ -462,7 +462,7 @@ class SatniMinutniKanvas(Kanvas):
                 clickedy = -30
             else:
                 clickedy = 30
-        return (clickedx, clickedy)
+        return clickedx, clickedy
 
     def setup_annotation_text(self, xpoint):
         """
@@ -677,7 +677,7 @@ class SatniKanvas(SatniMinutniKanvas):
             #naredba za crtanje glavnog grafa
             self.crtaj_glavni_kanal()
             #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
+            pomocni = set(self.data.keys()) - {self.gKanal, self.tKontejner}
             #naredba za crtanje pomocnih
             self.crtaj_pomocne(pomocni)
             ###micanje tocaka od rubova, tickovi, legenda...
@@ -943,7 +943,7 @@ class MinutniKanvas(SatniMinutniKanvas):
             #naredba za crtanje glavnog grafa
             self.crtaj_glavni_kanal()
             #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - set([self.gKanal, self.tKontejner])
+            pomocni = set(self.data.keys()) - {self.gKanal, self.tKontejner}
             #naredba za crtanje pomocnih
             self.crtaj_pomocne(pomocni)
             ###micanje tocaka od rubova, tickovi, legenda...
@@ -1268,7 +1268,7 @@ class ZeroSpanKanvas(Kanvas):
             y = y[-1]
             minD = minD[-1]
             maxD = maxD[-1]
-        if y >= minD and y<= maxD:
+        if minD <= y <= maxD:
             status = 'Dobar'
         else:
             status = 'Ne valja'

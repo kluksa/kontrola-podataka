@@ -203,7 +203,7 @@ class GlavniProzor(base, form):
     def promjeni_stil_grafova(self):
         opis = self.kontrola.mapaMjerenjeIdToOpis
         drvo = self.kontrola.modelProgramaMjerenja
-        if opis != None and drvo != None:
+        if opis is not None and drvo is not None:
             logging.info('Pozvan dijalog za promjenu stila grafova')
             dijalog = glavni_dijalog.GlavniIzbor(defaulti = self.konfiguracija, opiskanala = opis, stablo = drvo, parent = self)
 

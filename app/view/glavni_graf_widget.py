@@ -11,6 +11,8 @@ import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
 ###############################################################################
 base6, form6 = uic.loadUiType('./app/view/ui_files/glavni_graf_widget.ui')
+
+
 class GrafIzbor(base6, form6):
     """
     Prikaz kontrolnih widgeta za postavljanje opcija glavnog grafa
@@ -32,7 +34,8 @@ class GrafIzbor(base6, form6):
             element 4 : agregirani kanal --> dulji opis kanala
             element 5 : dulji opis kanala --> agregirani kanal
     """
-    def __init__(self, parent = None, defaulti = None, listHelpera = []):
+
+    def __init__(self, parent=None, defaulti=None, listHelpera=[]):
         super(base6, self).__init__(parent)
         self.setupUi(self)
 
@@ -42,7 +45,7 @@ class GrafIzbor(base6, form6):
 
 
         ###marker###
-        #sirovi, nevalidirani podatak
+        # sirovi, nevalidirani podatak
         self.normalMarker.addItems(markeri)
         normal = listHelpera[0][defaulti.satni.NVOK.markerStyle]
         self.normalMarker.setCurrentIndex(self.normalMarker.findText(normal))
@@ -67,7 +70,8 @@ class GrafIzbor(base6, form6):
         #sirina centralne linije
         self.midlineWidth.setValue(defaulti.satni.Midline.lineWidth)
         #boja centralne linije
-        self.set_widget_color_style(defaulti.satni.Midline.rgb, defaulti.satni.Midline.alpha, "QPushButton", self.midlineBoja)
+        self.set_widget_color_style(defaulti.satni.Midline.rgb, defaulti.satni.Midline.alpha, "QPushButton",
+                                    self.midlineBoja)
         #prozirnost centralne linije
         self.midlineAlpha.setValue(defaulti.satni.Midline.alpha)
 
@@ -80,7 +84,8 @@ class GrafIzbor(base6, form6):
         #velicina markera ekstremnih vrijednosti
         self.ekstremSize.setValue(defaulti.satni.EksMin.markerSize)
         #boja markera ekstremnih vrijednosti
-        self.set_widget_color_style(defaulti.satni.EksMin.rgb, defaulti.satni.EksMin.alpha, "QPushButton", self.ekstremBoja)
+        self.set_widget_color_style(defaulti.satni.EksMin.rgb, defaulti.satni.EksMin.alpha, "QPushButton",
+                                    self.ekstremBoja)
         #prozirnost markera ekstremnih vrijednosti
         self.ekstremAlpha.setValue(defaulti.satni.EksMin.alpha)
         #disable/enable kontrole ovisno o statusu checkboxa
@@ -120,18 +125,19 @@ class GrafIzbor(base6, form6):
             self.fillKomponenta2.setEnabled(False)
             self.fillBoja.setEnabled(False)
             self.fillAlpha.setEnabled(False)
-###############################################################################
+        ###############################################################################
+
     def set_widget_color_style(self, rgb, a, tip, target):
         """
         izrada stila widgeta
         tip - qwidget tip, npr "QPushButton"
         target - instanca widgeta kojem mjenjamo stil
         """
-        #get string name of target object
+        # get string name of target object
         name = str(target.objectName())
         #napravi stil
-        stil = pomocne_funkcije.rgba_to_style_string(rgb, a , tip, name)
+        stil = pomocne_funkcije.rgba_to_style_string(rgb, a, tip, name)
         #set stil u target
         target.setStyleSheet(stil)
-###############################################################################
-###############################################################################
+        ###############################################################################
+        ###############################################################################

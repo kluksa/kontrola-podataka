@@ -103,6 +103,20 @@ class Agregator(object):
         #provjera da li ulazni frame ima podataka
         #tj. postupak u slucaju da agregatoru netko prosljedi prazan slice
         if len(frejm) == 0:
+            #vrati dobro formatirani prazan dataframe
+            df = pd.DataFrame(columns = ['broj podataka',
+                                         'status',
+                                         'flag',
+                                         'avg',
+                                         'std',
+                                         'min',
+                                         'max',
+                                         'q05',
+                                         'median',
+                                         'q95',
+                                         'count'])
+            df = df.set_index(df['flag'].astype('datetime64[ns]'))
+
             return None
 
         agregirani = pd.DataFrame()

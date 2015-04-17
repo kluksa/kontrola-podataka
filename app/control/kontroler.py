@@ -408,9 +408,8 @@ class Kontroler(QtCore.QObject):
                 lista = self.sviBitniKanali,
                 tmin = self.pocetnoVrijeme,
                 tmax = self.zavrsnoVrijeme)
+
             #naredba za crtanje satnog grafa
-            #TODO!
-            #print(self.agregiraniFrejmovi[self.gKanal])
             self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
             #promjena labela u panelima sa grafovima, opis
             try:

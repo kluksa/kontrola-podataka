@@ -6,6 +6,11 @@ Created on Thu Apr  9 12:27:25 2015
 
 P.S. super() radi probleme, uzrok je potencijalo u cinjenici da klase nisu subklasa
 object.
+
+#TODO!
+- satni graf gubi highlight prilikom redrawa - highlight tocka se treba
+nacrtati ako je unutar postojeceg raspona
+- satni i minutni graf imaju isti zoom y osi pa y graf je malo zbijen.
 """
 import datetime
 import matplotlib
@@ -16,7 +21,6 @@ from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas #import specificnog canvasa za Qt
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
-
 ################################################################################
 ################################################################################
 class Kanvas(FigureCanvas):
@@ -482,7 +486,7 @@ class SatniMinutniKanvas(Kanvas):
         if self.statusAnnotation:
             self.annotation.remove()
             self.statusAnnotation = False
-            if point[0] is not self.lastAnnotation:
+            if point[0] != self.lastAnnotation:
                 self.make_annotation(point, event)
         else:
             self.make_annotation(point, event)

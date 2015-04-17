@@ -50,9 +50,6 @@ class RESTReader(object):
 
         output je pandas dataframe (prazan frame ako nema podataka)
         """
-        #prazan dobro formatirani dataframe
-        df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
-        df = df.set_index(df['id'].astype('datetime64[ns]'))
         try:
             #parse json i provjeri da li su svi relevantni stupci na broju
             df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
@@ -68,11 +65,15 @@ class RESTReader(object):
             df['koncentracija'] = df['koncentracija'].map(self.nan_conversion)
             df['flag'] = df['flag'].map(self.valjan_conversion)
             df.drop('vrijeme', inplace = True, axis = 1) #drop column vrijeme
+            #vrati adaptirani dataframe
+            return df
         except (ValueError, TypeError, AssertionError):
             #javi error signalom kontroleru da nesto nije u redu?
             logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)
-        #vrati adaptirani dataframe
-        return df
+            df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
+            df = df.set_index(df['id'].astype('datetime64[ns]'))
+            #vrati prazan frejm frejm
+            return df
 ###############################################################################
     def read(self, key = None, date = None):
         """
@@ -95,7 +96,7 @@ class RESTWriterAgregiranih(QtCore.QObject):
     """
     Klasa zaduzena za updateanje agregiranih podataka na REST web servis
     """
-    #TODO! visak... prebaciti funkcionalnost direktno na kontroler direktnim pozivom
+    #TODO! Na krivom mjestu... prebaciti funkcionalnost direktno na kontroler direktnim pozivom
     def __init__(self, source = None):
         #instanca Web zahtjeva za rest servise
         QtCore.QObject.__init__(self)

@@ -65,6 +65,9 @@ class DataModel(QtCore.QObject):
         kljuc, df = self.citac.read(key = key, date = date)
         if len(df):
             self.set_frame(key = kljuc, frame = df)
+        else:
+            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani'])
+            raise pomocne_funkcije.AppExcept(tekst)
 ###############################################################################
     def dataframe_structure_test(self, frame):
         """provjera da li je dataframe dobre strukture"""
@@ -104,7 +107,7 @@ class DataModel(QtCore.QObject):
                 self.data[key] = frame
                 self.data[key].sort()
         except AssertionError as e:
-            tekst = 'DataModel.set_frame:Assert fail.\n{0}'.format(e)
+            tekst = 'Frejm nije spremljen u model. DataModel.set_frame:Assert fail.\n{0}'.format(e)
             raise pomocne_funkcije.AppExcept(tekst) from e
 ###############################################################################
     def dohvati_minutne_frejmove(self, lista = None, tmin = None, tmax = None):

@@ -117,6 +117,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150409:::VM:::Preuredio tree model, sada prikazuje formulu i mjernu jedinicu umjesto id kanala mjerenja.:::
 20150409:::VM:::Preradio strukturu projekta (rasporedio sam fileove po folderima da nisu nabacani u root):::
 20150410:::VM:::Refoactor canvasa (sada postoji samo canvas.py), minor fix sa legendom:::
+20150417:::VM:::Fix minor bugova oko grafova gotov::: 
 
 
 

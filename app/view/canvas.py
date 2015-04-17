@@ -56,8 +56,8 @@ class Kanvas(FigureCanvas):
         self.lastHighlight = (None, None) #kooridinate zadnjeg highlighta
         self.legenda = None #placeholder za legendu
         self.highlightSize = 15 #dynamic size za highlight (1.5 puta veci od markera)
-        self.xlim_original = self.axes.get_xlim() #definicija raspona x osi grafa (zoom)
-        self.ylim_original = self.axes.get_ylim() #definicija raspona y osi grafa (zoom)
+        self.xlim_original = [0,1] #defaultna definicija raspona x osi grafa (zoom)
+        self.ylim_original = [0,1] #defaultna definicija raspona y osi grafa (zoom)
 
         self.initialize_interaction(self.span_select, self.rect_zoom)
 
@@ -666,7 +666,6 @@ class SatniKanvas(SatniMinutniKanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         -mapaParametara['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
         """
-        #TODO! check za y os
         #clear prethodnog grafa, reinicijalizacija membera
         self.clear_graf()
         self.data = frejmovi

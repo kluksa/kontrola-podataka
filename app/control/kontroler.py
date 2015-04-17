@@ -6,6 +6,8 @@ Created on Thu Jan 22 09:52:37 2015
 
 #TODO!
 - satni i minutni graf imaju isti zoom y osi pa y graf je malo zbijen.
+ERROR PRONADJEN--- dokument minutnom vraca cijeli dnevni slajs za crtanje, ali ga
+onda graf cropa ali samo po x osi...
 """
 from PyQt4 import QtCore, QtGui
 import datetime #python datetime objekt, potreban za timedelta isl.
@@ -543,8 +545,8 @@ class Kontroler(QtCore.QObject):
             #naredba za dohvacanje podataka
             self.frejmovi = self.dokument.dohvati_minutne_frejmove(
                 lista = self.sviBitniKanali,
-                tmin = self.pocetnoVrijeme,
-                tmax = self.zavrsnoVrijeme)
+                tmin = lowLim,
+                tmax = highLim)
             #naredba za crtanje
             self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg)
 ###############################################################################

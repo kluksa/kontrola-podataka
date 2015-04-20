@@ -30,7 +30,7 @@ class KonfigAplikacije():
         self.conf = cfg
         # mapa dto objekata pomocnih grafova - spremljnih pod kljucem programMjerenjaId
         self.dictPomocnih = {}
-        #definicija DTO za satni graf
+
         self.satni = SatniGrafKonfig(cfg)
         self.minutni = MinutniGrafKonfig(cfg)
         self.zero = ZeroGrafKonfig(cfg)
@@ -134,7 +134,10 @@ class SatniGrafKonfig(MetaConfig):
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-
+        #pomocni graf za temperatura kontejnera izvan dopustenih granica
+        self.temperaturaKontejnera = GrafDTO(cfg, tip='MAIN_WINDOW',podtip='temperatura_kontejnera', oblik='scatter')
+        self.temperaturaKontejneraMin = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_min', 15, int)
+        self.temperaturaKontejneraMax = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_max', 30, int)
 
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
@@ -159,7 +162,10 @@ class MinutniGrafKonfig(MetaConfig):
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False,
                                                           bool)
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-
+        #pomocni graf za temperatura kontejnera izvan dopustenih granica
+        self.temperaturaKontejnera = GrafDTO(cfg, tip='MAIN_WINDOW',podtip='temperatura_kontejnera', oblik='scatter')
+        self.temperaturaKontejneraMin = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_min', 15, int)
+        self.temperaturaKontejneraMax = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_max', 30, int)
 
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):

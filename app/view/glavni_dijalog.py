@@ -215,13 +215,116 @@ class GlavniIzbor(base5, form5):
         self.glavni.fillKomponenta2.currentIndexChanged.connect(self.promjena_glavni_fillKomponenta2)
         self.glavni.fillBoja.clicked.connect(self.promjena_glavni_fillBoja)
         self.glavni.fillAlpha.valueChanged.connect(self.promjena_glavni_fillAlpha)
-
+        #pomocni grafovi za temperaturu kontejnera
+        self.glavni.kontejnerCrtaj.clicked.connect(self.promjena_glavni_kontejnerCrtaj)
+        self.glavni.kontejnerAlpha.valueChanged.connect(self.promjena_glavni_kontejnerAlpha)
+        self.glavni.kontejnerBoja.clicked.connect(self.promjena_glavni_kontejnerBoja)
+        self.glavni.kontejnerSize.valueChanged.connect(self.promjena_glavni_kontejnerSize)
+        self.glavni.kontejnerStil.currentIndexChanged.connect(self.promjena_glavni_kontejnerStil)
+        self.glavni.kontejnerMax.valueChanged.connect(self.promjena_glavni_kontejnerMax)
+        self.glavni.kontejnerMin.valueChanged.connect(self.promjena_glavni_kontejnerMin)
         ###dodavanje grafova###
         """
         pomocni_grafovi_widget se sam brine za povezivanje i update grafSettings
         DTO objekta.
         vidi pomocni_grafovi_widget.py za detalje.
         """
+##############################################################################
+    def promjena_glavni_kontejnerMin(self, x):
+        """Promjena minimalne granice temperature 'dobrih' temperatura kontejnera
+        za satni i minutni graf."""
+        out = round(x, 2)
+        self.defaulti.satni.temperaturaKontejneraMin = out
+        self.defaulti.minutni.temperaturaKontejneraMin = out
+        if out > self.defaulti.satni.temperaturaKontejneraMax:
+            #TODO! promjeni boju widgeta kao indikaciju za los setting
+            pass
+        else:
+            #TODO! promjeni boju widgeta kao indikaciju da je sve u redu
+            pass
+
+###############################################################################
+    def promjena_glavni_kontejnerMax(self, x):
+        """Promjena maksimalne granice temperature 'dobrih' temperatura kontejnera
+        za satni i minutni graf."""
+        out = round(x, 2)
+        self.defaulti.satni.temperaturaKontejneraMax = out
+        self.defaulti.minutni.temperaturaKontejneraMax = out
+        if out < self.defaulti.satni.temperaturaKontejneraMin:
+            #TODO! promjeni boju widgeta kao indikaciju za los setting
+            pass
+        else:
+            #TODO! promjeni boju widgeta kao indikaciju da je sve u redu
+            pass
+###############################################################################
+    def promjena_glavni_kontejnerStil(self, x):
+        """Promjena stila markera grafa temperature kontejnera za satni i minutni
+        graf"""
+        marker = self.__opis_to_marker[self.glavni.kontejnerStil.currentText()]
+        self.defaulti.satni.temperaturaKontejnera.set_markerStyle(marker)
+        self.defaulti.satni.temperaturaKontejnera.set_markerStyle(marker)
+        self.defaulti.minutni.temperaturaKontejnera.set_markerStyle(marker)
+        self.defaulti.minutni.temperaturaKontejnera.set_markerStyle(marker)
+###############################################################################
+    def promjena_glavni_kontejnerSize(self, x):
+        """Promjena velicine markera grafa temperature kontejnera za satni i minutni
+        graf."""
+        out = int(x)
+        self.defaulti.satni.temperaturaKontejnera.set_markerSize(out)
+        self.defaulti.minutni.temperaturaKontejnera.set_markerSize(out)
+###############################################################################
+    def promjena_glavni_kontejnerBoja(self, x):
+        """Promjena boje grafa temperature kontejnera za satni i minutni graf"""
+        #dohvati boju
+        rgb = self.defaulti.satni.temperaturaKontejnera.rgb
+        a = self.defaulti.satni.temperaturaKontejnera.alpha
+        #convert u QColor zbog dijaloga
+        boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
+        #poziv dijaloga
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test:
+            #samo ako je boja dobro definirana
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
+            #set vrijednost za min i max ekstreme
+            self.defaulti.satni.temperaturaKontejnera.set_rgb(rgb)
+            self.defaulti.satni.temperaturaKontejnera.set_alpha(a)
+            self.defaulti.minutni.temperaturaKontejnera.set_rgb(rgb)
+            self.defaulti.minutni.temperaturaKontejnera.set_alpha(a)
+            #promjeni boju gumba
+            self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.kontejnerBoja)
+            #update alpha vrijednost na displayu
+            self.glavni.kontejnerAlpha.setValue(a)
+###############################################################################
+    def promjena_glavni_kontejnerAlpha(self, x):
+        """Promjena transparentnosti grafa temperature kontejnera za satni i minutni
+        graf"""
+        out = round(x, 2)
+        self.defaulti.satni.temperaturaKontejnera.set_alpha(out)
+        self.defaulti.minutni.temperaturaKontejnera.set_alpha(out)
+        #promjeni boju gumba
+        self.glavni.set_widget_color_style(self.defaulti.satni.temperaturaKontejnera.rgb,
+                                           out,
+                                           "QPushButton",
+                                           self.glavni.kontejnerBoja)
+###############################################################################
+    def promjena_glavni_kontejnerCrtaj(self, x):
+        """Promjena statusa crtanja temperature kontejnera za temperature izvan granica
+        na satnom i minutnom grafu"""
+        if x:
+            self.glavni.kontejnerAlpha.setEnabled(True)
+            self.glavni.kontejnerBoja.setEnabled(True)
+            self.glavni.kontejnerMin.setEnabled(True)
+            self.glavni.kontejnerMax.setEnabled(True)
+            self.glavni.kontejnerSize.setEnabled(True)
+            self.glavni.kontejnerStil.setEnabled(True)
+        else:
+            self.glavni.kontejnerAlpha.setEnabled(False)
+            self.glavni.kontejnerBoja.setEnabled(False)
+            self.glavni.kontejnerMin.setEnabled(False)
+            self.glavni.kontejnerMax.setEnabled(False)
+            self.glavni.kontejnerSize.setEnabled(False)
+            self.glavni.kontejnerStil.setEnabled(False)
 ###############################################################################
     def promjena_zs_zeroMarker(self, x):
         """Promjena tipa markera za zero graf"""

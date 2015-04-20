@@ -125,6 +125,42 @@ class GrafIzbor(base6, form6):
             self.fillKomponenta2.setEnabled(False)
             self.fillBoja.setEnabled(False)
             self.fillAlpha.setEnabled(False)
+
+        #postavke za temperaturu kontejnera (izvan postavljenih granica min i max)
+        #za inicijlalizaciju koristim satni graf (minutni je jednak, za sada...)
+        #izbor min i max granice dobrih temeperatura
+        self.kontejnerMin.setValue(defaulti.satni.temperaturaKontejneraMin)
+        self.kontejnerMax.setValue(defaulti.satni.temperaturaKontejneraMax)
+        #izbor stila markera
+        self.kontejnerStil.addItems(markeri)
+        tmark = listHelpera[0][defaulti.satni.temperaturaKontejnera.markerStyle]
+        self.kontejnerStil.setCurrentIndex(self.kontejnerStil.findText(tmark))
+        #izbor velicine markera
+        self.kontejnerSize.setValue(defaulti.satni.temperaturaKontejnera.markerSize)
+        #izbor boje temerature kontejnera
+        self.set_widget_color_style(defaulti.satni.temperaturaKontejnera.rgb,
+                                    defaulti.satni.temperaturaKontejnera.alpha,
+                                    "QPushButton",
+                                    self.kontejnerBoja)
+        #izbor prozirnosti temperature kontejnera
+        self.kontejnerAlpha.setValue(defaulti.satni.temperaturaKontejnera.alpha)
+        #enable/disable ovisno o statusu crtanja
+        self.kontejnerCrtaj.setChecked(defaulti.satni.temperaturaKontejnera.crtaj)
+        if defaulti.satni.Fill.crtaj:
+            self.kontejnerAlpha.setEnabled(True)
+            self.kontejnerBoja.setEnabled(True)
+            self.kontejnerMin.setEnabled(True)
+            self.kontejnerMax.setEnabled(True)
+            self.kontejnerSize.setEnabled(True)
+            self.kontejnerStil.setEnabled(True)
+        else:
+            self.kontejnerAlpha.setEnabled(False)
+            self.kontejnerBoja.setEnabled(False)
+            self.kontejnerMin.setEnabled(False)
+            self.kontejnerMax.setEnabled(False)
+            self.kontejnerSize.setEnabled(False)
+            self.kontejnerStil.setEnabled(False)
+
         ###############################################################################
 
     def set_widget_color_style(self, rgb, a, tip, target):

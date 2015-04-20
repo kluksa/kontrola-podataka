@@ -749,9 +749,9 @@ class Kontroler(QtCore.QObject):
         prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
         """
         if x == 1:
-            self.gui.restIzbornik.sljedeci_dan
+            self.gui.restIzbornik.sljedeci_dan()
         else:
-            self.gui.restIzbornik.prethodni_dan
+            self.gui.restIzbornik.prethodni_dan()
         ###############################################################################
 
     def update_zs_broj_dana(self, x):
@@ -770,21 +770,26 @@ class Kontroler(QtCore.QObject):
         - kreni crtati grafove za ciljani tab ako prije nisu nacrtani
         """
         self.aktivniTab = x
-        if x == 0 and not self.drawStatus[0]:
+        if x is 0 and not self.drawStatus[0]:
             self.crtaj_satni_graf()
             self.drawStatus[0] = True
-        elif x == 1 and not self.drawStatus[1]:
+        elif x is 1 and not self.drawStatus[1]:
             self.crtaj_zero_span()
-            self.drawStatus[0] = False
+            self.drawStatus[1] = True
         ###############################################################################
 
     def apply_promjena_izgleda_grafova(self):
         """
         funkcija se pokrece nakon izlaska iz dijaloga za promjenu grafova.
-        Naredba da se ponovno nacrtaju svi grafovi
+        Naredba da se ponovno nacrtaju svi grafovi.
         """
-        self.crtaj_satni_graf()
-        self.crtaj_zero_span()
+        self.drawStatus = [False, False] # promjena izgleda grafa, tretiraj kao da nisu nacrtani
+        if self.aktivniTab is 0:
+            self.crtaj_satni_graf()
+            self.drawStatus[0] = True
+        elif self.aktivniTab is 1:
+            self.crtaj_zero_span()
+            self.drawStatus[1] = True
 
     ###############################################################################
     def promjeni_flag(self, ulaz):

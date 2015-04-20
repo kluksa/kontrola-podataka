@@ -129,8 +129,15 @@ class GrafIzbor(base6, form6):
         #postavke za temperaturu kontejnera (izvan postavljenih granica min i max)
         #za inicijlalizaciju koristim satni graf (minutni je jednak, za sada...)
         #izbor min i max granice dobrih temeperatura
+        tempMin = defaulti.satni.temperaturaKontejneraMin
+        tempMax = defaulti.satni.temperaturaKontejneraMax
         self.kontejnerMin.setValue(defaulti.satni.temperaturaKontejneraMin)
         self.kontejnerMax.setValue(defaulti.satni.temperaturaKontejneraMax)
+        #provjeri za los input (min > max)
+        if tempMin > tempMax:
+            self.glavni.kontejnerMin.setStyleSheet("QDoubleSpinBox#kontejnerMin {color:rgb(255,0,0)}")
+            self.glavni.kontejnerMax.setStyleSheet("QDoubleSpinBox#kontejnerMax {color:rgb(255,0,0)}")
+
         #izbor stila markera
         self.kontejnerStil.addItems(markeri)
         tmark = listHelpera[0][defaulti.satni.temperaturaKontejnera.markerStyle]

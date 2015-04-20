@@ -397,8 +397,7 @@ class SatniMinutniKanvas(Kanvas):
     def crtaj_pomocne(self, popis):
         """
         Metoda za crtanje pomocnih grafova. Ulazni parametar popis je set id
-        oznaka programa mjerenja. Ulazni parametar tip, definira tip grafa
-        (satni ili minutni)
+        oznaka programa mjerenja.
         """
         for key in popis:
             frejm = self.data[key]
@@ -415,7 +414,7 @@ class SatniMinutniKanvas(Kanvas):
                                zorder=self.pomocniGrafovi[key].zorder,
                                label=self.pomocniGrafovi[key].label)
 
-    def crtaj_oznake_temperature(self, tempMin, tempMax):
+    def crtaj_oznake_temperature(self):
         """
         Crtanje oznaka za temperaturu kontejnera ako su izvan zadanih granica
         """
@@ -423,8 +422,8 @@ class SatniMinutniKanvas(Kanvas):
             frejm = self.data[self.tKontejner]
             frejm = frejm[frejm[self.konfig.FLAG] > 0]
             if len(frejm):
-                overlimit = frejm[frejm[self.konfig.MIDLINE] > tempMax]
-                underlimit = frejm[frejm[self.konfig.MIDLINE] < tempMin]
+                overlimit = frejm[frejm[self.konfig.MIDLINE] > self.konfig.temperaturaKontejneraMax]
+                underlimit = frejm[frejm[self.konfig.MIDLINE] < self.konfig.temperaturaKontejneraMax]
                 frejm = overlimit.append(underlimit)
                 x = list(frejm.index)
                 brojLosih = len(x)
@@ -434,10 +433,12 @@ class SatniMinutniKanvas(Kanvas):
                     y = [c for i in range(brojLosih)]
                     self.axes.plot(x,
                                    y,
-                                   marker='*',
-                                   color='Red',
-                                   linestyle='None',
-                                   alpha=0.4)
+                                   marker = self.konfig.temperaturaKontejnera.markerStyle,
+                                   markersize = self.konfig.temperaturaKontejnera.markerSize,
+                                   color = self.konfig.temperaturaKontejnera.color,
+                                   zorder = self.konfig.temperaturaKontejnera.zorder,
+                                   label = self.konfig.temperaturaKontejnera.label,
+                                   linestyle='None')
 
     def setup_annotation_offset(self, event):
         """
@@ -686,7 +687,7 @@ class SatniKanvas(SatniMinutniKanvas):
             self.setup_ticks()
             #toggle ticks, legend, grid
             self.toggle_tgl()
-            self.crtaj_oznake_temperature(15,30)
+            self.crtaj_oznake_temperature()
             #highlight prijasnje tocke
             if self.statusHighlight:
                 hx, hy = self.lastHighlight
@@ -952,7 +953,7 @@ class MinutniKanvas(SatniMinutniKanvas):
             self.setup_ticks()
             #toggle ticks, legend, grid
             self.toggle_tgl()
-            self.crtaj_oznake_temperature(15,30)
+            self.crtaj_oznake_temperature()
             self.draw()
         else:
             self.axes.text(0.5,

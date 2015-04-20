@@ -237,11 +237,11 @@ class GlavniIzbor(base5, form5):
         self.defaulti.satni.temperaturaKontejneraMin = out
         self.defaulti.minutni.temperaturaKontejneraMin = out
         if out > self.defaulti.satni.temperaturaKontejneraMax:
-            #TODO! promjeni boju widgeta kao indikaciju za los setting
-            pass
+            #promjeni boju pozadine widgeta u crvenu
+            self.glavni.kontejnerMin.setStyleSheet("QDoubleSpinBox#kontejnerMin {color:rgb(255,0,0)}")
         else:
-            #TODO! promjeni boju widgeta kao indikaciju da je sve u redu
-            pass
+            #promjeni boju teksta widgeta u crnu
+            self.glavni.kontejnerMin.setStyleSheet("QDoubleSpinBox#kontejnerMin {color:rgb(0,0,0)}")
 
 ###############################################################################
     def promjena_glavni_kontejnerMax(self, x):
@@ -251,11 +251,11 @@ class GlavniIzbor(base5, form5):
         self.defaulti.satni.temperaturaKontejneraMax = out
         self.defaulti.minutni.temperaturaKontejneraMax = out
         if out < self.defaulti.satni.temperaturaKontejneraMin:
-            #TODO! promjeni boju widgeta kao indikaciju za los setting
-            pass
+            #promjeni boju teksta widgeta u crvenu
+            self.glavni.kontejnerMax.setStyleSheet("QDoubleSpinBox#kontejnerMax {color:rgb(255,0,0)}")
         else:
-            #TODO! promjeni boju widgeta kao indikaciju da je sve u redu
-            pass
+            #promjeni boju teksta widgeta u crnu
+            self.glavni.kontejnerMax.setStyleSheet("QDoubleSpinBox#kontejnerMax {color:rgb(0,0,0)}")
 ###############################################################################
     def promjena_glavni_kontejnerStil(self, x):
         """Promjena stila markera grafa temperature kontejnera za satni i minutni

@@ -85,8 +85,10 @@ sys.exit(aplikacija.exec_())
 
 """
 TODO!
-- enable promjenu temperature kontejnera (promjena raspona)
-- DATA BUG? duplikacija Span podataka.--- vidi vrijeme: 2015-03-26 05:03:00 (4 komada)
+- maknuti opciju spremanja satno agregiranih podataka na REST, uploadaju se samo
+minutni (vidi rest_izbornik.py, grafovi_panel.py, kontroler.py, dokument_model.py )
+
+
 
 potencijalni problemi
 1. unresponsive gui.

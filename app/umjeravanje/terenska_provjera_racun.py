@@ -6,237 +6,332 @@ Created on Tue Apr 21 08:31:06 2015
 
 Implementacija dijelova za read...
 """
-import sys
+
 from PyQt4 import QtGui, QtCore, uic
 import pandas as pd
 import numpy as np
 
-class BaseFrejmModel(QtCore.QAbstractTableModel):
-    """
-    Definiranje qt modela za qt table view klase.
-    Osnova modela ce biti pandas dataframe.
-    Must reimplement:
-        rowCount()
-        columnCount()
-        data()
-        headerData()
-    Implemented by default:
-        parent()
-        index()
-    """
-    def __init__(self, frejm=pd.DataFrame(), parent=None):
-        """
-        Initialize with pandas dataframe with data
-        """
-        QtCore.QAbstractTableModel.__init__(self, parent)
-        self.dataFrejm = frejm
-
-    def rowCount(self, parent=QtCore.QModelIndex()):
-        """
-        MUST BE IMPLEMENTED.
-        Return number of rows of pandas dataframe
-        """
-        return len(self.dataFrejm)
-
-    def columnCount(self, parent=QtCore.QModelIndex()):
-        """
-        MUST BE IMPLEMENTED
-        Return number of columns of pandas dataframe. (add one for time index)
-        """
-        return len(self.dataFrejm.columns)
-
-    def flags(self, index):
-        """
-        Flags each item in table as enabled and selectable
-        """
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-
-    def data(self, index, role):
-        """
-        MUST BE IMPLEMENTED.
-        Return value for each index and role
-        """
-        print('krivo sublkasana klasa')
-        raise NotImplemented
-
-
-    def headerData(self, section, orientation, role):
-        """
-        Sets the headers of the table...
-        """
-        if role == QtCore.Qt.DisplayRole: # "is" comparison ne radi
-            if orientation == QtCore.Qt.Horizontal:
-                return self.dataFrejm.columns[section]
-            if orientation == QtCore.Qt.Vertical: # "is" comparison ne radi
-                return str(self.dataFrejm.index[section])
-
-
-class SiroviFrejmModel(BaseFrejmModel):
-    """
-    Klasa modela za prikaz SVIH 'sirovih' podataka preuzetih is csv filea.
-    """
-    def __init__(self, frejm=pd.DataFrame(), parent=None):
-        BaseFrejmModel.__init__(self, frejm=frejm, parent=parent)
-
-        self.izabraniPocetak = None
-
-    def data(self, index, role):
-        """
-        MUST BE IMPLEMENTED.
-        Return value for each index and role
-        """
-        if not index.isValid(): # "is" comparison ne radi
-            return None
-
-        if role == QtCore.Qt.DisplayRole:
-            row = index.row()
-            col = index.column()
-            return float(self.dataFrejm.iloc[row, col])
-
-        if role == QtCore.Qt.BackgroundColorRole:
-            if self.izabraniPocetak is not None and index.row()>=self.izabraniPocetak:
-                return QtGui.QBrush(QtGui.QColor(0,25,220,80))
-            else:
-                return QtGui.QBrush(QtGui.QColor(255,255,255,255))
-
-    def set_izabrani_pocetak_za_umjeravanje(self, index):
-        """
-        Pomocna funkcija, sluzi kao setter izabranog reda u tablici.
-        Ulazni parametrar je QModelIndex(), od kojega samo zapamtimo broj
-        redka.
-        """
-        self.izabraniPocetak = index.row()
-
-
-class WorkingFrejmModel(BaseFrejmModel):
-    def __init__(self, frejm=pd.DataFrame(), parent=None):
-        BaseFrejmModel.__init__(self, frejm=frejm, parent=parent)
-
-    def data(self, index, role):
-        """
-        MUST BE IMPLEMENTED.
-        Return value for each index and role
-        """
-        if not index.isValid(): # "is" comparison ne radi
-            return None
-
-        if role == QtCore.Qt.DisplayRole:
-            row = index.row()
-            col = index.column()
-            return float(self.dataFrejm.iloc[row, col])
-
-
-
-BASE, FORM = uic.loadUiType('terenska_provjera_racun.ui')
-class TerenskaProvjeraRacun(BASE, FORM):
+BASE4, FORM4 = uic.loadUiType('terenska_provjera_racun.ui')
+class TerenskaProvjeraRacun(BASE4, FORM4):
     """
     Klasa simulira sheet Terenska provjera - racun
     Jos u izradi...
 
-    MEMBERI:
-    QSpinBox
-        self.noPojedinihMjerenjaZaLOF
-        self.noPojedinihMjerenjaSrednjakaZaLOF
-        self.brojPojedinihMjerenjaZaKal1
-        self.brojPojedinihMjerenjaZaKal2
-    QTableView
-        self.tableViewSirovi --> prikaz sirovih podataka ucitanih sa filea
-        self.tableViewTocke --> prikaz agregiranih tocaka za umjeravanje
     """
-    def __init__(self, parent=None):
-        super(BASE, self).__init__(parent)
+    def __init__(self, parent=None, tocke=None):
+        super(BASE4, self).__init__(parent)
         self.setupUi(self)
+        self.tocke = tocke #enum raspona za pojedine tocke
+        self.workingFrejm = pd.DataFrame()
 
-        """QtableView initial setup"""
-        self.tableViewSirovi.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.tableViewSirovi.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.tableViewSirovi.setWordWrap(True)
-        self.tableViewTocke.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.tableViewTocke.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.tableViewTocke.setWordWrap(True)
+        self.komponenta = {}
+        self.dilucija = {}
+        self.cistiZrak = {}
+        self.ostaliMeta = {}
 
-        self.connect_everything()
+        self.linearnostDa.toggled.connect(self.toggle_provjeru_linearnosti_on)
+        self.linearnostNe.toggled.connect(self.toggle_provjeru_linearnosti_off)
 
-    def connect_everything(self):
-        """
-        Smisao metode je izdvojiti sve veze izmjedju signala i slotova
-        na jedno mjesto. Tu se opvezuju akcije gui-a sa funkcijama koje
-        odradjuju input.
-        """
-        self.buttonReadCSV.clicked.connect(self.make_model_from_csv)
-        self.tableViewSirovi.activated.connect(self.echo_click)
+    def toggle_provjeru_linearnosti_on(self):
+        if self.linearnostDa.isChecked():
+            print('ukljuci provjeru linearnosti')
 
-    def make_model_from_csv(self):
-        """
-        Ucitaj csv file, inicijaliziraj data model za prikaz
-        """
-        self.siroviFrejm = self.citaj_csv_file()
-        self.siroviFrejmModel = SiroviFrejmModel(frejm=self.siroviFrejm)
-        #set model to view
-        self.tableViewSirovi.setModel(self.siroviFrejmModel)
+    def toggle_provjeru_linearnosti_off(self):
+        if self.linearnostNe.isChecked():
+            print('iskljuci provjeru linearnosti')
 
-    def citaj_csv_file(self):
+    #TODO! setteri u tablicu bi se dali refactorat na pametniji nacin
+    def calc_and_set_cref(self):
         """
-        Otvori dialog za izbor csv filea, ucitaj podatke u pandas dataframe i
-        vrati dataframe.
+        Metoda racuna i postavlja cref u tablicu
         """
-        path = QtGui.QFileDialog.getOpenFileName(parent=self,
-                                                 caption="Open csv file",
-                                                 directory="",
-                                                 filter="CSV files (*.csv)")
-        frejm = pd.read_csv(path,
-                            index_col=0,
-                            parse_dates=[0],
-                            dayfirst=True,
-                            header=0,
-                            sep=",",
-                            encoding="iso-8859-1")
-        return frejm
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_cref(tocka=tocka)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 0, item)
+            i += 1 #move to next row
 
-    def echo_click(self, index):
+    def calc_and_set_c(self, stupac):
         """
-        test function
+        Metoda racuna i postavlja c u tablicu
         """
-        #informiraj model da je pocetak izabran
-        self.siroviFrejmModel.set_izabrani_pocetak_za_umjeravanje(index)
-        #model treba emitirati signal da view shvati da se view treba updateati
-        self.siroviFrejmModel.layoutChanged.emit()
-        #vrati slajs datafrejma za sve indekse koji su veci ili jednaki izabranom.
-        vrijeme = self.siroviFrejm.index[index.row()]
-        slajs = self.siroviFrejm[self.siroviFrejm.index >= vrijeme]
-        self.workingFrejm = self.priredi_slajs_podataka(slajs)
-        #napravi model 3 minutnih srednjaka i daj ga drugom viewu na prikaz
-        self.workingFrejmModel = WorkingFrejmModel(frejm=self.workingFrejm)
-        self.tableViewTocke.setModel(self.workingFrejmModel)
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_c(tocka=tocka, stupac=stupac)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 1, item)
+            print(i, 1, value) # TODO! WTF trenutak???
+            i += 1 #move to next row
 
-    def priredi_slajs_podataka(self, slajs):
+    def calc_and_set_delta(self, stupac):
         """
-        funkcija prihvaca izabrani slajs frejma i resamplira ga na 3 minutne
-        srednjake. interval je zatvoren sa desne strane, ali se koristi label
-        lijeve strane.
-        npr.
-        za index 12:05:00
-            -uzima se average indeksa 12:05, 12:06, 12:07
-            -koristi se label 12:05
+        Metoda racuna i postavlja deltu u tablicu
         """
-        #TODO! potencijalo nema smisla hvatati sve tocke u nizu, cut to size
-        frejm=slajs.copy()
-        listaIndeksa = []
-        for i in range(0,len(frejm),3):
-            for column in frejm.columns:
-                if i+2 <= len(frejm)-1:
-                    kat = frejm.loc[frejm.index[i]:frejm.index[i+2], column]
-                    srednjak = np.average(kat)
-                    frejm.loc[frejm.index[i], column] = srednjak
-                    if frejm.index[i] not in listaIndeksa:
-                        listaIndeksa.append(frejm.index[i])
-        frejm = frejm[frejm.index.isin(listaIndeksa)]
-        return frejm
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_odstupanje(tocka=tocka, stupac=stupac)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 2, item)
+            i += 1 #move to next row
 
+    def calc_and_set_sr(self, stupac):
+        """
+        Metoda racuna i postavlja sr u tablicu
+        """
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_sr(tocka=tocka, stupac=stupac)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 3, item)
+            i += 1 #move to next row
 
+    def calc_and_set_r(self, stupac):
+        """
+        Metoda racuna i postavlja r u tablicu
+        """
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_r(tocka=tocka, stupac=stupac)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 4, item)
+            i += 1 #move to next row
 
-if __name__ == '__main__':
-    umjeravanje = QtGui.QApplication(sys.argv)
-    prozor = TerenskaProvjeraRacun()
-    prozor.show()
-    sys.exit(umjeravanje.exec_())
+    def calc_and_set_UR(self):
+        i = 0 #counter reda
+        for tocka in self.tocke:
+            value = self.izracunaj_UR(tocka=tocka)
+            item = QtGui.QTableWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, str(value))
+            item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
+            self.tableWidget.setItem(i, 5, item)
+            i += 1 #move to next row
+
+    def set_working_frejm(self, frejm):
+        """
+        Metoda postavlja tocno definirani pandas dataframe podataka za daljnje
+        racunanje.
+        """
+        self.workingFrejm = frejm
+        #TODO! napravi na pametniji nacin
+        #populiraj tablicu sa rezultatima
+        self.calc_and_set_cref()
+        self.calc_and_set_c(0)
+        self.calc_and_set_delta(0)
+        self.calc_and_set_sr(0)
+        self.calc_and_set_r(0)
+        self.calc_and_set_UR()
+
+    def set_metadata(self, komponenta, dilucija, cistiZrak, other):
+        """
+        Metoda salje metapodatke potrebne za racunanje iz norme i drugih izvora
+        """
+        self.komponenta = komponenta
+        self.dilucija = dilucija
+        self.cistiZrak = cistiZrak
+        self.ostaliMeta = other
+        #TODO! force recalculation
+
+    def dohvati_rubove_working_slajsa_za_tocku(self, tocka):
+        """
+        Pomocna metoda:
+        Metoda vraca tuple (min, max) koji su indeksi slajsa s kojim racunamo
+        ostale statisticke parametre za zadanu tocku. Zanemarujemo prvih 5 tocaka
+        unutar slajsa.
+        """
+        ind = list(tocka.value)[5:]
+        return ind[0], ind[-1]
+
+    def dohvati_working_slajs_za_tocku_i_stupac(self, tocka, stupac):
+        """
+        Pomocna metoda:
+        Metoda vraca working slajs podataka (series), za zadanu tocku i indeks
+        stupca.
+        """
+        if tocka is self.tocke.tocka1:
+            low, high = self.dohvati_rubove_working_slajsa_za_tocku(self.tocke.tocka1)
+        elif tocka is self.tocke.tocka2:
+            low, high = self.dohvati_rubove_working_slajsa_za_tocku(self.tocke.tocka2)
+        elif tocka is self.tocke.tocka3:
+            low, high = self.dohvati_rubove_working_slajsa_za_tocku(self.tocke.tocka3)
+        elif tocka is self.tocke.tocka4:
+            low, high = self.dohvati_rubove_working_slajsa_za_tocku(self.tocke.tocka4)
+        elif tocka is self.tocke.tocka5:
+            low, high = self.dohvati_rubove_working_slajsa_za_tocku(self.tocke.tocka5)
+        return self.workingFrejm.iloc[low:high, stupac]
+
+    def izracunaj_cref(self, tocka=None):
+        """
+        Metoda racuna cref.
+
+        ulazni parametri :
+        tocka
+        -->enum tocke
+        stupac
+        -->int indeks stupca working datafrejma za kojeg se racuna cref
+
+        output:
+        -->vrijednost cref (float)
+        """
+        if tocka is self.tocke.tocka1:
+            return 0.8 * self.komponenta['opseg']
+        elif tocka is self.tocke.tocka2:
+            return 0
+        elif tocka is self.tocke.tocka3:
+            return 0.6 * self.komponenta['opseg']
+        elif tocka is self.tocke.tocka4:
+            return 0.2 * self.komponenta['opseg']
+        elif tocka is self.tocke.tocka5:
+            return 0.95 * self.komponenta['opseg']
+
+    def izracunaj_c(self, tocka=None, stupac=0):
+        """
+        Metoda racuna c.
+
+        ulaz:
+        tocka
+        --> enum tocke
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> vrijednost c (float)
+        """
+        podaci = self.dohvati_working_slajs_za_tocku_i_stupac(tocka, stupac)
+        return np.average(podaci)
+
+    def izracunaj_odstupanje(self, tocka=None, stupac=0):
+        """
+        Metoda racuna razliku cref i c.
+
+        Ulaz:
+        tocka
+        --> enum tocke
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> vrijednost razlike cref od c (float)
+        """
+        cref = self.izracunaj_cref(tocka=tocka)
+        c = self.izracunaj_c(tocka=tocka, stupac=stupac)
+        return cref - c
+
+    def izracunaj_sr(self, tocka=None, stupac=0):
+        """
+        Metoda racuna sr.
+
+        Ulaz:
+        tocka
+        --> enum tocke
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> stdev podataka (float)
+
+        !!WARNING!!
+        numpy.std() funkcija pretpostavlja po defaultu 0 stupnjeva slobode,
+        tj. radi std cijele populacije a ne uzorka. U pozivu funkcije moramo
+        prosljediti keyword argument ddof=1.
+        """
+        podaci = self.dohvati_working_slajs_za_tocku_i_stupac(tocka, stupac)
+        return np.std(podaci, ddof=1)
+
+    def pripremi_liste_za_racunanje_slope_i_intercept(self, stupac=0):
+        """
+        Metoda priprema dvije liste za racunanje slope i intercept za provjeru
+        linearnosti. Ignorira prvu tocku.
+
+        Ulaz:
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> tuple koji sadrzi dvije liste (cList, crefList)
+        """
+        cList = []
+        crefList = []
+        for tocka in self.tocke:
+            if tocka is not self.tocke.tocka1:
+                cList.append(self.izracunaj_c(tocka=tocka, stupac=stupac))
+                crefList.append(self.izracunaj_cref(tocka=tocka))
+        return cList, crefList
+
+    def izracunaj_slope(self, stupac=0):
+        """
+        Metoda racuna slope prilikom provjere linearnosti.
+
+        Ulaz:
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> float vrijednost nagiba pravca
+        """
+        cList, crefList = self.pripremi_liste_za_racunanje_slope_i_intercept(stupac=stupac)
+        return np.polyfit(crefList, cList, 1)[0]
+
+    def izracunaj_intercept(self, stupac=0):
+        """
+        Metoda racuna intercept sa y-osi prilikom provjere linearnosti.
+
+        Ulaz:
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> float vrijednost intercepta sa y-osi
+        """
+        cList, crefList = self.pripremi_liste_za_racunanje_slope_i_intercept(stupac=stupac)
+        return np.polyfit(crefList, cList, 1)[1]
+
+    def izracunaj_r(self, tocka=None, stupac=0):
+        """
+        Metoda racuna r.
+
+        Ulaz:
+        tocka
+        --> enum tocke
+        stupac
+        --> int indeks stupca pod working frejma s kojim radimo
+
+        output:
+        --> float vrijednost r
+        """
+        if tocka is self.tocke.tocka1:
+            return 0
+        elif tocka is self.tocke.tocka2:
+            c = self.izracunaj_c(tocka=tocka, stupac=stupac)
+            cref = self.izracunaj_cref(tocka=tocka)
+            slope = self.izracunaj_slope(stupac=stupac)
+            intercept = self.izracunaj_intercept(stupac=stupac)
+            return abs(c - (cref * slope + intercept))
+        else:
+            c = self.izracunaj_c(tocka=tocka, stupac=stupac)
+            cref = self.izracunaj_cref(tocka=tocka)
+            slope = self.izracunaj_slope(stupac=stupac)
+            intercept = self.izracunaj_intercept(stupac=stupac)
+            return abs((c - (cref * slope + intercept))/ cref)
+
+    def izracunaj_UR(self, tocka=None):
+        """
+        skip midkorake i direktni racun UR
+        """
+        cref = self.izracunaj_cref(tocka=tocka)
+        ufz = self.dilucija['MFC_NULL_PLIN_U']*(cref*(self.ostaliMeta['CRM_C']-cref)/self.ostaliMeta['CRM_C'])
+        ufm = self.dilucija['MFC_KAL_PLIN_U']*(cref*(self.ostaliMeta['CRM_C']-cref)/self.ostaliMeta['CRM_C'])
+        ucr = cref*self.ostaliMeta['CRM_sljedivost']/200
+        ucz = (self.ostaliMeta['CRM_C']-cref)*(self.komponenta['srz'])*(self.ostaliMeta['CRM_C'])/np.sqrt(3)
+        out = np.sqrt(ufz**2+ufm**2+ucr**2+(2*ucz)**2)
+        return out

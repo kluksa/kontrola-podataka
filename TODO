@@ -119,6 +119,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150410:::VM:::Refoactor canvasa (sada postoji samo canvas.py), minor fix sa legendom:::
 20150417:::VM:::Fix minor bugova oko grafova gotov:::
 20150417:::VM:::Ispravio nered vezan za rest writer (po uzoru na rest reader):::
+20150424:::VM:::Progress update. Izbacio upload satno agregiranih, prilagodio upload minutnih da vraca samo 'Id' i 'valjan' nazad REST-u. Pocetak prilagodbi za nove 'statuse'.:::
 
 
 

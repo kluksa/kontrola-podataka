@@ -159,14 +159,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel,
                      QtCore.SIGNAL('dodaj_novu_referentnu_vrijednost'),
                      self.dodaj_novu_referentnu_vrijednost)
-        ###UPLOAD SATNO AGREGIRANIH NA REST SERVIS###
-        self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('upload_satno_agregirane'),
-                     self.upload_satno_agregirane)
-        ###UPLOAD MINUTNIH PODATAKA NA REST SERVIS###
-        self.connect(self.gui.restIzbornik,
-                     QtCore.SIGNAL('upload_minutne_na_REST'),
-                     self.upload_minutne_na_REST)
         ###PROMJENA IZGLEDA GRAFA###
         self.connect(self.gui,
                      QtCore.SIGNAL('apply_promjena_izgleda_grafova'),
@@ -204,6 +196,7 @@ class Kontroler(QtCore.QObject):
         """
         Inicijalizacija web zahtjeva i REST reader/writer objekata koji ovise o
         njemu.
+        Takodjer dohvati i mapu status codea  i postavi je u minutni i satni kanvas
         """
         # dohvati podatke o rest servisu
         baseurl = str(self.gui.konfiguracija.REST.RESTBaseUrl)
@@ -221,6 +214,13 @@ class Kontroler(QtCore.QObject):
         self.restWriter = data_reader.RESTWriter(source=self.webZahtjev)
         #postavljanje writera u model
         self.dokument.set_writer(self.restWriter)
+        #TODO!
+        """
+        -get status dictionary
+        -set status dictionary u satni i minutni canvas uz pomoc:
+        --> self.gui.koncPanel.satniGraf.set_statusMap(mapa)
+        --> self.gui.koncPanel.minutniGraf.set_statusMap(mapa)
+        """
 
     ###############################################################################
     def konstruiraj_tree_model(self):
@@ -618,6 +618,7 @@ class Kontroler(QtCore.QObject):
         ###############################################################################
 
     def upload_minutne_na_REST(self):
+        #TODO! modify function... vracaj samo id i valjan
         """
         Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na
         REST servis.
@@ -660,52 +661,6 @@ class Kontroler(QtCore.QObject):
                     QtGui.QApplication.restoreOverrideCursor()
         else:
             msg = 'Nije moguce spremiti minutne podatke na REST jer nije izabran glavni kanal i datum.'
-            self.prikazi_error_msg(msg)
-        ###############################################################################
-
-    def upload_satno_agregirane(self):
-        """
-        Za trenutno aktivni kanal i datum, spremi slajs agregiranog frejma na
-        REST servis.
-        Pitaj za potvrdu odluke sa spremanje podataka, prije nego krene upload.
-        """
-        if self.gKanal is not None and self.pickedDate is not None:
-            # prompt izbora za spremanje filea, question
-            msg = " ".join(['Spremi agregirane podatke od',
-                            str(self.gKanal),
-                            ':',
-                            self.pickedDate,
-                            'na REST web servis?'])
-            odgovor = QtGui.QMessageBox.question(self.gui,
-                                                 "Potvrdi upload na REST servis",
-                                                 msg,
-                                                 QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-            if odgovor == QtGui.QMessageBox.Yes:
-                try:
-                    # promjeni cursor u wait cursor
-                    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                    #reci dokumentu da spremi minutne podatke na rest za zadani kanal i datum
-                    self.dokument.persist_agregirane_podatke(key=self.gKanal, date=self.pickedDate)
-                    #update status kalendara
-                    self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
-                    self.promjena_boje_kalendara()
-                    #report sucess
-                    msg = " ".join(['Agregirani podaci za',
-                                    str(self.gKanal),
-                                    ':',
-                                    self.pickedDate,
-                                    'su spremljeni na REST servis.'])
-                    self.prikazi_error_msg(msg)
-                except (Exception, pomocne_funkcije.AppExcept):
-                    logging.error('Error prilikom uploada na rest servis', exc_info=True)
-                    # report fail
-                    msg = 'Podaci nisu spremljeni na REST servis. Doslo je do pogreske prilikom rada.'
-                    self.prikazi_error_msg(msg)
-                finally:
-                    # vrati izgled cursora nazad na normalni
-                    QtGui.QApplication.restoreOverrideCursor()
-        else:
-            msg = 'Nije moguce spremiti agregirane podatke na REST jer nije izabran glavni kanal i datum.'
             self.prikazi_error_msg(msg)
         ###############################################################################
 

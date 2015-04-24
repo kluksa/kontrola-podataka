@@ -3,9 +3,6 @@
 Created on Thu Apr  9 12:27:25 2015
 
 @author: DHMZ-Milic
-
-P.S. super() radi probleme, uzrok je potencijalo u cinjenici da klase nisu subklasa
-object.
 """
 import datetime
 import matplotlib
@@ -16,6 +13,8 @@ from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas #import specificnog canvasa za Qt
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
+
+
 ################################################################################
 ################################################################################
 class Kanvas(FigureCanvas):
@@ -30,10 +29,7 @@ class Kanvas(FigureCanvas):
         #osnovna definicija figure, axes i canvasa
         self.fig = Figure(figsize = (width, height), dpi = dpi)
         self.axes = self.fig.add_subplot(111)
-        #TODO!
-        """super potencijalno radi probleme ako klase nemaju object kao base class"""
         FigureCanvas.__init__(self, self.fig)
-#        super(Kanvas,self).__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
             self,
@@ -353,8 +349,39 @@ class SatniMinutniKanvas(Kanvas):
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
         Kanvas.__init__(self, konfig)
-        #super(SatniMinutniKanvas, self).__init__(self, konfig)
         self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
+        self.statusMap = {} #defaultni satusMap je prazan dict, ---> status annotation ce biti prazan
+
+    def set_statusMap(self, mapa):
+        """
+        Setter za dict koji povezuje poziciju bita sa opisom statusa.
+        """
+        self.statusMap = mapa
+
+    def check_bit(self, broj, bit_position):
+        """
+        Pomocna funkcija za testiranje statusa
+
+        Napravi temporary integer koji ima samo jedan bit vrijednosti 1 na poziciji
+        bit_position. Napravi binary and takvog broja i ulaznog broja.
+        Ako oba broja imaju bit 1 na istoj poziciji vrati True, inace vrati False.
+        """
+        temp = 1 << int(bit_position) #left shift bit za neki broj pozicija
+        if int(broj) & temp > 0: # binary and izmjedju ulaznog broja i testnog broja
+            return True
+        else:
+            return False
+
+    def check_status_flags(self, broj, mapa):
+        """
+        provjeri stauts integera broj dekodirajuci ga sa hash tablicom
+        {bit_pozicija:opisni string}. Vrati csv string opisa.
+        """
+        output = []
+        for i in mapa.keys():
+            if self.check_bit(broj, i):
+                output.append(mapa[i])
+        return ",".join(output)
 
     def connect_pick_evente(self):
         """
@@ -641,7 +668,6 @@ class SatniKanvas(SatniMinutniKanvas):
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
         SatniMinutniKanvas.__init__(self, konfig, pomocni)
-        #super(SatniKanvas, self).__init__(self, konfig, pomocni)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
@@ -796,6 +822,8 @@ class SatniKanvas(SatniMinutniKanvas):
             ymin = self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]
             ymax = self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
+            #TODO! check for status
+            #ystatus = self.check_status_flags(ystatus)
             ycount = self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]
             tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
         else:
@@ -908,7 +936,6 @@ class MinutniKanvas(SatniMinutniKanvas):
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
         SatniMinutniKanvas.__init__(self, konfig, pomocni)
-        #super(MinutniKanvas, self).__init__(self, konfig, pomocni)
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
@@ -1039,6 +1066,8 @@ class MinutniKanvas(SatniMinutniKanvas):
         if xpoint in list(self.data[self.gKanal].index):
             ykonc = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
+            #TODO! check for status
+            #ystat = self.check_status_flags(ystat)
             yflag = self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]
             tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
         else:
@@ -1074,7 +1103,6 @@ class ZeroSpanKanvas(Kanvas):
     """
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
         Kanvas.__init__(self, konfig)
-        #super(ZeroSpanKanvas, self).__init__(self, konfig)
 
     def pronadji_najblizi_time_indeks(self, lista, vrijednost):
         """
@@ -1412,7 +1440,6 @@ class ZeroKanvas(ZeroSpanKanvas):
     """specificna implementacija Zero canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
         ZeroSpanKanvas.__init__(self, konfig)
-        #super(ZeroKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('bottom')
         self.axes.figure.subplots_adjust(top = 0.98)
@@ -1440,7 +1467,6 @@ class SpanKanvas(ZeroSpanKanvas):
     """specificna implementacija span canvasa"""
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
         ZeroSpanKanvas.__init__(self, konfig)
-        #super(SpanKanvas, self).__init__(self, konfig)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.xaxis.set_ticks_position('top')
         self.axes.figure.subplots_adjust(top = 0.92)

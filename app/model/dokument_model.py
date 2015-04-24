@@ -87,41 +87,16 @@ class DataModel(QtCore.QObject):
         tmax = t + datetime.timedelta(days=1)
         #dohvati trazeni slajs
         frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
-        #provjeri da li su svi unutar slajsa validirani
+        #provjeri da li su svi unutar slajsa validirani, ako nisu raise error
         testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
         lenSvih = len(testValidacije)
         lenDobrih = len(testValidacije[testValidacije == True])
-        if lenSvih == lenDobrih:
+        if lenSvih != lenDobrih:
             tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
             raise pomocne_funkcije.AppExcept(tekst)
         #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
         if len(frejm):
             self.pisac.write_minutni(key = key, date = date, frejm = frejm)
-        else:
-            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
-            raise pomocne_funkcije.AppExcept(tekst)
-###############################################################################
-    def persist_agregirane_podatke(self, key = None, date = None):
-        """
-        -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
-        -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
-        """
-        #adapt time da uhvatis slajs (tmin, tmax)
-        t = pd.to_datetime(date)
-        tmin = t + datetime.timedelta(minutes=1)
-        tmax = t + datetime.timedelta(days=1)
-        #dohvati agergirani slajs
-        frejm = self.get_agregirani_frame(key = key, tmin = tmin, tmax = tmax)
-        #provjeri da li su svi unutar slajsa validirani
-        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
-        lenSvih = len(testValidacije)
-        lenDobrih = len(testValidacije[testValidacije == True])
-        if lenSvih == lenDobrih:
-            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti agregirane podatke na REST servis.'
-            raise pomocne_funkcije.AppExcept(tekst)
-        #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
-        if len(frejm):
-            self.pisac.write_agregirani(key = key, date = date, frejm = frejm)
         else:
             tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
             raise pomocne_funkcije.AppExcept(tekst)

@@ -73,7 +73,6 @@ class GlavniProzor(base, form):
 
         #toggle koji je gumb u rest izborniku aktivan (ovisno o aktivnom tabu)
         ind = self.tabWidget.currentIndex()
-        self.toggle_upload_buttons(ind)
 
         #setup stanja grafova (ticks, grid, span, zoom....)
         self.koncPanel.satniGraf.set_interaction_mode(self.konfiguracija.satni.Zoom,
@@ -102,23 +101,8 @@ class GlavniProzor(base, form):
         """
         promjena tab, koji je od panela trenutno prikazan na ekranu.
         """
-        #enable/disable gumbe na rest izborniku
-        self.toggle_upload_buttons(x)
         #emit promjene aktivnog taba
         self.emit(QtCore.SIGNAL('promjena_aktivnog_taba(PyQt_PyObject)'), x)
-###############################################################################
-    def toggle_upload_buttons(self, x):
-        """
-        enable/disable toggle za gumbe na restIzborniku.
-        Kada je aktivan tab sa koncentracijskim grafovima
-            -upload agregiranih je enabled
-            -dodavanje zero span ref vrijednosti je disabled
-        Kada je aktivan tab sa zero/span grafovima situacija je obrnuta.
-        """
-        if x == 0:
-            self.restIzbornik.uploadAgregirane.setEnabled(True)
-        elif x == 1:
-            self.restIzbornik.uploadAgregirane.setEnabled(False)
 ###############################################################################
     def setup_ikone(self):
         """

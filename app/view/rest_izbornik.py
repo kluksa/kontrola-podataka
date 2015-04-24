@@ -12,35 +12,18 @@ import app.model.model_drva as model_drva
 ###############################################################################
 ###############################################################################
 base1, form1 = uic.loadUiType('./app/view/ui_files/rest_izbornik.ui')
-
-
 class RestIzbornik(base1, form1):
     """
     REST izbornik (gumbi, treeView, kalendar...).
     """
-
     def __init__(self, parent=None):
         super(base1, self).__init__(parent)
         self.setupUi(self)
-
         self.model = None
-
         # set custom kalendar u widget
         self.calendarWidget = CustomKalendar(parent=None)
         self.calendarLayout.addWidget(self.calendarWidget)
 
-        self.veze()
-
-    ###############################################################################
-    def veze(self):
-        """
-        Povezivanje akcija (poput izbora datuma ili pritiska gumba) sa
-        funkcijama.
-        """
-        # upload agregirane gumb
-        self.uploadAgregirane.clicked.connect(self.request_upload_agregiranih)
-        #upload minutne gumb
-        self.uploadMinutne.clicked.connect(self.request_upload_minutnih)
         #doubleclick/enter na kalendar
         self.calendarWidget.activated.connect(self.get_mjerenje_datum)
         #single click/select na kalendar
@@ -48,25 +31,6 @@ class RestIzbornik(base1, form1):
         #doubleclick/enter na element u treeViewu (program mjerenja)
         self.treeView.activated.connect(self.get_mjerenje_datum)
 
-    ###############################################################################
-    def request_upload_agregiranih(self, x):
-        """
-        Emit zahtjev za uploadom agregiranih podataka trenutno aktivnog kanala
-        i datuma.
-        """
-        self.emit(QtCore.SIGNAL('upload_satno_agregirane'))
-        logging.debug('request za upload agregiranih vrijednosti predan kontroloru')
-
-    ###############################################################################
-    def request_upload_minutnih(self, x):
-        """
-        Emit zahtjev za uploadom agregiranih podataka trenutno aktivnog kanala
-        i datuma.
-        """
-        self.emit(QtCore.SIGNAL('upload_minutne_na_REST'))
-        logging.debug('request za upload minutnih vrijednosti predan kontroloru')
-
-    ###############################################################################
     def get_mjerenje_datum(self, x):
         """
         Funkcija se poziva prilikom:
@@ -105,7 +69,6 @@ class RestIzbornik(base1, form1):
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n' + str(err)
             logging.error('App exception', exc_info=True)
             self.emit(QtCore.SIGNAL('prikazi_error_msg(PyQt_PyObject)'), tekst)
-        ###############################################################################
 
     def sljedeci_dan(self):
         """
@@ -120,7 +83,6 @@ class RestIzbornik(base1, form1):
         #informiraj kontroler o promjeni
         self.get_mjerenje_datum(True)
 
-    ###############################################################################
     def prethodni_dan(self):
         """
         Metoda "pomice dan" u kalendaru nazad za 1 dan od trenutno selektiranog
@@ -133,8 +95,6 @@ class RestIzbornik(base1, form1):
         self.calendarWidget.setSelectedDate(dan2)
         #informiraj kontroler o promjeni
         self.get_mjerenje_datum(True)
-
-
 ###############################################################################
 ###############################################################################
 class CustomKalendar(QtGui.QCalendarWidget):
@@ -147,13 +107,10 @@ class CustomKalendar(QtGui.QCalendarWidget):
     'ok' --> zelena boja
     'bad' --> crvena boja
     """
-
     def __init__(self, parent=None, datumi={'ok': [], 'bad': []}):
         QtGui.QCalendarWidget.__init__(self, parent)
-
         # dict QDate objekata koji se trebaju razlicito obojati
         self.datumi = datumi
-
         self.setFirstDayOfWeek(QtCore.Qt.Monday)
         #boja za nedovrsene datume
         self.color1 = QtGui.QColor(255, 0, 0)
@@ -164,11 +121,10 @@ class CustomKalendar(QtGui.QCalendarWidget):
         #boja za select
         self.color3 = QtGui.QColor(0, 0, 255)
         self.color3.setAlpha(50)
-
         self.selectionChanged.connect(self.updateCells)
 
-    ###############################################################################
     def paintCell(self, painter, rect, date):
+        """Painter za celije kalendara"""
         QtGui.QCalendarWidget.paintCell(self, painter, rect, date)
 
         if date in self.datumi['bad'] and date not in self.datumi['ok']:
@@ -179,11 +135,12 @@ class CustomKalendar(QtGui.QCalendarWidget):
         izabrani = self.selectedDate()
         if date == izabrani:
             painter.fillRect(rect, self.color3)
-        ###############################################################################
 
     def refresh_dates(self, qdatesdict):
+        """Setter za novi popis datuma koji treba drugacije obojati i update
+        izgleda kalendara u jednom."""
         self.datumi = qdatesdict
         # updateCells, forsira ponovno iscrtavanje
         self.updateCells()
-        ###############################################################################
-        ###############################################################################
+###############################################################################
+###############################################################################

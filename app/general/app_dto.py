@@ -232,6 +232,8 @@ class RESTKonfig():
         self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
         self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci',
                                                                  'dhz.skz.rs.satnipodatak', str)
+        self.RESTStatusMap = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'status_map',
+                                                               'dhz.skz.rs.sirovipodaci/statusi', str)
 
 
 ################################################################################

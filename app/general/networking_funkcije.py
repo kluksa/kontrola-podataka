@@ -9,7 +9,7 @@ import requests
 import logging
 import xml.etree.ElementTree as ET
 from PyQt4 import QtCore
-import pandas as pd
+import json
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
@@ -37,6 +37,35 @@ class WebZahtjev(QtCore.QObject):
 
         #, auth = HTTPBasicAuth(self.user, self.pswd)
         #, auth = (self.user, self.pswd)
+###############################################################################
+    def get_statusMap(self):
+        """
+        Metoda dohvaca podatke o statusima sa REST servisa
+        vraca dictionary:
+        {broj bita [int] : opisni string [str]}
+        """
+        url = self._base + self._resursi['statusMap']
+        try:
+            r = requests.get(url, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
+            #assert dobar response (status code 200) i xml content-type
+            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            jsonStr = r.text
+            #parse and asemble statusMap
+            x = json.loads(jsonStr)
+            rezultat = {}
+            for i in range(len(x)):
+                rezultat[x[i]['i']] = x[i]['s']
+            return rezultat
+        except AssertionError as e1:
+            tekst = 'WebZahtjev.get_statusMap:Assert fail.\n{0}'.format(e1)
+            raise pomocne_funkcije.AppExcept(tekst) from e1
+        except requests.exceptions.RequestException as e2:
+            tekst = 'WebZahtjev.get_statusMap:Request fail (http error, timeout...).\n{0}'.format(e2)
+            raise pomocne_funkcije.AppExcept(tekst) from e2
+        except Exception as e3:
+            tekst = 'WebZahtjev.get_statusMap:Opceniti fail.\n{0}'.format(e3)
+            raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
     def parse_xml(self, x):
         """
@@ -111,9 +140,6 @@ class WebZahtjev(QtCore.QObject):
             #assert dobar response (status code 200), json content-type
             assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
-            #TODO! ignore empty json string...return what you get
-            #assert da je duljina json stringa dovoljna (ako nema podataka, dobivam nazad prazan string)
-            #assert len(r.text) > 3, 'Bad response, empty json string'
             return r.text
         except AssertionError as e1:
             tekst = 'WebZahtjev.get_sirovi:Assert fail.\n{0}'.format(e1)
@@ -124,27 +150,6 @@ class WebZahtjev(QtCore.QObject):
         except Exception as e3:
             tekst = 'WebZahtjev.get_sirovi:Opceniti fail.\n{0}'.format(e3)
             raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
-    def upload_json_agregiranih(self, x):
-        """
-        Za zadani json string  agregiranih x, predaj zahtjev za spremanje u REST servis.
-        """
-        #point url na REST  servis
-        url = self._base + self._resursi['satniPodaci']
-        #pripiremi zahtjev
-        payload = {"id":"putPodaci", "name":"PUT"}
-        headers = {'Content-type': 'application/json'}
-        try:
-            assert x is not None, 'Ulazni parametar je None, json string nije zadan.'
-            assert len(x) > 0, 'Ulazni json string je prazan'
-            r = requests.put(url, params = payload, data = x, headers = headers, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
-        except AssertionError as e1:
-            tekst = 'WebZahtjev.upload_json_agregiranih:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
-        except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.upload_json_agregiranih:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
 ###############################################################################
     def upload_json_minutnih(self, x):
         """

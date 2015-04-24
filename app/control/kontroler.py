@@ -203,7 +203,8 @@ class Kontroler(QtCore.QObject):
         resursi = {'siroviPodaci': str(self.gui.konfiguracija.REST.RESTSiroviPodaci),
                    'programMjerenja': str(self.gui.konfiguracija.REST.RESTProgramMjerenja),
                    'zerospan': str(self.gui.konfiguracija.REST.RESTZeroSpan),
-                   'satniPodaci': str(self.gui.konfiguracija.REST.RESTSatniPodaci)}
+                   'satniPodaci': str(self.gui.konfiguracija.REST.RESTSatniPodaci),
+                   'statusMap': str(self.gui.konfiguracija.REST.RESTStatusMap)}
         # inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
         #inicijalizacija REST readera
@@ -214,14 +215,12 @@ class Kontroler(QtCore.QObject):
         self.restWriter = data_reader.RESTWriter(source=self.webZahtjev)
         #postavljanje writera u model
         self.dokument.set_writer(self.restWriter)
-        #TODO!
-        """
-        -get status dictionary
-        -set status dictionary u satni i minutni canvas uz pomoc:
-        --> self.gui.koncPanel.satniGraf.set_statusMap(mapa)
-        --> self.gui.koncPanel.minutniGraf.set_statusMap(mapa)
-        """
-
+        try:
+            statusMapa = self.webZahtjev.get_statusMap()
+            self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
+            self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
+        except pomocne_funkcije.AppExcept:
+            self.prikazi_error_msg('Status mapa nije ucitana sa REST-a')
     ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -618,7 +617,6 @@ class Kontroler(QtCore.QObject):
         ###############################################################################
 
     def upload_minutne_na_REST(self):
-        #TODO! modify function... vracaj samo id i valjan
         """
         Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na
         REST servis.

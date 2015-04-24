@@ -85,10 +85,6 @@ sys.exit(aplikacija.exec_())
 
 """
 TODO!
-- maknuti opciju spremanja satno agregiranih podataka na REST, uploadaju se samo
-minutni (vidi rest_izbornik.py, grafovi_panel.py, kontroler.py, dokument_model.py )
-
-
 
 potencijalni problemi
 1. unresponsive gui.

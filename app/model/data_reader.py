@@ -57,11 +57,10 @@ class RESTReader(object):
             assert 'vrijednost' in df.columns, 'ERROR - Nedostaje stupac: "vrijednost'
             assert 'statusString' in df.columns, 'ERROR - Nedostaje stupac: "statusString"'
             assert 'valjan' in df.columns, 'ERROR - Nedostaje stupac: "valjan"'
-#            assert 'status' in df.columns, 'ERROR - Nedostaje stupac: "status"' #TODO! status support
+            assert 'statusInt' in df.columns, 'ERROR - Nedostaje stupac: "statusInt"'
 
             df = df.set_index(df['vrijeme'])
-            df['status'] = pd.Series(0, df.index) #TODO! kada dobijem status ignore this line
-            df.rename(columns={'vrijednost' : 'koncentracija', 'valjan' : 'flag'}, inplace = True)
+            df.rename(columns={'vrijednost' : 'koncentracija', 'valjan' : 'flag', 'statusInt':'status'}, inplace = True)
             df['koncentracija'] = df['koncentracija'].map(self.nan_conversion)
             df['flag'] = df['flag'].map(self.valjan_conversion)
             df.drop('vrijeme', inplace = True, axis = 1) #drop column vrijeme

@@ -372,15 +372,15 @@ class SatniMinutniKanvas(Kanvas):
         else:
             return False
 
-    def check_status_flags(self, broj, mapa):
+    def check_status_flags(self, broj):
         """
         provjeri stauts integera broj dekodirajuci ga sa hash tablicom
         {bit_pozicija:opisni string}. Vrati csv string opisa.
         """
         output = []
-        for i in mapa.keys():
+        for i in self.statusMap.keys():
             if self.check_bit(broj, i):
-                output.append(mapa[i])
+                output.append(self.statusMap[i])
         return ",".join(output)
 
     def connect_pick_evente(self):
@@ -823,7 +823,8 @@ class SatniKanvas(SatniMinutniKanvas):
             ymax = self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
             #TODO! check for status
-            #ystatus = self.check_status_flags(ystatus)
+            if ystatus != 0:
+                ystatus = self.check_status_flags(ystatus)
             ycount = self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]
             tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
         else:
@@ -1067,7 +1068,8 @@ class MinutniKanvas(SatniMinutniKanvas):
             ykonc = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
             #TODO! check for status
-            #ystat = self.check_status_flags(ystat)
+            if ystat != 0:
+                ystat = self.check_status_flags(ystat)
             yflag = self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]
             tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
         else:

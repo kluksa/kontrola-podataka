@@ -120,6 +120,7 @@ Zelim da u grani koja je nazvana fix, u svakom trenutku bude aplikacija koja rad
 20150417:::VM:::Fix minor bugova oko grafova gotov:::
 20150417:::VM:::Ispravio nered vezan za rest writer (po uzoru na rest reader):::
 20150424:::VM:::Progress update. Izbacio upload satno agregiranih, prilagodio upload minutnih da vraca samo 'Id' i 'valjan' nazad REST-u. Pocetak prilagodbi za nove 'statuse'.:::
+20150427:::VM:::Izbacen support za annotatione na satnom i minutnom grafu. Podaci se ispisuju u labele u koncentracijskom panelu ispod grafova. Implementiran highlight tocke na minutnom grafu radi lakse vizualne identifikacije koja je tocka stisnuta.:::
 
 
 

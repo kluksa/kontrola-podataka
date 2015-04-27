@@ -122,6 +122,37 @@ class KoncPanel(base2, form2):
         self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), -1)
         logging.info('request pomak dana unazad')
 ###############################################################################
+    def set_labele_satne_tocke(self, arg):
+        """
+        Setter labela podataka za satno agregiranu tocku. Prikazuju se podaci:
+        vrijeme, average, min, max, count, flag, status. Ista metoda se koristi
+        za clear, samo se treba poslati set praznih stringova.
+
+        ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
+        moraju biti stringovi!
+        """
+        self.satniVrijeme.setText(arg['vrijeme'])
+        self.satniAverage.setText(arg['average'])
+        self.satniFlag.setText(arg['flag'])
+        self.satniMin.setText(arg['min'])
+        self.satniMax.setText(arg['max'])
+        self.satniCount.setText(arg['count'])
+        self.satniStatus.setText(arg['status'])
+###############################################################################
+    def set_labele_minutne_tocke(self, arg):
+        """
+        Setter labela podataka za minutnu tocku. Prikazuju se podaci:
+        vrijeme, koncentracija, flag, status. Ista metoda se koristi za clear,
+        samo se treba poslati set praznih stringova.
+
+        ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
+        moraju biti stringovi!
+        """
+        self.minutniVrijeme.setText(arg['vrijeme'])
+        self.minutniKoncentracija.setText(arg['koncentracija'])
+        self.minutniFlag.setText(arg['flag'])
+        self.minutniStatus.setText(arg['status'])
+###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')
 class ZeroSpanPanel(base3, form3):

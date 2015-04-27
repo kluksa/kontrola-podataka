@@ -172,6 +172,14 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
 
+        #TODO! connect this right!
+        ###update labela na koncentracijskom panelu###
+        self.connect(self.gui.koncPanel.satniGraf,
+                     QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'),
+                     self.gui.koncPanel.set_labele_satne_tocke)
+        self.connect(self.gui.koncPanel.minutniGraf,
+                     QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'),
+                     self.gui.koncPanel.set_labele_minutne_tocke)
     ###############################################################################
     def user_log_in(self, x):
         """

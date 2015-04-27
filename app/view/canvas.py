@@ -46,8 +46,6 @@ class Kanvas(FigureCanvas):
         self.pocetnoVrijeme = None #min zadano vrijeme za prikaz
         self.zavrsnoVrijeme = None #max zadano vrijeme za prikaz
         self.statusGlavniGraf = False #status glavnog grafa (da li je glavni kanal nacrtan)
-        self.statusAnnotation = False #status prikaza annotationa
-        self.lastAnnotation = None #kooridinate zadnjeg annotationa
         self.statusHighlight = False #status prikaza oznacene izabrane tocke
         self.lastHighlight = (None, None) #kooridinate zadnjeg highlighta
         self.legenda = None #placeholder za legendu
@@ -256,10 +254,8 @@ class Kanvas(FigureCanvas):
         """
         self.data = {} #spremnik za frejmove (ucitane)
         self.statusGlavniGraf = False
-        self.statusAnnotation = False
         #self.statusHighlight = False
         #self.lastHighlight = (None, None)
-        self.lastAnnotation = None
         self.axes.clear()
         #redo Axes labels
         self.axes.set_ylabel(self.konfig.TIP)
@@ -421,6 +417,38 @@ class SatniMinutniKanvas(Kanvas):
             self.crtaj_scatter(x, y, konfig)
             self.statusGlavniGraf = True
 
+    def highlight_pick(self, tpl, size):
+        """
+        naredba za crtanje highlight tocke na grafu na koridinatama
+        tpl = (x, y), velicine size.
+        """
+        x, y = tpl
+        if self.statusHighlight:
+            if tpl is not self.lastHighlight:
+                self.axes.lines.remove(self.highlight[0])
+                self.make_highlight(x, y, size)
+        else:
+            self.make_highlight(x, y, size)
+
+        self.draw()
+
+    def make_highlight(self, x, y, size):
+        """
+        Generiranje instance highlight tocke na kooridinati x, y za prikaz.
+        Velicina markera je definirana sa ulaznim parametrom size.
+        """
+        self.highlight = self.axes.plot(x,
+                                        y,
+                                        marker = 'o',
+                                        markersize = int(size),
+                                        color = 'yellow',
+                                        alpha = 0.5,
+                                        zorder = 10)
+        self.lastHighlight = (x, y)
+        self.statusHighlight = True
+        #setup odgovarajucih labela tjekom highlighta
+        self.setup_annotation_text(x)
+
     def crtaj_pomocne(self, popis):
         """
         Metoda za crtanje pomocnih grafova. Ulazni parametar popis je set id
@@ -467,79 +495,13 @@ class SatniMinutniKanvas(Kanvas):
                                    label = self.konfig.temperaturaKontejnera.label,
                                    linestyle='None')
 
-    def setup_annotation_offset(self, event):
-        """
-        Funkcija postavlja annotation offset ovisno o polozaju klika na canvas.
-        """
-        size = self.frameSize()
-        x, y = size.width(), size.height()
-        x //= 2
-        y //= 2
-        clickedx = event.x
-        clickedy = event.y
-
-        if clickedx >= x:
-            clickedx = -80
-            if clickedy >= y:
-                clickedy = -30
-            else:
-                clickedy = 30
-        else:
-            clickedx = 30
-            if clickedy >= y:
-                clickedy = -30
-            else:
-                clickedy = 30
-        return clickedx, clickedy
-
     def setup_annotation_text(self, xpoint):
         """
-        Definiranje teksta za prikaz annotationa (sto ce biti unutar annotationa).
-        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
-        teksta annotationa.
+        Definiranje teksta za prikaz annotationa (labeli ispod grafova za izabranu tocku).
+        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca dict
+        stringova za labele. Reimplementiraj za satni i minutni graf.
         """
         pass
-
-    def annotate_pick(self, point, event):
-        """
-        Mangage annotation za pick event
-        point --> (x, y) tuple tocke
-        event --> matplotlib click event
-        """
-        if self.statusAnnotation:
-            self.annotation.remove()
-            self.statusAnnotation = False
-            if point[0] != self.lastAnnotation:
-                self.make_annotation(point, event)
-        else:
-            self.make_annotation(point, event)
-        self.draw()
-
-    def make_annotation(self, point, event):
-        """
-        Metoda stvara annotation objekt koji ce se prikazati na grafu.
-        ulazni parametri su:
-        point ---> tocka na grafu ,tuple (x, y)
-        event ---> matplotlib event koji je triggerao annotation
-        Annotation instance object, pozicija na grafu.
-        """
-        #set offset annotationa
-        offs = self.setup_annotation_offset(event)
-        #set tekst annotationa
-        tekst = self.setup_annotation_text(point[0]) #overload metodu za specificni graf
-        self.annotation = self.axes.annotate(
-                    tekst,
-                    xy = point,
-                    xytext = offs,
-                    textcoords = 'offset points',
-                    ha = 'left',
-                    va = 'center',
-                    fontsize = 7,
-                    zorder = 102,
-                    bbox = dict(boxstyle = 'square', fc = 'cyan', alpha = 0.7),
-                    arrowprops = dict(arrowstyle = '->'))
-        self.lastAnnotation = point[0]
-        self.statusAnnotation = True
 
     def zaokruzi_na_najblize_vrijeme(self, x):
         """
@@ -724,6 +686,9 @@ class SatniKanvas(SatniMinutniKanvas):
                 else:
                     self.statusHighlight = False
                     self.lastHighlight = (None, None)
+                    #reset labele u panelu --
+                    self.setup_annotation_text('')
+
             self.draw()
         else:
             self.axes.text(0.5,
@@ -817,19 +782,26 @@ class SatniKanvas(SatniMinutniKanvas):
         Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
         teksta annotationa.
         """
+        output = {'vrijeme':'',
+                  'average':'',
+                  'min': '',
+                  'max': '',
+                  'count':'',
+                  'flag': '',
+                  'status':''}
         if xpoint in list(self.data[self.gKanal].index):
-            yavg = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
-            ymin = self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]
-            ymax = self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
-            #TODO! check for status
             if ystatus != 0:
                 ystatus = self.check_status_flags(ystatus)
-            ycount = self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]
-            tekst = 'Vrijeme: '+str(xpoint)+'\nAverage: '+str(yavg)+'\nMin:'+str(ymin)+'\nMax:'+str(ymax)+'\nStatus:'+str(ystatus)+'\nCount:'+str(ycount)
-        else:
-            tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
-        return tekst
+            output = {'vrijeme':str(xpoint),
+                      'average':str(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),
+                      'min': str(self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]),
+                      'max': str(self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]),
+                      'count':str(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
+                      'flag': str(self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]),
+                      'status':str(ystatus)}
+        #emit signal to update
+        self.emit(QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'), output)
 
     def zaokruzi_na_najblize_vrijeme(self, xpoint):
         """
@@ -837,36 +809,6 @@ class SatniKanvas(SatniMinutniKanvas):
         najblizi puni sat.
         """
         return self.zaokruzi_vrijeme(xpoint, 3600)
-
-    def highlight_pick(self, tpl, size):
-        """
-        naredba za crtanje highlight tocke na grafu na koridinatama
-        tpl = (x, y), velicine size.
-        """
-        x, y = tpl
-        if self.statusHighlight:
-            if tpl is not self.lastHighlight:
-                self.axes.lines.remove(self.highlight[0])
-                self.make_highlight(x, y, size)
-        else:
-            self.make_highlight(x, y, size)
-
-        self.draw()
-
-    def make_highlight(self, x, y, size):
-        """
-        Generiranje instance highlight tocke na kooridinati x, y za prikaz.
-        Velicina markera je definirana sa ulaznim parametrom size.
-        """
-        self.highlight = self.axes.plot(x,
-                                        y,
-                                        marker = 'o',
-                                        markersize = int(size),
-                                        color = 'yellow',
-                                        alpha = 0.5,
-                                        zorder = 10)
-        self.lastHighlight = (x, y)
-        self.statusHighlight = True
 
     def on_pick(self, event):
         """
@@ -877,11 +819,9 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1:
+            if event.button == 1 or event.button == 2:
                 self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-            elif event.button == 2:
-                self.annotate_pick((xpoint, ypoint), event)
             elif event.button == 3:
                 loc = QtGui.QCursor.pos() #lokacija klika
                 #odmakni donj limit intervala za 59 minuta od izabrane tocke xpoint
@@ -937,6 +877,7 @@ class MinutniKanvas(SatniMinutniKanvas):
     """
     def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
         SatniMinutniKanvas.__init__(self, konfig, pomocni)
+        self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
@@ -982,6 +923,18 @@ class MinutniKanvas(SatniMinutniKanvas):
             #toggle ticks, legend, grid
             self.toggle_tgl()
             self.crtaj_oznake_temperature()
+            #highlight prijasnje tocke
+            if self.statusHighlight:
+                hx, hy = self.lastHighlight
+                if hx in self.data[self.gKanal].index:
+                    #pronadji novu y vrijednosti indeksa
+                    hy = self.data[self.gKanal].loc[hx, self.konfig.MIDLINE]
+                    self.make_highlight(hx, hy, self.highlightSize)
+                else:
+                    self.statusHighlight = False
+                    self.lastHighlight = (None, None)
+                    #reset labele u panelu --
+                    self.setup_annotation_text('')
             self.draw()
         else:
             self.axes.text(0.5,
@@ -1064,17 +1017,20 @@ class MinutniKanvas(SatniMinutniKanvas):
         Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
         teksta annotationa.
         """
+        output = {'vrijeme': '',
+                  'koncentracija': '',
+                  'flag': '',
+                  'status': ''}
         if xpoint in list(self.data[self.gKanal].index):
-            ykonc = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
-            #TODO! check for status
             if ystat != 0:
                 ystat = self.check_status_flags(ystat)
-            yflag = self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]
-            tekst = 'Vrijeme: '+str(xpoint)+'\nKoncentracija: '+str(ykonc)+'\nStatus:'+str(ystat)+'\nFlag:'+str(yflag)
-        else:
-            tekst = 'Vrijeme: '+str(xpoint)+'\nNema podataka'
-        return tekst
+            output = {'vrijeme': str(xpoint),
+                      'koncentracija': str(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),
+                      'flag': str(self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]),
+                      'status': str(ystat)}
+        #emit za promjenu minutnog statusa
+        self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)
 
     def zaokruzi_na_najblize_vrijeme(self, xpoint):
         """
@@ -1092,8 +1048,8 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 2:
-                self.annotate_pick((xpoint, ypoint), event)
+            if event.button == 1 or event.button == 2:
+                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
                 loc = QtGui.QCursor.pos() #lokacija klika
                 self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti

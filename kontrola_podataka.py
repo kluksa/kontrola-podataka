@@ -85,8 +85,6 @@ sys.exit(aplikacija.exec_())
 
 """
 TODO!
--izbaci annotatione za satni i minutni graf
--prebaci informacije o tockama na panel ispod grafova
 -poradi na razumljivijim error msg
 -fix kod da odgovara PEP8
 

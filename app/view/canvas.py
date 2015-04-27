@@ -622,22 +622,6 @@ class SatniMinutniKanvas(Kanvas):
         #generalni emit za promjenu flaga
         self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
 
-################################################################################
-class SatniKanvas(SatniMinutniKanvas):
-    """
-    Klasa kanvasa za satni graf.
-    Inicijalizacija sa konfig objektom i mapom pomocnih kanala
-    """
-    def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
-        SatniMinutniKanvas.__init__(self, konfig, pomocni)
-        self.highlightSize = 1.5 * self.konfig.VOK.markerSize
-        self.axes.set_ylabel(self.konfig.TIP)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
-
     def crtaj(self, frejmovi, mapaParametara):
         """
         PROMJENA : direktno prosljedjivanje frejmova za crtanje...bez signala
@@ -699,6 +683,22 @@ class SatniKanvas(SatniMinutniKanvas):
                            fontsize = 8,
                            transform = self.axes.transAxes)
             self.draw()
+
+################################################################################
+class SatniKanvas(SatniMinutniKanvas):
+    """
+    Klasa kanvasa za satni graf.
+    Inicijalizacija sa konfig objektom i mapom pomocnih kanala
+    """
+    def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
+        SatniMinutniKanvas.__init__(self, konfig, pomocni)
+        self.highlightSize = 1.5 * self.konfig.VOK.markerSize
+        self.axes.set_ylabel(self.konfig.TIP)
+        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
+        self.initialize_interaction(self.span_select, self.rect_zoom)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
+        self.toggle_grid(self.konfig.Grid)
+        self.toggle_ticks(self.konfig.Ticks)
 
     def crtaj_glavni_kanal(self):
         """
@@ -884,68 +884,6 @@ class MinutniKanvas(SatniMinutniKanvas):
         self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
-
-    def crtaj(self, frejmovi, mapaParametara):
-        """
-        PROMJENA : direktno prosljedjivanje frejmova za crtanje...bez signala
-
-        Glavna metoda za crtanje na canvas. Eksplicitne naredbe za crtanje.
-        ulazni argumenti:
-        frejmovi:
-        -Mapa programMjerenjaId:pandas dataframe.
-        -Podaci za crtanje
-
-        mapaParametara:
-        -mapa sa potrebnim parametrima
-        -mapaParametara['kanalId'] --> program mjerenja id glavnog kanala [int]
-        -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
-        -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
-        -mapaParametara['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
-        """
-        #clear prethodnog grafa, reinicijalizacija membera
-        self.clear_graf()
-        self.data = frejmovi
-        self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
-        self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
-        self.gKanal = mapaParametara['kanalId']
-        self.tKontejner = mapaParametara['tempKontejner']
-        if self.gKanal in self.data.keys():
-            #naredba za crtanje glavnog grafa
-            self.crtaj_glavni_kanal()
-            #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - {self.gKanal, self.tKontejner}
-            #naredba za crtanje pomocnih
-            self.crtaj_pomocne(pomocni)
-            ###micanje tocaka od rubova, tickovi, legenda...
-            self.setup_limits()
-            self.setup_legend()
-            self.setup_ticks()
-            #toggle ticks, legend, grid
-            self.toggle_tgl()
-            self.crtaj_oznake_temperature()
-            #highlight prijasnje tocke
-            if self.statusHighlight:
-                hx, hy = self.lastHighlight
-                if hx in self.data[self.gKanal].index:
-                    #pronadji novu y vrijednosti indeksa
-                    hy = self.data[self.gKanal].loc[hx, self.konfig.MIDLINE]
-                    self.make_highlight(hx, hy, self.highlightSize)
-                else:
-                    self.statusHighlight = False
-                    self.lastHighlight = (None, None)
-                    #reset labele u panelu --
-                    self.setup_annotation_text('')
-            self.draw()
-        else:
-            self.axes.text(0.5,
-                           0.5,
-                           'Nije moguce pristupiti podacima za trazeni kanal.',
-                           horizontalalignment='center',
-                           verticalalignment='center',
-                           fontsize = 8,
-                           transform = self.axes.transAxes)
-            self.draw()
-
 
     def crtaj_glavni_kanal(self):
         """

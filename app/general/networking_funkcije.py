@@ -48,7 +48,7 @@ class WebZahtjev(QtCore.QObject):
         try:
             r = requests.get(url, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #assert dobar response (status code 200) i xml content-type
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             jsonStr = r.text
             #parse and asemble statusMap
@@ -111,7 +111,7 @@ class WebZahtjev(QtCore.QObject):
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPDigestAuth(self.user, self.pswd))
             #assert dobar response (status code 200) i xml content-type
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
             assert r.headers['Content-Type'] == 'application/xml', 'Bad response, not xml'
             #xml parsing
             rezultat = self.parse_xml(r.text)
@@ -138,7 +138,7 @@ class WebZahtjev(QtCore.QObject):
         try:
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #assert dobar response (status code 200), json content-type
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             return r.text
         except AssertionError as e1:
@@ -164,7 +164,7 @@ class WebZahtjev(QtCore.QObject):
             assert x is not None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(x) > 0, 'Ulazni json string je prazan'
             r = requests.put(url, params = payload, data = x, headers = headers, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, x)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_json_minutnih:Assert fail.\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1
@@ -187,7 +187,7 @@ class WebZahtjev(QtCore.QObject):
             payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
             #request
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request/response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request/response code={0}, url={1}'.format(r.status_code )
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             return r.text
         except requests.exceptions.RequestException as e1:
@@ -217,7 +217,7 @@ class WebZahtjev(QtCore.QObject):
             assert jS is not None, 'Ulazni parametar je None, json string nije zadan.'
             assert len(jS) > 0, 'Ulazni json string je prazan'
             r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code:{0}'.format(r.status_code)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, jS)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Assert fail.\n{0}'.format(e1)
             logging.error('assert fail (bad response, los request..)', exc_info = True)

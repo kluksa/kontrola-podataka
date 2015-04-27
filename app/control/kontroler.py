@@ -171,8 +171,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('upload_minutne_na_REST'),
                      self.upload_minutne_na_REST)
-
-        #TODO! connect this right!
         ###update labela na koncentracijskom panelu###
         self.connect(self.gui.koncPanel.satniGraf,
                      QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'),

@@ -473,8 +473,6 @@ class Kontroler(QtCore.QObject):
         assert 'vrsta' in frejm.columns
         assert 'vrijeme' in frejm.columns
         assert 'vrijednost' in frejm.columns
-        assert 'minDozvoljeno' in frejm.columns
-        assert 'maxDozvoljeno' in frejm.columns
 
         zeroFrejm = frejm[frejm['vrsta'] == "Z"]
         spanFrejm = frejm[frejm['vrsta'] == "S"]

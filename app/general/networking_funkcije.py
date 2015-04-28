@@ -187,7 +187,7 @@ class WebZahtjev(QtCore.QObject):
             payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
             #request
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request/response code={0}, url={1}'.format(r.status_code )
+            assert r.ok == True, 'Bad request/response code={0}, url={1}'.format(r.status_code, r.url)
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             return r.text
         except requests.exceptions.RequestException as e1:

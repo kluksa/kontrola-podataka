@@ -1090,35 +1090,46 @@ class ZeroSpanKanvas(Kanvas):
         frejm = self.data
         x = list(frejm.index) #svi indeksi
         y = list(frejm[self.konfig.MIDLINE]) #sve vrijednosti
-        warningUp = list(frejm[self.konfig.WARNING_HIGH]) #warning up
-        warningLow = list(frejm[self.konfig.WARNING_LOW]) #warning low
-        #pronalazak samo ok tocaka
-        tempfrejm = self.data.copy()
-        okTocke = tempfrejm[tempfrejm[self.konfig.MIDLINE] <= tempfrejm[self.konfig.WARNING_HIGH]]
-        okTocke = okTocke[okTocke[self.konfig.MIDLINE] >= okTocke[self.konfig.WARNING_LOW]]
-        xok = list(okTocke.index)
-        yok = list(okTocke[self.konfig.MIDLINE])
-        #pronalazak losih tocaka
-        tempfrejm = self.data.copy()
-        badOver = tempfrejm[tempfrejm[self.konfig.MIDLINE] > tempfrejm[self.konfig.WARNING_HIGH]]
-        tempfrejm = self.data.copy()
-        badUnder = tempfrejm[tempfrejm[self.konfig.MIDLINE] < tempfrejm[self.konfig.WARNING_LOW]]
-        badTocke = badUnder.append(badOver)
-        badTocke.sort()
-        badTocke.drop_duplicates(subset='vrijeme',
-                                 take_last=True,
-                                 inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
-        xbad = list(badTocke.index)
-        ybad = list(badTocke[self.konfig.MIDLINE])
 
-        return {'x':x,
-                'y':y,
-                'warningUp':warningUp,
-                'warningLow':warningLow,
-                'xok':xok,
-                'yok':yok,
-                'xbad':xbad,
-                'ybad':ybad}
+        if self.konfig.WARNING_HIGH in frejm.columns and self.konfig.WARNING_LOW in frejm.columns:
+            warningUp = list(frejm[self.konfig.WARNING_HIGH]) #warning up
+            warningLow = list(frejm[self.konfig.WARNING_LOW]) #warning low
+            #pronalazak samo ok tocaka
+            tempfrejm = self.data.copy()
+            okTocke = tempfrejm[tempfrejm[self.konfig.MIDLINE] <= tempfrejm[self.konfig.WARNING_HIGH]]
+            okTocke = okTocke[okTocke[self.konfig.MIDLINE] >= okTocke[self.konfig.WARNING_LOW]]
+            xok = list(okTocke.index)
+            yok = list(okTocke[self.konfig.MIDLINE])
+            #pronalazak losih tocaka
+            tempfrejm = self.data.copy()
+            badOver = tempfrejm[tempfrejm[self.konfig.MIDLINE] > tempfrejm[self.konfig.WARNING_HIGH]]
+            tempfrejm = self.data.copy()
+            badUnder = tempfrejm[tempfrejm[self.konfig.MIDLINE] < tempfrejm[self.konfig.WARNING_LOW]]
+            badTocke = badUnder.append(badOver)
+            badTocke.sort()
+            badTocke.drop_duplicates(subset='vrijeme',
+                                     take_last=True,
+                                     inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
+            xbad = list(badTocke.index)
+            ybad = list(badTocke[self.konfig.MIDLINE])
+
+            return {'x': x,
+                    'y': y,
+                    'warningUp': warningUp,
+                    'warningLow': warningLow,
+                    'xok': xok,
+                    'yok': yok,
+                    'xbad': xbad,
+                    'ybad': ybad}
+        else:
+            return {'x': x,
+                    'y': y,
+                    'warningUp': [],
+                    'warningLow': [],
+                    'xok': [],
+                    'yok': [],
+                    'xbad': [],
+                    'ybad': []}
 
     def rect_zoom(self, eclick, erelease):
         """
@@ -1246,12 +1257,12 @@ class ZeroSpanKanvas(Kanvas):
             if len(tocke['xbad']) > 0:
                 self.crtaj_scatter(tocke['xbad'], tocke['ybad'], self.konfig.VBAD)
 
-            if self.konfig.Warning1.crtaj:
+            if self.konfig.Warning1.crtaj and len(tocke['warningUp']) > 0:
                 self.crtaj_line(tocke['x'], tocke['warningUp'], self.konfig.Warning1)
                 self.crtaj_line(tocke['x'], tocke['warningLow'], self.konfig.Warning2)
             #fill
             ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
-            if self.konfig.Fill1.crtaj:
+            if self.konfig.Fill1.crtaj and len(tocke['warningUp']) > 0:
                 self.crtaj_fill(tocke['x'], tocke['warningLow'], tocke['warningUp'], self.konfig.Fill1)
                 self.crtaj_fill(tocke['x'], tocke['warningUp'], hedge, self.konfig.Fill2)
                 self.crtaj_fill(tocke['x'], ledge, tocke['warningLow'], self.konfig.Fill2)

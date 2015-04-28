@@ -377,7 +377,7 @@ class SatniMinutniKanvas(Kanvas):
         for i in self.statusMap.keys():
             if self.check_bit(broj, i):
                 output.append(self.statusMap[i])
-        return ",".join(output)
+        return ",\n".join(output)
 
     def connect_pick_evente(self):
         """
@@ -787,7 +787,6 @@ class SatniKanvas(SatniMinutniKanvas):
                   'min': '',
                   'max': '',
                   'count':'',
-                  'flag': '',
                   'status':''}
         if xpoint in list(self.data[self.gKanal].index):
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
@@ -798,7 +797,6 @@ class SatniKanvas(SatniMinutniKanvas):
                       'min': str(self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]),
                       'max': str(self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]),
                       'count':str(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
-                      'flag': str(self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]),
                       'status':str(ystatus)}
         #emit signal to update
         self.emit(QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'), output)
@@ -957,7 +955,6 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         output = {'vrijeme': '',
                   'koncentracija': '',
-                  'flag': '',
                   'status': ''}
         if xpoint in list(self.data[self.gKanal].index):
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
@@ -965,7 +962,6 @@ class MinutniKanvas(SatniMinutniKanvas):
                 ystat = self.check_status_flags(ystat)
             output = {'vrijeme': str(xpoint),
                       'koncentracija': str(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),
-                      'flag': str(self.data[self.gKanal].loc[xpoint, self.konfig.FLAG]),
                       'status': str(ystat)}
         #emit za promjenu minutnog statusa
         self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)

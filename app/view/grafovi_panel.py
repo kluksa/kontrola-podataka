@@ -125,33 +125,33 @@ class KoncPanel(base2, form2):
     def set_labele_satne_tocke(self, arg):
         """
         Setter labela podataka za satno agregiranu tocku. Prikazuju se podaci:
-        vrijeme, average, min, max, count, flag, status. Ista metoda se koristi
+        vrijeme, average, min, max, count, status. Ista metoda se koristi
         za clear, samo se treba poslati set praznih stringova.
 
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
+        self.satniStatus.clear()
         self.satniVrijeme.setText(arg['vrijeme'])
         self.satniAverage.setText(arg['average'])
-        self.satniFlag.setText(arg['flag'])
         self.satniMin.setText(arg['min'])
         self.satniMax.setText(arg['max'])
         self.satniCount.setText(arg['count'])
-        self.satniStatus.setText(arg['status'])
+        self.satniStatus.setPlainText(arg['status'])
 ###############################################################################
     def set_labele_minutne_tocke(self, arg):
         """
         Setter labela podataka za minutnu tocku. Prikazuju se podaci:
-        vrijeme, koncentracija, flag, status. Ista metoda se koristi za clear,
+        vrijeme, koncentracija, status. Ista metoda se koristi za clear,
         samo se treba poslati set praznih stringova.
 
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
+        self.minutniStatus.clear()
         self.minutniVrijeme.setText(arg['vrijeme'])
         self.minutniKoncentracija.setText(arg['koncentracija'])
-        self.minutniFlag.setText(arg['flag'])
-        self.minutniStatus.setText(arg['status'])
+        self.minutniStatus.setPlainText(arg['status'])
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')

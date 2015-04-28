@@ -132,12 +132,12 @@ class KoncPanel(base2, form2):
         moraju biti stringovi!
         """
         self.satniStatus.clear()
-        self.satniVrijeme.setText(arg['vrijeme'])
-        self.satniAverage.setText(arg['average'])
-        self.satniMin.setText(arg['min'])
-        self.satniMax.setText(arg['max'])
-        self.satniCount.setText(arg['count'])
-        self.satniStatus.setPlainText(arg['status'])
+        self.satniVrijeme.setText(str(arg['vrijeme']))
+        self.satniAverage.setText(str(arg['average']))
+        self.satniMin.setText(str(arg['min']))
+        self.satniMax.setText(str(arg['max']))
+        self.satniCount.setText(str(arg['count']))
+        self.satniStatus.setPlainText(str(arg['status']))
 ###############################################################################
     def set_labele_minutne_tocke(self, arg):
         """
@@ -149,9 +149,9 @@ class KoncPanel(base2, form2):
         moraju biti stringovi!
         """
         self.minutniStatus.clear()
-        self.minutniVrijeme.setText(arg['vrijeme'])
-        self.minutniKoncentracija.setText(arg['koncentracija'])
-        self.minutniStatus.setPlainText(arg['status'])
+        self.minutniVrijeme.setText(str(arg['vrijeme']))
+        self.minutniKoncentracija.setText(str(arg['koncentracija']))
+        self.minutniStatus.setPlainText(str(arg['status']))
 ###############################################################################
 ###############################################################################
 base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')

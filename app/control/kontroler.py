@@ -187,7 +187,7 @@ class Kontroler(QtCore.QObject):
         self.appAuth = x
         # spoji se na rest
         self.reconnect_to_REST()
-
+        #TODO! test for successful login
     ###############################################################################
     def user_log_out(self):
         """

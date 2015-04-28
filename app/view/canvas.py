@@ -95,7 +95,7 @@ class Kanvas(FigureCanvas):
                                          direction = 'horizontal',
                                          useblit = True,
                                          rectprops = self.spanBoxInfo)
-        self.spanSelector.visible = False
+        #self.spanSelector.visible = False
 
     def crtaj_scatter(self, x, y, konfig):
         """
@@ -175,7 +175,7 @@ class Kanvas(FigureCanvas):
             self.mpl_disconnect(self.cid)
             self.cid = None
 
-    def set_interaction_mode(self, zoom, cursor, span):
+    def set_interaction_mode(self, zoom, cursor):
         """
         Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
         zoom --> boolean
@@ -194,15 +194,11 @@ class Kanvas(FigureCanvas):
         else:
             #zoom off
             self.zoomSelector.set_active(False)
+            self.spanSelector.visible = True
             if cursor:
                 self.cursorAssist.visible = True
             else:
                 self.cursorAssist.visible = False
-            if span:
-                self.spanSelector.visible = True
-                self.disconnect_pick_evente()
-            else:
-                self.spanSelector.visible = False
 
     def connect_pick_evente(self):
         """
@@ -696,7 +692,7 @@ class SatniKanvas(SatniMinutniKanvas):
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
 
@@ -793,10 +789,10 @@ class SatniKanvas(SatniMinutniKanvas):
             if ystatus != 0:
                 ystatus = self.check_status_flags(ystatus)
             output = {'vrijeme':str(xpoint),
-                      'average':str(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),
-                      'min': str(self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]),
-                      'max': str(self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]),
-                      'count':str(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
+                      'average':round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),3),
+                      'min': round((self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]),3),
+                      'max': round((self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]),3),
+                      'count':int(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
                       'status':str(ystatus)}
         #emit signal to update
         self.emit(QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'), output)
@@ -817,10 +813,11 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1 or event.button == 2:
+            if event.button == 2:
                 self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
+                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
                 loc = QtGui.QCursor.pos() #lokacija klika
                 #odmakni donj limit intervala za 59 minuta od izabrane tocke xpoint
                 lowlim = xpoint - datetime.timedelta(minutes = 59)
@@ -879,7 +876,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
 
@@ -961,7 +958,7 @@ class MinutniKanvas(SatniMinutniKanvas):
             if ystat != 0:
                 ystat = self.check_status_flags(ystat)
             output = {'vrijeme': str(xpoint),
-                      'koncentracija': str(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),
+                      'koncentracija': round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]), 3),
                       'status': str(ystat)}
         #emit za promjenu minutnog statusa
         self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)
@@ -982,9 +979,10 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1 or event.button == 2:
+            if event.button == 2:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
+                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
                 loc = QtGui.QCursor.pos() #lokacija klika
                 self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
 ################################################################################
@@ -1040,17 +1038,21 @@ class ZeroSpanKanvas(Kanvas):
             ind = self.pronadji_najblizi_time_indeks(self.data.index, argList['xtocka'])
             x = self.data.index[ind]
             y = self.data.loc[x, self.konfig.MIDLINE]
-            minD = self.data.loc[x, self.konfig.WARNING_LOW]
-            maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
-            # ako postoje vise istih indeksa, uzmi zadnji
-            if type(y) is pd.core.series.Series:
-                y = y[-1]
-                minD = minD[-1]
-                maxD = maxD[-1]
-            if y >= minD and y<= maxD:
-                status = 'Dobar'
-            else:
-                status = 'Ne valja'
+            minD = 'not defined'
+            maxD = 'not defined'
+            status = 'not defined'
+            if self.konfig.WARNING_LOW in self.data.columns:
+                minD = self.data.loc[x, self.konfig.WARNING_LOW]
+                maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
+                # ako postoje vise istih indeksa, uzmi zadnji
+                if type(y) is pd.core.series.Series:
+                    y = y[-1]
+                    minD = minD[-1]
+                    maxD = maxD[-1]
+                if y >= minD and y<= maxD:
+                    status = 'Dobar'
+                else:
+                    status = 'Ne valja'
 
             newArgMap = {'xtocka': str(x),
                           'ytocka': str(y),
@@ -1090,6 +1092,12 @@ class ZeroSpanKanvas(Kanvas):
         frejm = self.data
         x = list(frejm.index) #svi indeksi
         y = list(frejm[self.konfig.MIDLINE]) #sve vrijednosti
+        warningUp = y
+        warningLow = y
+        xok = []
+        yok = []
+        xbad = x
+        ybad = y
 
         if self.konfig.WARNING_HIGH in frejm.columns and self.konfig.WARNING_LOW in frejm.columns:
             warningUp = list(frejm[self.konfig.WARNING_HIGH]) #warning up
@@ -1113,23 +1121,14 @@ class ZeroSpanKanvas(Kanvas):
             xbad = list(badTocke.index)
             ybad = list(badTocke[self.konfig.MIDLINE])
 
-            return {'x': x,
-                    'y': y,
-                    'warningUp': warningUp,
-                    'warningLow': warningLow,
-                    'xok': xok,
-                    'yok': yok,
-                    'xbad': xbad,
-                    'ybad': ybad}
-        else:
-            return {'x': x,
-                    'y': y,
-                    'warningUp': [],
-                    'warningLow': [],
-                    'xok': [],
-                    'yok': [],
-                    'xbad': [],
-                    'ybad': []}
+        return {'x': x,
+                'y': y,
+                'warningUp': warningUp,
+                'warningLow': warningLow,
+                'xok': xok,
+                'yok': yok,
+                'xbad': xbad,
+                'ybad': ybad}
 
     def rect_zoom(self, eclick, erelease):
         """
@@ -1193,19 +1192,23 @@ class ZeroSpanKanvas(Kanvas):
         #definiraj x i y preko izabrane tocke
         x = self.data.index[event.ind[0]]
         y = self.data.loc[x, self.konfig.MIDLINE]
-        minD = self.data.loc[x, self.konfig.WARNING_LOW]
-        maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
-        # ako postoje vise istih indeksa, uzmi zadnji
-        if type(y) is pd.core.series.Series:
-            y = y[-1]
-            minD = minD[-1]
-            maxD = maxD[-1]
-        if minD <= y <= maxD:
-            status = 'Dobar'
-        else:
-            status = 'Ne valja'
+        minD = 'not defined'
+        maxD = 'not defined'
+        status = 'not defined'
+        if self.konfig.WARNING_LOW in self.data.columns:
+            minD = self.data.loc[x, self.konfig.WARNING_LOW]
+            maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
+            # ako postoje vise istih indeksa, uzmi zadnji
+            if type(y) is pd.core.series.Series:
+                y = y[-1]
+                minD = minD[-1]
+                maxD = maxD[-1]
+            if minD <= y <= maxD:
+                status = 'Dobar'
+            else:
+                status = 'Ne valja'
 
-        if event.mouseevent.button == 1:
+        if event.mouseevent.button == 2:
             #left click
             #update labels
             argList = {'xtocka': str(x),
@@ -1351,7 +1354,7 @@ class ZeroKanvas(ZeroSpanKanvas):
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
 
@@ -1378,7 +1381,7 @@ class SpanKanvas(ZeroSpanKanvas):
         self.axes.set_ylabel(self.konfig.TIP)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor, self.konfig.Selector)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
 

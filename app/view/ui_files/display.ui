@@ -112,7 +112,6 @@
      <addaction name="action_satni_grid"/>
      <addaction name="action_satni_cursor"/>
      <addaction name="action_satni_minor_ticks"/>
-     <addaction name="action_satni_span_selector"/>
      <addaction name="action_satni_legend"/>
     </widget>
     <widget class="QMenu" name="menu_Minutni_graf">
@@ -122,7 +121,6 @@
      <addaction name="action_minutni_grid"/>
      <addaction name="action_minutni_cursor"/>
      <addaction name="action_minutni_minor_ticks"/>
-     <addaction name="action_minutni_span_selector"/>
      <addaction name="action_minutni_legend"/>
     </widget>
     <widget class="QMenu" name="menu_SPAN_graf">
@@ -242,17 +240,6 @@
     <string>Toggle minor tickove na grafu sa satno agregiranim podacima.</string>
    </property>
   </action>
-  <action name="action_satni_span_selector">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Span selector</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle selektiranje vise tocaka na grafu sa satno agregiranim podacima.</string>
-   </property>
-  </action>
   <action name="action_satni_legend">
    <property name="checkable">
     <bool>true</bool>
@@ -295,17 +282,6 @@
    </property>
    <property name="toolTip">
     <string>Toggle minor ticks na grafu sa minutnim podacima.</string>
-   </property>
-  </action>
-  <action name="action_minutni_span_selector">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Span selector</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle izbora vise tocaka na grafu sa minutnim podacima.</string>
    </property>
   </action>
   <action name="action_minutni_legend">

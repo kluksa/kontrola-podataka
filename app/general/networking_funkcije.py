@@ -38,6 +38,43 @@ class WebZahtjev(QtCore.QObject):
         #, auth = HTTPBasicAuth(self.user, self.pswd)
         #, auth = (self.user, self.pswd)
 ###############################################################################
+    def get_satne_podatke(self, mapa):
+        """
+        Metoda dohvaca satno agregirane podatke sa REST servisa.
+        ulazni parametar je mapa podataka
+
+        {
+            'datum': string, format mora biti "YYYY-MM-DDThh:mm:ss"
+            'kanal': int, id programa mjerenja
+            'brojdana': int, broj koliko dana unazad treba prikazati
+            'valjani': boolean, Da li se prikazuju samo valjani
+            'validacija': int, nivo validacije
+        }
+
+        metoda vraca json string
+        """
+        url = self._base + self._resursi['satniPodaci']+'/'+str(mapa['kanal'])+'/'+mapa['datum']
+        payload = {"broj_dana":mapa['brojdana'],
+                   "samo_valjani":mapa['valjani'],
+                   "nivo_validacije":mapa['validacija']}
+        try:
+            r = requests.get(url,
+                             timeout=39.1,
+                             auth = HTTPBasicAuth(self.user, self.pswd),
+                             params=payload)
+            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
+            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            return r.text
+        except AssertionError as e1:
+            tekst = 'WebZahtjev.get_satne_podatke:Assert fail.\n{0}'.format(e1)
+            raise pomocne_funkcije.AppExcept(tekst) from e1
+        except requests.exceptions.RequestException as e2:
+            tekst = 'WebZahtjev.get_satne_podatke:Request fail (http error, timeout...).\n{0}'.format(e2)
+            raise pomocne_funkcije.AppExcept(tekst) from e2
+        except Exception as e3:
+            tekst = 'WebZahtjev.get_satne_podatke:Opceniti fail.\n{0}'.format(e3)
+            raise pomocne_funkcije.AppExcept(tekst) from e3
+###############################################################################
     def get_statusMap(self):
         """
         Metoda dohvaca podatke o statusima sa REST servisa

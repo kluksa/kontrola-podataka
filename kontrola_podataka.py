@@ -85,8 +85,6 @@ sys.exit(aplikacija.exec_())
 
 """
 TODO!
--IZBACI CRTANJE TEMPERATURE
--UMJESTO TEMPERATURE KONTEJNERA CRTAJ NESTO AKO FALG NIJE JEDNAK 0
 -poradi na razumljivijim error msg
 -fix kod da odgovara PEP8
 

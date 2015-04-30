@@ -65,6 +65,11 @@ class GlavniProzor(base, form):
         self.zsPanel = grafovi_panel.ZeroSpanPanel(self.konfiguracija)
         self.zsPanelLayout.addWidget(self.zsPanel)
 
+        #inicijalizacija panela za pregled agregiranih (visednevni)
+        #TODO!
+        self.visednevniPanel = grafovi_panel.RestPregledSatnih(self.konfiguracija)
+        self.visednevniLayout.addWidget(self.visednevniPanel)
+
         #inicijalizacija i postavljanje kontrolnog widgeta (tree view/kalendar...)
         self.restIzbornik = rest_izbornik.RestIzbornik()
         self.dockWidget.setWidget(self.restIzbornik)
@@ -252,22 +257,27 @@ class GlavniProzor(base, form):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satni.set_grid(x)
         self.koncPanel.satniGraf.toggle_grid(x)
+        self.visednevniPanel.satniRest.toggle_grid(x)
 ###############################################################################
     def request_satni_cursor_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satni.set_cursor(x)
         self.koncPanel.satniGraf.set_interaction_mode(self.konfiguracija.satni.Zoom,
                                                       self.konfiguracija.satni.Cursor)
+        self.visednevniPanel.satniRest.set_interaction_mode(self.konfiguracija.satni.Zoom,
+                                                            self.konfiguracija.satni.Cursor)
 ###############################################################################
     def request_satni_ticks_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satni.set_ticks(x)
         self.koncPanel.satniGraf.toggle_ticks(x)
+        self.visednevniPanel.satniRest.toggle_ticks(x)
 ###############################################################################
     def request_satni_legend_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satni.set_legend(x)
         self.koncPanel.satniGraf.toggle_legend(x)
+        self.visednevniPanel.satniRest.toggle_legend(x)
 ###############################################################################
     def request_minutni_grid_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
@@ -320,6 +330,12 @@ class GlavniProzor(base, form):
         self.konfiguracija.span.set_zoom(x)
         self.zsPanel.spanGraf.set_interaction_mode(self.konfiguracija.span.Zoom,
                                                    False)
+
+        #visednevni
+        self.konfiguracija.satni.set_zoom(x)
+        self.visednevniPanel.satniRest.set_interaction_mode(self.konfiguracija.satni.Zoom,
+                                                            False)
+
 ###############################################################################
     def zoom_out(self):
         """
@@ -330,6 +346,7 @@ class GlavniProzor(base, form):
         self.koncPanel.minutniGraf.full_zoom_out()
         self.zsPanel.spanGraf.full_zoom_out()
         self.zsPanel.zeroGraf.full_zoom_out()
+        self.visednevniPanel.satniRest.full_zoom_out()
 ###############################################################################
     def setup_kontroler(self):
         """

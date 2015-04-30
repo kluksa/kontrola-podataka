@@ -104,6 +104,9 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
                      self.priredi_podatke)
+        self.connect(self.gui.restIzbornik,
+                     QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
+                     self.gui.visednevniPanel.set_gKanal)
 
         ###PROMJENA BROJA DANA U ZERO/SPAN PANELU###
         self.connect(self.gui.zsPanel,
@@ -154,6 +157,11 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel.spanGraf,
                      QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.sync_x_zoom)
+
+        ###CRTANJE SATNO AGREGIRANIH PODATAKA SA RESTA###
+        self.connect(self.gui.visednevniPanel,
+                     QtCore.SIGNAL('nacrtaj_rest_satne(PyQt_PyObject)'),
+                     self.nacrtaj_rest_satne)
 
         ###DODAVANJE NOVE ZERO ILI SPAN REFERENTNE VRIJEDNOSTI###
         self.connect(self.gui.zsPanel,
@@ -389,6 +397,7 @@ class Kontroler(QtCore.QObject):
                   'datum': self.pickedDate}
         self.gui.koncPanel.change_glavniLabel(argMap)
         self.gui.zsPanel.change_glavniLabel(argMap)
+        self.gui.visednevniPanel.change_glavniLabel(argMap['opis'])
 
         self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
@@ -461,7 +470,19 @@ class Kontroler(QtCore.QObject):
         ValueError, TypeError --> krivi argumenti za json parser ili los json
         """
         jsonText = self.webZahtjev.get_zero_span(self.gKanal, self.pickedDate, self.brojDana)
-        frejm = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
+        try:
+            frejm = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
+        except ValueError:
+            logging.error('App exception', exc_info=True)
+            msg = """
+                Error je kod dohvacanja zero/span podataka sa resta.
+                Moguce nije valjani json.
+                Kanal: {0}
+                Datum: {1}
+                JSON:{2}""".format(str(self.gKanal), str(self.pickedDate), str(jsonText))
+            logging.error(msg)
+            #vrati dva prazna datafrejma, nista se nece crtati dalje
+            return pd.DataFrame(), pd.DataFrame()
 
         # test za strukturu frejma
         assert 'vrsta' in frejm.columns
@@ -772,5 +793,66 @@ class Kontroler(QtCore.QObject):
         max2 = max(frejm2.index)
 
         return [min(min1, min2), max(max1, max2)]
+    ###############################################################################
+    def nacrtaj_rest_satne(self, mapa):
+        """
+        Metoda je zaduzena da preuzme podatke sa REST servisa, pripremi ih
+        za crtanje i pokrene crtanje direktnom naredbom zaduzenom kanvasu
+
+        ulazna mapa ima sljedeca polja
+        ['datum','kanal','brojdana','valjani','validacija']
+
+        P.S. ista mapa se mora prosljediti webZahtjevu da povuce podatke sa RESTA
+        """
+        try:
+            jsonText = self.webZahtjev.get_satne_podatke(mapa)
+            df = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
+            frames, metaData = self.adapt_rest_satni_frejm(df)
+            #naredba za crtanje....
+            self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
+            #TODO! najblizi je satnom... reimplement certain methods
+        except ValueError:
+            logging.error('App exception', exc_info=True)
+            msg = """
+                Error je kod dohvacanja satnih podataka sa resta.
+                Moguce nije valjani json.
+                Kanal: {0}
+                Datum: {1}
+                JSON:{2}""".format(str(self.gKanal), str(self.pickedDate), str(jsonText))
+            logging.error(msg)
+            #vrati dva prazna datafrejma, nista se nece crtati dalje
+            return pd.DataFrame(), pd.DataFrame()
+        except pomocne_funkcije.AppExcept as err:
+            # log error sa stack traceom exceptiona
+            logging.error('App exception', exc_info=True)
+            self.prikazi_error_msg(err)
+    ###############################################################################
+    def adapt_rest_satni_frejm(self, frejm):
+        """
+        metoda prilagodjava ulazni dataframe i sve potrebno za crtanje.
+        frejm i mapu sa meta_podacima
+        """
+        frejm = frejm.set_index(frejm['vrijeme'])
+        pocetno = frejm.index.min()
+        zavrsno = frejm.index.max()
+        kanal = frejm.loc[pocetno, 'programMjerenjaId']
+        #TODO!
+        #trenutno se kosristi satni konfig, i kanvas subklasan od satnog konfiga..
+        frejm.rename(columns={'valjan':'flag','vrijednost':'avg'}, inplace = True)
+        frejm['flag'] = frejm['flag'].map(self.adapt_valjan)
+
+        frejmovi = {kanal:frejm}
+        metaMap = {'kanalId': kanal,
+                   'pocetnoVrijeme': pocetno,
+                   'zavrsnoVrijeme': zavrsno}
+
+        return frejmovi, metaMap
+
+    def adapt_valjan(self, x):
+        """hellper converter iz booleana u flag"""
+        if x:
+            return 1
+        else:
+            return -1
         ###############################################################################
         ###############################################################################

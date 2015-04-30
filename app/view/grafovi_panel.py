@@ -13,7 +13,8 @@ Wrapper koji sadrzi:
 """
 
 import logging
-from PyQt4 import QtCore, uic
+import datetime
+from PyQt4 import QtCore, QtGui, uic
 
 import app.view.canvas as canvas
 ###############################################################################
@@ -242,3 +243,67 @@ class ZeroSpanPanel(base3, form3):
         self.spanStatus.setText(mapa['status'])
 ###############################################################################
 ###############################################################################
+base14, form14 = uic.loadUiType('./app/view/ui_files/visednevni_prikaz.ui')
+class RestPregledSatnih(base14, form14):
+    """
+    Klasa za pregled vise dana agregiranih podataka povucenih sa REST servisa
+    """
+    def __init__(self, konfig, parent=None):
+        super(base14, self).__init__(parent)
+        self.setupUi(self)
+        self.gKanal = None # id glavnog kanala za prikaz
+
+        #placeholderi
+        self.satniRest = canvas.SatniRestKanvas(konfig.satni)
+        self.grafLayout.addWidget(self.satniRest)
+
+        self.buttonCrtaj.clicked.connect(self.get_podatke)
+
+    def change_glavniLabel(self, ulaz):
+        """
+        Metoda postavlja opisni label na graf
+
+        ulaz je mapa sa opisom kanala(naziv, mjerna jedinica...)
+        """
+        postaja = ulaz['postajaNaziv']
+        komponenta = ulaz['komponentaNaziv']
+        formula = ulaz['komponentaFormula']
+        mjernaJedinica = ulaz['komponentaMjernaJedinica']
+        opis = '{0}, {1}( {2} ) [{3}]'.format(postaja, komponenta, formula, mjernaJedinica)
+        self.glavniLabel.setText(opis)
+
+    def set_gKanal(self, mapa):
+        """
+        Setter za glavni kanal
+        mapa:
+        {'programMjerenjaId':int, 'datumString':'YYYY-MM-DD'}
+        """
+        noviKanal = mapa['programMjerenjaId']
+        if self.gKanal != noviKanal:
+            self.gKanal = noviKanal
+
+    def adapt_datum(self, datum):
+        """
+        Convert QDate objekt u pravilno formatiran string "YYYY-MM-DDThh:mm:ss"
+        """
+        dat = datum.toPyDate()
+        dat = dat + datetime.timedelta(days=1)
+        dat = dat.strftime('%Y-%m-%dT%H:%M:%S')
+        return dat
+
+    def get_podatke(self):
+        """slanje requesta za crtanjem REST satnih podataka"""
+        if self.gKanal is not None:
+            datum = self.adapt_datum(self.kalendar.selectedDate())
+            brojDana = self.spinBrojDana.value()
+            valjani = self.checkSamoValjani.isChecked()
+            nivoValidacije = self.spinNivoValidacije.value()
+            output = {'datum': datum,
+                      'kanal': self.gKanal,
+                      'brojdana': brojDana,
+                      'valjani': valjani,
+                      'validacija': nivoValidacije}
+            self.emit(QtCore.SIGNAL('nacrtaj_rest_satne(PyQt_PyObject)'), output)
+        else:
+            QtGui.QMessageBox.information(self, 'Problem kod crtanja', 'Nije moguce nacrtati graf, kanal nije izabran')
+

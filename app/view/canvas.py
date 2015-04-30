@@ -94,7 +94,7 @@ class Kanvas(FigureCanvas):
                                          direction = 'horizontal',
                                          useblit = True,
                                          rectprops = self.spanBoxInfo)
-        #self.spanSelector.visible = False
+        self.spanSelector.visible = False
 
     def crtaj_scatter(self, x, y, konfig):
         """
@@ -179,7 +179,6 @@ class Kanvas(FigureCanvas):
         Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
         zoom --> boolean
         cursor --> boolean
-        span --> boolean
         """
         #set up pick callbacks ovisno o tipu grafa
         self.disconnect_pick_evente()
@@ -664,7 +663,6 @@ class SatniMinutniKanvas(Kanvas):
                            fontsize = 8,
                            transform = self.axes.transAxes)
             self.draw()
-
 ################################################################################
 class SatniKanvas(SatniMinutniKanvas):
     """
@@ -801,7 +799,7 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 2:
+            if event.button == 2 or event.button == 1:
                 self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
@@ -852,6 +850,128 @@ class SatniKanvas(SatniMinutniKanvas):
                 lowlim = t1 - datetime.timedelta(minutes = 59)
                 lowlim = pd.to_datetime(lowlim)
                 self.show_context_menu(loc, lowlim, t2) #poziv kontekstnog menija
+################################################################################
+class SatniRestKanvas(SatniKanvas):
+    """
+    SUBLKLASAJ SATNI KANVAS, najslicniji je njemu
+    """
+    #TODO! reimplement funkcije do kraja
+    def __init__(self, konfig, parent=None, width=6, height=5, dpi=100):
+        SatniKanvas.__init__(self, konfig, pomocni={}) #nema pomocnih, zato prosljedjen prazan dict
+        self.axes.set_ylabel(self.konfig.TIP)
+        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
+        self.initialize_interaction(self.span_select, self.rect_zoom)
+        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
+        self.toggle_grid(self.konfig.Grid)
+        self.toggle_ticks(self.konfig.Ticks)
+
+    def set_interaction_mode(self, zoom, cursor):
+        """
+        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
+        zoom --> boolean
+        cursor --> boolean
+        """
+        #zero i span nemaju span selektor
+        self.spanSelector = None
+        #set up pick callbacks ovisno o tipu grafa
+        self.disconnect_pick_evente()
+        self.connect_pick_evente()
+        if zoom:
+            #zoom on, all else off
+            self.zoomSelector.set_active(True)
+            self.cursorAssist.visible = False
+            self.disconnect_pick_evente()
+        else:
+            #zoom off
+            self.zoomSelector.set_active(False)
+            if cursor:
+                self.cursorAssist.visible = True
+            else:
+                self.cursorAssist.visible = False
+
+    def crtaj(self, frejmovi, mapaParametara):
+        """
+        PROMJENA : direktno prosljedjivanje frejmova za crtanje...bez signala
+
+        Glavna metoda za crtanje na canvas. Eksplicitne naredbe za crtanje.
+        ulazni argumenti:
+        frejmovi:
+        -Mapa programMjerenjaId:pandas dataframe.
+        -Podaci za crtanje
+
+        mapaParametara:
+        -mapa sa potrebnim parametrima
+        -mapaParametara['kanalId'] --> program mjerenja id glavnog kanala [int]
+        -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
+        -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
+        """
+        #clear prethodnog grafa, reinicijalizacija membera
+        self.clear_graf()
+        self.data = frejmovi
+        self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
+        self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
+        self.gKanal = mapaParametara['kanalId']
+
+        #naredba za crtanje glavnog grafa
+        self.crtaj_glavni_kanal()
+        ###micanje tocaka od rubova, tickovi, legenda...
+        self.setup_limits()
+        self.setup_legend()
+        self.setup_ticks()
+        #toggle ticks, legend, grid
+        self.toggle_tgl()
+        self.draw()
+
+    def crtaj_glavni_kanal(self):
+        """
+        Metoda za crtanje glavnog grafa
+        """
+        #midline
+        frejm = self.data[self.gKanal]
+        x = list(frejm.index)
+        y = list(frejm[self.konfig.MIDLINE])
+        self.crtaj_line(x, y, self.konfig.Midline)
+        #plot tocaka ovisno o flagu i validaciji
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
+        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
+        self.statusGlavniGraf = True
+
+    def pronadji_tickove(self):
+        """
+        funkcija vraca listu tickmarkera i listu tick labela za satni REST graf.
+        -vremenski raspon je tmin, tmax
+        -tickovi su razmaknuti 1 dan
+        vrati dict sa listama lokacija i labela za tickove
+        """
+        tmin = self.pocetnoVrijeme
+        tmax = self.zavrsnoVrijeme
+        majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'D'))
+        majorLabeli = [str(ind.date()) for ind in majorTickovi]
+        tempTickovi = list(pd.date_range(start = tmin, end = tmax, freq = '6H'))
+        minorTickovi = []
+        minorLabeli = []
+        for ind in tempTickovi:
+            if ind not in majorTickovi:
+                minorTickovi.append(ind)
+                minorLabeli.append("")
+                #minorLabeli.append(ftime)
+        out = {'majorTickovi':majorTickovi,
+               'majorLabeli':majorLabeli,
+               'minorTickovi':minorTickovi,
+               'minorLabeli':minorLabeli}
+        return out
+
+    def on_pick(self, event):
+        pass
+
+    def span_select(self, xmin, xmax):
+        pass
+
+
+
+
 ################################################################################
 class MinutniKanvas(SatniMinutniKanvas):
     """
@@ -1199,7 +1319,7 @@ class ZeroSpanKanvas(Kanvas):
             else:
                 status = 'Ne valja'
 
-        if event.mouseevent.button == 2:
+        if event.mouseevent.button == 2 or event.mouseevent.button == 1:
             #left click
             #update labels
             argList = {'xtocka': str(x),
@@ -1332,6 +1452,31 @@ class ZeroSpanKanvas(Kanvas):
         Zero i span graf nemaju opciju za span selektor.
         """
         pass
+
+    def set_interaction_mode(self, zoom, cursor):
+        """
+        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
+        zoom --> boolean
+        cursor --> boolean
+        """
+        #zero i span nemaju span selektor
+        self.spanSelector = None
+        #set up pick callbacks ovisno o tipu grafa
+        self.disconnect_pick_evente()
+        self.connect_pick_evente()
+        if zoom:
+            #zoom on, all else off
+            self.zoomSelector.set_active(True)
+            self.cursorAssist.visible = False
+            self.disconnect_pick_evente()
+        else:
+            #zoom off
+            self.zoomSelector.set_active(False)
+            if cursor:
+                self.cursorAssist.visible = True
+            else:
+                self.cursorAssist.visible = False
+
 ################################################################################
 class ZeroKanvas(ZeroSpanKanvas):
     """specificna implementacija Zero canvasa"""

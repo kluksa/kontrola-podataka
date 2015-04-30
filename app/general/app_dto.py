@@ -94,12 +94,6 @@ class MetaConfig():
         self.Ticks = x
         logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
-    def set_selector(self, x):
-        """boolean setter za span selector interakciju sa canvasom (biranje vise tocaka
-        odjednom)"""
-        self.Selector = x
-        logging.info('Selector boolean value promjenjen, nova vrijednost = {0}'.format(x))
-
     def set_zoom(self, x):
         """boolean setter za zoom interakciju sa canvasom"""
         self.Zoom = x
@@ -128,14 +122,40 @@ class SatniGrafKonfig(MetaConfig):
         self.EksMax = GrafDTO(cfg, tip='SATNI', podtip='ekstrem', oblik='scatter')
         self.Fill = GrafDTO(cfg, tip='SATNI', podtip='fill1', oblik='fill')
         #interakcija sa grafom
-        self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_grid', False, bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_cursor', False, bool)
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_legend', False, bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
-        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
-        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
+        self.Grid = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_satni_grid',
+                                                      False,
+                                                      bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_satni_cursor',
+                                                        False,
+                                                        bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_satni_legend',
+                                                        False,
+                                                        bool)
+        self.Ticks = pomocne_funkcije.load_config_item(cfg,
+                                                       'MAIN_WINDOW',
+                                                       'action_satni_minor_ticks',
+                                                       False,
+                                                       bool)
+        self.Selector = pomocne_funkcije.load_config_item(cfg,
+                                                          'MAIN_WINDOW',
+                                                          'action_satni_span_selector',
+                                                          False,
+                                                          bool)
+        self.Zoom = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_zoom',
+                                                      False,
+                                                      bool)
         #status warning plot
-        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW', podtip='status_warning', oblik='scatter')
+        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
+                                     podtip='status_warning',
+                                     oblik='scatter')
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -152,14 +172,40 @@ class MinutniGrafKonfig(MetaConfig):
         self.NVOK = GrafDTO(cfg, tip='MINUTNI', podtip='NVOK', oblik='scatter')
         self.NVBAD = GrafDTO(cfg, tip='MINUTNI', podtip='NVBAD', oblik='scatter')
         #interakcija sa grafom
-        self.Grid = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_grid', False, bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_cursor', False, bool)
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
-        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
-        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
+        self.Grid = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_minutni_grid',
+                                                      False,
+                                                      bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_minutni_cursor',
+                                                        False,
+                                                        bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_minutni_legend',
+                                                        False,
+                                                        bool)
+        self.Ticks = pomocne_funkcije.load_config_item(cfg,
+                                                       'MAIN_WINDOW',
+                                                       'action_minutni_minor_ticks',
+                                                       False,
+                                                       bool)
+        self.Selector = pomocne_funkcije.load_config_item(cfg,
+                                                          'MAIN_WINDOW',
+                                                          'action_minutni_span_selector',
+                                                          False,
+                                                          bool)
+        self.Zoom = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_zoom',
+                                                      False,
+                                                      bool)
         #status warning
-        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW', podtip='status_warning', oblik='scatter')
+        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
+                                     podtip='status_warning',
+                                     oblik='scatter')
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -180,11 +226,18 @@ class ZeroGrafKonfig(MetaConfig):
         #interakcija sa grafom
         self.Grid = False
         self.Cursor = False
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_ZERO_legend', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_ZERO_legend',
+                                                        False,
+                                                        bool)
         self.Ticks = False
         self.Selector = False
-        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-
+        self.Zoom = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_zoom',
+                                                      False,
+                                                      bool)
 
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
@@ -206,29 +259,53 @@ class SpanGrafKonfig(MetaConfig):
         #interakcija sa grafom
         self.Grid = False
         self.Cursor = False
-        self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_SPAN_legend', False, bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_SPAN_legend',
+                                                        False,
+                                                        bool)
         self.Ticks = False
         self.Selector = False
-        self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-
+        self.Zoom = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_zoom',
+                                                      False,
+                                                      bool)
 
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):
         # konstante za REST
-        self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'base_url',
-                                                             'http://172.20.1.166:9090/SKZ-war/webresources/', str)
-        self.RESTProgramMjerenja = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'program_mjerenja',
-                                                                     'dhz.skz.aqdb.entity.programmjerenja', str)
-        self.RESTSiroviPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'sirovi_podaci',
-                                                                  'dhz.skz.rs.sirovipodaci', str)
-        self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'zero_span', 'dhz.skz.rs.zerospan', str)
-        self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'satni_podaci',
-                                                                 'dhz.skz.rs.satnipodatak', str)
-        self.RESTStatusMap = pomocne_funkcije.load_config_item(cfg, 'REST_INFO', 'status_map',
-                                                               'dhz.skz.rs.sirovipodaci/statusi', str)
-
-
+        self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg,
+                                                             'REST_INFO',
+                                                             'base_url',
+                                                             'http://172.20.1.166:9090/SKZ-war/webresources/',
+                                                             str)
+        self.RESTProgramMjerenja = pomocne_funkcije.load_config_item(cfg,
+                                                                     'REST_INFO',
+                                                                     'program_mjerenja',
+                                                                     'dhz.skz.aqdb.entity.programmjerenja',
+                                                                     str)
+        self.RESTSiroviPodaci = pomocne_funkcije.load_config_item(cfg,
+                                                                  'REST_INFO',
+                                                                  'sirovi_podaci',
+                                                                  'dhz.skz.rs.sirovipodaci',
+                                                                  str)
+        self.RESTZeroSpan = pomocne_funkcije.load_config_item(cfg,
+                                                              'REST_INFO',
+                                                              'zero_span',
+                                                              'dhz.skz.rs.zerospan',
+                                                              str)
+        self.RESTSatniPodaci = pomocne_funkcije.load_config_item(cfg,
+                                                                 'REST_INFO',
+                                                                 'satni_podaci',
+                                                                 'dhz.skz.rs.satnipodatak',
+                                                                 str)
+        self.RESTStatusMap = pomocne_funkcije.load_config_item(cfg,
+                                                               'REST_INFO',
+                                                               'status_map',
+                                                               'dhz.skz.rs.sirovipodaci/statusi',
+                                                               str)
 ################################################################################
 class GrafDTO():
     """

@@ -73,6 +73,12 @@
         </property>
        </layout>
       </widget>
+      <widget class="QWidget" name="visednevni">
+       <attribute name="title">
+        <string>PREGLED AGREGIRANIH</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="visednevniLayout"/>
+      </widget>
      </widget>
     </item>
    </layout>

@@ -126,47 +126,32 @@ class GrafIzbor(base6, form6):
             self.fillBoja.setEnabled(False)
             self.fillAlpha.setEnabled(False)
 
-        #postavke za temperaturu kontejnera (izvan postavljenih granica min i max)
-        #za inicijlalizaciju koristim satni graf (minutni je jednak, za sada...)
-        #izbor min i max granice dobrih temeperatura
-        tempMin = defaulti.satni.temperaturaKontejneraMin
-        tempMax = defaulti.satni.temperaturaKontejneraMax
-        self.kontejnerMin.setValue(defaulti.satni.temperaturaKontejneraMin)
-        self.kontejnerMax.setValue(defaulti.satni.temperaturaKontejneraMax)
-        #provjeri za los input (min > max)
-        if tempMin > tempMax:
-            self.glavni.kontejnerMin.setStyleSheet("QDoubleSpinBox#kontejnerMin {color:rgb(255,0,0)}")
-            self.glavni.kontejnerMax.setStyleSheet("QDoubleSpinBox#kontejnerMax {color:rgb(255,0,0)}")
-
+        #postavke za status warning
         #izbor stila markera
-        self.kontejnerStil.addItems(markeri)
-        tmark = listHelpera[0][defaulti.satni.temperaturaKontejnera.markerStyle]
-        self.kontejnerStil.setCurrentIndex(self.kontejnerStil.findText(tmark))
+        self.statusStil.addItems(markeri)
+        tmark = listHelpera[0][defaulti.satni.statusWarning.markerStyle]
+        self.statusStil.setCurrentIndex(self.statusStil.findText(tmark))
         #izbor velicine markera
-        self.kontejnerSize.setValue(defaulti.satni.temperaturaKontejnera.markerSize)
+        self.statusSize.setValue(defaulti.satni.statusWarning.markerSize)
         #izbor boje temerature kontejnera
-        self.set_widget_color_style(defaulti.satni.temperaturaKontejnera.rgb,
-                                    defaulti.satni.temperaturaKontejnera.alpha,
+        self.set_widget_color_style(defaulti.satni.statusWarning.rgb,
+                                    defaulti.satni.statusWarning.alpha,
                                     "QPushButton",
-                                    self.kontejnerBoja)
+                                    self.statusBoja)
         #izbor prozirnosti temperature kontejnera
-        self.kontejnerAlpha.setValue(defaulti.satni.temperaturaKontejnera.alpha)
+        self.statusAlpha.setValue(defaulti.satni.statusWarning.alpha)
         #enable/disable ovisno o statusu crtanja
-        self.kontejnerCrtaj.setChecked(defaulti.satni.temperaturaKontejnera.crtaj)
-        if defaulti.satni.Fill.crtaj:
-            self.kontejnerAlpha.setEnabled(True)
-            self.kontejnerBoja.setEnabled(True)
-            self.kontejnerMin.setEnabled(True)
-            self.kontejnerMax.setEnabled(True)
-            self.kontejnerSize.setEnabled(True)
-            self.kontejnerStil.setEnabled(True)
+        self.statusCrtaj.setChecked(defaulti.satni.statusWarning.crtaj)
+        if defaulti.satni.statusWarning.crtaj:
+            self.statusAlpha.setEnabled(True)
+            self.statusBoja.setEnabled(True)
+            self.statusSize.setEnabled(True)
+            self.statusStil.setEnabled(True)
         else:
-            self.kontejnerAlpha.setEnabled(False)
-            self.kontejnerBoja.setEnabled(False)
-            self.kontejnerMin.setEnabled(False)
-            self.kontejnerMax.setEnabled(False)
-            self.kontejnerSize.setEnabled(False)
-            self.kontejnerStil.setEnabled(False)
+            self.statusAlpha.setEnabled(False)
+            self.statusBoja.setEnabled(False)
+            self.statusSize.setEnabled(False)
+            self.statusStil.setEnabled(False)
 
         ###############################################################################
 

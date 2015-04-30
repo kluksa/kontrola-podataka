@@ -37,6 +37,17 @@ class DataModel(QtCore.QObject):
         self.citac = reader
         self.pisac = writer
         self.agregator = agregator
+        self.statusMap = {} #mapa statusa
+        self.kontrolaBitPolozaj = None # polozaj bita statusa za predhodno validirane podatke
+###############################################################################
+    def set_statusMap(self, mapa):
+        """
+        Setter za opis bitova statusa.
+        """
+        self.statusMap = mapa
+        for i in self.statusMap.keys():
+            if self.statusMap[i] is 'KONTROLA_PROVEDENA':
+                self.kontrolaBitPolozaj = i
 ###############################################################################
     def set_writer(self, writer):
         """
@@ -101,17 +112,38 @@ class DataModel(QtCore.QObject):
             tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
             raise pomocne_funkcije.AppExcept(tekst)
 ###############################################################################
+    def pronadji_kontorlirane(self, x):
+        """
+        Pomocna funkcija da koja pronalazi podatke koji su predhodno validirani.
+        Ulazni parametar x je status. Izlaz ja 1000 ako je kontrola prethodno
+        obavljena, 1 ako nije.
+        """
+        value = x & 1 << int(self.kontrolaBitPolozaj)
+        if value > 0:
+            return 1000
+        else:
+            return 1
+###############################################################################
     def citaj(self, key = None, date = None):
         """
         -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
         -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
         """
         kljuc, df = self.citac.read(key = key, date = date)
-        if len(df):
-            self.set_frame(key = kljuc, frame = df)
-        else:
-            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
-            raise pomocne_funkcije.AppExcept(tekst)
+        try:
+            assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
+            self.dataframe_structure_test(df)
+            if len(df):
+                if self.kontrolaBitPolozaj in self.statusMap.keys():
+                    for i in df.index:
+                        df.loc[i, 'flag'] = df.loc[i, 'flag'] * self.pronadji_kontorlirane(df.loc[i, 'status'])
+                self.set_frame(key = kljuc, frame = df)
+            else:
+                tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
+                raise pomocne_funkcije.AppExcept(tekst)
+        except AssertionError as e:
+            tekst = 'Frejm nije spremljen u model. DataModel.set_frame:Assert fail.\n{0}'.format(e)
+            raise pomocne_funkcije.AppExcept(tekst) from e
 ###############################################################################
     def dataframe_structure_test(self, frame):
         """provjera da li je dataframe dobre strukture"""
@@ -125,34 +157,26 @@ class DataModel(QtCore.QObject):
 ###############################################################################
     def set_frame(self, key = None, frame = None):
         """postavi frame u self.data pod kljucem key"""
-        try:
-            #provjera ulaznog parametra key
-            assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
-            #provjeri ulazni frame
-            self.dataframe_structure_test(frame)
-            #SORT DATAFRAME
-            frame.sort_index(inplace = True)
-            #dodaj na self.data
-            if key in self.data.keys():
-                #merge
-                self.data[key] = pd.merge(
-                    self.data[key],
-                    frame,
-                    how = 'outer',
-                    left_index = True,
-                    right_index = True,
-                    sort = True,
-                    on = ['koncentracija', 'status', 'flag', 'id', 'statusString'])
-                #update values
-                self.data[key].update(frame)
-                self.data[key].sort()
-            else:
-                #create new key
-                self.data[key] = frame
-                self.data[key].sort()
-        except AssertionError as e:
-            tekst = 'Frejm nije spremljen u model. DataModel.set_frame:Assert fail.\n{0}'.format(e)
-            raise pomocne_funkcije.AppExcept(tekst) from e
+        #SORT DATAFRAME
+        frame.sort_index(inplace = True)
+        #dodaj na self.data
+        if key in self.data.keys():
+            #merge
+            self.data[key] = pd.merge(
+                self.data[key],
+                frame,
+                how = 'outer',
+                left_index = True,
+                right_index = True,
+                sort = True,
+                on = ['koncentracija', 'status', 'flag', 'id', 'statusString'])
+            #update values
+            self.data[key].update(frame)
+            self.data[key].sort()
+        else:
+            #create new key
+            self.data[key] = frame
+            self.data[key].sort()
 ###############################################################################
     def dohvati_minutne_frejmove(self, lista = None, tmin = None, tmax = None):
         """

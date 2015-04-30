@@ -187,7 +187,6 @@ class Kontroler(QtCore.QObject):
         self.appAuth = x
         # spoji se na rest
         self.reconnect_to_REST()
-        #TODO! test for successful login
     ###############################################################################
     def user_log_out(self):
         """
@@ -223,10 +222,14 @@ class Kontroler(QtCore.QObject):
         self.dokument.set_writer(self.restWriter)
         try:
             statusMapa = self.webZahtjev.get_statusMap()
+            self.dokument.set_statusMap(statusMapa)
             self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
             self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
         except pomocne_funkcije.AppExcept:
-            self.prikazi_error_msg('Status mapa nije ucitana sa REST-a')
+            msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
+            self.prikazi_error_msg(msg)
+            self.gui.action_log_in.setEnabled(True)
+            self.gui.action_log_out.setEnabled(False)
     ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -319,8 +322,6 @@ class Kontroler(QtCore.QObject):
         self.zavrsnoVrijeme = pd.to_datetime(self.zavrsnoVrijeme)
         self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
         #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
-        self.tKontejnerId = self.get_kanal_temp_kontenjera()
-
     ###############################################################################
     def cache_test(self, key=None, date=None):
         """
@@ -345,9 +346,6 @@ class Kontroler(QtCore.QObject):
         """
         self.sviBitniKanali = []  # varijabla sa listom svih programMjerenjaId koje treba ucitati
         self.sviBitniKanali.append(self.gKanal)  # dodaj glavni kanal na popis
-        # ako za stanicu postoji temperatura kontejnera, dodaj i taj kanal
-        if self.tKontejnerId is not None:
-            self.sviBitniKanali.append(self.tKontejnerId)
         # pronadji sve ostale kanale potrebne za crtanje
         for key in self.gui.konfiguracija.dictPomocnih:
             self.sviBitniKanali.append(key)
@@ -384,8 +382,6 @@ class Kontroler(QtCore.QObject):
         self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
-        #update lebele na panelima (informacija o kanalu i datumu)
-        #argList = [self.mapaMjerenjeIdToOpis[self.gKanal], self.pickedDate]
         #restore wait cursora
         QtGui.QApplication.restoreOverrideCursor()
 
@@ -423,14 +419,12 @@ class Kontroler(QtCore.QObject):
         if self.pocetnoVrijeme != None and self.zavrsnoVrijeme != None and self.gKanal != None:
             arg = {'kanalId': self.gKanal,
                    'pocetnoVrijeme': self.pocetnoVrijeme,
-                   'zavrsnoVrijeme': self.zavrsnoVrijeme,
-                   'tempKontejner': self.tKontejnerId}
+                   'zavrsnoVrijeme': self.zavrsnoVrijeme}
             # relevantni agregirani frejmovi za satni graf
             self.agregiraniFrejmovi = self.dokument.dohvati_agregirane_frejmove(
                 lista=self.sviBitniKanali,
                 tmin=self.pocetnoVrijeme,
                 tmax=self.zavrsnoVrijeme)
-
             # naredba za crtanje satnog grafa
             self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
             #promjena labela u panelima sa grafovima, opis
@@ -555,8 +549,7 @@ class Kontroler(QtCore.QObject):
             self.gui.koncPanel.change_satLabel(self.sat)
             arg = {'kanalId': self.gKanal,
                    'pocetnoVrijeme': lowLim,
-                   'zavrsnoVrijeme': highLim,
-                   'tempKontejner': self.tKontejnerId}
+                   'zavrsnoVrijeme': highLim}
             # naredba za dohvacanje podataka
             self.frejmovi = self.dokument.dohvati_minutne_frejmove(
                 lista=self.sviBitniKanali,
@@ -767,20 +760,6 @@ class Kontroler(QtCore.QObject):
         self.dokument.change_flag(key=ulaz['kanal'], tmin=ulaz['od'], tmax=ulaz['do'], flag=ulaz['noviFlag'])
 
     ###############################################################################
-    def get_kanal_temp_kontenjera(self):
-        """
-        iz dicta programa mjerenja i glavnog kanala dohvati programMjerenjaId
-        odgovarajuceg mjerenja Temperature kontejnera za tu stanicu (ako
-        postoji, ako ne vrati None)
-        """
-        stanica = self.mapaMjerenjeIdToOpis[self.gKanal]['postajaId']
-        for key in self.mapaMjerenjeIdToOpis:
-            if self.mapaMjerenjeIdToOpis[key]['postajaId'] is stanica:
-                if self.mapaMjerenjeIdToOpis[key]['komponentaNaziv'] == 'Temperatura kontejnera':
-                    if key is not self.gKanal:
-                        return key
-                    ###############################################################################
-
     def sync_zero_span_x_os(self, frejm1, frejm2):
         """
         Metoda sluzi za definiciju raspona x osi za zero i span graf

@@ -42,7 +42,6 @@ class Kanvas(FigureCanvas):
         self.konfig = konfig #konfig dto objekt
         self.data = {} #prazan dict koji ce sadrzavati frejmove sa podacima
         self.gKanal = None #kanal id glavnog kanala
-        self.tKontejner = None #kanal id za temperaturu kontejnera za zadani glavni kanal
         self.pocetnoVrijeme = None #min zadano vrijeme za prikaz
         self.zavrsnoVrijeme = None #max zadano vrijeme za prikaz
         self.statusGlavniGraf = False #status glavnog grafa (da li je glavni kanal nacrtan)
@@ -373,7 +372,7 @@ class SatniMinutniKanvas(Kanvas):
         for i in self.statusMap.keys():
             if self.check_bit(broj, i):
                 output.append(self.statusMap[i])
-        return ",\n".join(output)
+        return ", ".join(output)
 
     def connect_pick_evente(self):
         """
@@ -465,31 +464,19 @@ class SatniMinutniKanvas(Kanvas):
                                zorder=self.pomocniGrafovi[key].zorder,
                                label=self.pomocniGrafovi[key].label)
 
-    def crtaj_oznake_temperature(self):
+    def crtaj_oznake_statusa(self):
         """
-        Crtanje oznaka za temperaturu kontejnera ako su izvan zadanih granica
+        Crtanje oznaka za sve tocke gdje je status razlicit od nule.
+        Prikazuje se scatter plot (samo tocke) ispod gornjeg ruba grafa.
         """
-        if self.tKontejner in self.data.keys():
-            frejm = self.data[self.tKontejner]
-            frejm = frejm[frejm[self.konfig.FLAG] > 0]
-            if len(frejm):
-                overlimit = frejm[frejm[self.konfig.MIDLINE] > self.konfig.temperaturaKontejneraMax]
-                underlimit = frejm[frejm[self.konfig.MIDLINE] < self.konfig.temperaturaKontejneraMax]
-                frejm = overlimit.append(underlimit)
-                x = list(frejm.index)
-                brojLosih = len(x)
-                if brojLosih:
-                    y1, y2 = self.ylim_original
-                    c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
-                    y = [c for i in range(brojLosih)]
-                    self.axes.plot(x,
-                                   y,
-                                   marker = self.konfig.temperaturaKontejnera.markerStyle,
-                                   markersize = self.konfig.temperaturaKontejnera.markerSize,
-                                   color = self.konfig.temperaturaKontejnera.color,
-                                   zorder = self.konfig.temperaturaKontejnera.zorder,
-                                   label = self.konfig.temperaturaKontejnera.label,
-                                   linestyle='None')
+        frejm = self.data[self.gKanal]
+        frejm = frejm[frejm[self.konfig.STATUS] != 0]
+        if len(frejm):
+            x = list(frejm.index)
+            y1, y2 = self.ylim_original
+            c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+            y = [c for i in x]
+            self.crtaj_scatter(x, y, self.konfig.statusWarning)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -633,7 +620,6 @@ class SatniMinutniKanvas(Kanvas):
         -mapaParametara['kanalId'] --> program mjerenja id glavnog kanala [int]
         -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
-        -mapaParametara['tempKontejner'] --> temperatura kontejnera id (ili None) [int]
         """
         #clear prethodnog grafa, reinicijalizacija membera
         self.clear_graf()
@@ -641,12 +627,11 @@ class SatniMinutniKanvas(Kanvas):
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
         self.gKanal = mapaParametara['kanalId']
-        self.tKontejner = mapaParametara['tempKontejner']
         if self.gKanal in self.data.keys():
             #naredba za crtanje glavnog grafa
             self.crtaj_glavni_kanal()
             #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - {self.gKanal, self.tKontejner}
+            pomocni = set(self.data.keys()) - {self.gKanal}
             #naredba za crtanje pomocnih
             self.crtaj_pomocne(pomocni)
             ###micanje tocaka od rubova, tickovi, legenda...
@@ -655,7 +640,7 @@ class SatniMinutniKanvas(Kanvas):
             self.setup_ticks()
             #toggle ticks, legend, grid
             self.toggle_tgl()
-            self.crtaj_oznake_temperature()
+            self.crtaj_oznake_statusa()
             #highlight prijasnje tocke
             if self.statusHighlight:
                 hx, hy = self.lastHighlight
@@ -734,6 +719,9 @@ class SatniKanvas(SatniMinutniKanvas):
         #set granice za max zoom out
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
+        y1,y2 = self.ylim_original
+        c = abs(y2 - y1) * 0.1
+        self.ylim_original = (y1, y2 + c)
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
@@ -907,6 +895,9 @@ class MinutniKanvas(SatniMinutniKanvas):
         #set granice za max zoom out
         self.xlim_original = (tmin, tmax)
         self.ylim_original = self.axes.get_ylim()
+        y1,y2 = self.ylim_original
+        c = abs(y2 - y1) * 0.1
+        self.ylim_original = (y1, y2 + c)
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)

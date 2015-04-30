@@ -134,11 +134,8 @@ class SatniGrafKonfig(MetaConfig):
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_minor_ticks', False, bool)
         self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_satni_span_selector', False, bool)
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-        #pomocni graf za temperatura kontejnera izvan dopustenih granica
-        self.temperaturaKontejnera = GrafDTO(cfg, tip='MAIN_WINDOW',podtip='temperatura_kontejnera', oblik='scatter')
-        self.temperaturaKontejneraMin = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_min', 15, int)
-        self.temperaturaKontejneraMax = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_max', 30, int)
-
+        #status warning plot
+        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW', podtip='status_warning', oblik='scatter')
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -159,14 +156,10 @@ class MinutniGrafKonfig(MetaConfig):
         self.Cursor = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_cursor', False, bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_legend', False, bool)
         self.Ticks = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_minor_ticks', False, bool)
-        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False,
-                                                          bool)
+        self.Selector = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_minutni_span_selector', False, bool)
         self.Zoom = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'action_zoom', False, bool)
-        #pomocni graf za temperatura kontejnera izvan dopustenih granica
-        self.temperaturaKontejnera = GrafDTO(cfg, tip='MAIN_WINDOW',podtip='temperatura_kontejnera', oblik='scatter')
-        self.temperaturaKontejneraMin = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_min', 15, int)
-        self.temperaturaKontejneraMax = pomocne_funkcije.load_config_item(cfg, 'MAIN_WINDOW', 'temperatura_kontejnera_max', 30, int)
-
+        #status warning
+        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW', podtip='status_warning', oblik='scatter')
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):
     def __init__(self, cfg):

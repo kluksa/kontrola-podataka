@@ -157,6 +157,8 @@ class DataModel(QtCore.QObject):
 ###############################################################################
     def set_frame(self, key = None, frame = None):
         """postavi frame u self.data pod kljucem key"""
+        #recast 'statusString to str type
+        frame['statusString'] = frame['statusString'].astype(str)
         #SORT DATAFRAME
         frame.sort_index(inplace = True)
         #dodaj na self.data
@@ -174,6 +176,8 @@ class DataModel(QtCore.QObject):
             self.data[key].update(frame)
             self.data[key].sort()
         else:
+            #recast 'statusString to str type
+            frame['statusString'] = frame['statusString'].astype(str)
             #create new key
             self.data[key] = frame
             self.data[key].sort()

@@ -186,6 +186,10 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel.minutniGraf,
                      QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'),
                      self.gui.koncPanel.set_labele_minutne_tocke)
+        ###update labela za satnu rest tocku###
+        self.connect(self.gui.visednevniPanel.satniRest,
+                     QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'),
+                     self.gui.visednevniPanel.prikazi_info_satni_rest)
     ###############################################################################
     def user_log_in(self, x):
         """
@@ -233,6 +237,7 @@ class Kontroler(QtCore.QObject):
             self.dokument.set_statusMap(statusMapa)
             self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
             self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
+            self.gui.visednevniPanel.satniRest.set_statusMap(statusMapa)
         except pomocne_funkcije.AppExcept:
             msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
             self.prikazi_error_msg(msg)

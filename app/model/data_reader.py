@@ -50,6 +50,12 @@ class RESTReader(object):
         output je pandas dataframe (prazan frame ako nema podataka)
         """
         try:
+            """
+            TODO! moguce je prosljediti keyword argument dtype={column name : type}
+            funkciji pd.read_json() koja ce castati stupce u odredjeni tip prilikom
+            citanja. Svi stupci koji nisu navedeni u dictu ce se automatski castati
+            u 'najprikladniji' tip.
+            """
             #parse json i provjeri da li su svi relevantni stupci na broju
             df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
             assert 'vrijeme' in df.columns, 'ERROR - Nedostaje stupac: "vrijeme"'

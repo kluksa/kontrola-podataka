@@ -253,8 +253,10 @@ class RestPregledSatnih(base14, form14):
         self.setupUi(self)
         self.gKanal = None # id glavnog kanala za prikaz
 
-        #placeholderi
-        self.satniRest = canvas.SatniRestKanvas(konfig.satni)
+        #set dateEdit na danasnji datum
+        self.dateEditPocetni.setDate(QtCore.QDate.currentDate())
+
+        self.satniRest = canvas.SatniRestKanvas(konfig.satniRest)
         self.grafLayout.addWidget(self.satniRest)
 
         self.buttonCrtaj.clicked.connect(self.get_podatke)
@@ -294,7 +296,7 @@ class RestPregledSatnih(base14, form14):
     def get_podatke(self):
         """slanje requesta za crtanjem REST satnih podataka"""
         if self.gKanal is not None:
-            datum = self.adapt_datum(self.kalendar.selectedDate())
+            datum = self.adapt_datum(self.dateEditPocetni.date())
             brojDana = self.spinBrojDana.value()
             valjani = self.checkSamoValjani.isChecked()
             nivoValidacije = self.spinNivoValidacije.value()
@@ -307,3 +309,17 @@ class RestPregledSatnih(base14, form14):
         else:
             QtGui.QMessageBox.information(self, 'Problem kod crtanja', 'Nije moguce nacrtati graf, kanal nije izabran')
 
+    def prikazi_info_satni_rest(self, mapa):
+        """
+        Funkcija updatea labele sa informacijom o izabranoj tocki sa grafa satno
+        agregiranih vrijednosti direktno preuzetih sa REST servisa.
+
+        mapa['vrijeme'] = vrijeme
+        mapa['average'] = vrijednost
+        mapa['status'] = status
+        mapa['obuhvat'] = obuhvat
+        """
+        self.labelVrijeme.setText(str(mapa['vrijeme']))
+        self.labelAverage.setText(str(mapa['average']))
+        self.labelObuhvat.setText(str(mapa['obuhvat']))
+        self.plainTextEditStatus.setPlainText(str(mapa['status']))

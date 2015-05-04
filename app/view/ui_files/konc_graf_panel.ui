@@ -184,7 +184,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>satniVrijeme</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -223,7 +223,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>satniAverage</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -249,7 +249,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>satniMin</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -262,7 +262,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>satniMax</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -288,7 +288,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>satniCount</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -362,7 +362,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>minutniKoncentracija</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -401,7 +401,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>minutniVrijeme</string>
+             <string/>
             </property>
            </widget>
           </item>

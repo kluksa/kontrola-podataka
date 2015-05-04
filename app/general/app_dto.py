@@ -36,6 +36,7 @@ class KonfigAplikacije():
         self.zero = ZeroGrafKonfig(cfg)
         self.span = SpanGrafKonfig(cfg)
         self.REST = RESTKonfig(cfg)
+        self.satniRest = SatniRestGrafKonfig(cfg)
         logging.debug('Inicijalizacija DTO za sve grafove, end')
 
     def dodaj_pomocni(self, key):
@@ -98,8 +99,44 @@ class MetaConfig():
         """boolean setter za zoom interakciju sa canvasom"""
         self.Zoom = x
         logging.info('Zoom boolean value promjenjen, nova vrijednost = {0}'.format(x))
-
-
+################################################################################
+class SatniRestGrafKonfig(MetaConfig):
+    def __init__(self, cfg):
+        super(SatniRestGrafKonfig, self).__init__()
+        #konstante
+        self.TIP = 'SATNO AGREGIRANI, REST'
+        self.MIDLINE = 'avg'
+        self.STATUS = 'status'
+        self.COUNT = 'obuhvat'
+        #podaci o grafovima
+        self.Midline = GrafDTO(cfg, tip='SATNI_REST', podtip='midline', oblik='line')
+        self.VOK = GrafDTO(cfg, tip='SATNI', podtip='VOK', oblik='scatter') #potreban za highlight
+        #interakcija sa grafom
+        self.Grid = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_satni_rest_grid',
+                                                      False,
+                                                      bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_satni_rest_cursor',
+                                                        False,
+                                                        bool)
+        self.Legend = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_satni_rest_legend',
+                                                        False,
+                                                        bool)
+        self.Ticks = pomocne_funkcije.load_config_item(cfg,
+                                                       'MAIN_WINDOW',
+                                                       'action_satni_rest_minor_ticks',
+                                                       False,
+                                                       bool)
+        self.Zoom = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_zoom',
+                                                      False,
+                                                      bool)
 ################################################################################
 class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):

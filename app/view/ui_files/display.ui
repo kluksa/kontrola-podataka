@@ -141,10 +141,20 @@
      </property>
      <addaction name="action_ZERO_legend"/>
     </widget>
+    <widget class="QMenu" name="menu_REST_agreg_graf">
+     <property name="title">
+      <string>&amp;REST agreg. graf</string>
+     </property>
+     <addaction name="action_rest_satni_grid"/>
+     <addaction name="action_rest_satni_cursor"/>
+     <addaction name="action_rest_satni_minor_ticks"/>
+     <addaction name="action_rest_satni_legend"/>
+    </widget>
     <addaction name="menu_Satni_graf"/>
     <addaction name="menu_Minutni_graf"/>
     <addaction name="menu_ZERO_graf"/>
     <addaction name="menu_SPAN_graf"/>
+    <addaction name="menu_REST_agreg_graf"/>
     <addaction name="separator"/>
     <addaction name="action_zoom"/>
     <addaction name="action_zoom_out"/>
@@ -348,6 +358,38 @@
    </property>
    <property name="toolTip">
     <string>Toggle legende za SPAN graf</string>
+   </property>
+  </action>
+  <action name="action_rest_satni_grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Grid</string>
+   </property>
+  </action>
+  <action name="action_rest_satni_cursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Cursor</string>
+   </property>
+  </action>
+  <action name="action_rest_satni_legend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Legend</string>
+   </property>
+  </action>
+  <action name="action_rest_satni_minor_ticks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Minor ticks</string>
    </property>
   </action>
  </widget>

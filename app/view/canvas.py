@@ -13,7 +13,7 @@ from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas #import specificnog canvasa za Qt
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector, Cursor
-
+from matplotlib.dates import AutoDateFormatter, AutoDateLocator
 
 ################################################################################
 ################################################################################
@@ -76,10 +76,12 @@ class Kanvas(FigureCanvas):
         self.zoomBoxInfo = dict(facecolor = 'yellow',
                                 edgecolor = 'black',
                                 alpha = 0.5,
+                                zorder = 10,
                                 fill = True)
         self.zoomSelector = RectangleSelector(self.axes,
                                               zoom_func,
                                               drawtype = 'box',
+                                              useblit = True,
                                               rectprops = self.zoomBoxInfo)
         self.zoomSelector.set_active(False)
 
@@ -853,17 +855,34 @@ class SatniKanvas(SatniMinutniKanvas):
 ################################################################################
 class SatniRestKanvas(SatniKanvas):
     """
-    SUBLKLASAJ SATNI KANVAS, najslicniji je njemu
+    Klasa za prikaz satno agregiranih srednjaka preuzetih direktno sa REST servisa.
     """
-    #TODO! reimplement funkcije do kraja
     def __init__(self, konfig, parent=None, width=6, height=5, dpi=100):
         SatniKanvas.__init__(self, konfig, pomocni={}) #nema pomocnih, zato prosljedjen prazan dict
         self.axes.set_ylabel(self.konfig.TIP)
+        self.axes.figure.subplots_adjust(top = 0.98)
+        self.axes.figure.subplots_adjust(bottom = 0.08)
+        self.axes.figure.subplots_adjust(left = 0.08)
+        self.axes.figure.subplots_adjust(right = 0.98)
         #inicijalni setup za interakciju i display(pick, zoom, ticks...)
         self.initialize_interaction(self.span_select, self.rect_zoom)
         self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
         self.toggle_grid(self.konfig.Grid)
         self.toggle_ticks(self.konfig.Ticks)
+
+    def setup_ticks(self):
+        """
+        automatsko postavljane tickova i labela
+        """
+        locator = AutoDateLocator()
+        majorTickFormat = AutoDateFormatter(locator, defaultfmt='%Y-%m-%d')
+        majorTickFormat.scaled[30.] = '%Y-%m-%d'
+        majorTickFormat.scaled[1.0] = '%Y-%m-%d'
+        majorTickFormat.scaled[1. / 24.] = '%H:%M:%S'
+        majorTickFormat.scaled[1. / (24. * 60.)] = '%M:%S'
+        self.axes.xaxis.set_major_locator(locator)
+        self.axes.xaxis.set_major_formatter(majorTickFormat)
+        self.fig.autofmt_xdate()
 
     def set_interaction_mode(self, zoom, cursor):
         """
@@ -871,7 +890,6 @@ class SatniRestKanvas(SatniKanvas):
         zoom --> boolean
         cursor --> boolean
         """
-        #zero i span nemaju span selektor
         self.spanSelector = None
         #set up pick callbacks ovisno o tipu grafa
         self.disconnect_pick_evente()
@@ -912,15 +930,37 @@ class SatniRestKanvas(SatniKanvas):
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
         self.gKanal = mapaParametara['kanalId']
 
-        #naredba za crtanje glavnog grafa
-        self.crtaj_glavni_kanal()
-        ###micanje tocaka od rubova, tickovi, legenda...
-        self.setup_limits()
-        self.setup_legend()
-        self.setup_ticks()
-        #toggle ticks, legend, grid
-        self.toggle_tgl()
-        self.draw()
+        if self.gKanal in self.data.keys():
+            #naredba za crtanje glavnog grafa
+            self.crtaj_glavni_kanal()
+            ###micanje tocaka od rubova, tickovi, legenda...
+            self.setup_limits()
+            self.setup_legend()
+            self.setup_ticks()
+            #toggle ticks, legend, grid
+            self.toggle_tgl()
+            #highlight prijasnje tocke
+            if self.statusHighlight:
+                hx, hy = self.lastHighlight
+                if hx in self.data[self.gKanal].index:
+                    #pronadji novu y vrijednosti indeksa
+                    hy = self.data[self.gKanal].loc[hx, self.konfig.MIDLINE]
+                    self.make_highlight(hx, hy, self.highlightSize)
+                else:
+                    self.statusHighlight = False
+                    self.lastHighlight = (None, None)
+                    #reset labele u panelu --
+                    self.setup_annotation_text('')
+            self.draw()
+        else:
+            self.axes.text(0.5,
+               0.5,
+               'Nije moguce pristupiti podacima za trazeni kanal.',
+               horizontalalignment='center',
+               verticalalignment='center',
+               fontsize = 8,
+               transform = self.axes.transAxes)
+            self.draw()
 
     def crtaj_glavni_kanal(self):
         """
@@ -931,47 +971,40 @@ class SatniRestKanvas(SatniKanvas):
         x = list(frejm.index)
         y = list(frejm[self.konfig.MIDLINE])
         self.crtaj_line(x, y, self.konfig.Midline)
-        #plot tocaka ovisno o flagu i validaciji
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
         self.statusGlavniGraf = True
 
-    def pronadji_tickove(self):
-        """
-        funkcija vraca listu tickmarkera i listu tick labela za satni REST graf.
-        -vremenski raspon je tmin, tmax
-        -tickovi su razmaknuti 1 dan
-        vrati dict sa listama lokacija i labela za tickove
-        """
-        tmin = self.pocetnoVrijeme
-        tmax = self.zavrsnoVrijeme
-        majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'D'))
-        majorLabeli = [str(ind.date()) for ind in majorTickovi]
-        tempTickovi = list(pd.date_range(start = tmin, end = tmax, freq = '6H'))
-        minorTickovi = []
-        minorLabeli = []
-        for ind in tempTickovi:
-            if ind not in majorTickovi:
-                minorTickovi.append(ind)
-                minorLabeli.append("")
-                #minorLabeli.append(ftime)
-        out = {'majorTickovi':majorTickovi,
-               'majorLabeli':majorLabeli,
-               'minorTickovi':minorTickovi,
-               'minorLabeli':minorLabeli}
-        return out
-
     def on_pick(self, event):
-        pass
+        """
+        Resolve pick eventa.
+        """
+        if self.statusGlavniGraf and event.inaxes == self.axes:
+            xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
+            if event.button == 1 or event.button == 2:
+                self.highlight_pick((xpoint, ypoint), self.highlightSize)
+
+    def setup_annotation_text(self, xpoint):
+        """
+        Definiranje teksta za prikaz annotationa.
+        Ulazni parametar je tocka za koju radimo annotation. Funkcija vraca string
+        teksta annotationa.
+        """
+        output = {'vrijeme': '',
+                  'average': '',
+                  'obuhvat': '',
+                  'status': ''}
+        if xpoint in list(self.data[self.gKanal].index):
+            ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
+            if ystatus != 0:
+                ystatus = self.check_status_flags(ystatus)
+            output = {'vrijeme':str(xpoint),
+                      'average':round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),3),
+                      'obuhvat':int(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
+                      'status':str(ystatus)}
+        #emit signal to update label
+        self.emit(QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'), output)
 
     def span_select(self, xmin, xmax):
         pass
-
-
-
-
 ################################################################################
 class MinutniKanvas(SatniMinutniKanvas):
     """

@@ -157,6 +157,7 @@ class DataModel(QtCore.QObject):
 ###############################################################################
     def set_frame(self, key = None, frame = None):
         """postavi frame u self.data pod kljucem key"""
+        #BUG FIX approach 1.
         #recast 'statusString to str type
         frame['statusString'] = frame['statusString'].astype(str)
         #SORT DATAFRAME

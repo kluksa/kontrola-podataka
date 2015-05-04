@@ -968,6 +968,7 @@ class SatniRestKanvas(SatniKanvas):
         """
         #midline
         frejm = self.data[self.gKanal]
+        frejm = frejm[frejm[self.konfig.MIDLINE] > -99]
         x = list(frejm.index)
         y = list(frejm[self.konfig.MIDLINE])
         self.crtaj_line(x, y, self.konfig.Midline)
@@ -991,7 +992,7 @@ class SatniRestKanvas(SatniKanvas):
         output = {'vrijeme': '',
                   'average': '',
                   'obuhvat': '',
-                  'status': ''}
+                  'status': 'Nema podataka'}
         if xpoint in list(self.data[self.gKanal].index):
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
             if ystatus != 0:

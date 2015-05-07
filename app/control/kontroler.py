@@ -805,7 +805,7 @@ class Kontroler(QtCore.QObject):
         za crtanje i pokrene crtanje direktnom naredbom zaduzenom kanvasu
 
         ulazna mapa ima sljedeca polja
-        ['datum','kanal','brojdana','valjani','validacija']
+        ['datumOd','datumDo', 'kanal', 'valjani','validacija']
 
         P.S. ista mapa se mora prosljediti webZahtjevu da povuce podatke sa RESTA
         """

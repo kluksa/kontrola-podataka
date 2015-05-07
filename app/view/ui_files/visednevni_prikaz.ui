@@ -56,22 +56,10 @@
         <string>Opcije:</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="spinBrojDana">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>999</number>
-          </property>
-          <property name="value">
-           <number>10</number>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Do datuma :</string>
           </property>
          </widget>
         </item>
@@ -121,21 +109,8 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Broj dana :</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1">
-         <widget class="QDateEdit" name="dateEditPocetni">
+         <widget class="QDateEdit" name="dateEditOd">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -150,7 +125,7 @@
            </date>
           </property>
           <property name="displayFormat">
-           <string>yyyy-mM-dd</string>
+           <string>yyyy-M-d</string>
           </property>
           <property name="calendarPopup">
            <bool>true</bool>
@@ -160,7 +135,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Pocetni datum :</string>
+           <string>Od datuma :</string>
           </property>
          </widget>
         </item>
@@ -171,6 +146,29 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDateEdit" name="dateEditDo">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="date">
+           <date>
+            <year>2015</year>
+            <month>1</month>
+            <day>14</day>
+           </date>
+          </property>
+          <property name="displayFormat">
+           <string>yyyy-M-d</string>
+          </property>
+          <property name="calendarPopup">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

@@ -44,18 +44,19 @@ class WebZahtjev(QtCore.QObject):
         ulazni parametar je mapa podataka
 
         {
-            'datum': string, format mora biti "YYYY-MM-DDThh:mm:ss"
+            'datumOd': string, format mora biti "YYYY-MM-DDThh:mm:ss"
+            'datumDo': string, format mora biti "YYYY-MM-DDThh:mm:ss"
             'kanal': int, id programa mjerenja
-            'brojdana': int, broj koliko dana unazad treba prikazati
             'valjani': boolean, Da li se prikazuju samo valjani
             'validacija': int, nivo validacije
         }
 
         metoda vraca json string
         """
-        url = self._base + self._resursi['satniPodaci']+'/'+str(mapa['kanal'])+'/'+mapa['datum']
-        payload = {"broj_dana":mapa['brojdana'],
-                   "samo_valjani":mapa['valjani'],
+        url = self._base + self._resursi['satniPodaci']+'/'
+        res = "/".join([str(mapa['kanal']),str(mapa['datumOd']),str(mapa['datumDo'])])
+        url = url+res
+        payload = {"samo_valjani":mapa['valjani'],
                    "nivo_validacije":mapa['validacija']}
         try:
             r = requests.get(url,

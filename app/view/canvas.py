@@ -515,12 +515,15 @@ class SatniMinutniKanvas(Kanvas):
         if xpoint <= self.pocetnoVrijeme:
             xpoint = self.pocetnoVrijeme
         #kooridinate ako nedostaju podaci za highlight
+        #TODO! fix highlighta
+        ymin, ymax = self.axes.get_ylim()
+        defaultY = (ymax-ymin) / 2
         if xpoint in list(self.data[self.gKanal].index):
             ypoint = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
+            if ypoint < ymin or ypoint > ymax:
+                ypoint = defaultY
         else:
-            miny = self.data[self.gKanal][self.konfig.MIDLINE].min()
-            maxy = self.data[self.gKanal][self.konfig.MIDLINE].max()
-            ypoint = (miny + maxy)/2
+            ypoint = defaultY
 
         return xpoint, ypoint
 
@@ -966,11 +969,13 @@ class SatniRestKanvas(SatniKanvas):
         """
         Metoda za crtanje glavnog grafa
         """
-        #midline
         frejm = self.data[self.gKanal]
         frejm = frejm[frejm[self.konfig.MIDLINE] > -99]
-        x = list(frejm.index)
-        y = list(frejm[self.konfig.MIDLINE])
+        srednjaci = frejm[self.konfig.MIDLINE]
+        srednjaci = srednjaci.asfreq('H') #resample na satne intervale, NaN gdje nema podataka
+        #graf koji se crta bi trebao imati 'rupe' tamo gdje nema podataka
+        x = list(srednjaci.index)
+        y = list(srednjaci)
         self.crtaj_line(x, y, self.konfig.Midline)
         self.statusGlavniGraf = True
 

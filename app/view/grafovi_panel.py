@@ -254,7 +254,9 @@ class RestPregledSatnih(base14, form14):
         self.gKanal = None # id glavnog kanala za prikaz
 
         #set dateEdit na danasnji datum
-        self.dateEditPocetni.setDate(QtCore.QDate.currentDate())
+        temp = QtCore.QDate.currentDate().addDays(-10)
+        self.dateEditOd.setDate(temp)
+        self.dateEditDo.setDate(QtCore.QDate.currentDate())
 
         self.satniRest = canvas.SatniRestKanvas(konfig.satniRest)
         self.grafLayout.addWidget(self.satniRest)
@@ -296,13 +298,13 @@ class RestPregledSatnih(base14, form14):
     def get_podatke(self):
         """slanje requesta za crtanjem REST satnih podataka"""
         if self.gKanal is not None:
-            datum = self.adapt_datum(self.dateEditPocetni.date())
-            brojDana = self.spinBrojDana.value()
+            datumOd = self.adapt_datum(self.dateEditOd.date())
+            datumDo = self.adapt_datum(self.dateEditDo.date())
             valjani = self.checkSamoValjani.isChecked()
             nivoValidacije = self.spinNivoValidacije.value()
-            output = {'datum': datum,
+            output = {'datumOd': datumOd,
+                      'datumDo': datumDo,
                       'kanal': self.gKanal,
-                      'brojdana': brojDana,
                       'valjani': valjani,
                       'validacija': nivoValidacije}
             self.emit(QtCore.SIGNAL('nacrtaj_rest_satne(PyQt_PyObject)'), output)

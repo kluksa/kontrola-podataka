@@ -129,9 +129,6 @@ class RESTWriter(object):
         #convert to json string uz pomoc pandasa
         jstring = frejm.to_json(orient = 'records')
         #upload uz pomoc self.source objekta (networking_funkcjie.WebZahtjev)
-        #TODO!
-        print('!!!!!!!!!!outgoing json za spremanje na REST!!!!!!!!!!!!!')
-        print(jstring)
         self.source.upload_json_minutnih(jstring=jstring, program=key, date=date)
 
     def int_to_boolean(self, x):

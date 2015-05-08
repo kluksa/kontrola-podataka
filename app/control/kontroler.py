@@ -399,10 +399,11 @@ class Kontroler(QtCore.QObject):
         QtGui.QApplication.restoreOverrideCursor()
 
         argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
-                  'datum': self.pickedDate}
+                  'datum': self.pickedDate,
+                  'mjerenjeId': self.gKanal}
         self.gui.koncPanel.change_glavniLabel(argMap)
         self.gui.zsPanel.change_glavniLabel(argMap)
-        self.gui.visednevniPanel.change_glavniLabel(argMap['opis'])
+        self.gui.visednevniPanel.change_glavniLabel(argMap)
 
         self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
@@ -680,6 +681,8 @@ class Kontroler(QtCore.QObject):
                 finally:
                     # vrati izgled cursora nazad na normalni
                     QtGui.QApplication.restoreOverrideCursor()
+                    #ponovno ucitaj podatake sa RESTA za isti datum i glavni kanal kao i one koje si spremio
+                    self.ponisti_izmjene()
         else:
             msg = 'Nije moguce spremiti minutne podatke na REST jer nije izabran glavni kanal i datum.'
             self.prikazi_error_msg(msg)

@@ -91,12 +91,13 @@ class KoncPanel(base2, form2):
         Informacija o izboru se postavlja u label.
         """
         mapa = ulaz['opis']
+        mjerenjeId = ulaz['mjerenjeId']
         datum = ulaz['datum']
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
         mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4}'.format(postaja, komponenta, formula, mjernaJedinica, datum)
+        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
         self.glavniLabel.setText(opis)
         logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
 ###############################################################################
@@ -190,12 +191,13 @@ class ZeroSpanPanel(base3, form3):
         Informacija o izboru se postavlja u label.
         """
         mapa = ulaz['opis']
+        mjerenjeId = ulaz['mjerenjeId']
         datum = ulaz['datum']
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
         mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4}'.format(postaja, komponenta, formula, mjernaJedinica, datum)
+        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
         self.glavniLabel.setText(opis)
         logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
 ###############################################################################
@@ -269,11 +271,13 @@ class RestPregledSatnih(base14, form14):
 
         ulaz je mapa sa opisom kanala(naziv, mjerna jedinica...)
         """
-        postaja = ulaz['postajaNaziv']
-        komponenta = ulaz['komponentaNaziv']
-        formula = ulaz['komponentaFormula']
-        mjernaJedinica = ulaz['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]'.format(postaja, komponenta, formula, mjernaJedinica)
+        mapa = ulaz['opis']
+        mjerenjeId = ulaz['mjerenjeId']
+        postaja = mapa['postajaNaziv']
+        komponenta = mapa['komponentaNaziv']
+        formula = mapa['komponentaFormula']
+        mjernaJedinica = mapa['komponentaMjernaJedinica']
+        opis = '{0}, {1}( {2} ) [{3}]. mjerenjeId:{4}'.format(postaja, komponenta, formula, mjernaJedinica, mjerenjeId)
         self.glavniLabel.setText(opis)
 
     def set_gKanal(self, mapa):

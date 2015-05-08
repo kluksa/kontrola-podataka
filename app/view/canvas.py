@@ -343,12 +343,16 @@ class SatniMinutniKanvas(Kanvas):
         Kanvas.__init__(self, konfig)
         self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
         self.statusMap = {} #defaultni satusMap je prazan dict, ---> status annotation ce biti prazan
+        self.kontrolaProvedenaBit = None
 
     def set_statusMap(self, mapa):
         """
         Setter za dict koji povezuje poziciju bita sa opisom statusa.
         """
         self.statusMap = mapa
+        for i in self.statusMap:
+            if self.statusMap[i] == 'KONTROLA_PROVEDENA':
+                self.kontrolaProvedenaBit = i
 
     def check_bit(self, broj, bit_position):
         """
@@ -465,13 +469,29 @@ class SatniMinutniKanvas(Kanvas):
                                zorder=self.pomocniGrafovi[key].zorder,
                                label=self.pomocniGrafovi[key].label)
 
+    def provjera_obavljene_kontrole(self, x):
+        """
+        Pomocna funkcija, za svaki status x provjerava da li je kontrola provedena.
+        Ako je kontrola provedena vraca 0
+        Ako kontrola nije provedena vraca x
+        """
+        if self.check_bit(x, self.kontrolaProvedenaBit):
+            return 0
+        else:
+            return x
+
     def crtaj_oznake_statusa(self):
         """
-        Crtanje oznaka za sve tocke gdje je status razlicit od nule.
+        Crtanje oznaka za sve tocke gdje je status razlicit od nule, a da nije
+        provedena kontrola nad tim podacima.
         Prikazuje se scatter plot (samo tocke) ispod gornjeg ruba grafa.
         """
         frejm = self.data[self.gKanal]
+        #ako je kontrola provedena promjeni status u 0
+        frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
+        #eliminacija svih kojima je status 0
         frejm = frejm[frejm[self.konfig.STATUS] != 0]
+        #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
         if len(frejm):
             x = list(frejm.index)
             y1, y2 = self.ylim_original
@@ -515,7 +535,6 @@ class SatniMinutniKanvas(Kanvas):
         if xpoint <= self.pocetnoVrijeme:
             xpoint = self.pocetnoVrijeme
         #kooridinate ako nedostaju podaci za highlight
-        #TODO! fix highlighta
         ymin, ymax = self.axes.get_ylim()
         defaultY = (ymax-ymin) / 2
         if xpoint in list(self.data[self.gKanal].index):
@@ -690,26 +709,27 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         #midline
         frejm = self.data[self.gKanal]
-        x = list(frejm.index)
-        y = list(frejm[self.konfig.MIDLINE])
-        self.crtaj_line(x, y, self.konfig.Midline)
-        #fill izmedju komponenti
-        if self.konfig.Fill.crtaj:
-            self.crtaj_fill(x,
-                            list(frejm[self.konfig.Fill.komponenta1]),
-                            list(frejm[self.konfig.Fill.komponenta2]),
-                            self.konfig.Fill)
-        #ekstremi min i max
-        if self.konfig.EksMin.crtaj:
-            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MINIMUM, self.konfig.EksMin, None)
-            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MAKSIMUM, self.konfig.EksMax, None)
+        if type(frejm) == pd.core.frame.DataFrame:
+            x = list(frejm.index)
+            y = list(frejm[self.konfig.MIDLINE])
+            self.crtaj_line(x, y, self.konfig.Midline)
+            #fill izmedju komponenti
+            if self.konfig.Fill.crtaj:
+                self.crtaj_fill(x,
+                                list(frejm[self.konfig.Fill.komponenta1]),
+                                list(frejm[self.konfig.Fill.komponenta2]),
+                                self.konfig.Fill)
+            #ekstremi min i max
+            if self.konfig.EksMin.crtaj:
+                self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MINIMUM, self.konfig.EksMin, None)
+                self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MAKSIMUM, self.konfig.EksMax, None)
 
-        #plot tocaka ovisno o flagu i validaciji
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
-        self.statusGlavniGraf = True
+            #plot tocaka ovisno o flagu i validaciji
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
+            self.statusGlavniGraf = True
 
     def setup_limits(self):
         """
@@ -970,14 +990,15 @@ class SatniRestKanvas(SatniKanvas):
         Metoda za crtanje glavnog grafa
         """
         frejm = self.data[self.gKanal]
-        frejm = frejm[frejm[self.konfig.MIDLINE] > -99]
-        srednjaci = frejm[self.konfig.MIDLINE]
-        srednjaci = srednjaci.asfreq('H') #resample na satne intervale, NaN gdje nema podataka
-        #graf koji se crta bi trebao imati 'rupe' tamo gdje nema podataka
-        x = list(srednjaci.index)
-        y = list(srednjaci)
-        self.crtaj_line(x, y, self.konfig.Midline)
-        self.statusGlavniGraf = True
+        if type(frejm) == pd.core.frame.DataFrame:
+            frejm = frejm[frejm[self.konfig.MIDLINE] > -99]
+            srednjaci = frejm[self.konfig.MIDLINE]
+            srednjaci = srednjaci.asfreq('H') #resample na satne intervale, NaN gdje nema podataka
+            #graf koji se crta bi trebao imati 'rupe' tamo gdje nema podataka
+            x = list(srednjaci.index)
+            y = list(srednjaci)
+            self.crtaj_line(x, y, self.konfig.Midline)
+            self.statusGlavniGraf = True
 
     def on_pick(self, event):
         """
@@ -1033,15 +1054,16 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         #midline
         frejm = self.data[self.gKanal]
-        x = list(frejm.index)
-        y = list(frejm[self.konfig.MIDLINE])
-        self.crtaj_line(x, y, self.konfig.Midline)
-        #plot tocaka ovisno o flagu i validaciji
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
-        self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
-        self.statusGlavniGraf = True
+        if type(frejm) == pd.core.frame.DataFrame:
+            x = list(frejm.index)
+            y = list(frejm[self.konfig.MIDLINE])
+            self.crtaj_line(x, y, self.konfig.Midline)
+            #plot tocaka ovisno o flagu i validaciji
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VOK, 1000)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.VBAD, -1000)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVOK, 1)
+            self.crtaj_scatter_value_ovisno_o_flagu(self.konfig.MIDLINE, self.konfig.NVBAD, -1)
+            self.statusGlavniGraf = True
 
     def setup_limits(self):
         """

@@ -137,14 +137,10 @@ class DataModel(QtCore.QObject):
             df['status'] = df['status'].astype(np.int64)
             df['id'] = df['id'].astype(np.int64)
             if len(df):
-                print(self.kontrolaBitPolozaj)
-                print(self.statusMap.keys())
                 if self.kontrolaBitPolozaj in self.statusMap.keys():
                     for i in df.index:
                         df.loc[i, 'flag'] = df.loc[i, 'flag'] * self.pronadji_kontorlirane(df.loc[i, 'status'])
                 self.set_frame(key = kljuc, frame = df)
-                #TODO!
-                print(df)
             else:
                 tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
                 raise pomocne_funkcije.AppExcept(tekst)

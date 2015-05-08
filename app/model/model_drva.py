@@ -147,6 +147,8 @@ class ModelDrva(QtCore.QAbstractItemModel):
                 return item.data(0)
             elif index.column() == 1:
                 return item.data(3)
+            elif index.column() == 2:
+                return item.data(2)
         else:
             return None
         ###############################################################################
@@ -173,7 +175,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         TODO! pitanje je koliko informacija nam treba u view-u
         """
         # return self.rootItem.columnCount()
-        return 2
+        return 3
 
     ###############################################################################
     def parent(self, index):
@@ -200,7 +202,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         # headeri = ['Stanica/komponenta', 'Usporedno', 'Program mjerenja']
         #headeri = ['Stanica/komponenta', 'Program mjerenja']
-        headeri = ['Stanica/komponenta', 'Formula']
+        headeri = ['Stanica/komponenta', 'Formula', 'Id']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 

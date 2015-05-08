@@ -189,13 +189,13 @@ class WebZahtjev(QtCore.QObject):
             tekst = 'WebZahtjev.get_sirovi:Opceniti fail.\n{0}'.format(e3)
             raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
-    def upload_json_minutnih(self, program=None, jstring=None):
+    def upload_json_minutnih(self, program=None, jstring=None, date=None):
         """
         Za zadani json string minutnih podataka, predaj zahtjev za spremanje u REST servis.
         Dodatni parametar je program mjerenja id
         """
         #point url na REST  servis
-        url = self._base + self._resursi['siroviPodaci']+ '/'+str(program)
+        url = self._base + self._resursi['siroviPodaci']+ '/'+str(program)+'/'+str(date)
         #pripiremi zahtjev
         payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}

@@ -135,6 +135,7 @@ class DataModel(QtCore.QObject):
             assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
             self.dataframe_structure_test(df)
             df['status'] = df['status'].astype(np.int64)
+            df['id'] = df['id'].astype(np.int64)
             if len(df):
                 print(self.kontrolaBitPolozaj)
                 print(self.statusMap.keys())

@@ -132,7 +132,7 @@ class RESTWriter(object):
         #TODO!
         print('!!!!!!!!!!outgoing json za spremanje na REST!!!!!!!!!!!!!')
         print(jstring)
-        self.source.upload_json_minutnih(jstring=jstring, program=key)
+        self.source.upload_json_minutnih(jstring=jstring, program=key, date=date)
 
     def int_to_boolean(self, x):
         """

@@ -10,7 +10,7 @@ VERZIJE EKSTERNIH MODULA
 -pandas 0.15.2
 -numpy 1.9.2rc1
 -matplotlib 1.4.3
--requests 2.5.3
+t-requests 2.5.3
 -enum
 
 - standard library python 3.4.3 (sys, configparser...)

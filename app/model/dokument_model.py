@@ -8,6 +8,7 @@ Created on Wed Jan 21 14:45:37 2015
 import pandas as pd
 import datetime
 from PyQt4 import QtCore
+import numpy as np
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 ###############################################################################
@@ -46,7 +47,7 @@ class DataModel(QtCore.QObject):
         """
         self.statusMap = mapa
         for i in self.statusMap.keys():
-            if self.statusMap[i] is 'KONTROLA_PROVEDENA':
+            if self.statusMap[i] == 'KONTROLA_PROVEDENA':
                 self.kontrolaBitPolozaj = i
 ###############################################################################
     def set_writer(self, writer):
@@ -118,7 +119,7 @@ class DataModel(QtCore.QObject):
         Ulazni parametar x je status. Izlaz ja 1000 ako je kontrola prethodno
         obavljena, 1 ako nije.
         """
-        value = x & 1 << int(self.kontrolaBitPolozaj)
+        value = int(x) & (1 << int(self.kontrolaBitPolozaj))
         if value > 0:
             return 1000
         else:
@@ -133,11 +134,16 @@ class DataModel(QtCore.QObject):
         try:
             assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
             self.dataframe_structure_test(df)
+            df['status'] = df['status'].astype(np.int64)
             if len(df):
+                print(self.kontrolaBitPolozaj)
+                print(self.statusMap.keys())
                 if self.kontrolaBitPolozaj in self.statusMap.keys():
                     for i in df.index:
                         df.loc[i, 'flag'] = df.loc[i, 'flag'] * self.pronadji_kontorlirane(df.loc[i, 'status'])
                 self.set_frame(key = kljuc, frame = df)
+                #TODO!
+                print(df)
             else:
                 tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
                 raise pomocne_funkcije.AppExcept(tekst)

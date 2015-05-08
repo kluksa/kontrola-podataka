@@ -638,7 +638,7 @@ class Kontroler(QtCore.QObject):
             logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
             self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
         ###############################################################################
-
+    #TODO!
     def upload_minutne_na_REST(self):
         """
         Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na

@@ -119,6 +119,7 @@ class RESTWriter(object):
         frejm --> slajs minutnog frejma
         """
         #test da li su 'bitni' stupci u frejmu
+        assert key != None, 'ERROR - Nedostaje program mjerenja'
         assert 'id' in frejm.columns, 'ERROR - Nedostaje stupac: "id"'
         assert 'flag' in frejm.columns, 'ERROR - Nedostaje stupac: "flag"'
         #rename i adapt frejm
@@ -131,7 +132,7 @@ class RESTWriter(object):
         #TODO!
         print('!!!!!!!!!!outgoing json za spremanje na REST!!!!!!!!!!!!!')
         print(jstring)
-        self.source.upload_json_minutnih(jstring)
+        self.source.upload_json_minutnih(jstring=jstring, program=key)
 
     def int_to_boolean(self, x):
         """

@@ -98,16 +98,16 @@ class DataModel(QtCore.QObject):
         tmax = t + datetime.timedelta(days=1)
         #dohvati trazeni slajs
         frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
-        #provjeri da li su svi unutar slajsa validirani, ako nisu raise error
-        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
-        lenSvih = len(testValidacije)
-        lenDobrih = len(testValidacije[testValidacije == True])
-        if lenSvih != lenDobrih:
-            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
-            raise pomocne_funkcije.AppExcept(tekst)
+#        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
+#        lenSvih = len(testValidacije)
+#        lenDobrih = len(testValidacije[testValidacije == True])
+#        if lenSvih != lenDobrih:
+#            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
+#            raise pomocne_funkcije.AppExcept(tekst)
         #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
         if len(frejm):
             self.pisac.write_minutni(key = key, date = date, frejm = frejm)
+            #TODO! potrebno je promjeniti flag gdje treba u 1000 ili -1000 zbog vizualne identifikacije sto je otislo na rest?
         else:
             tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
             raise pomocne_funkcije.AppExcept(tekst)

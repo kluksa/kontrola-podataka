@@ -189,20 +189,26 @@ class WebZahtjev(QtCore.QObject):
             tekst = 'WebZahtjev.get_sirovi:Opceniti fail.\n{0}'.format(e3)
             raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
-    def upload_json_minutnih(self, x):
+    def upload_json_minutnih(self, program=None, jstring=None):
         """
-        Za zadani json string x minutnih podataka, predaj zahtjev za spremanje u REST servis.
+        Za zadani json string minutnih podataka, predaj zahtjev za spremanje u REST servis.
+        Dodatni parametar je program mjerenja id
         """
         #point url na REST  servis
-        url = self._base + self._resursi['siroviPodaci']
+        url = self._base + self._resursi['siroviPodaci']+ '/'+str(program)
         #pripiremi zahtjev
         payload = {"id":"putPodaci", "name":"PUT"}
         headers = {'Content-type': 'application/json'}
         try:
-            assert x is not None, 'Ulazni parametar je None, json string nije zadan.'
-            assert len(x) > 0, 'Ulazni json string je prazan'
-            r = requests.put(url, params = payload, data = x, headers = headers, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, x)
+            assert jstring is not None, 'Ulazni parametar je None, json string nije zadan.'
+            assert len(jstring) > 0, 'Ulazni json string je prazan'
+            r = requests.put(url,
+                             params=payload,
+                             data=jstring,
+                             headers=headers,
+                             timeout=39.1,
+                             auth = HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, jstring)
         except AssertionError as e1:
             tekst = 'WebZahtjev.upload_json_minutnih:Assert fail.\n{0}'.format(e1)
             raise pomocne_funkcije.AppExcept(tekst) from e1

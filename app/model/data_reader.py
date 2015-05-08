@@ -127,6 +127,7 @@ class RESTWriter(object):
         frejm['valjan'] = frejm['valjan'].map(self.int_to_boolean)
         frejm.drop(['status', 'koncentracija', 'statusString'], inplace = True, axis = 1)
         #convert to json string uz pomoc pandasa
+        frejm['id'] = frejm['id'].astype(np.int64)
         jstring = frejm.to_json(orient = 'records')
         #upload uz pomoc self.source objekta (networking_funkcjie.WebZahtjev)
         self.source.upload_json_minutnih(jstring=jstring, program=key, date=date)

@@ -1151,7 +1151,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 2:
+            if event.button ==1 or event.button == 2:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa

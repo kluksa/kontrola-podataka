@@ -223,12 +223,13 @@ class Kanvas(FigureCanvas):
         """
         x = sorted([eclick.xdata, erelease.xdata])
         y = sorted([eclick.ydata, erelease.ydata])
-        #set nove granice osi za sve axese
-        for ax in self.fig.axes:
-            ax.set_xlim(x)
-            ax.set_ylim(y)
-        #redraw
-        self.draw()
+        if x[0] != x[1] and y[0] != y[1]:
+            #set nove granice osi za sve axese
+            for ax in self.fig.axes:
+                ax.set_xlim(x)
+                ax.set_ylim(y)
+            #redraw
+            self.draw()
 
     def full_zoom_out(self):
         """

@@ -54,7 +54,6 @@ class Kontroler(QtCore.QObject):
         self.drawStatus = [False, False]  #status grafa prema panelu [koncPanel, zsPanel]. True ako je graf nacrtan.
         self.zeroFrejm = None  #member sa trenutnim Zero frejmom
         self.spanFrejm = None  #member sa trenutnim Span frejmom
-        self.cache = []  #member zaduzen da zapisuje sve odradjene zahtjeve za podacima
         self.sviBitniKanali = []  #lista potrebnih programMjerenjaId (kanala) za crtanje. Refresh za svaki izbor kanala i datuma.
         self.frejmovi = {}  #mapa aktualnih frejmova (programMjerenjaId:slajs)
         self.agregiraniFrejmovi = {}  #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
@@ -336,22 +335,6 @@ class Kontroler(QtCore.QObject):
         self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
         #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
     ###############################################################################
-    def cache_test(self, key=None, date=None):
-        """
-        Provjera da li je zahtjev prije odradjen prije pokusaja ponovnog citanja.
-        Funckija vraca True ako je potrebno ucitati frejm.
-        """
-        sada = datetime.datetime.now()
-        sada = str(sada.date())
-        if (key, date) not in self.cache:
-            return True
-        else:
-            if date is sada:
-                return True
-            else:
-                return False
-            ###############################################################################
-
     def ucitaj_podatke_ako_nisu_prije_ucitani(self):
         """
         Metoda usporedjuje argumente zahtjeva sa 'cacheom' vec odradjenih zahtjeva.
@@ -365,16 +348,14 @@ class Kontroler(QtCore.QObject):
         #kreni ucitavati po potrebi
         for kanal in self.sviBitniKanali:
             try:
-                if self.cache_test(key=kanal, date=self.pickedDate):
-                    #citanje pojedinog kanala (ukljucujuci i pomocne)
-                    self.dokument.citaj(key=kanal, date=self.pickedDate)
-                    #update kalendarStatus
-                    self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
-                    #dodaj glavni kanal u setGlavnihKanala
-                    self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
-                    #dodaj argumente readera u cache
-                    if (kanal, self.pickedDate) not in self.cache:
-                        self.cache.append((kanal, self.pickedDate))
+                #citanje pojedinog kanala (ukljucujuci i pomocne)
+                self.dokument.citaj(key=kanal, date=self.pickedDate)
+                #update kalendarStatus
+                self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
+                #dodaj glavni kanal u setGlavnihKanala
+                self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
+                self.modelProgramaMjerenja.set_usedMjerenja(self.kalendarStatus)
+                #TODO! pametniji nacin bojanja tree viewa
             except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info=True)
         #update boju na kalendaru ovisno o ucitanim podacima
@@ -416,10 +397,6 @@ class Kontroler(QtCore.QObject):
         trenutno aktivnog kanala za trenutno izabrani datum.
         """
         if self.gKanal is not None and self.pickedDate is not None:
-            arg = (self.gKanal, self.pickedDate)
-            # cache prati sto je ucitao do sada, pa moramo maknuti referencu sa liste
-            if arg in self.cache:
-                self.cache.remove(arg)
             mapa = {'programMjerenjaId': self.gKanal,
                     'datumString': self.pickedDate}
             # pokreni postupak kao da je kombinacija datuma i kanala prvi puta izabrana
@@ -639,7 +616,6 @@ class Kontroler(QtCore.QObject):
             logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
             self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
         ###############################################################################
-    #TODO!
     def upload_minutne_na_REST(self):
         """
         Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na
@@ -698,15 +674,17 @@ class Kontroler(QtCore.QObject):
         tip --> 'ucitani' ili 'spremljeni'
         """
         datum = QtCore.QDate.fromString(datum, 'yyyy-MM-dd')
-        if progMjer in self.kalendarStatus:
-            if tip == 'spremljeni':
-                if datum not in self.kalendarStatus[progMjer]['ok']:
-                    self.kalendarStatus[progMjer]['ok'].append(datum)
+        danas = datetime.datetime.now().strftime('%Y-%m-%d')
+        if datum != danas:
+            if progMjer in self.kalendarStatus:
+                if tip == 'spremljeni':
+                    if datum not in self.kalendarStatus[progMjer]['ok']:
+                        self.kalendarStatus[progMjer]['ok'].append(datum)
+                else:
+                    if datum not in self.kalendarStatus[progMjer]['bad']:
+                        self.kalendarStatus[progMjer]['bad'].append(datum)
             else:
-                if datum not in self.kalendarStatus[progMjer]['bad']:
-                    self.kalendarStatus[progMjer]['bad'].append(datum)
-        else:
-            self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
+                self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
         ###############################################################################
 
     def promjena_boje_kalendara(self):
@@ -818,7 +796,6 @@ class Kontroler(QtCore.QObject):
             frames, metaData = self.adapt_rest_satni_frejm(df)
             #naredba za crtanje....
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
-            #TODO! najblizi je satnom... reimplement certain methods
         except ValueError:
             logging.error('App exception', exc_info=True)
             msg = """
@@ -844,8 +821,6 @@ class Kontroler(QtCore.QObject):
         pocetno = frejm.index.min()
         zavrsno = frejm.index.max()
         kanal = frejm.loc[pocetno, 'programMjerenjaId']
-        #TODO!
-        #trenutno se kosristi satni konfig, i kanvas subklasan od satnog konfiga..
         frejm.rename(columns={'valjan':'flag','vrijednost':'avg'}, inplace = True)
         frejm['flag'] = frejm['flag'].map(self.adapt_valjan)
 

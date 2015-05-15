@@ -30,6 +30,8 @@ class RestIzbornik(base1, form1):
         self.calendarWidget.clicked.connect(self.get_mjerenje_datum)
         #doubleclick/enter na element u treeViewu (program mjerenja)
         self.treeView.activated.connect(self.get_mjerenje_datum)
+        #singleclick ma element u treeViewu sa programima mjerenja
+        self.treeView.clicked.connect(self.get_mjerenje_datum)
 
     def get_mjerenje_datum(self, x):
         """

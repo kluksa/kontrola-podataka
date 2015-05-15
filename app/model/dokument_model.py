@@ -165,26 +165,8 @@ class DataModel(QtCore.QObject):
         frame['statusString'] = frame['statusString'].astype(str)
         #SORT DATAFRAME
         frame.sort_index(inplace = True)
-        #dodaj na self.data
-        if key in self.data.keys():
-            #merge
-            self.data[key] = pd.merge(
-                self.data[key],
-                frame,
-                how = 'outer',
-                left_index = True,
-                right_index = True,
-                sort = True,
-                on = ['koncentracija', 'status', 'flag', 'id', 'statusString'])
-            #update values
-            self.data[key].update(frame)
-            self.data[key].sort()
-        else:
-            #recast 'statusString to str type
-            frame['statusString'] = frame['statusString'].astype(str)
-            #create new key
-            self.data[key] = frame
-            self.data[key].sort()
+        #replace self.data[key]
+        self.data[key] = frame
 ###############################################################################
     def dohvati_minutne_frejmove(self, lista = None, tmin = None, tmax = None):
         """

@@ -203,16 +203,34 @@ class Kontroler(QtCore.QObject):
         """
         - clear self.appAuth
         - reinitialize connection objekt i sve objekte koji ovise o njemu.
+        - mankuti tree view
+        - clear grafove
         """
         self.appAuth = ("", "")
-        self.reconnect_to_REST()
+        #reset webZahtjev, dokumnet....
+        self.initialize_web_and_rest_interface(False)
 
+        #reset tree view model... prikazi nista.
+        tree = model_drva.TreeItem(['stanice', None, None, None], parent=None)
+        self.modelProgramaMjerenja = model_drva.ModelDrva(tree)
+        #set model to views
+        self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
+        self.gui.restIzbornik.model = self.modelProgramaMjerenja
+        #clear glavni kanal i datum, clear sve grafove
+        self.gKanal = None
+        self.pickedDate = None
+        self.gui.koncPanel.satniGraf.clear_graf()
+        self.gui.koncPanel.minutniGraf.clear_graf()
+        self.gui.zsPanel.zeroGraf.clear_graf()
+        self.gui.zsPanel.spanGraf.clear_graf()
+        self.gui.visednevniPanel.satniRest.clear_graf()
     ###############################################################################
-    def initialize_web_and_rest_interface(self):
+    def initialize_web_and_rest_interface(self, tip):
         """
         Inicijalizacija web zahtjeva i REST reader/writer objekata koji ovise o
         njemu.
         Takodjer dohvati i mapu status codea  i postavi je u minutni i satni kanvas
+        Tip je boolean vrijednost... True za log in, False za log out
         """
         # dohvati podatke o rest servisu
         baseurl = str(self.gui.konfiguracija.REST.RESTBaseUrl)
@@ -231,17 +249,18 @@ class Kontroler(QtCore.QObject):
         self.restWriter = data_reader.RESTWriter(source=self.webZahtjev)
         #postavljanje writera u model
         self.dokument.set_writer(self.restWriter)
-        try:
-            statusMapa = self.webZahtjev.get_statusMap()
-            self.dokument.set_statusMap(statusMapa)
-            self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
-            self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
-            self.gui.visednevniPanel.satniRest.set_statusMap(statusMapa)
-        except pomocne_funkcije.AppExcept:
-            msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
-            self.prikazi_error_msg(msg)
-            self.gui.action_log_in.setEnabled(True)
-            self.gui.action_log_out.setEnabled(False)
+        if tip:
+            try:
+                statusMapa = self.webZahtjev.get_statusMap()
+                self.dokument.set_statusMap(statusMapa)
+                self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
+                self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
+                self.gui.visednevniPanel.satniRest.set_statusMap(statusMapa)
+            except pomocne_funkcije.AppExcept:
+                msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
+                self.prikazi_error_msg(msg)
+                self.gui.action_log_in.setEnabled(True)
+                self.gui.action_log_out.setEnabled(False)
     ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -256,13 +275,15 @@ class Kontroler(QtCore.QObject):
             #root objekt
             tree = model_drva.TreeItem(['stanice', None, None, None], parent=None)
             #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
-            stanice = {}
+            stanice = []
             for i in sorted(list(mapa.keys())):
                 stanica = mapa[i]['postajaNaziv']
                 if stanica not in stanice:
-                    stanice[stanica] = model_drva.TreeItem([stanica, None, None, None], parent=tree)
-            #za svako individualnu komponentu napravi TreeItem sa odgovarajucim parentom (stanica)
-            for i in mapa.keys():
+                    stanice.append(stanica)
+            stanice = sorted(stanice)
+            postaje = [model_drva.TreeItem([name, None, None, None], parent=tree) for name in stanice]
+            strPostaje = [str(i) for i in postaje]
+            for i in mapa:
                 stanica = mapa[i]['postajaNaziv']  #parent = stanice[stanica]
                 komponenta = mapa[i]['komponentaNaziv']
                 mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
@@ -271,7 +292,8 @@ class Kontroler(QtCore.QObject):
                 usporedno = mapa[i]['usporednoMjerenje']
                 #data = [komponenta, mjernaJedinica, i]
                 data = [komponenta, usporedno, i, opis]
-                model_drva.TreeItem(data, parent=stanice[stanica])  #kreacija TreeItem objekta
+                redniBrojPostaje = strPostaje.index(stanica)
+                model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])  #kreacija TreeItem objekta
 
             self.modelProgramaMjerenja = model_drva.ModelDrva(tree)  #napravi model
 
@@ -291,7 +313,7 @@ class Kontroler(QtCore.QObject):
         # promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         # inicijalizacija objekata
-        self.initialize_web_and_rest_interface()
+        self.initialize_web_and_rest_interface(True)
         #konstruiraj tree model programa mjerenja
         self.konstruiraj_tree_model()
         #postavi tree model u ciljani tree view widget na display
@@ -333,7 +355,6 @@ class Kontroler(QtCore.QObject):
         #za svaki slucaj, pobrinimo se da su varijable pandas.tslib.Timestamp
         self.zavrsnoVrijeme = pd.to_datetime(self.zavrsnoVrijeme)
         self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
-        #dodaj kanal sa temperaturom kontejnera ako postoji za tu stanicu
     ###############################################################################
     def ucitaj_podatke_ako_nisu_prije_ucitani(self):
         """
@@ -355,7 +376,6 @@ class Kontroler(QtCore.QObject):
                 #dodaj glavni kanal u setGlavnihKanala
                 self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
                 self.modelProgramaMjerenja.set_usedMjerenja(self.kalendarStatus)
-                #TODO! pametniji nacin bojanja tree viewa
             except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info=True)
         #update boju na kalendaru ovisno o ucitanim podacima
@@ -741,13 +761,9 @@ class Kontroler(QtCore.QObject):
         Naredba da se ponovno nacrtaju svi grafovi.
         """
         self.drawStatus = [False, False] # promjena izgleda grafa, tretiraj kao da nisu nacrtani
-        if self.aktivniTab is 0:
-            self.crtaj_satni_graf()
-            self.drawStatus[0] = True
-        elif self.aktivniTab is 1:
-            self.crtaj_zero_span()
-            self.drawStatus[1] = True
-
+        if self.gKanal != None:
+            mapa = {'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate}
+            self.priredi_podatke(mapa)
     ###############################################################################
     def promjeni_flag(self, ulaz):
         """

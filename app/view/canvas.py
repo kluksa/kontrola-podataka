@@ -487,18 +487,19 @@ class SatniMinutniKanvas(Kanvas):
         provedena kontrola nad tim podacima.
         Prikazuje se scatter plot (samo tocke) ispod gornjeg ruba grafa.
         """
-        frejm = self.data[self.gKanal]
-        #ako je kontrola provedena promjeni status u 0
-        frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
-        #eliminacija svih kojima je status 0
-        frejm = frejm[frejm[self.konfig.STATUS] != 0]
-        #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
-        if len(frejm):
-            x = list(frejm.index)
-            y1, y2 = self.ylim_original
-            c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
-            y = [c for i in x]
-            self.crtaj_scatter(x, y, self.konfig.statusWarning)
+        if self.konfig.statusWarning.crtaj:
+            frejm = self.data[self.gKanal]
+            #ako je kontrola provedena promjeni status u 0
+            frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
+            #eliminacija svih kojima je status 0
+            frejm = frejm[frejm[self.konfig.STATUS] != 0]
+            #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
+            if len(frejm):
+                x = list(frejm.index)
+                y1, y2 = self.ylim_original
+                c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+                y = [c for i in x]
+                self.crtaj_scatter(x, y, self.konfig.statusWarning)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -780,9 +781,22 @@ class SatniKanvas(SatniMinutniKanvas):
         return out
 
     def toggle_tgl(self):
-        self.toggle_ticks(self.konfig.Ticks)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_legend(self.konfig.Legend)
+        #TICKS
+        if self.konfig.Ticks:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        #GRID
+        if self.konfig.Grid:
+            self.axes.grid(True)
+        else:
+            self.axes.grid(False)
+        #LEGEND
+        if self.legenda is not None:
+            if self.konfig.Legend:
+                self.legenda.set_visible(True)
+            else:
+                self.legenda.set_visible(False)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -1113,9 +1127,22 @@ class MinutniKanvas(SatniMinutniKanvas):
 
 
     def toggle_tgl(self):
-        self.toggle_ticks(self.konfig.Ticks)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_legend(self.konfig.Legend)
+        #TICKS
+        if self.konfig.Ticks:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        #GRID
+        if self.konfig.Grid:
+            self.axes.grid(True)
+        else:
+            self.axes.grid(False)
+        #LEGEND
+        if self.legenda is not None:
+            if self.konfig.Legend:
+                self.legenda.set_visible(True)
+            else:
+                self.legenda.set_visible(False)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -1192,7 +1219,13 @@ class ZeroSpanKanvas(Kanvas):
     def toggle_tgl(self):
         """inicjalni toggle elemenata (grid, legend...). Za sada zero i span
         grafovi podrzavaju samo legendu"""
-        self.toggle_legend(self.konfig.Legend)
+        #LEGEND
+        if self.legenda is not None:
+            if self.konfig.Legend:
+                self.legenda.set_visible(True)
+            else:
+                self.legenda.set_visible(False)
+
 
     def pick_nearest(self, argList):
         """

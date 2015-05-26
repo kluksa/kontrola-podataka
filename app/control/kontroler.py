@@ -154,7 +154,7 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
                      self.gui.zsPanel.spanGraf.sync_x_zoom)
         self.connect(self.gui.zsPanel.spanGraf,
-                     QtCore.SIGNAL('span_sync_x_zoom(PyQt_PyObject)'),
+                     QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.sync_x_zoom)
 
         ###CRTANJE SATNO AGREGIRANIH PODATAKA SA RESTA###

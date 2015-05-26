@@ -251,8 +251,6 @@ class Kanvas(FigureCanvas):
         """
         self.data = {} #spremnik za frejmove (ucitane)
         self.statusGlavniGraf = False
-        #self.statusHighlight = False
-        #self.lastHighlight = (None, None)
         self.axes.clear()
         #redo Axes labels
         self.axes.set_ylabel(self.konfig.TIP)
@@ -262,21 +260,33 @@ class Kanvas(FigureCanvas):
         """
         Postavljanje pozicije i formata tickova x osi.
         """
-        tickovi = self.pronadji_tickove()
-        self.majorTickLoc = tickovi['majorTickovi']
-        self.majorTickLab = tickovi['majorLabeli']
-        self.minorTickLoc = tickovi['minorTickovi']
-        self.minorTickLab = tickovi['minorLabeli']
-
-        self.axes.set_xticks(self.majorTickLoc, minor = False)
-        self.axes.set_xticklabels(self.majorTickLab, minor = False)
-        self.axes.set_xticks(self.minorTickLoc, minor = True)
-        self.axes.set_xticklabels(self.minorTickLab, minor = True)
+        locator = AutoDateLocator(minticks=5, maxticks=24, interval_multiples=True)
+        majorTickFormat = AutoDateFormatter(locator, defaultfmt='%Y-%m-%d')
+        majorTickFormat.scaled[30.] = '%Y-%m-%d'
+        majorTickFormat.scaled[1.0] = '%m-%d'
+        majorTickFormat.scaled[1. / 24.] = '%H:%M'
+        majorTickFormat.scaled[1. / (24. * 60.)] = '%H:%M:%S'
+        self.axes.xaxis.set_major_locator(locator)
+        self.axes.xaxis.set_major_formatter(majorTickFormat)
+        self.fig.autofmt_xdate()
 
         allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
         for label in allXLabels:
-            label.set_rotation(30)
+            #label.set_rotation(30)
             label.set_fontsize(8)
+
+        #vidljivost minor tickova i grida
+        #TICKS
+        if self.konfig.Ticks:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        #GRID
+        if self.konfig.Grid:
+            self.axes.grid(True)
+        else:
+            self.axes.grid(False)
+
 
     def setup_legend(self):
         """
@@ -286,6 +296,12 @@ class Kanvas(FigureCanvas):
                                         fontsize = 8,
                                         fancybox = True)
         self.legenda.get_frame().set_alpha(0.8)
+        #LEGEND - visibility
+        if self.konfig.Legend:
+            self.legenda.set_visible(True)
+        else:
+            self.legenda.set_visible(False)
+
 
     def prosiri_granice_grafa(self, tmin, tmax, t):
         """
@@ -647,7 +663,9 @@ class SatniMinutniKanvas(Kanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
         #clear prethodnog grafa, reinicijalizacija membera
-        self.clear_graf()
+        self.statusGlavniGraf = False
+        self.axes.clear()
+        self.axes.set_ylabel(self.konfig.TIP)
         self.data = frejmovi
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
@@ -664,7 +682,6 @@ class SatniMinutniKanvas(Kanvas):
             self.setup_legend()
             self.setup_ticks()
             #toggle ticks, legend, grid
-            self.toggle_tgl()
             self.crtaj_oznake_statusa()
             #highlight prijasnje tocke
             if self.statusHighlight:
@@ -678,8 +695,6 @@ class SatniMinutniKanvas(Kanvas):
                     self.lastHighlight = (None, None)
                     #reset labele u panelu --
                     self.setup_annotation_text('')
-
-            self.draw()
         else:
             self.axes.text(0.5,
                            0.5,
@@ -688,7 +703,7 @@ class SatniMinutniKanvas(Kanvas):
                            verticalalignment='center',
                            fontsize = 8,
                            transform = self.axes.transAxes)
-            self.draw()
+        self.draw()
 ################################################################################
 class SatniKanvas(SatniMinutniKanvas):
     """
@@ -750,53 +765,6 @@ class SatniKanvas(SatniMinutniKanvas):
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
-
-    def pronadji_tickove(self):
-        """
-        funkcija vraca listu tickmarkera i listu tick labela za satni graf.
-        -vremenski raspon je tmin, tmax
-        -tickovi su razmaknuti 1 sat
-        vrati dict sa listama lokacija i labela za tickove
-        """
-        tmin = self.pocetnoVrijeme
-        tmax = self.zavrsnoVrijeme
-        tmin = tmin - datetime.timedelta(minutes = 1)
-        tmin = pd.to_datetime(tmin)
-        majorTickovi = list(pd.date_range(start = tmin, end = tmax, freq = 'H'))
-        majorLabeli = [str(ind.hour)+'h' for ind in majorTickovi]
-        tempTickovi = list(pd.date_range(start = tmin, end = tmax, freq = '15Min'))
-        minorTickovi = []
-        minorLabeli = []
-        for ind in tempTickovi:
-            if ind not in majorTickovi:
-                #formatiraj vrijeme u sat:min 12:15:00 -> 12h:15m
-                #ftime = str(ind.hour)+'h:'+str(ind.minute)+'m'
-                minorTickovi.append(ind)
-                minorLabeli.append("")
-                #minorLabeli.append(ftime)
-        out = {'majorTickovi':majorTickovi,
-               'majorLabeli':majorLabeli,
-               'minorTickovi':minorTickovi,
-               'minorLabeli':minorLabeli}
-        return out
-
-    def toggle_tgl(self):
-        #TICKS
-        if self.konfig.Ticks:
-            self.axes.minorticks_on()
-        else:
-            self.axes.minorticks_off()
-        #GRID
-        if self.konfig.Grid:
-            self.axes.grid(True)
-        else:
-            self.axes.grid(False)
-        #LEGEND
-        if self.legenda is not None:
-            if self.konfig.Legend:
-                self.legenda.set_visible(True)
-            else:
-                self.legenda.set_visible(False)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -912,7 +880,7 @@ class SatniRestKanvas(SatniKanvas):
         """
         automatsko postavljane tickova i labela
         """
-        locator = AutoDateLocator()
+        locator = AutoDateLocator(minticks=5, maxticks=24, interval_multiples=True)
         majorTickFormat = AutoDateFormatter(locator, defaultfmt='%Y-%m-%d')
         majorTickFormat.scaled[30.] = '%Y-%m-%d'
         majorTickFormat.scaled[1.0] = '%Y-%m-%d'
@@ -962,7 +930,10 @@ class SatniRestKanvas(SatniKanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
         #clear prethodnog grafa, reinicijalizacija membera
-        self.clear_graf()
+        self.statusGlavniGraf = False
+        self.axes.clear()
+        #redo Axes labels
+        self.axes.set_ylabel(self.konfig.TIP)
         self.data = frejmovi
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
@@ -975,8 +946,6 @@ class SatniRestKanvas(SatniKanvas):
             self.setup_limits()
             self.setup_legend()
             self.setup_ticks()
-            #toggle ticks, legend, grid
-            self.toggle_tgl()
             #highlight prijasnje tocke
             if self.statusHighlight:
                 hx, hy = self.lastHighlight
@@ -1098,52 +1067,6 @@ class MinutniKanvas(SatniMinutniKanvas):
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
 
-    def pronadji_tickove(self):
-        """
-        funkcija vraca liste tickmarkera (minor i major) i listu tick labela
-        za minutni graf.
-        """
-        tmin = self.pocetnoVrijeme
-        tmax = self.zavrsnoVrijeme
-
-        tmin = tmin - datetime.timedelta(minutes = 1)
-        tmin = pd.to_datetime(tmin)
-        majorTickovi = list(pd.date_range(start = tmin, end= tmax, freq = '5Min'))
-        majorLabeli = [str(ind.hour)+'h:'+str(ind.minute)+'m' for ind in majorTickovi]
-        tempTickovi = list(pd.date_range(start = tmin, end= tmax, freq = 'Min'))
-        minorTickovi = []
-        minorLabeli = []
-        for ind in tempTickovi:
-            if ind not in majorTickovi:
-                minorTickovi.append(ind)
-                #minorLabeli.append(str(ind.minute)+'m')
-                minorLabeli.append("")
-
-        out = {'majorTickovi':majorTickovi,
-               'majorLabeli':majorLabeli,
-               'minorTickovi':minorTickovi,
-               'minorLabeli':minorLabeli}
-        return out
-
-
-    def toggle_tgl(self):
-        #TICKS
-        if self.konfig.Ticks:
-            self.axes.minorticks_on()
-        else:
-            self.axes.minorticks_off()
-        #GRID
-        if self.konfig.Grid:
-            self.axes.grid(True)
-        else:
-            self.axes.grid(False)
-        #LEGEND
-        if self.legenda is not None:
-            if self.konfig.Legend:
-                self.legenda.set_visible(True)
-            else:
-                self.legenda.set_visible(False)
-
     def setup_annotation_text(self, xpoint):
         """
         Definiranje teksta za prikaz annotationa (sto ce biti unutar annotationa).
@@ -1216,16 +1139,6 @@ class ZeroSpanKanvas(Kanvas):
         """connect canvas pick point event sa metodom self.on_pick"""
         self.cid = self.mpl_connect('pick_event', self.on_pick)
 
-    def toggle_tgl(self):
-        """inicjalni toggle elemenata (grid, legend...). Za sada zero i span
-        grafovi podrzavaju samo legendu"""
-        #LEGEND
-        if self.legenda is not None:
-            if self.konfig.Legend:
-                self.legenda.set_visible(True)
-            else:
-                self.legenda.set_visible(False)
-
 
     def pick_nearest(self, argList):
         """
@@ -1268,28 +1181,6 @@ class ZeroSpanKanvas(Kanvas):
 
             self.highlight_pick((x, y), self.highlightSize)
             self.updateaj_labele_na_panelu('normal', newArgMap)
-
-    def pronadji_tickove(self):
-        """
-        Funkcija radi tickove za zero i span graf
-
-        Dodatno, funkcija adaptira vrijeme npr. timestamp jedne vrijednosti
-        je '2015-02-14 12:34:56' i treba se 'adaptirati' u '14.02' radi kraceg zapisa
-
-        input je lista min i max vrijeme za prikaz (raspon grafa)
-        output je lista stringova (labeli za tickove), lista timestampova (tick location)
-        """
-        tmin = self.pocetnoVrijeme
-        tmax = self.zavrsnoVrijeme
-        raspon = pd.date_range(start = tmin, end = tmax, freq = 'D')
-        tickLoc = [pd.to_datetime(i.date())for i in raspon]
-        tickLab = [str(i.day)+'.'+str(i.month) for i in tickLoc]
-        #za sada zanemarimo minor tickove na zero/span grafu, prosljedi prazne liste
-        out = {'majorTickovi':tickLoc,
-               'majorLabeli':tickLab,
-               'minorTickovi':[],
-               'minorLabeli':[]}
-        return out
 
     def pripremi_zero_span_podatke_za_crtanje(self):
         """Pripremanje podataka za crtanje zero/span. Funkcija vraca dictionary
@@ -1342,15 +1233,16 @@ class ZeroSpanKanvas(Kanvas):
         evente (rubovi kvadrata) te povecava izabrani dio slike preko cijelog
         canvasa. overloaded za zero i span graf
         """
-        x = sorted([eclick.xdata, erelease.xdata])
-        y = sorted([eclick.ydata, erelease.ydata])
-        #set nove granice osi za sve axese
-        for ax in self.fig.axes:
-            ax.set_xlim(x)
-            ax.set_ylim(y)
-        #redraw
-        self.draw()
-        self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), sorted([eclick.xdata, erelease.xdata]))
+        if eclick.xdata != erelease.xdata and eclick.ydata != erelease.ydata:
+            x = sorted([eclick.xdata, erelease.xdata])
+            y = sorted([eclick.ydata, erelease.ydata])
+            #set nove granice osi za sve axese
+            for ax in self.fig.axes:
+                ax.set_xlim(x)
+                ax.set_ylim(y)
+            #redraw
+            self.draw()
+            self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), sorted([eclick.xdata, erelease.xdata]))
 
     def sync_x_zoom(self, x):
         """
@@ -1495,7 +1387,11 @@ class ZeroSpanKanvas(Kanvas):
         -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
-        self.clear_graf()
+        self.statusGlavniGraf = False
+        self.axes.clear()
+        #redo Axes labels
+        self.axes.set_ylabel(self.konfig.TIP)
+
         self.statusHighlight = False
         self.lastHighlight = (None, None)
         argMap = {'xtocka':'',
@@ -1516,15 +1412,17 @@ class ZeroSpanKanvas(Kanvas):
         self.setup_limits()
         self.setup_legend()
 
-        #toggle legende
-        self.toggle_tgl()
         self.draw()
 
     def clear_zero_span(self):
         """
         clear grafa i replace sa porukom da nema dostupnih podataka
         """
-        self.clear_graf()
+        self.statusGlavniGraf = False
+        self.axes.clear()
+        #redo Axes labels
+        self.axes.set_ylabel(self.konfig.TIP)
+
         self.statusHighlight = False
         self.lastHighlight = (None, None)
         argMap = {'xtocka':'',

@@ -72,6 +72,7 @@ class KoncPanel(base2, form2):
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
         self.buttonPonisti.clicked.connect(self.ponisti_promjene)
         self.buttonRestSave.clicked.connect(self.save_na_rest)
+        self.brojDanaSpin.valueChanged.connect(self.promjeni_broj_dana)
 ###############################################################################
     def ponisti_promjene(self):
         """emitiraj signal kontroleru da 'ponisti' promjene za trenutni dan i postaju"""
@@ -81,6 +82,12 @@ class KoncPanel(base2, form2):
         """emitiraj signal kontroleru da spremi podatke za trenutni dan i postaju na
         rest servis"""
         self.emit(QtCore.SIGNAL('upload_minutne_na_REST'))
+###############################################################################
+    def promjeni_broj_dana(self, x):
+        """
+        emitiraj signal za promjenu broja dana za prikaz
+        """
+        self.emit(QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'), x)
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """

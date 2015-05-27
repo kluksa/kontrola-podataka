@@ -85,7 +85,7 @@ class RESTReader(object):
             #vrati prazan frejm frejm
             return df
 ###############################################################################
-    def read(self, key = None, date = None):
+    def read(self, key=None, date=None, ndana=1):
         """
         ucitavanje json podataka sa rest servisa.
         key je programMjerenja
@@ -96,7 +96,7 @@ class RESTReader(object):
         iznad
         """
         #pokusaj ucitati json string sa REST servisa
-        jsonString = self.source.get_sirovi(key, date)
+        jsonString = self.source.get_sirovi(key, date, ndana)
         #pretvori u dataframe
         df = self.adaptiraj_ulazni_json(jsonString)
         return key, df

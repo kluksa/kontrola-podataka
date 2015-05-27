@@ -57,6 +57,7 @@ class Kontroler(QtCore.QObject):
         self.sviBitniKanali = []  #lista potrebnih programMjerenjaId (kanala) za crtanje. Refresh za svaki izbor kanala i datuma.
         self.frejmovi = {}  #mapa aktualnih frejmova (programMjerenjaId:slajs)
         self.agregiraniFrejmovi = {}  #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
+        self.brojDanaSatni = 1 #member prati koliko dana se prikazuje za satno agregirani graf
         ###povezivanje akcija sa funkcijama###
         self.setup_veze()
         logging.debug('inicijalizacija kontrolora, end')
@@ -189,6 +190,32 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.visednevniPanel.satniRest,
                      QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'),
                      self.gui.visednevniPanel.prikazi_info_satni_rest)
+
+        ###promjena max broja dana za satni graf...
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'),
+                     self.promjeni_max_broj_dana_satnog)
+    ###############################################################################
+    def promjeni_max_broj_dana_satnog(self, x):
+        """
+        promjena raspona max broja dana za satno agregirani graf. ulazni parametar
+        x je broj dana, integer u rasponu [1-5].
+        """
+        self.brojDanaSatni = int(x)
+        #ako su izabrani glank i datum, ponovno nacrtaj graf
+        if self.gKanal != None and self.pickedDate != None:
+            self.priredi_podatke({'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate})
+    ###############################################################################
+    def napravi_listu_dana(self, datum, brojDana):
+        """
+        Funkcija uzima datum string formata 'YYYY-MM-DD' i integer broja dana.
+        Izlaz fukcije je lista QDate objekata (datum i N prethodnih dana)
+        """
+        #TODO! helper funkcija za bojanje datuma
+        date = datetime.datetime.strptime(datum, '%Y-%m-%d')
+        popis = [date-datetime.timedelta(days=i) for i in range(brojDana)]
+        izlaz = [QtCore.QDate(i) for i in popis]
+        return izlaz
     ###############################################################################
     def user_log_in(self, x):
         """
@@ -351,7 +378,7 @@ class Kontroler(QtCore.QObject):
         # pretvaranje datuma u 2 timestampa od 00:01:00 do 00:00:00 iduceg dana
         tsdatum = pd.to_datetime(datum)
         self.zavrsnoVrijeme = tsdatum + datetime.timedelta(days=1)
-        self.pocetnoVrijeme = tsdatum + datetime.timedelta(minutes=1)
+        self.pocetnoVrijeme = tsdatum + datetime.timedelta(minutes=1) - datetime.timedelta(days=self.brojDanaSatni-1) #offset dana unazad
         #za svaki slucaj, pobrinimo se da su varijable pandas.tslib.Timestamp
         self.zavrsnoVrijeme = pd.to_datetime(self.zavrsnoVrijeme)
         self.pocetnoVrijeme = pd.to_datetime(self.pocetnoVrijeme)
@@ -370,7 +397,7 @@ class Kontroler(QtCore.QObject):
         for kanal in self.sviBitniKanali:
             try:
                 #citanje pojedinog kanala (ukljucujuci i pomocne)
-                self.dokument.citaj(key=kanal, date=self.pickedDate)
+                self.dokument.citaj(key=kanal, date=self.pickedDate, ndana=self.brojDanaSatni)
                 #update kalendarStatus
                 self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
                 #dodaj glavni kanal u setGlavnihKanala
@@ -657,16 +684,18 @@ class Kontroler(QtCore.QObject):
                 try:
                     # promjeni cursor u wait cursor
                     QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                    #reci dokumentu da spremi minutne podatke na rest za zadani kanal i datum
-                    self.dokument.persist_minutne_podatke(key=self.gKanal, date=self.pickedDate)
+                    #reci dokumentu da spremi minutne podatke na rest
+                    datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
+                    #convert from qdate to string representation
+                    datumi = [i.toString('yyyy-MM-dd') for i in datumi]
+                    for datum in datumi:
+                        self.dokument.persist_minutne_podatke(key=self.gKanal, date=datum)
                     #update status kalendara
                     self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
                     self.promjena_boje_kalendara()
                     #report success
                     msg = " ".join(['Minutni podaci za',
                                     str(self.gKanal),
-                                    ':',
-                                    self.pickedDate,
                                     'su spremljeni na REST servis.'])
                     self.prikazi_error_msg(msg)
                 except (Exception, pomocne_funkcije.AppExcept):
@@ -693,18 +722,23 @@ class Kontroler(QtCore.QObject):
         datum --> string reprezentacija datuma  'yyyy-MM-dd' formata
         tip --> 'ucitani' ili 'spremljeni'
         """
-        datum = QtCore.QDate.fromString(datum, 'yyyy-MM-dd')
+        #datum = QtCore.QDate.fromString(datum, 'yyyy-MM-dd')
         danas = datetime.datetime.now().strftime('%Y-%m-%d')
-        if datum != danas:
-            if progMjer in self.kalendarStatus:
-                if tip == 'spremljeni':
-                    if datum not in self.kalendarStatus[progMjer]['ok']:
-                        self.kalendarStatus[progMjer]['ok'].append(datum)
+        datumi = self.napravi_listu_dana(datum, self.brojDanaSatni)
+        for datum in datumi:
+            if datum != danas:
+                if progMjer in self.kalendarStatus:
+                    if tip == 'spremljeni':
+                        if datum not in self.kalendarStatus[progMjer]['ok']:
+                            self.kalendarStatus[progMjer]['ok'].append(datum)
+                    else:
+                        if datum not in self.kalendarStatus[progMjer]['bad']:
+                            self.kalendarStatus[progMjer]['bad'].append(datum)
+                        #TODO! provjera da li je ucitani dan "validiran" ranije
+                        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
+                            self.kalendarStatus[progMjer]['ok'].append(datum)
                 else:
-                    if datum not in self.kalendarStatus[progMjer]['bad']:
-                        self.kalendarStatus[progMjer]['bad'].append(datum)
-            else:
-                self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
+                    self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
         ###############################################################################
 
     def promjena_boje_kalendara(self):

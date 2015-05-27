@@ -99,16 +99,9 @@ class DataModel(QtCore.QObject):
         tmax = t + datetime.timedelta(days=1)
         #dohvati trazeni slajs
         frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
-#        testValidacije = frejm['flag'].map(self.test_stupnja_validacije)
-#        lenSvih = len(testValidacije)
-#        lenDobrih = len(testValidacije[testValidacije == True])
-#        if lenSvih != lenDobrih:
-#            tekst = 'Neki podaci nisu validirani.\nNije moguce spremiti minutne podatke na REST servis.'
-#            raise pomocne_funkcije.AppExcept(tekst)
         #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
         if len(frejm):
             self.pisac.write_minutni(key = key, date = date, frejm = frejm)
-            #TODO! potrebno je promjeniti flag gdje treba u 1000 ili -1000 zbog vizualne identifikacije sto je otislo na rest?
         else:
             tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
             raise pomocne_funkcije.AppExcept(tekst)
@@ -125,12 +118,12 @@ class DataModel(QtCore.QObject):
         else:
             return 1
 ###############################################################################
-    def citaj(self, key = None, date = None):
+    def citaj(self, key=None, date=None, ndana=1):
         """
         -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
         -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
         """
-        kljuc, df = self.citac.read(key = key, date = date)
+        kljuc, df = self.citac.read(key=key, date=date, ndana=ndana)
         try:
             assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
             self.dataframe_structure_test(df)
@@ -239,6 +232,27 @@ class DataModel(QtCore.QObject):
         provjeru validacije stupca flag (da li su svi podaci validirani).
         """
         if abs(x) == 1000:
+            return True
+        else:
+            return False
+###############################################################################
+    def provjeri_validiranost_dana(self, kanal, datum):
+        """
+        Provjera da li su u slajsu frejma (za kanal i datum) validirani svi
+        podaci.
+        kanal je integer, datum je QDate objekt ,funkcija vraca boolean.
+        """
+        #pronadji rubove slajsa
+        dan = pd.to_datetime(datum.toPyDate())
+        maxi = dan+datetime.timedelta(days=1)
+        mini = dan+datetime.timedelta(minutes=1)
+        #dohvati slajs frejma
+        slajs = self.get_frame(key=kanal, tmin=mini, tmax=maxi)
+        #test validiranost slajsa
+        testValidacije = slajs['flag'].map(self.test_stupnja_validacije)
+        lenSvih = len(testValidacije)
+        lenDobrih = len(testValidacije[testValidacije == True])
+        if lenSvih == lenDobrih:
             return True
         else:
             return False

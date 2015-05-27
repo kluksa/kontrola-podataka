@@ -164,7 +164,7 @@ class WebZahtjev(QtCore.QObject):
             tekst = 'WebZahtjev.get_programe_mjerenja:Opceniti fail.\n{0}'.format(e3)
             raise pomocne_funkcije.AppExcept(tekst) from e3
 ###############################################################################
-    def get_sirovi(self, programMjerenja, datum):
+    def get_sirovi(self, programMjerenja, datum, brojdana):
         """
         Novi REST servis, za zadani program mjerenja (int) i datum (string,
         u formatu YYYY-MM-DD) dohvati sirove podatke
@@ -172,7 +172,7 @@ class WebZahtjev(QtCore.QObject):
         #point url na trazeni dio REST servisa
         url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
         #pripremi zahtjev
-        payload = {"id":"getPodaci", "name":"GET"}
+        payload = {"id":"getPodaci", "name":"GET", "broj_dana":brojdana}
         try:
             r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
             #assert dobar response (status code 200), json content-type

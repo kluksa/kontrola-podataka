@@ -282,10 +282,7 @@ class Kanvas(FigureCanvas):
         else:
             self.axes.minorticks_off()
         #GRID
-        if self.konfig.Grid:
-            self.axes.grid(True)
-        else:
-            self.axes.grid(False)
+        self.axes.grid(self.konfig.Grid)
 
 
     def setup_legend(self):
@@ -297,11 +294,7 @@ class Kanvas(FigureCanvas):
                                         fancybox = True)
         self.legenda.get_frame().set_alpha(0.8)
         #LEGEND - visibility
-        if self.konfig.Legend:
-            self.legenda.set_visible(True)
-        else:
-            self.legenda.set_visible(False)
-
+        self.legenda.set_visible(self.konfig.Legend)
 
     def prosiri_granice_grafa(self, tmin, tmax, t):
         """

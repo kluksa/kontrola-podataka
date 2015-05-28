@@ -72,7 +72,6 @@ class MetaConfig():
         self.Fill2 = None
         self.Warning1 = None
         self.Warning2 = None
-        self.Zoom = False
 
     ###definicije setter metoda za boolean vrijednosti (za toggle).
     def set_grid(self, x):
@@ -94,11 +93,6 @@ class MetaConfig():
         """boolean setter za prikaz minor tickova"""
         self.Ticks = x
         logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
-
-    def set_zoom(self, x):
-        """boolean setter za zoom interakciju sa canvasom"""
-        self.Zoom = x
-        logging.info('Zoom boolean value promjenjen, nova vrijednost = {0}'.format(x))
 ################################################################################
 class SatniRestGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -132,11 +126,6 @@ class SatniRestGrafKonfig(MetaConfig):
                                                        'action_satni_rest_minor_ticks',
                                                        False,
                                                        bool)
-        self.Zoom = pomocne_funkcije.load_config_item(cfg,
-                                                      'MAIN_WINDOW',
-                                                      'action_zoom',
-                                                      False,
-                                                      bool)
 ################################################################################
 class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -179,16 +168,6 @@ class SatniGrafKonfig(MetaConfig):
                                                        'action_satni_minor_ticks',
                                                        False,
                                                        bool)
-        self.Selector = pomocne_funkcije.load_config_item(cfg,
-                                                          'MAIN_WINDOW',
-                                                          'action_satni_span_selector',
-                                                          False,
-                                                          bool)
-        self.Zoom = pomocne_funkcije.load_config_item(cfg,
-                                                      'MAIN_WINDOW',
-                                                      'action_zoom',
-                                                      False,
-                                                      bool)
         #status warning plot
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
@@ -229,16 +208,6 @@ class MinutniGrafKonfig(MetaConfig):
                                                        'action_minutni_minor_ticks',
                                                        False,
                                                        bool)
-        self.Selector = pomocne_funkcije.load_config_item(cfg,
-                                                          'MAIN_WINDOW',
-                                                          'action_minutni_span_selector',
-                                                          False,
-                                                          bool)
-        self.Zoom = pomocne_funkcije.load_config_item(cfg,
-                                                      'MAIN_WINDOW',
-                                                      'action_zoom',
-                                                      False,
-                                                      bool)
         #status warning
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
@@ -261,21 +230,26 @@ class ZeroGrafKonfig(MetaConfig):
         self.Warning1 = GrafDTO(cfg, tip='ZERO', podtip='warning', oblik='line')
         self.Warning2 = GrafDTO(cfg, tip='ZERO', podtip='warning', oblik='line')
         #interakcija sa grafom
-        self.Grid = False
-        self.Cursor = False
+        self.Grid = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_ZERO_grid',
+                                                      False,
+                                                      bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_ZERO_cursor',
+                                                        False,
+                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_ZERO_legend',
                                                         False,
                                                         bool)
-        self.Ticks = False
-        self.Selector = False
-        self.Zoom = pomocne_funkcije.load_config_item(cfg,
-                                                      'MAIN_WINDOW',
-                                                      'action_zoom',
-                                                      False,
-                                                      bool)
-
+        self.Ticks = pomocne_funkcije.load_config_item(cfg,
+                                                       'MAIN_WINDOW',
+                                                       'action_ZERO_minor_ticks',
+                                                       False,
+                                                       bool)
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -294,21 +268,26 @@ class SpanGrafKonfig(MetaConfig):
         self.Warning1 = GrafDTO(cfg, tip='SPAN', podtip='warning', oblik='line')
         self.Warning2 = GrafDTO(cfg, tip='SPAN', podtip='warning', oblik='line')
         #interakcija sa grafom
-        self.Grid = False
-        self.Cursor = False
+        self.Grid = pomocne_funkcije.load_config_item(cfg,
+                                                      'MAIN_WINDOW',
+                                                      'action_SPAN_grid',
+                                                      False,
+                                                      bool)
+        self.Cursor = pomocne_funkcije.load_config_item(cfg,
+                                                        'MAIN_WINDOW',
+                                                        'action_SPAN_cursor',
+                                                        False,
+                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_SPAN_legend',
                                                         False,
                                                         bool)
-        self.Ticks = False
-        self.Selector = False
-        self.Zoom = pomocne_funkcije.load_config_item(cfg,
-                                                      'MAIN_WINDOW',
-                                                      'action_zoom',
-                                                      False,
-                                                      bool)
-
+        self.Ticks = pomocne_funkcije.load_config_item(cfg,
+                                                       'MAIN_WINDOW',
+                                                       'action_SPAN_minor_ticks',
+                                                       False,
+                                                       bool)
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):

@@ -51,17 +51,20 @@ class GlavniProzor(base, form):
         self.action_minutni_minor_ticks.setChecked(self.konfiguracija.minutni.Ticks)
         self.action_minutni_legend.setChecked(self.konfiguracija.minutni.Legend)
         #zero
+        self.action_ZERO_grid.setChecked(self.konfiguracija.zero.Grid)
+        self.action_ZERO_cursor.setChecked(self.konfiguracija.zero.Cursor)
+        self.action_ZERO_minor_ticks.setChecked(self.konfiguracija.zero.Ticks)
         self.action_ZERO_legend.setChecked(self.konfiguracija.zero.Legend)
         #span
+        self.action_SPAN_grid.setChecked(self.konfiguracija.span.Grid)
+        self.action_SPAN_cursor.setChecked(self.konfiguracija.span.Cursor)
+        self.action_SPAN_minor_ticks.setChecked(self.konfiguracija.span.Ticks)
         self.action_SPAN_legend.setChecked(self.konfiguracija.span.Legend)
         #satniRest
         self.action_rest_satni_grid.setChecked(self.konfiguracija.satniRest.Grid)
         self.action_rest_satni_cursor.setChecked(self.konfiguracija.satniRest.Cursor)
         self.action_rest_satni_minor_ticks.setChecked(self.konfiguracija.satniRest.Ticks)
         self.action_rest_satni_legend.setChecked(self.konfiguracija.satniRest.Legend)
-
-        #zoom je jednak za sve (za toggle koristimo informaciju za satni zoom)
-        self.action_zoom.setChecked(self.konfiguracija.satni.Zoom)
 
         #inicijalizacija panela sa grafovima koncentracije
         self.koncPanel = grafovi_panel.KoncPanel(self.konfiguracija)
@@ -81,18 +84,6 @@ class GlavniProzor(base, form):
 
         #toggle koji je gumb u rest izborniku aktivan (ovisno o aktivnom tabu)
         ind = self.tabWidget.currentIndex()
-
-        #setup stanja grafova (ticks, grid, span, zoom....)
-        self.koncPanel.satniGraf.set_interaction_mode(self.konfiguracija.satni.Zoom,
-                                                      self.konfiguracija.satni.Cursor)
-        self.koncPanel.minutniGraf.set_interaction_mode(self.konfiguracija.minutni.Zoom,
-                                                        self.konfiguracija.minutni.Cursor)
-        self.zsPanel.zeroGraf.set_interaction_mode(self.konfiguracija.zero.Zoom,
-                                                   False)
-        self.zsPanel.spanGraf.set_interaction_mode(self.konfiguracija.span.Zoom,
-                                                   False)
-        self.visednevniPanel.satniRest.set_interaction_mode(self.konfiguracija.satniRest.Zoom,
-                                                            self.konfiguracija.satniRest.Cursor)
 
         #setup icons
         self.setup_ikone()
@@ -118,8 +109,6 @@ class GlavniProzor(base, form):
         self.action_log_in.setIcon(QtGui.QIcon('./app/view/icons/enter3.png'))
         self.action_log_out.setIcon(QtGui.QIcon('./app/view/icons/door9.png'))
         self.action_reconnect.setIcon(QtGui.QIcon('./app/view/icons/cogwheel9.png'))
-        self.action_zoom.setIcon(QtGui.QIcon('./app/view/icons/zoom24.png'))
-        self.action_zoom_out.setIcon(QtGui.QIcon('./app/view/icons/zoom25.png'))
         self.action_stil_grafova.setIcon(QtGui.QIcon('./app/view/icons/bars7.png'))
 ###############################################################################
     def setup_signals(self):
@@ -140,10 +129,14 @@ class GlavniProzor(base, form):
         self.action_minutni_cursor.triggered.connect(self.request_minutni_cursor_toggle)
         self.action_minutni_minor_ticks.triggered.connect(self.request_minutni_ticks_toggle)
         self.action_minutni_legend.triggered.connect(self.request_minutni_legend_toggle)
-        self.action_zoom.triggered.connect(self.zoom_toggle)
-        self.action_zoom_out.triggered.connect(self.zoom_out)
         self.action_stil_grafova.triggered.connect(self.promjeni_stil_grafova)
+        self.action_ZERO_grid.triggered.connect(self.request_zero_grid_toggle)
+        self.action_ZERO_cursor.triggered.connect(self.request_zero_cursor_toggle)
+        self.action_ZERO_minor_ticks.triggered.connect(self.request_zero_ticks_toggle)
         self.action_ZERO_legend.triggered.connect(self.request_zero_legend_toggle)
+        self.action_SPAN_grid.triggered.connect(self.request_span_grid_toggle)
+        self.action_SPAN_cursor.triggered.connect(self.request_span_cursor_toggle)
+        self.action_SPAN_minor_ticks.triggered.connect(self.request_span_ticks_toggle)
         self.action_SPAN_legend.triggered.connect(self.request_span_legend_toggle)
         self.action_rest_satni_grid.triggered.connect(self.request_rest_satni_grid_toggle)
         self.action_rest_satni_cursor.triggered.connect(self.request_rest_satni_cursor_toggle)
@@ -272,8 +265,7 @@ class GlavniProzor(base, form):
     def request_rest_satni_cursor_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satniRest.set_cursor(x)
-        self.visednevniPanel.satniRest.set_interaction_mode(self.konfiguracija.satniRest.Zoom,
-                                                            self.konfiguracija.satniRest.Cursor)
+        self.visednevniPanel.satniRest.toggle_cursor(self.konfiguracija.satniRest.Cursor)
 ###############################################################################
     def request_rest_satni_ticks_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
@@ -293,8 +285,7 @@ class GlavniProzor(base, form):
     def request_satni_cursor_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.satni.set_cursor(x)
-        self.koncPanel.satniGraf.set_interaction_mode(self.konfiguracija.satni.Zoom,
-                                                      self.konfiguracija.satni.Cursor)
+        self.koncPanel.satniGraf.toggle_cursor(self.konfiguracija.satni.Cursor)
 ###############################################################################
     def request_satni_ticks_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
@@ -314,8 +305,7 @@ class GlavniProzor(base, form):
     def request_minutni_cursor_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.minutni.set_cursor(x)
-        self.koncPanel.minutniGraf.set_interaction_mode(self.konfiguracija.minutni.Zoom,
-                                                        self.konfiguracija.minutni.Cursor)
+        self.koncPanel.minutniGraf.toggle_cursor(self.konfiguracija.minutni.Cursor)
 ###############################################################################
     def request_minutni_ticks_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
@@ -327,53 +317,45 @@ class GlavniProzor(base, form):
         self.konfiguracija.minutni.set_legend(x)
         self.koncPanel.minutniGraf.toggle_legend(x)
 ###############################################################################
+    def request_zero_grid_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.zero.set_grid(x)
+        self.zsPanel.zeroGraf.toggle_grid(x)
+###############################################################################
+    def request_zero_cursor_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.zero.set_cursor(x)
+        self.zsPanel.zeroGraf.toggle_cursor(self.konfiguracija.zero.Cursor)
+###############################################################################
+    def request_zero_ticks_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.zero.set_ticks(x)
+        self.zsPanel.zeroGraf.toggle_ticks(x)
+###############################################################################
     def request_zero_legend_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.zero.set_legend(x)
         self.zsPanel.zeroGraf.toggle_legend(x)
 ###############################################################################
+    def request_span_grid_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.span.set_grid(x)
+        self.zsPanel.spanGraf.toggle_grid(x)
+###############################################################################
+    def request_span_cursor_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.span.set_cursor(x)
+        self.zsPanel.spanGraf.toggle_cursor(self.konfiguracija.span.Cursor)
+###############################################################################
+    def request_span_ticks_toggle(self, x):
+        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
+        self.konfiguracija.span.set_ticks(x)
+        self.zsPanel.spanGraf.toggle_ticks(x)
+###############################################################################
     def request_span_legend_toggle(self, x):
         """callback, spaja klik akcije sa promjenom u appSettings objektu"""
         self.konfiguracija.span.set_legend(x)
         self.zsPanel.spanGraf.toggle_legend(x)
-###############################################################################
-    def zoom_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu
-        ista akcija 'ukljucuje' zoom na sva cetiri kanvasa.
-        """
-        #satni kanvas
-        self.konfiguracija.satni.set_zoom(x)
-        self.koncPanel.satniGraf.set_interaction_mode(self.konfiguracija.satni.Zoom,
-                                                      self.konfiguracija.satni.Cursor)
-        #minutni
-        self.konfiguracija.minutni.set_zoom(x)
-        self.koncPanel.minutniGraf.set_interaction_mode(self.konfiguracija.minutni.Zoom,
-                                                        self.konfiguracija.minutni.Cursor)
-        #zero
-        self.konfiguracija.zero.set_zoom(x)
-        self.zsPanel.zeroGraf.set_interaction_mode(self.konfiguracija.zero.Zoom,
-                                                   False)
-        #span
-        self.konfiguracija.span.set_zoom(x)
-        self.zsPanel.spanGraf.set_interaction_mode(self.konfiguracija.span.Zoom,
-                                                   False)
-
-        #visednevni
-        self.konfiguracija.satniRest.set_zoom(x)
-        self.visednevniPanel.satniRest.set_interaction_mode(self.konfiguracija.satniRest.Zoom,
-                                                            self.konfiguracija.satniRest.Cursor)
-
-###############################################################################
-    def zoom_out(self):
-        """
-        Prosljedjuje naredbu kontrolnom elementu da napravi full zoom out
-        na svim grafovima
-        """
-        self.koncPanel.satniGraf.full_zoom_out()
-        self.koncPanel.minutniGraf.full_zoom_out()
-        self.zsPanel.spanGraf.full_zoom_out()
-        self.zsPanel.zeroGraf.full_zoom_out()
-        self.visednevniPanel.satniRest.full_zoom_out()
 ###############################################################################
     def setup_kontroler(self):
         """

@@ -72,7 +72,9 @@ class KoncPanel(base2, form2):
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
         self.buttonPonisti.clicked.connect(self.ponisti_promjene)
         self.buttonRestSave.clicked.connect(self.save_na_rest)
-        self.brojDanaSpin.valueChanged.connect(self.promjeni_broj_dana)
+        self.brojDanaCombo.currentIndexChanged.connect(self.promjeni_broj_dana)
+        self.zoomOutSatni.clicked.connect(self.satniGraf.zoom_out)
+        self.zoomOutMinutni.clicked.connect(self.minutniGraf.zoom_out)
 ###############################################################################
     def ponisti_promjene(self):
         """emitiraj signal kontroleru da 'ponisti' promjene za trenutni dan i postaju"""
@@ -87,7 +89,8 @@ class KoncPanel(base2, form2):
         """
         emitiraj signal za promjenu broja dana za prikaz
         """
-        self.emit(QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'), x)
+        value = int(self.brojDanaCombo.currentText())
+        self.emit(QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'), value)
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """
@@ -181,6 +184,8 @@ class ZeroSpanPanel(base3, form3):
         #povezivanje akcija widgeta sa funkcijama
         self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.dodajZSRef.clicked.connect(self.dodaj_novu_zs_ref_vrijednost)
+        self.zoomOutZero.clicked.connect(self.zeroGraf.zoom_out)
+        self.zoomOutSpan.clicked.connect(self.spanGraf.zoom_out)
 ###############################################################################
     def dodaj_novu_zs_ref_vrijednost(self):
         """
@@ -271,6 +276,7 @@ class RestPregledSatnih(base14, form14):
         self.grafLayout.addWidget(self.satniRest)
 
         self.buttonCrtaj.clicked.connect(self.get_podatke)
+        self.zoomOutRestSatni.clicked.connect(self.satniRest.zoom_out)
 
     def change_glavniLabel(self, ulaz):
         """

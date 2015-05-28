@@ -134,11 +134,17 @@
       <string>&amp;SPAN graf</string>
      </property>
      <addaction name="action_SPAN_legend"/>
+     <addaction name="action_SPAN_grid"/>
+     <addaction name="action_SPAN_cursor"/>
+     <addaction name="action_SPAN_minor_ticks"/>
     </widget>
     <widget class="QMenu" name="menu_ZERO_graf">
      <property name="title">
       <string>&amp;ZERO graf</string>
      </property>
+     <addaction name="action_ZERO_grid"/>
+     <addaction name="action_ZERO_cursor"/>
+     <addaction name="action_ZERO_minor_ticks"/>
      <addaction name="action_ZERO_legend"/>
     </widget>
     <widget class="QMenu" name="menu_REST_agreg_graf">
@@ -156,8 +162,6 @@
     <addaction name="menu_SPAN_graf"/>
     <addaction name="menu_REST_agreg_graf"/>
     <addaction name="separator"/>
-    <addaction name="action_zoom"/>
-    <addaction name="action_zoom_out"/>
     <addaction name="separator"/>
     <addaction name="action_stil_grafova"/>
    </widget>
@@ -197,8 +201,6 @@
    <addaction name="separator"/>
    <addaction name="action_stil_grafova"/>
    <addaction name="separator"/>
-   <addaction name="action_zoom"/>
-   <addaction name="action_zoom_out"/>
   </widget>
   <action name="action_log_in">
    <property name="text">
@@ -311,25 +313,6 @@
     <string>Toggle prikaz legende na grafu sa minutnim podacima.</string>
    </property>
   </action>
-  <action name="action_zoom">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Zoom in</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle zoom mod za grafove</string>
-   </property>
-  </action>
-  <action name="action_zoom_out">
-   <property name="text">
-    <string>&amp;Zoom out</string>
-   </property>
-   <property name="toolTip">
-    <string>Zoom out sve grafove</string>
-   </property>
-  </action>
   <action name="action_stil_grafova">
    <property name="text">
     <string>&amp;Stil grafova</string>
@@ -390,6 +373,72 @@
    </property>
    <property name="text">
     <string>&amp;Minor ticks</string>
+   </property>
+  </action>
+  <action name="action_ZERO_grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Grid</string>
+   </property>
+   <property name="toolTip">
+    <string>Grid ZERO grafa</string>
+   </property>
+  </action>
+  <action name="action_ZERO_cursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Cursor</string>
+   </property>
+   <property name="toolTip">
+    <string>Cursor ZERO grafa</string>
+   </property>
+  </action>
+  <action name="action_ZERO_minor_ticks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Minor ticks</string>
+   </property>
+   <property name="toolTip">
+    <string>Minor ticks ZERO grafa</string>
+   </property>
+  </action>
+  <action name="action_SPAN_grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Grid</string>
+   </property>
+   <property name="toolTip">
+    <string>Grid SPAN grafa</string>
+   </property>
+  </action>
+  <action name="action_SPAN_cursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Cursor</string>
+   </property>
+   <property name="toolTip">
+    <string>Cursor SPAN grafa</string>
+   </property>
+  </action>
+  <action name="action_SPAN_minor_ticks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Minor ticks</string>
+   </property>
+   <property name="toolTip">
+    <string>Minor ticks SPAN grafa</string>
    </property>
   </action>
  </widget>

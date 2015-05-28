@@ -3,6 +3,7 @@
 Created on Thu Apr  9 12:27:25 2015
 
 @author: DHMZ-Milic
+
 """
 import datetime
 import matplotlib
@@ -51,8 +52,18 @@ class Kanvas(FigureCanvas):
         self.highlightSize = 15 #dynamic size za highlight (1.5 puta veci od markera)
         self.xlim_original = [0,1] #defaultna definicija raspona x osi grafa (zoom)
         self.ylim_original = [0,1] #defaultna definicija raspona y osi grafa (zoom)
+        self.zoomStack = [] #stack za zoom levele
 
         self.initialize_interaction(self.span_select, self.rect_zoom)
+        #inicijalizacija tickova
+        if self.konfig.Ticks:
+            self.axes.minorticks_on()
+        else:
+            self.axes.minorticks_off()
+        #inicijalizacija grida
+        self.axes.grid(self.konfig.Grid)
+        #inicijalizacija cursora
+        self.toggle_cursor(self.konfig.Cursor)
 
     def initialize_interaction(self, span_func, zoom_func):
         """
@@ -81,13 +92,12 @@ class Kanvas(FigureCanvas):
         self.zoomSelector = RectangleSelector(self.axes,
                                               zoom_func,
                                               drawtype = 'box',
+                                              button=2,
                                               useblit = True,
                                               rectprops = self.zoomBoxInfo)
-        self.zoomSelector.set_active(False)
-
         #cursor implement, inicijalizacija pomocnih lijija cursora
         self.cursorAssist = Cursor(self.axes, useblit = True, color = 'tomato', linewidth = 1)
-        self.cursorAssist.visible = False
+        self.cursorAssist.visible = self.konfig.Cursor
 
         #span selector, inicijalizacija span selectora (izbor vise tocaka po x osi)
         self.spanBoxInfo = dict(alpha = 0.3, facecolor = 'yellow')
@@ -96,7 +106,6 @@ class Kanvas(FigureCanvas):
                                          direction = 'horizontal',
                                          useblit = True,
                                          rectprops = self.spanBoxInfo)
-        self.spanSelector.visible = False
 
     def crtaj_scatter(self, x, y, konfig):
         """
@@ -141,7 +150,7 @@ class Kanvas(FigureCanvas):
         """
         Toggle minor tickova on i off ovisno o ulaznoj vrijednosti x (boolean).
         """
-        if x and self.statusGlavniGraf:
+        if x:
             self.axes.minorticks_on()
         else:
             self.axes.minorticks_off()
@@ -151,10 +160,7 @@ class Kanvas(FigureCanvas):
         """
         Toggle grida on i off, ovisno o ulaznoj vrijednosti x (boolean)
         """
-        if x and self.statusGlavniGraf:
-            self.axes.grid(True)
-        else:
-            self.axes.grid(False)
+        self.axes.grid(x)
         self.draw()
 
     def toggle_legend(self, x):
@@ -168,44 +174,11 @@ class Kanvas(FigureCanvas):
                 self.legenda.set_visible(False)
         self.draw()
 
-    def disconnect_pick_evente(self):
-        """Opceniti disconnect pick eventa. Pick eventi se trebaju odspojiti prilikom
-        zoom akcije i prilikom izbora vise tocaka uz pomoc span selektora (izbjegavanje
-        konfliktnih matplotlib signala)."""
-        if self.cid:
-            self.mpl_disconnect(self.cid)
-            self.cid = None
-
-    def set_interaction_mode(self, zoom, cursor):
+    def toggle_cursor(self, x):
         """
-        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
-        zoom --> boolean
-        cursor --> boolean
+        Toggle prikaza 'cursora' na grafu
         """
-        #set up pick callbacks ovisno o tipu grafa
-        self.disconnect_pick_evente()
-        self.connect_pick_evente()
-        if zoom:
-            #zoom on, all else off
-            self.zoomSelector.set_active(True)
-            self.cursorAssist.visible = False
-            self.spanSelector.visible = False
-            self.disconnect_pick_evente()
-        else:
-            #zoom off
-            self.zoomSelector.set_active(False)
-            self.spanSelector.visible = True
-            if cursor:
-                self.cursorAssist.visible = True
-            else:
-                self.cursorAssist.visible = False
-
-    def connect_pick_evente(self):
-        """
-        Matplotlib connection ovisno o tipu canvasa. Reimplementiraj za pojedini graf.
-        Predvidjeni connection member je self.cid
-        """
-        pass
+        self.cursorAssist.visible = x
 
     def span_select(self, tmin, tmax):
         """
@@ -224,6 +197,8 @@ class Kanvas(FigureCanvas):
         x = sorted([eclick.xdata, erelease.xdata])
         y = sorted([eclick.ydata, erelease.ydata])
         if x[0] != x[1] and y[0] != y[1]:
+            #dodaj zoom tocke na stack
+            self.zoomStack.append((x, y))
             #set nove granice osi za sve axese
             for ax in self.fig.axes:
                 ax.set_xlim(x)
@@ -231,7 +206,7 @@ class Kanvas(FigureCanvas):
             #redraw
             self.draw()
 
-    def full_zoom_out(self):
+    def zoom_out(self):
         """
         Reset granica x i y osi da pokrivaju isti raspon kao i originalna slika.
         Full zoom out.
@@ -240,8 +215,15 @@ class Kanvas(FigureCanvas):
         self.xlim_original --> (xmin, xmax)
         self.ylim_original --> (ymin, ymax)
         """
-        self.axes.set_xlim(self.xlim_original)
-        self.axes.set_ylim(self.ylim_original)
+        if len(self.zoomStack) > 1:
+            self.zoomStack.pop() #makni zadnji element sa zoom stacka
+            x, y = self.zoomStack[-1] #prikazi vrijednost elementa odmah ispod
+            for ax in self.fig.axes:
+                ax.set_xlim(x)
+                ax.set_ylim(y)
+        else:
+            self.axes.set_xlim(self.xlim_original)
+            self.axes.set_ylim(self.ylim_original)
         #nacrtaj promjenu
         self.draw()
 
@@ -249,6 +231,7 @@ class Kanvas(FigureCanvas):
         """
         clear grafa
         """
+        self.zoomStack.clear()
         self.data = {} #spremnik za frejmove (ucitane)
         self.statusGlavniGraf = False
         self.axes.clear()
@@ -269,21 +252,10 @@ class Kanvas(FigureCanvas):
         self.axes.xaxis.set_major_locator(locator)
         self.axes.xaxis.set_major_formatter(majorTickFormat)
         self.fig.autofmt_xdate()
-
         allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
         for label in allXLabels:
             #label.set_rotation(30)
             label.set_fontsize(8)
-
-        #vidljivost minor tickova i grida
-        #TICKS
-        if self.konfig.Ticks:
-            self.axes.minorticks_on()
-        else:
-            self.axes.minorticks_off()
-        #GRID
-        self.axes.grid(self.konfig.Grid)
-
 
     def setup_legend(self):
         """
@@ -354,6 +326,7 @@ class SatniMinutniKanvas(Kanvas):
         self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
         self.statusMap = {} #defaultni satusMap je prazan dict, ---> status annotation ce biti prazan
         self.kontrolaProvedenaBit = None
+        self.cid = self.mpl_connect('button_press_event', self.on_pick) #callback za pick
 
     def set_statusMap(self, mapa):
         """
@@ -388,12 +361,6 @@ class SatniMinutniKanvas(Kanvas):
             if self.check_bit(broj, i):
                 output.append(self.statusMap[i])
         return ", ".join(output)
-
-    def connect_pick_evente(self):
-        """
-        connect canvas pick event sa metodom self.on_pick
-        """
-        self.cid = self.mpl_connect('button_press_event', self.on_pick)
 
     def crtaj_scatter_value_ovisno_o_flagu(self, komponenta, konfig, flag):
         """
@@ -547,10 +514,10 @@ class SatniMinutniKanvas(Kanvas):
             xpoint = self.pocetnoVrijeme
         #kooridinate ako nedostaju podaci za highlight
         ymin, ymax = self.axes.get_ylim()
-        defaultY = (ymax-ymin) / 2
+        defaultY = (ymax+ymin) / 2
         if xpoint in list(self.data[self.gKanal].index):
             ypoint = self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]
-            if ypoint < ymin or ypoint > ymax:
+            if ypoint < ymin or ypoint > ymax or str(ypoint) == 'nan':
                 ypoint = defaultY
         else:
             ypoint = defaultY
@@ -656,6 +623,7 @@ class SatniMinutniKanvas(Kanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
         #clear prethodnog grafa, reinicijalizacija membera
+        self.zoomStack.clear()
         self.statusGlavniGraf = False
         self.axes.clear()
         self.axes.set_ylabel(self.konfig.TIP)
@@ -707,11 +675,6 @@ class SatniKanvas(SatniMinutniKanvas):
         SatniMinutniKanvas.__init__(self, konfig, pomocni)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
 
     def crtaj_glavni_kanal(self):
         """
@@ -758,6 +721,8 @@ class SatniKanvas(SatniMinutniKanvas):
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
+        #set limite prilikom crtanja na zoom stack
+        self.zoomStack.append((self.xlim_original, self.ylim_original))
 
     def setup_annotation_text(self, xpoint):
         """
@@ -776,9 +741,9 @@ class SatniKanvas(SatniMinutniKanvas):
             if ystatus != 0:
                 ystatus = self.check_status_flags(ystatus)
             output = {'vrijeme':str(xpoint),
-                      'average':round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),3),
-                      'min': round((self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM]),3),
-                      'max': round((self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM]),3),
+                      'average':round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3),
+                      'min':round(self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM], 3),
+                      'max':round(self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM], 3),
                       'count':int(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
                       'status':str(ystatus)}
         #emit signal to update
@@ -800,7 +765,7 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 2 or event.button == 1:
+            if event.button == 1:
                 self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
@@ -863,11 +828,7 @@ class SatniRestKanvas(SatniKanvas):
         self.axes.figure.subplots_adjust(bottom = 0.08)
         self.axes.figure.subplots_adjust(left = 0.08)
         self.axes.figure.subplots_adjust(right = 0.98)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
+        self.spanSelector.visible = False
 
     def setup_ticks(self):
         """
@@ -882,29 +843,11 @@ class SatniRestKanvas(SatniKanvas):
         self.axes.xaxis.set_major_locator(locator)
         self.axes.xaxis.set_major_formatter(majorTickFormat)
         self.fig.autofmt_xdate()
+        allXLabels = self.axes.get_xticklabels(which = 'both') #dohvati sve labele
+        for label in allXLabels:
+            #label.set_rotation(30)
+            label.set_fontsize(8)
 
-    def set_interaction_mode(self, zoom, cursor):
-        """
-        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
-        zoom --> boolean
-        cursor --> boolean
-        """
-        self.spanSelector = None
-        #set up pick callbacks ovisno o tipu grafa
-        self.disconnect_pick_evente()
-        self.connect_pick_evente()
-        if zoom:
-            #zoom on, all else off
-            self.zoomSelector.set_active(True)
-            self.cursorAssist.visible = False
-            self.disconnect_pick_evente()
-        else:
-            #zoom off
-            self.zoomSelector.set_active(False)
-            if cursor:
-                self.cursorAssist.visible = True
-            else:
-                self.cursorAssist.visible = False
 
     def crtaj(self, frejmovi, mapaParametara):
         """
@@ -923,6 +866,7 @@ class SatniRestKanvas(SatniKanvas):
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
         #clear prethodnog grafa, reinicijalizacija membera
+        self.zoomStack.clear()
         self.statusGlavniGraf = False
         self.axes.clear()
         #redo Axes labels
@@ -983,7 +927,7 @@ class SatniRestKanvas(SatniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1 or event.button == 2:
+            if event.button == 1:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize)
 
     def setup_annotation_text(self, xpoint):
@@ -1001,8 +945,8 @@ class SatniRestKanvas(SatniKanvas):
             if ystatus != 0:
                 ystatus = self.check_status_flags(ystatus)
             output = {'vrijeme':str(xpoint),
-                      'average':round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]),3),
-                      'obuhvat':int(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
+                      'average':round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3),
+                      'obuhvat':self.data[self.gKanal].loc[xpoint, self.konfig.COUNT],
                       'status':str(ystatus)}
         #emit signal to update label
         self.emit(QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'), output)
@@ -1019,11 +963,6 @@ class MinutniKanvas(SatniMinutniKanvas):
         SatniMinutniKanvas.__init__(self, konfig, pomocni)
         self.highlightSize = 1.5 * self.konfig.VOK.markerSize
         self.axes.set_ylabel(self.konfig.TIP)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
 
     def crtaj_glavni_kanal(self):
         """
@@ -1059,6 +998,8 @@ class MinutniKanvas(SatniMinutniKanvas):
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
+        #set limite prilikom crtanja na zoom stack
+        self.zoomStack.append((self.xlim_original, self.ylim_original))
 
     def setup_annotation_text(self, xpoint):
         """
@@ -1074,7 +1015,7 @@ class MinutniKanvas(SatniMinutniKanvas):
             if ystat != 0:
                 ystat = self.check_status_flags(ystat)
             output = {'vrijeme': str(xpoint),
-                      'koncentracija': round((self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE]), 3),
+                      'koncentracija':round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3),
                       'status': str(ystat)}
         #emit za promjenu minutnog statusa
         self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)
@@ -1095,7 +1036,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
             xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button ==1 or event.button == 2:
+            if event.button ==1:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
             elif event.button == 3:
                 self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
@@ -1109,6 +1050,8 @@ class ZeroSpanKanvas(Kanvas):
     """
     def __init__(self, konfig, parent = None, width = 6, height = 5, dpi=100):
         Kanvas.__init__(self, konfig)
+        self.cid = self.mpl_connect('pick_event', self.on_pick)
+        self.spanSelector.visible = False
 
     def pronadji_najblizi_time_indeks(self, lista, vrijednost):
         """
@@ -1126,11 +1069,6 @@ class ZeroSpanKanvas(Kanvas):
         #oduzmi dvije liste teprimjeni apsolutnu vrijednost na ostatak.
         #minimum tako dobivene liste je najbliza vrijednost
         return (np.abs(inList - const)).argmin()
-
-
-    def connect_pick_evente(self):
-        """connect canvas pick point event sa metodom self.on_pick"""
-        self.cid = self.mpl_connect('pick_event', self.on_pick)
 
 
     def pick_nearest(self, argList):
@@ -1229,6 +1167,8 @@ class ZeroSpanKanvas(Kanvas):
         if eclick.xdata != erelease.xdata and eclick.ydata != erelease.ydata:
             x = sorted([eclick.xdata, erelease.xdata])
             y = sorted([eclick.ydata, erelease.ydata])
+            #dodaj zoom tocke na stack
+            self.zoomStack.append((x, y))
             #set nove granice osi za sve axese
             for ax in self.fig.axes:
                 ax.set_xlim(x)
@@ -1237,11 +1177,37 @@ class ZeroSpanKanvas(Kanvas):
             self.draw()
             self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), sorted([eclick.xdata, erelease.xdata]))
 
+    def zoom_out(self):
+        """
+        Reset granica x i y osi da pokrivaju isti raspon kao i originalna slika.
+        Full zoom out.
+
+        vrijednosti su spremljene u memberima u obliku tuple
+        self.xlim_original --> (xmin, xmax)
+        self.ylim_original --> (ymin, ymax)
+        """
+        if len(self.zoomStack) > 1:
+            self.zoomStack.pop() #makni zadnji element sa zoom stacka
+            x, y = self.zoomStack[-1] #prikazi vrijednost elementa odmah ispod
+            for ax in self.fig.axes:
+                ax.set_xlim(x)
+                ax.set_ylim(y)
+            self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), x)
+        else:
+            self.axes.set_xlim(self.xlim_original)
+            self.axes.set_ylim(self.ylim_original)
+            self.emit(QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'), self.xlim_original)
+        #nacrtaj promjenu
+        self.draw()
+
     def sync_x_zoom(self, x):
         """
         Postavi novi raspon x osi. Metoda sluzi za sinhronizaciju zooma po x osi
         za zero i span graf.
         """
+        #sync zoom mora appendati na zoom stack
+        y = self.axes.get_ylim()
+        self.zoomStack.append((x, y))
         for ax in self.fig.axes:
             ax.set_xlim(x)
         self.draw()
@@ -1299,7 +1265,7 @@ class ZeroSpanKanvas(Kanvas):
             else:
                 status = 'Ne valja'
 
-        if event.mouseevent.button == 2 or event.mouseevent.button == 1:
+        if event.mouseevent.button == 1:
             #left click
             #update labels
             argList = {'xtocka': str(x),
@@ -1326,6 +1292,9 @@ class ZeroSpanKanvas(Kanvas):
         #set granice grafa
         self.axes.set_xlim(self.xlim_original)
         self.axes.set_ylim(self.ylim_original)
+        #set limite prilikom crtanja na zoom stack
+        self.zoomStack.append((self.xlim_original, self.ylim_original))
+
 
     def crtaj_glavni_kanal(self):
         """
@@ -1380,6 +1349,7 @@ class ZeroSpanKanvas(Kanvas):
         -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
         """
+        self.zoomStack.clear()
         self.statusGlavniGraf = False
         self.axes.clear()
         #redo Axes labels
@@ -1411,6 +1381,7 @@ class ZeroSpanKanvas(Kanvas):
         """
         clear grafa i replace sa porukom da nema dostupnih podataka
         """
+        self.zoomStack.clear()
         self.statusGlavniGraf = False
         self.axes.clear()
         #redo Axes labels
@@ -1426,7 +1397,7 @@ class ZeroSpanKanvas(Kanvas):
         self.updateaj_labele_na_panelu('normal', argMap)
         self.axes.text(0.5,
                        0.5,
-                       'Nije moguce pristupiti podacima',
+                       'Nije moguce pristupiti podacima ili nema podataka',
                        horizontalalignment='center',
                        verticalalignment='center',
                        fontsize = 8,
@@ -1438,31 +1409,6 @@ class ZeroSpanKanvas(Kanvas):
         Zero i span graf nemaju opciju za span selektor.
         """
         pass
-
-    def set_interaction_mode(self, zoom, cursor):
-        """
-        Toggle nacina interakcije, ovisno o zeljenom nacinu interakcije sa canvasom.
-        zoom --> boolean
-        cursor --> boolean
-        """
-        #zero i span nemaju span selektor
-        self.spanSelector = None
-        #set up pick callbacks ovisno o tipu grafa
-        self.disconnect_pick_evente()
-        self.connect_pick_evente()
-        if zoom:
-            #zoom on, all else off
-            self.zoomSelector.set_active(True)
-            self.cursorAssist.visible = False
-            self.disconnect_pick_evente()
-        else:
-            #zoom off
-            self.zoomSelector.set_active(False)
-            if cursor:
-                self.cursorAssist.visible = True
-            else:
-                self.cursorAssist.visible = False
-
 ################################################################################
 class ZeroKanvas(ZeroSpanKanvas):
     """specificna implementacija Zero canvasa"""
@@ -1474,11 +1420,6 @@ class ZeroKanvas(ZeroSpanKanvas):
         self.axes.figure.subplots_adjust(bottom = 0.08)
         self.axes.figure.subplots_adjust(right = 0.98)
         self.axes.set_ylabel(self.konfig.TIP)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
 
     def updateaj_labele_na_panelu(self, tip, argMap):
         """
@@ -1501,11 +1442,6 @@ class SpanKanvas(ZeroSpanKanvas):
         self.axes.figure.subplots_adjust(bottom = 0.02)
         self.axes.figure.subplots_adjust(right = 0.98)
         self.axes.set_ylabel(self.konfig.TIP)
-        #inicijalni setup za interakciju i display(pick, zoom, ticks...)
-        self.initialize_interaction(self.span_select, self.rect_zoom)
-        self.set_interaction_mode(self.konfig.Zoom, self.konfig.Cursor)
-        self.toggle_grid(self.konfig.Grid)
-        self.toggle_ticks(self.konfig.Ticks)
 
     def updateaj_labele_na_panelu(self, tip, argMap):
         """

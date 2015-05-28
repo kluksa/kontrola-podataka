@@ -552,7 +552,6 @@ class Kontroler(QtCore.QObject):
                 self.zeroFrejm, self.spanFrejm = self.dohvati_zero_span()
                 #nastavi dalje samo ako oba frejma nisu prazna
                 if len(self.zeroFrejm) > 0 or len(self.spanFrejm) > 0:
-                    raspon = self.sync_zero_span_x_os(self.zeroFrejm, self.spanFrejm)
                     #fix duplicate rows (if any)
                     self.zeroFrejm.drop_duplicates(subset='vrijeme',
                                                    take_last=True,
@@ -563,9 +562,11 @@ class Kontroler(QtCore.QObject):
                                                    inplace=True)
                     self.spanFrejm.sort()
                     #redefinicija argumenata
+                    tmax = datetime.datetime.strptime(self.pickedDate, '%Y-%m-%d')
+                    tmin = tmax - datetime.timedelta(days=self.brojDana)
                     arg = {'kanalId': self.gKanal,
-                           'pocetnoVrijeme': raspon[0],
-                           'zavrsnoVrijeme': raspon[1]}
+                           'pocetnoVrijeme': tmin,
+                           'zavrsnoVrijeme': tmax}
                     #naredi crtanje
                     self.gui.zsPanel.zeroGraf.crtaj(self.zeroFrejm, arg)
                     self.gui.zsPanel.spanGraf.crtaj(self.spanFrejm, arg)

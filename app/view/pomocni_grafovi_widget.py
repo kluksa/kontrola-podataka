@@ -11,8 +11,6 @@ import app.view.dodavanje_pomocnih as dodavanje_pomocnih
 ###############################################################################
 ###############################################################################
 base8, form8 = uic.loadUiType('./app/view/ui_files/pomocni_grafovi_widget.ui')
-
-
 class PomocniIzbor(base8, form8):
     """
     Widget se sastoji od QtableView instance i dva gumba (za dodavanje i
@@ -58,9 +56,11 @@ class PomocniIzbor(base8, form8):
         self.comboListe = cListe
         self.mapaKanali = opisKanala
         self.dictHelperi = listHelpera
+        self.tmodel = None
 
-        #konstruiraj table model iz raspolozivih podataka
-        self.tmodel = self.napravi_table_model()
+        #dodavanje stabla u tree view... izbor postaje
+        self.treeView.setModel(self.drvo)
+
         #inicijalizacija parametara za tablicu
         initlista = [self.drvo,
                      self.comboListe,
@@ -68,18 +68,32 @@ class PomocniIzbor(base8, form8):
 
         #inicijalizacija tablice
         self.tableView = Tablica(lista=initlista)
-        #postavljanje modela u qtablewiew
-        self.tableView.setModel(self.tmodel)
         #set selecting by rows
         self.tableView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         #set selection mode, only one at a time
         self.tableView.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         #postavljanje tablice u layout dijaloga
         self.tableViewLayout.addWidget(self.tableView)
-        #check za disable/enable gumba za brisanje grafova (ovisno da li su definirani)
-        self.toggle_brisanje_pomocnog_grafa()
 
         self.veze()
+    ###############################################################################
+    def setup_table_model(self, x):
+        """
+        setup table modela ovisno o aktivnom kanalu
+        """
+        item = self.drvo.getItem(x)
+        progmjer = item.data(2)
+        if progmjer != None:
+            self.tmodel = self.napravi_table_model(progmjer)
+            self.tableView.setModel(self.tmodel)
+            self.izabraniGlavniKanal = progmjer
+            self.dodajGrafGumb.setEnabled(True)
+
+        else:
+            self.tmodel = table_model.PomocniGrafovi() #empty model
+            self.tableView.setModel(self.tmodel)
+            self.izabraniGlavniKanal = None
+            self.dodajGrafGumb.setEnabled(False)
 
     ###############################################################################
     def veze(self):
@@ -88,17 +102,18 @@ class PomocniIzbor(base8, form8):
         """
         self.dodajGrafGumb.clicked.connect(self.dodaj_graf)
         self.makniGrafGumb.clicked.connect(self.makni_pomocni_graf)
+        self.treeView.clicked.connect(self.setup_table_model)
         self.connect(self.tableView.delegat,
                      QtCore.SIGNAL('update_dto(PyQt_PyObject)'),
                      self.update_dto)
 
     ###############################################################################
-    def napravi_table_model(self):
+    def napravi_table_model(self, kanal):
         """
         konstrukcija modela za QTableView
         """
         nLista = []
-        pomocni = self.defaulti.dictPomocnih
+        pomocni = self.defaulti.dictPomocnih[kanal]
         if len(pomocni) == 0:
             nLista = []
         else:
@@ -195,30 +210,31 @@ class PomocniIzbor(base8, form8):
                         self.tmodel.insertRows(0, 1, sto=[pomocniKanal])
                         #dodaj novi dto objekt u defaulte
                         key = pomocniKanal[0]
-                        self.defaulti.dodaj_pomocni(key)
+                        self.defaulti.dodaj_pomocni(self.izabraniGlavniKanal, key)
                         #set vrijednosti
-                        self.change_pomocni(key, pomocniKanal)
-                        self.toggle_brisanje_pomocnog_grafa()
+                        self.change_pomocni(self.izabraniGlavniKanal, key, pomocniKanal)
+
         else:
             #javi problem, model dostupnih programa mjerenja nije uspjesno instanciran
             tekst = 'Mapa sa programima mjerenja nije instancirana.\nNije moguce dodati nove grafove.\nPokusaj obnoviti vezu sa REST servisom.'
             QtGui.QMessageBox.information(self, "Problem kod dodavanja grafova", tekst)
         ###############################################################################
 
-    def change_pomocni(self, key, lista):
+    def change_pomocni(self, masterkey, key, lista):
         """
         promjena graf dto objekta za pomocni graf
+        masterkey - kljuc kanala za koji se definiraju pomocni
         key - programMjerenjaId, kljuc u dictu pomocnih
         lista - 'redak' iz tablice sa podacima
         """
-        self.defaulti.dictPomocnih[key].set_markerStyle(self.dictHelperi[1][lista[4]])
-        self.defaulti.dictPomocnih[key].set_markerSize(lista[5])
-        self.defaulti.dictPomocnih[key].set_lineStyle(self.dictHelperi[3][lista[6]])
-        self.defaulti.dictPomocnih[key].set_lineWidth(lista[7])
-        self.defaulti.dictPomocnih[key].set_rgb(lista[8])
-        self.defaulti.dictPomocnih[key].set_alpha(lista[9])
-        self.defaulti.dictPomocnih[key].set_zorder(lista[10])
-        self.defaulti.dictPomocnih[key].set_label(lista[11])
+        self.defaulti.dictPomocnih[masterkey][key].set_markerStyle(self.dictHelperi[1][lista[4]])
+        self.defaulti.dictPomocnih[masterkey][key].set_markerSize(lista[5])
+        self.defaulti.dictPomocnih[masterkey][key].set_lineStyle(self.dictHelperi[3][lista[6]])
+        self.defaulti.dictPomocnih[masterkey][key].set_lineWidth(lista[7])
+        self.defaulti.dictPomocnih[masterkey][key].set_rgb(lista[8])
+        self.defaulti.dictPomocnih[masterkey][key].set_alpha(lista[9])
+        self.defaulti.dictPomocnih[masterkey][key].set_zorder(lista[10])
+        self.defaulti.dictPomocnih[masterkey][key].set_label(lista[11])
 
     ###############################################################################
     def update_dto(self, lista):
@@ -231,24 +247,18 @@ class PomocniIzbor(base8, form8):
     ###############################################################################
     def makni_pomocni_graf(self):
         """Brisanje selektiranog reda u qtableview"""
-        indeks = self.tableView.currentIndex()
-        red = indeks.row()
-        # programMjerenjaId za izabrani index
-        keyid = int(indeks.model().grafInfo[red][0])
+        try:
+            indeks = self.tableView.currentIndex()
+            red = indeks.row()
+            # programMjerenjaId za izabrani index
+            keyid = int(indeks.model().grafInfo[red][0])
+        except AttributeError:
+            red = -1
         if red >= 0:
             self.tmodel.removeRows(red, 1)
             #makni dto objekt iz dicta pomocnih
-            self.defaulti.makni_pomocni(keyid)
-            self.toggle_brisanje_pomocnog_grafa()
+            self.defaulti.makni_pomocni(self.izabraniGlavniKanal, keyid)
         ###############################################################################
-
-    def toggle_brisanje_pomocnog_grafa(self):
-        """toggle za enable/disable gumba za brisanje pomocnih grafova"""
-        if self.tmodel.rowCount == 0:
-            self.makniGrafGumb.setEnabled(False)
-        else:
-            self.makniGrafGumb.setEnabled(True)
-
 
 ###############################################################################
 ###############################################################################

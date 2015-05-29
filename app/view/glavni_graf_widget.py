@@ -133,13 +133,18 @@ class GrafIzbor(base6, form6):
         self.statusStil.setCurrentIndex(self.statusStil.findText(tmark))
         #izbor velicine markera
         self.statusSize.setValue(defaulti.satni.statusWarning.markerSize)
-        #izbor boje temerature kontejnera
+        #izbor boje statusa
         self.set_widget_color_style(defaulti.satni.statusWarning.rgb,
                                     defaulti.satni.statusWarning.alpha,
                                     "QPushButton",
                                     self.statusBoja)
+        self.set_widget_color_style(defaulti.satni.statusWarningOkolis.rgb,
+                                    defaulti.satni.statusWarningOkolis.alpha,
+                                    "QPushButton",
+                                    self.okolisStatusBoja)
         #izbor prozirnosti temperature kontejnera
         self.statusAlpha.setValue(defaulti.satni.statusWarning.alpha)
+        self.okolisStatusAlpha.setValue(defaulti.satni.statusWarningOkolis.alpha)
         #enable/disable ovisno o statusu crtanja
         self.statusCrtaj.setChecked(defaulti.satni.statusWarning.crtaj)
         if defaulti.satni.statusWarning.crtaj:
@@ -147,11 +152,15 @@ class GrafIzbor(base6, form6):
             self.statusBoja.setEnabled(True)
             self.statusSize.setEnabled(True)
             self.statusStil.setEnabled(True)
+            self.okolisStatusBoja.setEnabled(True)
+            self.okolisStatusAlpha.setEnabled(True)
         else:
             self.statusAlpha.setEnabled(False)
             self.statusBoja.setEnabled(False)
             self.statusSize.setEnabled(False)
             self.statusStil.setEnabled(False)
+            self.okolisStatusBoja.setEnabled(False)
+            self.okolisStatusAlpha.setEnabled(False)
 
         ###############################################################################
 

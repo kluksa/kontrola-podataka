@@ -321,11 +321,12 @@ class SatniMinutniKanvas(Kanvas):
     Kanvas klasa sa zajednickim elementima za satni i minutni graf.
     Inicijalizacija sa konfig objektom i mapom pomocnih kanala.
     """
-    def __init__(self, konfig, pomocni, parent = None, width = 6, height = 5, dpi=100):
+    def __init__(self, konfig, masterkonfig, parent = None, width = 6, height = 5, dpi=100):
         Kanvas.__init__(self, konfig)
-        self.pomocniGrafovi = pomocni #mapa pomocnih kanala {kanalId:dto objekt za kanal}
+        self.masterKonfig = masterkonfig #mapa pomocnih kanala {kanalId:dto objekt za kanal}
         self.statusMap = {} #defaultni satusMap je prazan dict, ---> status annotation ce biti prazan
         self.kontrolaProvedenaBit = None
+        self.okolisniUvjetiBit = None
         self.cid = self.mpl_connect('button_press_event', self.on_pick) #callback za pick
 
     def set_statusMap(self, mapa):
@@ -336,6 +337,8 @@ class SatniMinutniKanvas(Kanvas):
         for i in self.statusMap:
             if self.statusMap[i] == 'KONTROLA_PROVEDENA':
                 self.kontrolaProvedenaBit = i
+            elif self.statusMap[i] == 'OKOLISNI_UVJETI':
+                self.okolisniUvjetiBit = i
 
     def check_bit(self, broj, bit_position):
         """
@@ -426,25 +429,27 @@ class SatniMinutniKanvas(Kanvas):
         #setup odgovarajucih labela tjekom highlighta
         self.setup_annotation_text(x)
 
-    def crtaj_pomocne(self, popis):
+    def crtaj_pomocne(self):
         """
         Metoda za crtanje pomocnih grafova. Ulazni parametar popis je set id
         oznaka programa mjerenja.
         """
-        for key in popis:
-            frejm = self.data[key]
-            if len(frejm):
-                x = list(frejm.index)
-                y = list(frejm[self.konfig.MIDLINE])
-                self.axes.plot(x,
-                               y,
-                               marker=self.pomocniGrafovi[key].markerStyle,
-                               markersize=self.pomocniGrafovi[key].markerSize,
-                               linestyle=self.pomocniGrafovi[key].lineStyle,
-                               linewidth=self.pomocniGrafovi[key].lineWidth,
-                               color=self.pomocniGrafovi[key].color,
-                               zorder=self.pomocniGrafovi[key].zorder,
-                               label=self.pomocniGrafovi[key].label)
+        pomocni = self.masterKonfig.dictPomocnih[self.gKanal]
+        for key in pomocni:
+            if key in self.data:
+                frejm = self.data[key]
+                if len(frejm):
+                    x = list(frejm.index)
+                    y = list(frejm[self.konfig.MIDLINE])
+                    self.axes.plot(x,
+                                   y,
+                                   marker=pomocni[key].markerStyle,
+                                   markersize=pomocni[key].markerSize,
+                                   linestyle=pomocni[key].lineStyle,
+                                   linewidth=pomocni[key].lineWidth,
+                                   color=pomocni[key].color,
+                                   zorder=pomocni[key].zorder,
+                                   label=pomocni[key].label)
 
     def provjera_obavljene_kontrole(self, x):
         """
@@ -456,6 +461,7 @@ class SatniMinutniKanvas(Kanvas):
             return 0
         else:
             return x
+
 
     def crtaj_oznake_statusa(self):
         """
@@ -470,12 +476,29 @@ class SatniMinutniKanvas(Kanvas):
             #eliminacija svih kojima je status 0
             frejm = frejm[frejm[self.konfig.STATUS] != 0]
             #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
-            if len(frejm):
-                x = list(frejm.index)
+            #samo okolisni uvijeti
+            okolisStatus = 1 << self.okolisniUvjetiBit
+            #samo okolisni uvijeti
+            frame1 = frejm.copy()
+            frame1 = frame1[frame1[self.konfig.STATUS] == okolisStatus]
+            #ostali statusi
+            frame2 = frejm.copy()
+            frame2 = frame2[frame2[self.konfig.STATUS] != okolisStatus]
+
+            if len(frame1):
+                x = list(frame1.index)
+                y1, y2 = self.ylim_original
+                c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+                y = [c for i in x]
+                self.crtaj_scatter(x, y, self.konfig.statusWarningOkolis)
+
+            if len(frame2):
+                x = list(frame2.index)
                 y1, y2 = self.ylim_original
                 c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
                 y = [c for i in x]
                 self.crtaj_scatter(x, y, self.konfig.statusWarning)
+
 
     def setup_annotation_text(self, xpoint):
         """
@@ -634,10 +657,8 @@ class SatniMinutniKanvas(Kanvas):
         if self.gKanal in self.data.keys():
             #naredba za crtanje glavnog grafa
             self.crtaj_glavni_kanal()
-            #set dostupnih pomocnih kanala za crtanje
-            pomocni = set(self.data.keys()) - {self.gKanal}
             #naredba za crtanje pomocnih
-            self.crtaj_pomocne(pomocni)
+            self.crtaj_pomocne()
             ###micanje tocaka od rubova, tickovi, legenda...
             self.setup_limits()
             self.setup_legend()

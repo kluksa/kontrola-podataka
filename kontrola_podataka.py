@@ -14,7 +14,6 @@ VERZIJE EKSTERNIH MODULA
 -enum
 
 - standard library python 3.4.3 (sys, configparser...)
-
 """
 import sys
 import configparser
@@ -22,7 +21,6 @@ import logging
 from PyQt4 import QtGui
 
 import app.view.glavniprozor as glavniprozor
-
 
 def setup_logging(file='applog.log', mode='a', lvl='INFO'):
     """

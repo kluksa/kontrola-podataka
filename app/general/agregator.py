@@ -4,6 +4,7 @@ Agregator dio
 """
 import pandas as pd
 import numpy as np
+import logging
 
 
 class Agregator(object):
@@ -84,11 +85,15 @@ class Agregator(object):
     def h_binary_or(self, x):
         # binarni or liste
         if len(x) == 0:
-            #za prazni interval, vrati -1 (ocita greska)
+            #za prazni interval
             return np.NaN
         result = 0
         for i in x:
-            result |= int(i)
+            try:
+                result |= int(i)
+            except ValueError:
+                logging.info('Agregator exception prilikom agregiranja statusa.', exc_info=True)
+                pass
         return result
 
     def h_size(self, x):
@@ -124,6 +129,15 @@ class Agregator(object):
         agregirani = pd.DataFrame()
 
         """
+        agregirani status
+        """
+        #agregacija statusa prije odbacivanja losih / nepostojecih podataka
+        tempDf = frejm.copy()
+        dfStatus = tempDf[u'status']
+        temp = dfStatus.resample('H', how=self.h_binary_or, closed='right', label='right')
+        agregirani[u'status'] = temp
+
+        """
         ukupni broj podataka koji postoje
         """
         #izbaci sve indekse gdje je koncentracija NaN
@@ -135,14 +149,6 @@ class Agregator(object):
         #resample series, prebroji koliko ima podataka
         temp = dfKonc.resample('H', how=self.h_size, closed='right', label='right')
         agregirani[u'broj podataka'] = temp
-
-        """
-        agregirani status
-        """
-        tempDf = df.copy()
-        dfStatus = tempDf[u'status']
-        temp = dfStatus.resample('H', how=self.h_binary_or, closed='right', label='right')
-        agregirani[u'status'] = temp
 
         """
         test validacije

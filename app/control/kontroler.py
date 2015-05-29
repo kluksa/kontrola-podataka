@@ -211,7 +211,6 @@ class Kontroler(QtCore.QObject):
         Funkcija uzima datum string formata 'YYYY-MM-DD' i integer broja dana.
         Izlaz fukcije je lista QDate objekata (datum i N prethodnih dana)
         """
-        #TODO! helper funkcija za bojanje datuma
         date = datetime.datetime.strptime(datum, '%Y-%m-%d')
         popis = [date-datetime.timedelta(days=i) for i in range(brojDana)]
         izlaz = [QtCore.QDate(i) for i in popis]
@@ -283,11 +282,40 @@ class Kontroler(QtCore.QObject):
                 self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
                 self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
                 self.gui.visednevniPanel.satniRest.set_statusMap(statusMapa)
-            except pomocne_funkcije.AppExcept:
-                msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
+            except pomocne_funkcije.AppExcept as err:
+                logging.error('App exception', exc_info=True)
+                msg = 'Pristup mapi sa statusima nije moguc.\n' + str(err)
                 self.prikazi_error_msg(msg)
                 self.gui.action_log_in.setEnabled(True)
                 self.gui.action_log_out.setEnabled(False)
+    ###############################################################################
+    def nadji_default_pomocne_za_kanal(self, kanal):
+        """
+        za zadani kanal, ako je formula kanala unutar nekog od setova,
+        vrati sve druge kanale na istoj postaji koji takodjer pripadaju istom
+        setu.
+
+        npr. ako je izabrani kanal Desinic NO, funkcija vraca id mjerenja za
+        NO2 i NOx sa Desinica (ako postoje)
+        """
+        setovi = [('NOx','NO','NO2'), ('PM10','PM1','PM2.5')]
+        output = set()
+        postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaId']
+        formula = self.mapaMjerenjeIdToOpis[kanal]['komponentaFormula']
+        ciljaniSet = None
+        for kombinacija in setovi:
+            if formula in kombinacija:
+                ciljaniSet = kombinacija
+                break
+        if ciljaniSet == None:
+            return output
+        for programMjerenja in self.mapaMjerenjeIdToOpis:
+            if self.mapaMjerenjeIdToOpis[programMjerenja]['postajaId'] == postaja and programMjerenja != kanal:
+                if self.mapaMjerenjeIdToOpis[programMjerenja]['komponentaFormula'] in ciljaniSet:
+                    output.add(programMjerenja)
+        return output
+
+
     ###############################################################################
     def konstruiraj_tree_model(self):
         """
@@ -299,6 +327,15 @@ class Kontroler(QtCore.QObject):
             mapa = self.webZahtjev.get_programe_mjerenja()
             # spremi mapu u privatni member
             self.mapaMjerenjeIdToOpis = mapa
+            self.gui.konfiguracija.reset_pomocne(self.mapaMjerenjeIdToOpis)
+            #TODO! dodaj radom pomocne grafove ovisno da li su u NOX ili PM grupi
+            for kanal in self.mapaMjerenjeIdToOpis:
+                pomocni = self.nadji_default_pomocne_za_kanal(kanal)
+                for i in pomocni:
+                    naziv = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                    self.gui.konfiguracija.dodaj_random_pomocni(kanal, i, naziv)
+
+
             #root objekt
             tree = model_drva.TreeItem(['stanice', None, None, None], parent=None)
             #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
@@ -323,11 +360,10 @@ class Kontroler(QtCore.QObject):
                 model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])  #kreacija TreeItem objekta
 
             self.modelProgramaMjerenja = model_drva.ModelDrva(tree)  #napravi model
-
-        except pomocne_funkcije.AppExcept as err:
+        except pomocne_funkcije.AppExcept:
             # log error sa stack traceom exceptiona
             logging.error('App exception', exc_info=True)
-            self.prikazi_error_msg(err)
+            self.mapaMjerenjeIdToOpis = None
         ###############################################################################
 
     def reconnect_to_REST(self):
@@ -348,8 +384,15 @@ class Kontroler(QtCore.QObject):
             self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
             self.gui.restIzbornik.model = self.modelProgramaMjerenja
             logging.info('Tree model programa mjerenja uspjesno postavljen')
+            self.gui.action_log_in.setEnabled(False)
+            self.gui.action_log_out.setEnabled(True)
         else:
             logging.info('Tree model programa mjerenja nije uspjesno postavljen')
+            self.gui.action_log_in.setEnabled(True)
+            self.gui.action_log_out.setEnabled(False)
+            msg = 'Krivi login user ili password.\n Spajanje sa REST servisom nije moguce'
+            self.prikazi_error_msg(msg)
+
         #vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
 
@@ -391,7 +434,7 @@ class Kontroler(QtCore.QObject):
         self.sviBitniKanali = []  # varijabla sa listom svih programMjerenjaId koje treba ucitati
         self.sviBitniKanali.append(self.gKanal)  # dodaj glavni kanal na popis
         # pronadji sve ostale kanale potrebne za crtanje
-        for key in self.gui.konfiguracija.dictPomocnih:
+        for key in self.gui.konfiguracija.dictPomocnih[self.gKanal]:
             self.sviBitniKanali.append(key)
         #kreni ucitavati po potrebi
         for kanal in self.sviBitniKanali:
@@ -487,6 +530,7 @@ class Kontroler(QtCore.QObject):
                         #clear izabrani label sata (prosljedi prazan string)
                         self.gui.koncPanel.change_satLabel('')
             except (TypeError, LookupError) as err:
+                logging.error('App exception', exc_info=True)
                 self.prikazi_error_msg(err)
             ###############################################################################
 
@@ -735,7 +779,6 @@ class Kontroler(QtCore.QObject):
                     else:
                         if datum not in self.kalendarStatus[progMjer]['bad']:
                             self.kalendarStatus[progMjer]['bad'].append(datum)
-                        #TODO! provjera da li je ucitani dan "validiran" ranije
                         if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
                             self.kalendarStatus[progMjer]['ok'].append(datum)
                 else:

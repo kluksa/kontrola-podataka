@@ -214,12 +214,14 @@ class GlavniIzbor(base5, form5):
         self.glavni.fillKomponenta2.currentIndexChanged.connect(self.promjena_glavni_fillKomponenta2)
         self.glavni.fillBoja.clicked.connect(self.promjena_glavni_fillBoja)
         self.glavni.fillAlpha.valueChanged.connect(self.promjena_glavni_fillAlpha)
-        #pomocni grafovi za temperaturu kontejnera
+        #pomocni grafovi status
         self.glavni.statusCrtaj.clicked.connect(self.promjena_glavni_statusCrtaj)
         self.glavni.statusAlpha.valueChanged.connect(self.promjena_glavni_statusAlpha)
         self.glavni.statusBoja.clicked.connect(self.promjena_glavni_statusBoja)
         self.glavni.statusSize.valueChanged.connect(self.promjena_glavni_statusSize)
         self.glavni.statusStil.currentIndexChanged.connect(self.promjena_glavni_statusStil)
+        self.glavni.okolisStatusAlpha.valueChanged.connect(self.promjena_glavni_okolisStatusAlpha)
+        self.glavni.okolisStatusBoja.clicked.connect(self.promjena_glavni_okolisStatusBoja)
         ###dodavanje grafova###
         """
         pomocni_grafovi_widget se sam brine za povezivanje i update grafSettings
@@ -240,6 +242,30 @@ class GlavniIzbor(base5, form5):
         out = int(x)
         self.defaulti.satni.statusWarning.set_markerSize(out)
         self.defaulti.minutni.statusWarning.set_markerSize(out)
+###############################################################################
+    def promjena_glavni_okolisStatusBoja(self, x):
+        """Promjena boje grafa status warninga za satni i minutni graf ali samo
+        za statuse sa OKOLISNI_UVJETI (samo za taj specificni status)"""
+        #dohvati boju
+        rgb = self.defaulti.satni.statusWarningOkolis.rgb
+        a = self.defaulti.satni.statusWarningOkolis.alpha
+        #convert u QColor zbog dijaloga
+        boja = pomocne_funkcije.default_color_to_qcolor(rgb, a)
+        #poziv dijaloga
+        color, test = QtGui.QColorDialog.getRgba(boja.rgba(), self)
+        if test:
+            #samo ako je boja dobro definirana
+            color = QtGui.QColor.fromRgba(color)
+            rgb, a = pomocne_funkcije.qcolor_to_default_color(color)
+            #set vrijednost za min i max ekstreme
+            self.defaulti.satni.statusWarningOkolis.set_rgb(rgb)
+            self.defaulti.satni.statusWarningOkolis.set_alpha(a)
+            self.defaulti.minutni.statusWarningOkolis.set_rgb(rgb)
+            self.defaulti.minutni.statusWarningOkolis.set_alpha(a)
+            #promjeni boju gumba
+            self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.okolisStatusBoja)
+            #update alpha vrijednost na displayu
+            self.glavni.okolisStatusAlpha.setValue(a)
 ###############################################################################
     def promjena_glavni_statusBoja(self, x):
         """Promjena boje grafa status warninga za satni i minutni graf"""
@@ -263,6 +289,18 @@ class GlavniIzbor(base5, form5):
             self.glavni.set_widget_color_style(rgb, a, "QPushButton", self.glavni.statusBoja)
             #update alpha vrijednost na displayu
             self.glavni.statusAlpha.setValue(a)
+###############################################################################
+    def promjena_glavni_okolisStatusAlpha(self, x):
+        """Promjena transparentnosti grafa status warninga za satni i minutni
+        graf, ali samo za statuse sa OKOLISNI_UVJETI (samo za taj specificni status)"""
+        out = round(x, 2)
+        self.defaulti.satni.statusWarningOkolis.set_alpha(out)
+        self.defaulti.minutni.statusWarningOkolis.set_alpha(out)
+        #promjeni boju gumba
+        self.glavni.set_widget_color_style(self.defaulti.satni.statusWarningOkolis.rgb,
+                                           out,
+                                           "QPushButton",
+                                           self.glavni.okolisStatusBoja)
 ###############################################################################
     def promjena_glavni_statusAlpha(self, x):
         """Promjena transparentnosti grafa status warninga za satni i minutni

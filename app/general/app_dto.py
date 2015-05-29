@@ -5,6 +5,7 @@ Created on Mon Mar  2 14:42:54 2015
 @author: User
 """
 import logging
+import random
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 
@@ -28,6 +29,7 @@ class KonfigAplikacije():
         """
         logging.debug('Inicijalizacija DTO za sve grafove, start')
         self.conf = cfg
+
         # mapa dto objekata pomocnih grafova - spremljnih pod kljucem programMjerenjaId
         self.dictPomocnih = {}
 
@@ -39,15 +41,44 @@ class KonfigAplikacije():
         self.satniRest = SatniRestGrafKonfig(cfg)
         logging.debug('Inicijalizacija DTO za sve grafove, end')
 
-    def dodaj_pomocni(self, key):
-        name = 'plot' + str(key)
-        self.dictPomocnih[key] = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')
-        logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+    def reset_pomocne(self, mapa):
+        """
+        Reset nested dicta pomocnih kanala na nulu
+        - mapa je opisna mapa svih kanala (kljuc je programMjerenjaId sto je bitno)
+        """
+        self.dictPomocnih = {}
+        for masterkey in mapa:
+            self.dictPomocnih[masterkey] = {}
 
-    def makni_pomocni(self, key):
-        self.dictPomocnih.pop(key)
+    def dodaj_pomocni(self, masterkey, key):
+        name = 'plot' + str(key)
+        if masterkey in self.dictPomocnih:
+            self.dictPomocnih[masterkey][key] = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')
+            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+        else:
+            self.dictPomocnih[masterkey] = {key:GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')}
+            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+
+    def makni_pomocni(self, masterkey, key):
+        self.dictPomocnih[masterkey].pop(key)
         logging.info('Pomocni graf maknut, mjerenjeId = {0}'.format(key))
 
+    def dodaj_random_pomocni(self, masterkey, key, naziv):
+        """
+        dodavanje pomocnog grafa ali sa random postavkama... samo za inicijalizaciju
+        """
+        name = 'plot'+str(key)
+        graf = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='line')
+        rgb = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
+        graf.set_rgb(rgb)
+        graf.set_label('pomocni graf -- {0}'.format(naziv))
+
+        if masterkey in self.dictPomocnih:
+            self.dictPomocnih[masterkey][key] = graf
+            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+        else:
+            self.dictPomocnih[masterkey] = {key:graf}
+            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
 
 ################################################################################
 class MetaConfig():
@@ -102,6 +133,7 @@ class SatniRestGrafKonfig(MetaConfig):
         self.MIDLINE = 'avg'
         self.STATUS = 'status'
         self.COUNT = 'obuhvat'
+
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='SATNI_REST', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='SATNI', podtip='VOK', oblik='scatter') #potreban za highlight
@@ -138,6 +170,7 @@ class SatniGrafKonfig(MetaConfig):
         self.STATUS = 'status'
         self.COUNT = 'count'
         self.FLAG = 'flag'
+
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='SATNI', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='SATNI', podtip='VOK', oblik='scatter')
@@ -172,6 +205,9 @@ class SatniGrafKonfig(MetaConfig):
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
                                      oblik='scatter')
+        self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
+                                           podtip='status_warning_okolis',
+                                           oblik='scatter')
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -181,6 +217,7 @@ class MinutniGrafKonfig(MetaConfig):
         self.MIDLINE = 'koncentracija'
         self.STATUS = 'status'
         self.FLAG = 'flag'
+
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='MINUTNI', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='MINUTNI', podtip='VOK', oblik='scatter')
@@ -212,6 +249,9 @@ class MinutniGrafKonfig(MetaConfig):
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
                                      oblik='scatter')
+        self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
+                                           podtip='status_warning_okolis',
+                                           oblik='scatter')
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):
     def __init__(self, cfg):

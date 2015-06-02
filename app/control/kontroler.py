@@ -328,7 +328,7 @@ class Kontroler(QtCore.QObject):
             # spremi mapu u privatni member
             self.mapaMjerenjeIdToOpis = mapa
             self.gui.konfiguracija.reset_pomocne(self.mapaMjerenjeIdToOpis)
-            #TODO! dodaj radom pomocne grafove ovisno da li su u NOX ili PM grupi
+            #dodaj pomocne grafove 'random boje' ovisno da li su u NOX ili PM grupi
             for kanal in self.mapaMjerenjeIdToOpis:
                 pomocni = self.nadji_default_pomocne_za_kanal(kanal)
                 for i in pomocni:
@@ -479,7 +479,6 @@ class Kontroler(QtCore.QObject):
         self.emit(QtCore.SIGNAL('change_glavniLabel(PyQt_PyObject)'), argMap)
         #pokreni crtanje, ali ovisno o tabu koji je aktivan
         self.promjena_aktivnog_taba(self.aktivniTab)
-
     ###############################################################################
     def ponisti_izmjene(self):
         """
@@ -888,7 +887,7 @@ class Kontroler(QtCore.QObject):
             jsonText = self.webZahtjev.get_satne_podatke(mapa)
             df = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
             frames, metaData = self.adapt_rest_satni_frejm(df)
-            #naredba za crtanje....
+            #TODO! naredba za crtanje....
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
         except ValueError:
             logging.error('App exception', exc_info=True)

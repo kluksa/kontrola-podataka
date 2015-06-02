@@ -131,8 +131,8 @@ class DataModel(QtCore.QObject):
             df['id'] = df['id'].astype(np.int64)
             if len(df):
                 if self.kontrolaBitPolozaj in self.statusMap.keys():
-                    for i in df.index:
-                        df.loc[i, 'flag'] = df.loc[i, 'flag'] * self.pronadji_kontorlirane(df.loc[i, 'status'])
+                    serija = df['status'].map(self.pronadji_kontorlirane)
+                    df.loc[:,'flag'] = df.loc[:,'flag'] * serija
                 self.set_frame(key = kljuc, frame = df)
             else:
                 tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])

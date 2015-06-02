@@ -264,9 +264,13 @@ class Kanvas(FigureCanvas):
         self.legenda = self.axes.legend(loc = 1,
                                         fontsize = 8,
                                         fancybox = True)
-        self.legenda.get_frame().set_alpha(0.8)
-        #LEGEND - visibility
-        self.legenda.set_visible(self.konfig.Legend)
+        #TODO!
+        """Bug. Iskocio je Attribute error da je self.legend == None
+        moguce da se desi ako na plotu nema niti jednog grafa sa labelom."""
+        if self.legenda != None:
+            self.legenda.get_frame().set_alpha(0.8)
+            #LEGEND - visibility
+            self.legenda.set_visible(self.konfig.Legend)
 
     def prosiri_granice_grafa(self, tmin, tmax, t):
         """
@@ -471,33 +475,34 @@ class SatniMinutniKanvas(Kanvas):
         """
         if self.konfig.statusWarning.crtaj:
             frejm = self.data[self.gKanal]
-            #ako je kontrola provedena promjeni status u 0
-            frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
-            #eliminacija svih kojima je status 0
-            frejm = frejm[frejm[self.konfig.STATUS] != 0]
-            #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
-            #samo okolisni uvijeti
-            okolisStatus = 1 << self.okolisniUvjetiBit
-            #samo okolisni uvijeti
-            frame1 = frejm.copy()
-            frame1 = frame1[frame1[self.konfig.STATUS] == okolisStatus]
-            #ostali statusi
-            frame2 = frejm.copy()
-            frame2 = frame2[frame2[self.konfig.STATUS] != okolisStatus]
+            if isinstance(frejm, pd.core.frame.DataFrame):
+                #ako je kontrola provedena promjeni status u 0
+                frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
+                #eliminacija svih kojima je status 0
+                frejm = frejm[frejm[self.konfig.STATUS] != 0]
+                #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0
+                #samo okolisni uvijeti
+                okolisStatus = 1 << self.okolisniUvjetiBit
+                #samo okolisni uvijeti
+                frame1 = frejm.copy()
+                frame1 = frame1[frame1[self.konfig.STATUS] == okolisStatus]
+                #ostali statusi
+                frame2 = frejm.copy()
+                frame2 = frame2[frame2[self.konfig.STATUS] != okolisStatus]
 
-            if len(frame1):
-                x = list(frame1.index)
-                y1, y2 = self.ylim_original
-                c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
-                y = [c for i in x]
-                self.crtaj_scatter(x, y, self.konfig.statusWarningOkolis)
+                if len(frame1):
+                    x = list(frame1.index)
+                    y1, y2 = self.ylim_original
+                    c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+                    y = [c for i in x]
+                    self.crtaj_scatter(x, y, self.konfig.statusWarningOkolis)
 
-            if len(frame2):
-                x = list(frame2.index)
-                y1, y2 = self.ylim_original
-                c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
-                y = [c for i in x]
-                self.crtaj_scatter(x, y, self.konfig.statusWarning)
+                if len(frame2):
+                    x = list(frame2.index)
+                    y1, y2 = self.ylim_original
+                    c = y2 - 0.05 * abs(y2 - y1)  # odmak od gornjeg ruba za 5% max raspona
+                    y = [c for i in x]
+                    self.crtaj_scatter(x, y, self.konfig.statusWarning)
 
 
     def setup_annotation_text(self, xpoint):

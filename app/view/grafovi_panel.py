@@ -22,34 +22,7 @@ import app.view.canvas as canvas
 base2, form2 = uic.loadUiType('./app/view/ui_files/konc_graf_panel.ui')
 class KoncPanel(base2, form2):
     """
-    Klasa za prikaz grafova
-    Sadrzaj ovog panela je sljedeci (kako se prikazuje odozgo prema dolje):
-
-    1. self.glavniLabel
-        -QLabel koji sluzi za prikaz trenutno aktivnog kanala
-        (stanica, formula, kanal, mjerna jedinica...)
-
-    2. self.verticalLayoutSatni
-        -placeholder definiran u QtDesigneru (layout)
-        -sluzi da se u njega stavi satni canvas
-
-    3. self.horizontalLayout
-        -horiznotalni layout koji sadrzi 3 elementa
-        2.1. self.buttonPrethodni
-            -QPushButton koji sluzi za prebacivanje dana na prethodni dan
-        2.2. self.satLabel
-            -QLabel koji sluzi za prikaz naziva glavnog kanala i vremenkog intervala
-        2.3. self.buttonSljedeci
-            -QPushButton koji slizi za prebacivanje dana na sljedeci dan
-
-    4. self.verticalLayoutMinutni
-        -placeholder definiran u QtDesigneru (QWidget)
-        -sluzi da se u njega stavi minutni canvas
-
-
-
-    self.satniGraf --> instanca satnog canvasa
-    self.minutniGraf --> instanca minutnog canvasa
+    Klasa panela u kojem se nalaze koncentracijski grafovi i kontrole za pojedini graf
     """
     def __init__(self, konfig, parent = None):
         """
@@ -58,6 +31,7 @@ class KoncPanel(base2, form2):
         super(base2, self).__init__(parent)
         self.setupUi(self)
 
+        self.konfig = konfig
         #inicijalizacija canvasa (samo sa djelom konfiga koji je potreban za
         #funkcioniranje klase i sa mapom pomocnih kanala)
         self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig)
@@ -67,14 +41,65 @@ class KoncPanel(base2, form2):
         self.verticalLayoutSatni.addWidget(self.satniGraf)
         self.verticalLayoutMinutni.addWidget(self.minutniGraf)
 
-        #gumbi zaduzeni za prebacivanje dana naprijed i nazad
+        self.setup_icons()
+
+        #kontrolni gumbi
         self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
         self.buttonPonisti.clicked.connect(self.ponisti_promjene)
         self.buttonRestSave.clicked.connect(self.save_na_rest)
         self.brojDanaCombo.currentIndexChanged.connect(self.promjeni_broj_dana)
+        self.zoomInSatni.clicked.connect(self.satniGraf.toggle_zoom)
         self.zoomOutSatni.clicked.connect(self.satniGraf.zoom_out)
+        self.zoomOutSatniFull.clicked.connect(self.satniGraf.zoom_out_full)
+        self.toggleGridSatni.clicked.connect(self.toggle_satni_grid)
+        self.toggleLegendSatni.clicked.connect(self.toggle_satni_legend)
+        self.zoomInMinutni.clicked.connect(self.minutniGraf.toggle_zoom)
         self.zoomOutMinutni.clicked.connect(self.minutniGraf.zoom_out)
+        self.zoomOutMinutniFull.clicked.connect(self.minutniGraf.zoom_out_full)
+        self.toggleGridMinutni.clicked.connect(self.toggle_minutni_grid)
+        self.toggleLegendMinutni.clicked.connect(self.toggle_minutni_legend)
+
+        #inicijalno stanje check statusa kontrola
+        self.toggleGridSatni.setChecked(self.konfig.satni.Grid)
+        self.toggleLegendSatni.setChecked(self.konfig.satni.Legend)
+        self.toggleGridMinutni.setChecked(self.konfig.minutni.Grid)
+        self.toggleLegendMinutni.setChecked(self.konfig.minutni.Legend)
+###############################################################################
+    def toggle_satni_grid(self, x):
+        """prosljeduje naredbu za toggle grida na satnom grafu"""
+        self.konfig.satni.set_grid(x)
+        self.satniGraf.toggle_grid(x)
+###############################################################################
+    def toggle_satni_legend(self, x):
+        """prosljeduje naredbu za toggle legende na satnom grafu"""
+        self.konfig.satni.set_legend(x)
+        self.satniGraf.toggle_legend(x)
+###############################################################################
+    def toggle_minutni_grid(self, x):
+        """prosljeduje naredbu za toggle grida na minutnom grafu"""
+        self.konfig.minutni.set_grid(x)
+        self.minutniGraf.toggle_grid(x)
+###############################################################################
+    def toggle_minutni_legend(self, x):
+        """prosljeduje naredbu za toggle legende na minutnom grafu"""
+        self.konfig.minutni.set_legend(x)
+        self.minutniGraf.toggle_legend(x)
+###############################################################################
+    def setup_icons(self):
+        """
+        Postavljanje ikona za gumbe
+        """
+        self.zoomInSatni.setIcon(QtGui.QIcon('./app/view/icons/zoomin.png'))
+        self.zoomOutSatni.setIcon(QtGui.QIcon('./app/view/icons/zoomout.png'))
+        self.zoomOutSatniFull.setIcon(QtGui.QIcon('./app/view/icons/zoomoutfull.png'))
+        self.toggleGridSatni.setIcon(QtGui.QIcon('./app/view/icons/grid.png'))
+        self.toggleLegendSatni.setIcon(QtGui.QIcon('./app/view/icons/listing.png'))
+        self.zoomInMinutni.setIcon(QtGui.QIcon('./app/view/icons/zoomin.png'))
+        self.zoomOutMinutni.setIcon(QtGui.QIcon('./app/view/icons/zoomout.png'))
+        self.zoomOutMinutniFull.setIcon(QtGui.QIcon('./app/view/icons/zoomoutfull.png'))
+        self.toggleGridMinutni.setIcon(QtGui.QIcon('./app/view/icons/grid.png'))
+        self.toggleLegendMinutni.setIcon(QtGui.QIcon('./app/view/icons/listing.png'))
 ###############################################################################
     def ponisti_promjene(self):
         """emitiraj signal kontroleru da 'ponisti' promjene za trenutni dan i postaju"""
@@ -174,6 +199,10 @@ class ZeroSpanPanel(base3, form3):
         """
         super(base3, self).__init__(parent)
         self.setupUi(self)
+        self.konfig = konfig
+        self.zoomStackZS = []
+        self.initial_zoom_level = (None, None, None)
+
         #inicijalizacija canvasa (pomocni nisu potrebni)
         self.zeroGraf = canvas.ZeroKanvas(konfig.zero)
         self.spanGraf = canvas.SpanKanvas(konfig.span)
@@ -181,11 +210,147 @@ class ZeroSpanPanel(base3, form3):
         self.zeroLayout.addWidget(self.zeroGraf)
         self.spanLayout.addWidget(self.spanGraf)
 
+        self.setup_icons()
+
         #povezivanje akcija widgeta sa funkcijama
         self.brojDana.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.dodajZSRef.clicked.connect(self.dodaj_novu_zs_ref_vrijednost)
-        self.zoomOutZero.clicked.connect(self.zeroGraf.zoom_out)
-        self.zoomOutSpan.clicked.connect(self.spanGraf.zoom_out)
+
+        self.zoomInZero.clicked.connect(self.zeroGraf.toggle_zoom)
+        self.zoomOutZero.clicked.connect(self.zoom_out)
+        self.zoomOutZeroFull.clicked.connect(self.full_zoom_out)
+        self.toggleGridZero.clicked.connect(self.toggle_zero_grid)
+        self.toggleLegendZero.clicked.connect(self.toggle_zero_legend)
+        self.zoomInSpan.clicked.connect(self.spanGraf.toggle_zoom)
+        self.zoomOutSpan.clicked.connect(self.zoom_out)
+        self.zoomOutSpanFull.clicked.connect(self.full_zoom_out)
+        self.toggleGridSpan.clicked.connect(self.toggle_span_grid)
+        self.toggleLegendSpan.clicked.connect(self.toggle_span_legend)
+
+        #inicijalno stanje check statusa kontrola
+        self.toggleGridZero.setChecked(self.konfig.zero.Grid)
+        self.toggleLegendZero.setChecked(self.konfig.zero.Legend)
+        self.toggleGridSpan.setChecked(self.konfig.span.Grid)
+        self.toggleLegendSpan.setChecked(self.konfig.span.Legend)
+
+        #zoom sinhronizacija
+        #ZERO
+        self.connect(self.zeroGraf,
+                     QtCore.SIGNAL('clear_zerospan_zoomstack'),
+                     self.clear_zoomStackZS)
+        self.connect(self.zeroGraf,
+                     QtCore.SIGNAL('report_original_size(PyQt_PyObject)'),
+                     self.postavi_initial_zoom_stack)
+        self.connect(self.zeroGraf,
+                     QtCore.SIGNAL('add_zoom_level(PyQt_PyObject)'),
+                     self.add_zoom_level_to_stack)
+        #SPAN
+        self.connect(self.spanGraf,
+                     QtCore.SIGNAL('clear_zerospan_zoomstack'),
+                     self.clear_zoomStackZS)
+        self.connect(self.spanGraf,
+                     QtCore.SIGNAL('report_original_size(PyQt_PyObject)'),
+                     self.postavi_initial_zoom_stack)
+        self.connect(self.spanGraf,
+                     QtCore.SIGNAL('add_zoom_level(PyQt_PyObject)'),
+                     self.add_zoom_level_to_stack)
+###############################################################################
+    def zoom_out(self):
+        """
+        zoom out jedan level
+        """
+        if len(self.zoomStackZS) > 1:
+            self.zoomStackZS.pop()
+            x, yz, ys = self.zoomStackZS[-1]
+            self.zeroGraf.postavi_novi_zoom_level(x, yz)
+            self.spanGraf.postavi_novi_zoom_level(x, ys)
+        else:
+            self.full_zoom_out()
+###############################################################################
+    def full_zoom_out(self):
+        """
+        implementacija full zoom outa za zero i span graf
+        """
+        self.zoomStackZS.clear()
+        x, yz, ys = self.initial_zoom_level
+        self.zeroGraf.postavi_novi_zoom_level(x, yz)
+        self.spanGraf.postavi_novi_zoom_level(x, ys)
+###############################################################################
+    def add_zoom_level_to_stack(self, mapa):
+        """
+        Dodavanje novog zoom levela na stack, pozivanje na reskaliranje grafa
+        """
+        if len(self.zoomStackZS):
+            oldx, oldyzero, oldyspan = self.zoomStackZS[-1]
+        else:
+            oldx, oldyzero, oldyspan = self.initial_zoom_level
+
+        newx = mapa['x']
+        newy = mapa['y']
+        if mapa['tip'] == 'ZERO':
+            self.zoomStackZS.append((newx, newy, oldyspan))
+            #zoom in za svaki graf
+            self.zeroGraf.postavi_novi_zoom_level(newx, newy)
+            self.spanGraf.postavi_novi_zoom_level(newx, oldyspan)
+        elif mapa['tip'] == 'SPAN':
+            self.zoomStackZS.append((newx, oldyzero, newy))
+            #zoom in za svaki graf
+            self.zeroGraf.postavi_novi_zoom_level(newx, oldyzero)
+            self.spanGraf.postavi_novi_zoom_level(newx, newy)
+###############################################################################
+    def postavi_initial_zoom_stack(self, mapa):
+        """
+        setup inicijalnog zoom stacka....
+        """
+        oldx, oldyzero, oldyspan = self.initial_zoom_level
+        if mapa['tip'] == 'ZERO':
+            self.initial_zoom_level = (mapa['x'], mapa['y'], oldyspan)
+        elif mapa['tip'] == 'SPAN':
+            self.initial_zoom_level = (mapa['x'], oldyzero, mapa['y'])
+        potpunost = True
+        for i in self.initial_zoom_level:
+            potpunost = potpunost and (i != None)
+        if potpunost:
+            self.zoomStackZS.append(self.initial_zoom_level)
+###############################################################################
+    def clear_zoomStackZS(self):
+        """
+        clear zajednickog zoom stacka za zero i span graf
+        """
+        self.zoomStackZS.clear()
+###############################################################################
+    def toggle_span_grid(self, x):
+        """prosljeduje naredbu za toggle grida na satnom grafu"""
+        self.konfig.span.set_grid(x)
+        self.spanGraf.toggle_grid(x)
+###############################################################################
+    def toggle_span_legend(self, x):
+        """prosljeduje naredbu za toggle legende na satnom grafu"""
+        self.konfig.span.set_legend(x)
+        self.spanGraf.toggle_legend(x)
+###############################################################################
+    def toggle_zero_grid(self, x):
+        """prosljeduje naredbu za toggle grida na minutnom grafu"""
+        self.konfig.zero.set_grid(x)
+        self.zeroGraf.toggle_grid(x)
+###############################################################################
+    def toggle_zero_legend(self, x):
+        """prosljeduje naredbu za toggle legende na minutnom grafu"""
+        self.konfig.zero.set_legend(x)
+        self.zeroGraf.toggle_legend(x)
+###############################################################################
+    def setup_icons(self):
+        """postavljanje ikona u gumbe"""
+        self.zoomInSpan.setIcon(QtGui.QIcon('./app/view/icons/zoomin.png'))
+        self.zoomOutSpan.setIcon(QtGui.QIcon('./app/view/icons/zoomout.png'))
+        self.zoomOutSpanFull.setIcon(QtGui.QIcon('./app/view/icons/zoomoutfull.png'))
+        self.toggleGridSpan.setIcon(QtGui.QIcon('./app/view/icons/grid.png'))
+        self.toggleLegendSpan.setIcon(QtGui.QIcon('./app/view/icons/listing.png'))
+        self.zoomInZero.setIcon(QtGui.QIcon('./app/view/icons/zoomin.png'))
+        self.zoomOutZero.setIcon(QtGui.QIcon('./app/view/icons/zoomout.png'))
+        self.zoomOutZeroFull.setIcon(QtGui.QIcon('./app/view/icons/zoomoutfull.png'))
+        self.toggleGridZero.setIcon(QtGui.QIcon('./app/view/icons/grid.png'))
+        self.toggleLegendZero.setIcon(QtGui.QIcon('./app/view/icons/listing.png'))
 ###############################################################################
     def dodaj_novu_zs_ref_vrijednost(self):
         """
@@ -266,17 +431,47 @@ class RestPregledSatnih(base14, form14):
         super(base14, self).__init__(parent)
         self.setupUi(self)
         self.gKanal = None # id glavnog kanala za prikaz
+        self.konfig = konfig
 
         #set dateEdit na danasnji datum
         temp = QtCore.QDate.currentDate().addDays(-10)
         self.dateEditOd.setDate(temp)
         self.dateEditDo.setDate(QtCore.QDate.currentDate())
 
+        self.setup_icons()
+
         self.satniRest = canvas.SatniRestKanvas(konfig.satniRest)
         self.grafLayout.addWidget(self.satniRest)
 
         self.buttonCrtaj.clicked.connect(self.get_podatke)
+        self.zoomInRestSatni.clicked.connect(self.satniRest.toggle_zoom)
         self.zoomOutRestSatni.clicked.connect(self.satniRest.zoom_out)
+        self.zoomOutRestSatniFull.clicked.connect(self.satniRest.zoom_out_full)
+        self.toggleGridRestSatni.clicked.connect(self.toggle_grid_satniRest)
+        self.toggleLegendRestSatni.clicked.connect(self.toggle_legend_satniRest)
+
+        #init na pocetno stanje
+        self.toggleGridRestSatni.setChecked(self.konfig.satniRest.Grid)
+        self.toggleLegendRestSatni.setChecked(self.konfig.satniRest.Legend)
+
+    def toggle_grid_satniRest(self, x):
+        """prosljeduje naredbu za toggle grida na satnom grafu"""
+        self.konfig.satniRest.set_grid(x)
+        self.satniRest.toggle_grid(x)
+
+    def toggle_legend_satniRest(self, x):
+        """prosljeduje naredbu za toggle legende na satnom grafu"""
+        self.konfig.satniRest.set_legend(x)
+        self.satniRest.toggle_legend(x)
+
+    def setup_icons(self):
+        """setup ikona za gumbe"""
+        self.zoomInRestSatni.setIcon(QtGui.QIcon('./app/view/icons/zoomin.png'))
+        self.zoomOutRestSatni.setIcon(QtGui.QIcon('./app/view/icons/zoomout.png'))
+        self.zoomOutRestSatniFull.setIcon(QtGui.QIcon('./app/view/icons/zoomoutfull.png'))
+        self.toggleGridRestSatni.setIcon(QtGui.QIcon('./app/view/icons/grid.png'))
+        self.toggleLegendRestSatni.setIcon(QtGui.QIcon('./app/view/icons/listing.png'))
+
 
     def change_glavniLabel(self, ulaz):
         """

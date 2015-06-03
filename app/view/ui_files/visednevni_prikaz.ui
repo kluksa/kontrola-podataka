@@ -51,6 +51,13 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
+          <widget class="QPushButton" name="zoomInRestSatni">
+           <property name="text">
+            <string>Zoom in</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="zoomOutRestSatni">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -66,6 +73,33 @@
            </property>
            <property name="text">
             <string>Zoom out</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="zoomOutRestSatniFull">
+           <property name="text">
+            <string>Full zoom out</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="toggleGridRestSatni">
+           <property name="text">
+            <string>Toggle grid</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="toggleLegendRestSatni">
+           <property name="text">
+            <string>Toggle legend</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
            </property>
           </widget>
          </item>

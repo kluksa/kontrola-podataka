@@ -150,13 +150,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel.spanGraf,
                      QtCore.SIGNAL('pick_nearest(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.pick_nearest)
-        #sync zooma po x osi za zero i span graf
-        self.connect(self.gui.zsPanel.zeroGraf,
-                     QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
-                     self.gui.zsPanel.spanGraf.sync_x_zoom)
-        self.connect(self.gui.zsPanel.spanGraf,
-                     QtCore.SIGNAL('sync_x_zoom(PyQt_PyObject)'),
-                     self.gui.zsPanel.zeroGraf.sync_x_zoom)
 
         ###CRTANJE SATNO AGREGIRANIH PODATAKA SA RESTA###
         self.connect(self.gui.visednevniPanel,
@@ -190,7 +183,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.visednevniPanel.satniRest,
                      QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'),
                      self.gui.visednevniPanel.prikazi_info_satni_rest)
-
         ###promjena max broja dana za satni graf...
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'),

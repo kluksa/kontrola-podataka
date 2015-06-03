@@ -39,33 +39,6 @@ class GlavniProzor(base, form):
         #inicijalizacija konfiguracijskog objekta
         self.konfiguracija = app_dto.KonfigAplikacije(self.config)
 
-        #set state chekcable akcija
-        #satni
-        self.action_satni_grid.setChecked(self.konfiguracija.satni.Grid)
-        self.action_satni_cursor.setChecked(self.konfiguracija.satni.Cursor)
-        self.action_satni_minor_ticks.setChecked(self.konfiguracija.satni.Ticks)
-        self.action_satni_legend.setChecked(self.konfiguracija.satni.Legend)
-        #minutni
-        self.action_minutni_grid.setChecked(self.konfiguracija.minutni.Grid)
-        self.action_minutni_cursor.setChecked(self.konfiguracija.minutni.Cursor)
-        self.action_minutni_minor_ticks.setChecked(self.konfiguracija.minutni.Ticks)
-        self.action_minutni_legend.setChecked(self.konfiguracija.minutni.Legend)
-        #zero
-        self.action_ZERO_grid.setChecked(self.konfiguracija.zero.Grid)
-        self.action_ZERO_cursor.setChecked(self.konfiguracija.zero.Cursor)
-        self.action_ZERO_minor_ticks.setChecked(self.konfiguracija.zero.Ticks)
-        self.action_ZERO_legend.setChecked(self.konfiguracija.zero.Legend)
-        #span
-        self.action_SPAN_grid.setChecked(self.konfiguracija.span.Grid)
-        self.action_SPAN_cursor.setChecked(self.konfiguracija.span.Cursor)
-        self.action_SPAN_minor_ticks.setChecked(self.konfiguracija.span.Ticks)
-        self.action_SPAN_legend.setChecked(self.konfiguracija.span.Legend)
-        #satniRest
-        self.action_rest_satni_grid.setChecked(self.konfiguracija.satniRest.Grid)
-        self.action_rest_satni_cursor.setChecked(self.konfiguracija.satniRest.Cursor)
-        self.action_rest_satni_minor_ticks.setChecked(self.konfiguracija.satniRest.Ticks)
-        self.action_rest_satni_legend.setChecked(self.konfiguracija.satniRest.Legend)
-
         #inicijalizacija panela sa grafovima koncentracije
         self.koncPanel = grafovi_panel.KoncPanel(self.konfiguracija)
         self.koncPanelLayout.addWidget(self.koncPanel)
@@ -121,27 +94,7 @@ class GlavniProzor(base, form):
         self.action_log_in.triggered.connect(self.request_log_in)
         self.action_log_out.triggered.connect(self.request_log_out)
         self.action_reconnect.triggered.connect(self.request_reconnect)
-        self.action_satni_grid.triggered.connect(self.request_satni_grid_toggle)
-        self.action_satni_cursor.triggered.connect(self.request_satni_cursor_toggle)
-        self.action_satni_minor_ticks.triggered.connect(self.request_satni_ticks_toggle)
-        self.action_satni_legend.triggered.connect(self.request_satni_legend_toggle)
-        self.action_minutni_grid.triggered.connect(self.request_minutni_grid_toggle)
-        self.action_minutni_cursor.triggered.connect(self.request_minutni_cursor_toggle)
-        self.action_minutni_minor_ticks.triggered.connect(self.request_minutni_ticks_toggle)
-        self.action_minutni_legend.triggered.connect(self.request_minutni_legend_toggle)
         self.action_stil_grafova.triggered.connect(self.promjeni_stil_grafova)
-        self.action_ZERO_grid.triggered.connect(self.request_zero_grid_toggle)
-        self.action_ZERO_cursor.triggered.connect(self.request_zero_cursor_toggle)
-        self.action_ZERO_minor_ticks.triggered.connect(self.request_zero_ticks_toggle)
-        self.action_ZERO_legend.triggered.connect(self.request_zero_legend_toggle)
-        self.action_SPAN_grid.triggered.connect(self.request_span_grid_toggle)
-        self.action_SPAN_cursor.triggered.connect(self.request_span_cursor_toggle)
-        self.action_SPAN_minor_ticks.triggered.connect(self.request_span_ticks_toggle)
-        self.action_SPAN_legend.triggered.connect(self.request_span_legend_toggle)
-        self.action_rest_satni_grid.triggered.connect(self.request_rest_satni_grid_toggle)
-        self.action_rest_satni_cursor.triggered.connect(self.request_rest_satni_cursor_toggle)
-        self.action_rest_satni_minor_ticks.triggered.connect(self.request_rest_satni_ticks_toggle)
-        self.action_rest_satni_legend.triggered.connect(self.request_rest_satni_legend_toggle)
 ###############################################################################
     def closeEvent(self, event):
         """
@@ -157,11 +110,13 @@ class GlavniProzor(base, form):
                 QtGui.QMessageBox.No)
 
             if reply==QtGui.QMessageBox.Yes:
+                self.konfiguracija.overwrite_konfig_file() #pregazi konfig za trenutnim vrijednostima
                 event.accept()
             else:
                 event.ignore()
         else:
             #izlaz iz aplikacije bez dodatnog pitanja.
+            self.konfiguracija.overwrite_konfig_file() #pregazi konfig za trenutnim vrijednostima
             event.accept()
 ###############################################################################
     def exit_check(self):
@@ -256,106 +211,6 @@ class GlavniProzor(base, form):
         metoda emitira request za reconnect proceduru
         """
         self.emit(QtCore.SIGNAL('reconnect_to_REST'))
-###############################################################################
-    def request_rest_satni_grid_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satniRest.set_grid(x)
-        self.visednevniPanel.satniRest.toggle_grid(x)
-###############################################################################
-    def request_rest_satni_cursor_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satniRest.set_cursor(x)
-        self.visednevniPanel.satniRest.toggle_cursor(self.konfiguracija.satniRest.Cursor)
-###############################################################################
-    def request_rest_satni_ticks_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satniRest.set_ticks(x)
-        self.visednevniPanel.satniRest.toggle_ticks(x)
-###############################################################################
-    def request_rest_satni_legend_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satniRest.set_legend(x)
-        self.visednevniPanel.satniRest.toggle_legend(x)
-###############################################################################
-    def request_satni_grid_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satni.set_grid(x)
-        self.koncPanel.satniGraf.toggle_grid(x)
-###############################################################################
-    def request_satni_cursor_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satni.set_cursor(x)
-        self.koncPanel.satniGraf.toggle_cursor(self.konfiguracija.satni.Cursor)
-###############################################################################
-    def request_satni_ticks_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satni.set_ticks(x)
-        self.koncPanel.satniGraf.toggle_ticks(x)
-###############################################################################
-    def request_satni_legend_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.satni.set_legend(x)
-        self.koncPanel.satniGraf.toggle_legend(x)
-###############################################################################
-    def request_minutni_grid_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.minutni.set_grid(x)
-        self.koncPanel.minutniGraf.toggle_grid(x)
-###############################################################################
-    def request_minutni_cursor_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.minutni.set_cursor(x)
-        self.koncPanel.minutniGraf.toggle_cursor(self.konfiguracija.minutni.Cursor)
-###############################################################################
-    def request_minutni_ticks_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.minutni.set_ticks(x)
-        self.koncPanel.minutniGraf.toggle_ticks(x)
-###############################################################################
-    def request_minutni_legend_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.minutni.set_legend(x)
-        self.koncPanel.minutniGraf.toggle_legend(x)
-###############################################################################
-    def request_zero_grid_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.zero.set_grid(x)
-        self.zsPanel.zeroGraf.toggle_grid(x)
-###############################################################################
-    def request_zero_cursor_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.zero.set_cursor(x)
-        self.zsPanel.zeroGraf.toggle_cursor(self.konfiguracija.zero.Cursor)
-###############################################################################
-    def request_zero_ticks_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.zero.set_ticks(x)
-        self.zsPanel.zeroGraf.toggle_ticks(x)
-###############################################################################
-    def request_zero_legend_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.zero.set_legend(x)
-        self.zsPanel.zeroGraf.toggle_legend(x)
-###############################################################################
-    def request_span_grid_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.span.set_grid(x)
-        self.zsPanel.spanGraf.toggle_grid(x)
-###############################################################################
-    def request_span_cursor_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.span.set_cursor(x)
-        self.zsPanel.spanGraf.toggle_cursor(self.konfiguracija.span.Cursor)
-###############################################################################
-    def request_span_ticks_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.span.set_ticks(x)
-        self.zsPanel.spanGraf.toggle_ticks(x)
-###############################################################################
-    def request_span_legend_toggle(self, x):
-        """callback, spaja klik akcije sa promjenom u appSettings objektu"""
-        self.konfiguracija.span.set_legend(x)
-        self.zsPanel.spanGraf.toggle_legend(x)
 ###############################################################################
     def setup_kontroler(self):
         """

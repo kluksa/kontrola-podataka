@@ -6,6 +6,7 @@ Created on Mon Mar  2 14:42:54 2015
 """
 import logging
 import random
+import configparser
 
 import app.general.pomocne_funkcije as pomocne_funkcije
 
@@ -40,6 +41,231 @@ class KonfigAplikacije():
         self.REST = RESTKonfig(cfg)
         self.satniRest = SatniRestGrafKonfig(cfg)
         logging.debug('Inicijalizacija DTO za sve grafove, end')
+
+    def overwrite_konfig_file(self):
+        """
+        metoda prepisuje svojstva objekta u konfig file.
+        #TODO! Ruzno do bola...treba smisliti nesto prakticnije...
+        """
+        sectioni = ['LOG_SETUP','REST_INFO','MAIN_WINDOW','SATNI_REST',
+                    'SATNI','MINUTNI','ZERO','SPAN']
+        new_config = configparser.ConfigParser()
+        for section in sectioni:
+            new_config.add_section(section)
+
+        #log_setup
+        new_config.set('LOG_SETUP', 'file', 'applog.log')
+        new_config.set('LOG_SETUP', 'mode', 'w')
+        new_config.set('LOG_SETUP', 'lvl', 'INFO')
+        #REST_INFO
+        new_config.set('REST_INFO', 'base_url', str(self.REST.RESTBaseUrl))
+        new_config.set('REST_INFO', 'program_mjerenja', str(self.REST.RESTProgramMjerenja))
+        new_config.set('REST_INFO', 'sirovi_podaci', str(self.REST.RESTSiroviPodaci))
+        new_config.set('REST_INFO', 'satni_podaci', str(self.REST.RESTSatniPodaci))
+        new_config.set('REST_INFO', 'zero_span', str(self.REST.RESTZeroSpan))
+        new_config.set('REST_INFO', 'status_map', str(self.REST.RESTStatusMap))
+        #MAIN WINDOW
+        new_config.set('MAIN_WINDOW', 'action_satni_grid', str(self.satni.Grid))
+        new_config.set('MAIN_WINDOW', 'action_satni_legend', str(self.satni.Legend))
+        new_config.set('MAIN_WINDOW', 'action_minutni_grid', str(self.minutni.Grid))
+        new_config.set('MAIN_WINDOW', 'action_minutni_legend', str(self.minutni.Legend))
+        new_config.set('MAIN_WINDOW', 'action_ZERO_grid', str(self.zero.Grid))
+        new_config.set('MAIN_WINDOW', 'action_ZERO_legend', str(self.zero.Legend))
+        new_config.set('MAIN_WINDOW', 'action_SPAN_grid', str(self.span.Grid))
+        new_config.set('MAIN_WINDOW', 'action_SPAN_legend', str(self.span.Legend))
+        new_config.set('MAIN_WINDOW', 'action_satni_rest_grid', str(self.satniRest.Grid))
+        new_config.set('MAIN_WINDOW', 'action_satni_rest_legend', str(self.satniRest.Legend))
+        new_config.set('MAIN_WINDOW', 'status_warning_crtaj_', str(self.satni.statusWarning.crtaj))
+        new_config.set('MAIN_WINDOW', 'status_warning_markerStyle_', str(self.satni.statusWarning.markerStyle))
+        new_config.set('MAIN_WINDOW', 'status_warning_markerSize_', str(self.satni.statusWarning.markerSize))
+        new_config.set('MAIN_WINDOW', 'status_warning_rgb_', str(self.satni.statusWarning.rgb)[1:-1]) #bez zagrada
+        new_config.set('MAIN_WINDOW', 'status_warning_alpha_', str(self.satni.statusWarning.alpha))
+        new_config.set('MAIN_WINDOW', 'status_warning_zorder_', str(self.satni.statusWarning.zorder))
+        new_config.set('MAIN_WINDOW', 'status_warning_label_', str(self.satni.statusWarning.label))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_crtaj_', str(self.satni.statusWarningOkolis.crtaj))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_markerStyle_', str(self.satni.statusWarningOkolis.markerStyle))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_markerSize_', str(self.satni.statusWarningOkolis.markerSize))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_rgb_', str(self.satni.statusWarningOkolis.rgb)[1:-1])
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_alpha_', str(self.satni.statusWarningOkolis.alpha))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_zorder_', str(self.satni.statusWarningOkolis.zorder))
+        new_config.set('MAIN_WINDOW', 'status_warning_okolis_label_', str(self.satni.statusWarningOkolis.label))
+        #SATNI_REST
+        new_config.set('SATNI_REST', 'midline_crtaj_', str(self.satniRest.Midline.crtaj))
+        new_config.set('SATNI_REST', 'midline_rgb_', str(self.satniRest.Midline.rgb)[1:-1])
+        new_config.set('SATNI_REST', 'midline_alpha_', str(self.satniRest.Midline.alpha))
+        new_config.set('SATNI_REST', 'midline_lineStyle_', str(self.satniRest.Midline.lineStyle))
+        new_config.set('SATNI_REST', 'midline_lineWidth_', str(self.satniRest.Midline.lineWidth))
+        new_config.set('SATNI_REST', 'midline_zorder_', str(self.satniRest.Midline.zorder))
+        new_config.set('SATNI_REST', 'midline_label_', str(self.satniRest.Midline.label))
+        #SATNI
+        new_config.set('SATNI', 'midline_crtaj_', str(self.satni.Midline.crtaj))
+        new_config.set('SATNI', 'midline_rgb_', str(self.satni.Midline.rgb)[1:-1])
+        new_config.set('SATNI', 'midline_alpha_', str(self.satni.Midline.alpha))
+        new_config.set('SATNI', 'midline_lineStyle_', str(self.satni.Midline.lineStyle))
+        new_config.set('SATNI', 'midline_lineWidth_', str(self.satni.Midline.lineWidth))
+        new_config.set('SATNI', 'midline_zorder_', str(self.satni.Midline.zorder))
+        new_config.set('SATNI', 'midline_label_', str(self.satni.Midline.label))
+        new_config.set('SATNI', 'ekstrem_crtaj_', str(self.satni.EksMax.crtaj))
+        new_config.set('SATNI', 'ekstrem_rgb_', str(self.satni.EksMax.rgb)[1:-1])
+        new_config.set('SATNI', 'ekstrem_alpha_', str(self.satni.EksMax.alpha))
+        new_config.set('SATNI', 'ekstrem_markerStyle_', str(self.satni.EksMax.markerStyle))
+        new_config.set('SATNI', 'ekstrem_markerSize_', str(self.satni.EksMax.markerSize))
+        new_config.set('SATNI', 'ekstrem_zorder_', str(self.satni.EksMax.zorder))
+        new_config.set('SATNI', 'ekstrem_label_', str(self.satni.EksMax.label))
+        new_config.set('SATNI', 'VOK_crtaj_', str(self.satni.VOK.crtaj))
+        new_config.set('SATNI', 'VOK_rgb_', str(self.satni.VOK.rgb)[1:-1])
+        new_config.set('SATNI', 'VOK_alpha_', str(self.satni.VOK.alpha))
+        new_config.set('SATNI', 'VOK_markerStyle_', str(self.satni.VOK.markerStyle))
+        new_config.set('SATNI', 'VOK_markerSize_', str(self.satni.VOK.markerSize))
+        new_config.set('SATNI', 'VOK_zorder_', str(self.satni.VOK.zorder))
+        new_config.set('SATNI', 'VOK_label_', str(self.satni.VOK.label))
+        new_config.set('SATNI', 'VBAD_crtaj_', str(self.satni.VBAD.crtaj))
+        new_config.set('SATNI', 'VBAD_rgb_', str(self.satni.VBAD.rgb)[1:-1])
+        new_config.set('SATNI', 'VBAD_alpha_', str(self.satni.VBAD.alpha))
+        new_config.set('SATNI', 'VBAD_markerStyle_', str(self.satni.VBAD.markerStyle))
+        new_config.set('SATNI', 'VBAD_markerSize_', str(self.satni.VBAD.markerSize))
+        new_config.set('SATNI', 'VBAD_zorder_', str(self.satni.VBAD.zorder))
+        new_config.set('SATNI', 'VBAD_label_', str(self.satni.VBAD.label))
+        new_config.set('SATNI', 'NVOK_crtaj_', str(self.satni.NVOK.crtaj))
+        new_config.set('SATNI', 'NVOK_rgb_', str(self.satni.NVOK.rgb)[1:-1])
+        new_config.set('SATNI', 'NVOK_alpha_', str(self.satni.NVOK.alpha))
+        new_config.set('SATNI', 'NVOK_markerStyle_', str(self.satni.NVOK.markerStyle))
+        new_config.set('SATNI', 'NVOK_markerSize_', str(self.satni.NVOK.markerSize))
+        new_config.set('SATNI', 'NVOK_zorder_', str(self.satni.NVOK.zorder))
+        new_config.set('SATNI', 'NVOK_label_', str(self.satni.NVOK.label))
+        new_config.set('SATNI', 'NVBAD_crtaj_', str(self.satni.NVBAD.crtaj))
+        new_config.set('SATNI', 'NVBAD_rgb_', str(self.satni.NVBAD.rgb)[1:-1])
+        new_config.set('SATNI', 'NVBAD_alpha_', str(self.satni.NVBAD.alpha))
+        new_config.set('SATNI', 'NVBAD_markerStyle_', str(self.satni.NVBAD.markerStyle))
+        new_config.set('SATNI', 'NVBAD_markerSize_', str(self.satni.NVBAD.markerSize))
+        new_config.set('SATNI', 'NVBAD_zorder_', str(self.satni.NVBAD.zorder))
+        new_config.set('SATNI', 'NVBAD_label_', str(self.satni.NVBAD.label))
+        new_config.set('SATNI', 'fill1_crtaj_', str(self.satni.Fill.crtaj))
+        new_config.set('SATNI', 'fill1_rgb_', str(self.satni.Fill.rgb)[1:-1])
+        new_config.set('SATNI', 'fill1_alpha_', str(self.satni.Fill.alpha))
+        new_config.set('SATNI', 'fill1_komponenta1_', str(self.satni.Fill.komponenta1))
+        new_config.set('SATNI', 'fill1_komponenta2_', str(self.satni.Fill.komponenta2))
+        new_config.set('SATNI', 'fill1_zorder_', str(self.satni.Fill.zorder))
+        #MINUTNI
+        new_config.set('MINUTNI', 'midline_crtaj_', str(self.minutni.Midline.crtaj))
+        new_config.set('MINUTNI', 'midline_rgb_', str(self.minutni.Midline.rgb)[1:-1])
+        new_config.set('MINUTNI', 'midline_alpha_', str(self.minutni.Midline.alpha))
+        new_config.set('MINUTNI', 'midline_lineStyle_', str(self.minutni.Midline.lineStyle))
+        new_config.set('MINUTNI', 'midline_lineWidth_', str(self.minutni.Midline.lineWidth))
+        new_config.set('MINUTNI', 'midline_zorder_', str(self.minutni.Midline.zorder))
+        new_config.set('MINUTNI', 'midline_label_', str(self.minutni.Midline.label))
+        new_config.set('MINUTNI', 'VOK_crtaj_', str(self.minutni.VOK.crtaj))
+        new_config.set('MINUTNI', 'VOK_rgb_', str(self.minutni.VOK.rgb)[1:-1])
+        new_config.set('MINUTNI', 'VOK_alpha_', str(self.minutni.VOK.alpha))
+        new_config.set('MINUTNI', 'VOK_markerStyle_', str(self.minutni.VOK.markerStyle))
+        new_config.set('MINUTNI', 'VOK_markerSize_', str(self.minutni.VOK.markerSize))
+        new_config.set('MINUTNI', 'VOK_zorder_', str(self.minutni.VOK.zorder))
+        new_config.set('MINUTNI', 'VOK_label_', str(self.minutni.VOK.label))
+        new_config.set('MINUTNI', 'VBAD_crtaj_', str(self.minutni.VBAD.crtaj))
+        new_config.set('MINUTNI', 'VBAD_rgb_', str(self.minutni.VBAD.rgb)[1:-1])
+        new_config.set('MINUTNI', 'VBAD_alpha_', str(self.minutni.VBAD.alpha))
+        new_config.set('MINUTNI', 'VBAD_markerStyle_', str(self.minutni.VBAD.markerStyle))
+        new_config.set('MINUTNI', 'VBAD_markerSize_', str(self.minutni.VBAD.markerSize))
+        new_config.set('MINUTNI', 'VBAD_zorder_', str(self.minutni.VBAD.zorder))
+        new_config.set('MINUTNI', 'VBAD_label_', str(self.minutni.VBAD.label))
+        new_config.set('MINUTNI', 'NVOK_crtaj_', str(self.minutni.NVOK.crtaj))
+        new_config.set('MINUTNI', 'NVOK_rgb_', str(self.minutni.NVOK.rgb)[1:-1])
+        new_config.set('MINUTNI', 'NVOK_alpha_', str(self.minutni.NVOK.alpha))
+        new_config.set('MINUTNI', 'NVOK_markerStyle_', str(self.minutni.NVOK.markerStyle))
+        new_config.set('MINUTNI', 'NVOK_markerSize_', str(self.minutni.NVOK.markerSize))
+        new_config.set('MINUTNI', 'NVOK_zorder_', str(self.minutni.NVOK.zorder))
+        new_config.set('MINUTNI', 'NVOK_label_', str(self.minutni.NVOK.label))
+        new_config.set('MINUTNI', 'NVBAD_crtaj_', str(self.minutni.NVBAD.crtaj))
+        new_config.set('MINUTNI', 'NVBAD_rgb_', str(self.minutni.NVBAD.rgb)[1:-1])
+        new_config.set('MINUTNI', 'NVBAD_alpha_', str(self.minutni.NVBAD.alpha))
+        new_config.set('MINUTNI', 'NVBAD_markerStyle_', str(self.minutni.NVBAD.markerStyle))
+        new_config.set('MINUTNI', 'NVBAD_markerSize_', str(self.minutni.NVBAD.markerSize))
+        new_config.set('MINUTNI', 'NVBAD_zorder_', str(self.minutni.NVBAD.zorder))
+        new_config.set('MINUTNI', 'NVBAD_label_', str(self.minutni.NVBAD.label))
+        #ZERO
+        new_config.set('ZERO', 'midline_crtaj_', str(self.zero.Midline.crtaj))
+        new_config.set('ZERO', 'midline_rgb_', str(self.zero.Midline.rgb)[1:-1])
+        new_config.set('ZERO', 'midline_alpha_', str(self.zero.Midline.alpha))
+        new_config.set('ZERO', 'midline_lineStyle_', str(self.zero.Midline.lineStyle))
+        new_config.set('ZERO', 'midline_lineWidth_', str(self.zero.Midline.lineWidth))
+        new_config.set('ZERO', 'midline_zorder_', str(self.zero.Midline.zorder))
+        new_config.set('ZERO', 'midline_label_', str(self.zero.Midline.label))
+        new_config.set('ZERO', 'VOK_crtaj_', str(self.zero.VOK.crtaj))
+        new_config.set('ZERO', 'VOK_rgb_', str(self.zero.VOK.rgb)[1:-1])
+        new_config.set('ZERO', 'VOK_alpha_', str(self.zero.VOK.alpha))
+        new_config.set('ZERO', 'VOK_markerStyle_', str(self.zero.VOK.markerStyle))
+        new_config.set('ZERO', 'VOK_markerSize_', str(self.zero.VOK.markerSize))
+        new_config.set('ZERO', 'VOK_zorder_', str(self.zero.VOK.zorder))
+        new_config.set('ZERO', 'VOK_label_', str(self.zero.VOK.label))
+        new_config.set('ZERO', 'VBAD_crtaj_', str(self.zero.VBAD.crtaj))
+        new_config.set('ZERO', 'VBAD_rgb_', str(self.zero.VBAD.rgb)[1:-1])
+        new_config.set('ZERO', 'VBAD_alpha_', str(self.zero.VBAD.alpha))
+        new_config.set('ZERO', 'VBAD_markerStyle_', str(self.zero.VBAD.markerStyle))
+        new_config.set('ZERO', 'VBAD_markerSize_', str(self.zero.VBAD.markerSize))
+        new_config.set('ZERO', 'VBAD_zorder_', str(self.zero.VBAD.zorder))
+        new_config.set('ZERO', 'VBAD_label_', str(self.zero.VBAD.label))
+        new_config.set('ZERO', 'fill1_crtaj_', str(self.zero.Fill1.crtaj))
+        new_config.set('ZERO', 'fill1_rgb_', str(self.zero.Fill1.rgb)[1:-1])
+        new_config.set('ZERO', 'fill1_alpha_', str(self.zero.Fill1.alpha))
+        new_config.set('ZERO', 'fill1_zorder_', str(self.zero.Fill1.zorder))
+        new_config.set('ZERO', 'fill1_label_', str(self.zero.Fill1.label))
+        new_config.set('ZERO', 'fill2_crtaj_', str(self.zero.Fill2.crtaj))
+        new_config.set('ZERO', 'fill2_rgb_', str(self.zero.Fill2.rgb)[1:-1])
+        new_config.set('ZERO', 'fill2_alpha_', str(self.zero.Fill2.alpha))
+        new_config.set('ZERO', 'fill2_zorder_', str(self.zero.Fill2.zorder))
+        new_config.set('ZERO', 'fill2_label_', str(self.zero.Fill2.label))
+        new_config.set('ZERO', 'warning_crtaj_', str(self.zero.Warning1.crtaj))
+        new_config.set('ZERO', 'warning_rgb_', str(self.zero.Warning1.rgb)[1:-1])
+        new_config.set('ZERO', 'warning_alpha_', str(self.zero.Warning1.alpha))
+        new_config.set('ZERO', 'warning_lineStyle_', str(self.zero.Warning1.lineStyle))
+        new_config.set('ZERO', 'warning_lineWidth_', str(self.zero.Warning1.lineWidth))
+        new_config.set('ZERO', 'warning_zorder_', str(self.zero.Warning1.zorder))
+        new_config.set('ZERO', 'warning_label_', str(self.zero.Warning1.label))
+        #SPAN
+        new_config.set('SPAN', 'midline_crtaj_', str(self.span.Midline.crtaj))
+        new_config.set('SPAN', 'midline_rgb_', str(self.span.Midline.rgb)[1:-1])
+        new_config.set('SPAN', 'midline_alpha_', str(self.span.Midline.alpha))
+        new_config.set('SPAN', 'midline_lineStyle_', str(self.span.Midline.lineStyle))
+        new_config.set('SPAN', 'midline_lineWidth_', str(self.span.Midline.lineWidth))
+        new_config.set('SPAN', 'midline_zorder_', str(self.span.Midline.zorder))
+        new_config.set('SPAN', 'midline_label_', str(self.span.Midline.label))
+        new_config.set('SPAN', 'VOK_crtaj_', str(self.span.VOK.crtaj))
+        new_config.set('SPAN', 'VOK_rgb_', str(self.span.VOK.rgb)[1:-1])
+        new_config.set('SPAN', 'VOK_alpha_', str(self.span.VOK.alpha))
+        new_config.set('SPAN', 'VOK_markerStyle_', str(self.span.VOK.markerStyle))
+        new_config.set('SPAN', 'VOK_markerSize_', str(self.span.VOK.markerSize))
+        new_config.set('SPAN', 'VOK_zorder_', str(self.span.VOK.zorder))
+        new_config.set('SPAN', 'VOK_label_', str(self.span.VOK.label))
+        new_config.set('SPAN', 'VBAD_crtaj_', str(self.span.VBAD.crtaj))
+        new_config.set('SPAN', 'VBAD_rgb_', str(self.span.VBAD.rgb)[1:-1])
+        new_config.set('SPAN', 'VBAD_alpha_', str(self.span.VBAD.alpha))
+        new_config.set('SPAN', 'VBAD_markerStyle_', str(self.span.VBAD.markerStyle))
+        new_config.set('SPAN', 'VBAD_markerSize_', str(self.span.VBAD.markerSize))
+        new_config.set('SPAN', 'VBAD_zorder_', str(self.span.VBAD.zorder))
+        new_config.set('SPAN', 'VBAD_label_', str(self.span.VBAD.label))
+        new_config.set('SPAN', 'fill1_crtaj_', str(self.span.Fill1.crtaj))
+        new_config.set('SPAN', 'fill1_rgb_', str(self.span.Fill1.rgb)[1:-1])
+        new_config.set('SPAN', 'fill1_alpha_', str(self.span.Fill1.alpha))
+        new_config.set('SPAN', 'fill1_zorder_', str(self.span.Fill1.zorder))
+        new_config.set('SPAN', 'fill1_label_', str(self.span.Fill1.label))
+        new_config.set('SPAN', 'fill2_crtaj_', str(self.span.Fill2.crtaj))
+        new_config.set('SPAN', 'fill2_rgb_', str(self.span.Fill2.rgb)[1:-1])
+        new_config.set('SPAN', 'fill2_alpha_', str(self.span.Fill2.alpha))
+        new_config.set('SPAN', 'fill2_zorder_', str(self.span.Fill2.zorder))
+        new_config.set('SPAN', 'fill2_label_', str(self.span.Fill2.label))
+        new_config.set('SPAN', 'warning_crtaj_', str(self.span.Warning1.crtaj))
+        new_config.set('SPAN', 'warning_rgb_', str(self.span.Warning1.rgb)[1:-1])
+        new_config.set('SPAN', 'warning_alpha_', str(self.span.Warning1.alpha))
+        new_config.set('SPAN', 'warning_lineStyle_', str(self.span.Warning1.lineStyle))
+        new_config.set('SPAN', 'warning_lineWidth_', str(self.span.Warning1.lineWidth))
+        new_config.set('SPAN', 'warning_zorder_', str(self.span.Warning1.zorder))
+        new_config.set('SPAN', 'warning_label_', str(self.span.Warning1.label))
+        """
+        Svi bitni elementi su upisani u novi new_config objekt. Pregazi stari
+        config.ini sa novim podacima.
+        """
+        with open('./config.ini', mode='w') as fajl:
+            new_config.write(fajl)
 
     def reset_pomocne(self, mapa):
         """
@@ -95,9 +321,7 @@ class MetaConfig():
         self.EksMax = None
         self.Fill = None
         self.Grid = False
-        self.Cursor = False
         self.Legend = False
-        self.Ticks = False
         self.Selector = False
         self.Fill1 = None
         self.Fill2 = None
@@ -110,20 +334,11 @@ class MetaConfig():
         self.Grid = x
         logging.info('Grid boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
-    def set_cursor(self, x):
-        """boolean setter za prikaz cursora"""
-        self.Cursor = x
-        logging.info('Cursor boolean value promjenjen, nova vrijednost = {0}'.format(x))
-
     def set_legend(self, x):
         """boolean setter za prikaz legende"""
         self.Legend = x
         logging.info('Legend boolean value promjenjen, nova vrijednost = {0}'.format(x))
 
-    def set_ticks(self, x):
-        """boolean setter za prikaz minor tickova"""
-        self.Ticks = x
-        logging.info('Ticks boolean value promjenjen, nova vrijednost = {0}'.format(x))
 ################################################################################
 class SatniRestGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -143,21 +358,11 @@ class SatniRestGrafKonfig(MetaConfig):
                                                       'action_satni_rest_grid',
                                                       False,
                                                       bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg,
-                                                        'MAIN_WINDOW',
-                                                        'action_satni_rest_cursor',
-                                                        False,
-                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_satni_rest_legend',
                                                         False,
                                                         bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg,
-                                                       'MAIN_WINDOW',
-                                                       'action_satni_rest_minor_ticks',
-                                                       False,
-                                                       bool)
 ################################################################################
 class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -186,21 +391,11 @@ class SatniGrafKonfig(MetaConfig):
                                                       'action_satni_grid',
                                                       False,
                                                       bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg,
-                                                        'MAIN_WINDOW',
-                                                        'action_satni_cursor',
-                                                        False,
-                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_satni_legend',
                                                         False,
                                                         bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg,
-                                                       'MAIN_WINDOW',
-                                                       'action_satni_minor_ticks',
-                                                       False,
-                                                       bool)
         #status warning plot
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
@@ -230,21 +425,11 @@ class MinutniGrafKonfig(MetaConfig):
                                                       'action_minutni_grid',
                                                       False,
                                                       bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg,
-                                                        'MAIN_WINDOW',
-                                                        'action_minutni_cursor',
-                                                        False,
-                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_minutni_legend',
                                                         False,
                                                         bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg,
-                                                       'MAIN_WINDOW',
-                                                       'action_minutni_minor_ticks',
-                                                       False,
-                                                       bool)
         #status warning
         self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
                                      podtip='status_warning',
@@ -275,21 +460,11 @@ class ZeroGrafKonfig(MetaConfig):
                                                       'action_ZERO_grid',
                                                       False,
                                                       bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg,
-                                                        'MAIN_WINDOW',
-                                                        'action_ZERO_cursor',
-                                                        False,
-                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_ZERO_legend',
                                                         False,
                                                         bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg,
-                                                       'MAIN_WINDOW',
-                                                       'action_ZERO_minor_ticks',
-                                                       False,
-                                                       bool)
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
@@ -313,21 +488,11 @@ class SpanGrafKonfig(MetaConfig):
                                                       'action_SPAN_grid',
                                                       False,
                                                       bool)
-        self.Cursor = pomocne_funkcije.load_config_item(cfg,
-                                                        'MAIN_WINDOW',
-                                                        'action_SPAN_cursor',
-                                                        False,
-                                                        bool)
         self.Legend = pomocne_funkcije.load_config_item(cfg,
                                                         'MAIN_WINDOW',
                                                         'action_SPAN_legend',
                                                         False,
                                                         bool)
-        self.Ticks = pomocne_funkcije.load_config_item(cfg,
-                                                       'MAIN_WINDOW',
-                                                       'action_SPAN_minor_ticks',
-                                                       False,
-                                                       bool)
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):

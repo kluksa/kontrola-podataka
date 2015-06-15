@@ -23,10 +23,6 @@ from PyQt4 import QtGui
 import app.view.glavniprozor as glavniprozor
 
 
-"""
-8. spremanje konfig postavki u file.. tj. prepisivanje konfiga prilikom izlaza iz app.
-"""
-
 def setup_logging(file='applog.log', mode='a', lvl='INFO'):
     """
     pattern of use:

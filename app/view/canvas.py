@@ -96,7 +96,7 @@ class Kanvas(FigureCanvas):
                                                         button=2,
                                                         useblit=True,
                                                         rectprops = self.zoomBoxInfo)
-
+        #iskljuci zoom vezan na ljevi klik
         self.zoomSelector.set_active(False)
 
         if self.konfig.TIP in ['SATNI', 'MINUTNI']:
@@ -836,17 +836,18 @@ class SatniKanvas(SatniMinutniKanvas):
         desni klik misa --> poziv kontektsnog menija za promjenu flaga
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
-            xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1:
-                self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
-                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-            elif event.button == 3:
-                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-                loc = QtGui.QCursor.pos() #lokacija klika
-                #odmakni donj limit intervala za 59 minuta od izabrane tocke xpoint
-                lowlim = xpoint - datetime.timedelta(minutes = 59)
-                lowlim = pd.to_datetime(lowlim)
-                self.show_context_menu(loc, lowlim, xpoint) #interval koji treba promjeniti
+            if not self.zoomSelector.get_active(): #zanemari pick opcije ako je aktivan zoom
+                xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
+                if event.button == 1:
+                    self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'), xpoint) #crtanje minutnog
+                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
+                elif event.button == 3:
+                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
+                    loc = QtGui.QCursor.pos() #lokacija klika
+                    #odmakni donj limit intervala za 59 minuta od izabrane tocke xpoint
+                    lowlim = xpoint - datetime.timedelta(minutes = 59)
+                    lowlim = pd.to_datetime(lowlim)
+                    self.show_context_menu(loc, lowlim, xpoint) #interval koji treba promjeniti
 
     def span_select(self, xmin, xmax):
         """
@@ -993,9 +994,10 @@ class SatniRestKanvas(SatniKanvas):
         Resolve pick eventa.
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
-            xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button == 1:
-                self.highlight_pick((xpoint, ypoint), self.highlightSize)
+            if not self.zoomSelector.get_active(): #zanemari pick opcije ako je aktivan zoom
+                xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
+                if event.button == 1:
+                    self.highlight_pick((xpoint, ypoint), self.highlightSize)
 
     def setup_annotation_text(self, xpoint):
         """
@@ -1123,13 +1125,14 @@ class MinutniKanvas(SatniMinutniKanvas):
         desni klik misa --> poziv kontektsnog menija za promjenu flaga
         """
         if self.statusGlavniGraf and event.inaxes == self.axes:
-            xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
-            if event.button ==1:
-                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-            elif event.button == 3:
-                self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
-                loc = QtGui.QCursor.pos() #lokacija klika
-                self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
+            if not self.zoomSelector.get_active(): #zanemari pick opcije ako je aktivan zoom
+                xpoint, ypoint = self.adaptiraj_tocku_od_pick_eventa(event)
+                if event.button ==1:
+                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
+                elif event.button == 3:
+                    self.highlight_pick((xpoint, ypoint), self.highlightSize) #highlight odabir, size pointa
+                    loc = QtGui.QCursor.pos() #lokacija klika
+                    self.show_context_menu(loc, xpoint, xpoint) #interval koji treba promjeniti
 ################################################################################
 class ZeroSpanKanvas(Kanvas):
     """
@@ -1335,17 +1338,18 @@ class ZeroSpanKanvas(Kanvas):
                 status = 'Ne valja'
 
         if event.mouseevent.button == 1:
-            #left click
-            #update labels
-            argList = {'xtocka': str(x),
-                       'ytocka': str(y),
-                       'minDozvoljenoOdstupanje': str(minD),
-                       'maxDozvoljenoOdstupanje': str(maxD),
-                       'status': str(status)}
-            #highlight tocku
-            self.highlight_pick((x, y), self.highlightSize)
-            #emit update vrijednosti
-            self.updateaj_labele_na_panelu('pick', argList)
+            if not self.zoomSelector.get_active(): #zanemari pick opcije ako je aktivan zoom
+                #left click
+                #update labels
+                argList = {'xtocka': str(x),
+                           'ytocka': str(y),
+                           'minDozvoljenoOdstupanje': str(minD),
+                           'maxDozvoljenoOdstupanje': str(maxD),
+                           'status': str(status)}
+                #highlight tocku
+                self.highlight_pick((x, y), self.highlightSize)
+                #emit update vrijednosti
+                self.updateaj_labele_na_panelu('pick', argList)
 
     def setup_limits(self):
         """

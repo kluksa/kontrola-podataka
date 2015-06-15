@@ -82,12 +82,21 @@ class Kanvas(FigureCanvas):
                                 alpha = 0.5,
                                 zorder = 10,
                                 fill = True)
+        #zoom koji se toggla sa clikcom na zoom ikonu
         self.zoomSelector = RectangleSelector(self.axes,
                                               zoom_func,
                                               drawtype = 'box',
                                               button=1,
-                                              useblit = True,
-                                              rectprops = self.zoomBoxInfo)
+                                              useblit=True,
+                                              rectprops=self.zoomBoxInfo)
+        #permanentni zoom na middle mouse clicku, uvijek aktivan
+        self.zoomSelectorPersistent = RectangleSelector(self.axes,
+                                                        zoom_func,
+                                                        drawtype='box',
+                                                        button=2,
+                                                        useblit=True,
+                                                        rectprops = self.zoomBoxInfo)
+
         self.zoomSelector.set_active(False)
 
         if self.konfig.TIP in ['SATNI', 'MINUTNI']:

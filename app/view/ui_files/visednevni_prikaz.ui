@@ -52,8 +52,14 @@
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
           <widget class="QPushButton" name="zoomInRestSatni">
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>30</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Zoom in</string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -67,26 +73,38 @@
            </property>
            <property name="maximumSize">
             <size>
-             <width>200</width>
-             <height>16777215</height>
+             <width>30</width>
+             <height>30</height>
             </size>
            </property>
            <property name="text">
-            <string>Zoom out</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="zoomOutRestSatniFull">
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>30</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Full zoom out</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="toggleGridRestSatni">
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>30</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Toggle grid</string>
+            <string/>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -95,8 +113,14 @@
          </item>
          <item>
           <widget class="QPushButton" name="toggleLegendRestSatni">
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>30</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Toggle legend</string>
+            <string/>
            </property>
            <property name="checkable">
             <bool>true</bool>

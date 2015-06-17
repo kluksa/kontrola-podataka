@@ -59,6 +59,7 @@ class KoncPanel(base2, form2):
         self.zoomOutMinutniFull.clicked.connect(self.minutniGraf.zoom_out_full)
         self.toggleGridMinutni.clicked.connect(self.toggle_minutni_grid)
         self.toggleLegendMinutni.clicked.connect(self.toggle_minutni_legend)
+        self.brojSatiCombo.currentIndexChanged.connect(self.promjeni_broj_sati)
 
         #inicijalno stanje check statusa kontrola
         self.toggleGridSatni.setChecked(self.konfig.satni.Grid)
@@ -116,6 +117,13 @@ class KoncPanel(base2, form2):
         """
         value = int(self.brojDanaCombo.currentText())
         self.emit(QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'), value)
+###############################################################################
+    def promjeni_broj_sati(self, x):
+        """
+        emitiraj signal za promjenu broja sati za prikaz na minutom grafu
+        """
+        value = int(self.brojSatiCombo.currentText())
+        self.emit(QtCore.SIGNAL('promjeni_max_broj_sati_minutnog(PyQt_PyObject)'), value)
 ###############################################################################
     def change_glavniLabel(self, ulaz):
         """

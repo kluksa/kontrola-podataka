@@ -58,6 +58,7 @@ class Kontroler(QtCore.QObject):
         self.frejmovi = {}  #mapa aktualnih frejmova (programMjerenjaId:slajs)
         self.agregiraniFrejmovi = {}  #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
         self.brojDanaSatni = 1 #member prati koliko dana se prikazuje za satno agregirani graf
+        self.brojSatiMinutni = 1 #member prati koliko sati se prikazuje na minutno agregiranom grafu
         ###povezivanje akcija sa funkcijama###
         self.setup_veze()
         logging.debug('inicijalizacija kontrolora, end')
@@ -183,10 +184,14 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.visednevniPanel.satniRest,
                      QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'),
                      self.gui.visednevniPanel.prikazi_info_satni_rest)
-        ###promjena max broja dana za satni graf...
+        ###promjena max broja dana za satni graf###
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'),
                      self.promjeni_max_broj_dana_satnog)
+        ###promjena max broja sati za minutni graf###
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('promjeni_max_broj_sati_minutnog(PyQt_PyObject)'),
+                     self.promjeni_max_broj_sati_minutnog)
     ###############################################################################
     def promjeni_max_broj_dana_satnog(self, x):
         """
@@ -197,6 +202,16 @@ class Kontroler(QtCore.QObject):
         #ako su izabrani glank i datum, ponovno nacrtaj graf
         if self.gKanal != None and self.pickedDate != None:
             self.priredi_podatke({'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate})
+    ###############################################################################
+    def promjeni_max_broj_sati_minutnog(self, x):
+        """
+        promjena raspona max broja sata za minutni graf. ulazni paremetar x je
+        broj sati, integer
+        """
+        #TODO!
+        self.brojSatiMinutni = int(x)
+        if self.gKanal != None and self.pickedDate != None and self.sat != None:
+            self.crtaj_minutni_graf(self.sat)
     ###############################################################################
     def napravi_listu_dana(self, datum, brojDana):
         """
@@ -627,10 +642,12 @@ class Kontroler(QtCore.QObject):
         agregiranom grafu. Za zadani sat, odredjuje rubove intervala te
         poziva crtanje minutnog grafa.
         """
+        #TODO! modifikacija za prikaz vise satnih podataka? samo pomakni lowLim za n sati...
         self.sat = izabrani_sat
+        dodatni_sati = self.brojSatiMinutni - 1 #1 sat je uracunat.
         if self.zavrsnoVrijeme >= self.sat >= self.pocetnoVrijeme:
             highLim = self.sat
-            lowLim = highLim - datetime.timedelta(minutes=59)
+            lowLim = highLim - datetime.timedelta(minutes=59) - datetime.timedelta(hours=dodatni_sati)
             lowLim = pd.to_datetime(lowLim)
             # update labela izabranog sata
             self.gui.koncPanel.change_satLabel(self.sat)

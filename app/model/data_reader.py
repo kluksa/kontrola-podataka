@@ -64,13 +64,13 @@ class RESTReader(object):
             assert 'statusString' in df.columns, 'ERROR - Nedostaje stupac: "statusString"'
             assert 'valjan' in df.columns, 'ERROR - Nedostaje stupac: "valjan"'
             assert 'statusInt' in df.columns, 'ERROR - Nedostaje stupac: "statusInt"'
+            assert 'nivoValidacije' in df.columns, 'Error - Nedostaje stupac: "nivoValidacije"'
 
             df = df.set_index(df['vrijeme'])
             df.rename(columns={'vrijednost' : 'koncentracija', 'valjan' : 'flag', 'statusInt':'status'}, inplace = True)
             df['koncentracija'] = df['koncentracija'].map(self.nan_conversion)
             df['flag'] = df['flag'].map(self.valjan_conversion)
             df.drop('vrijeme', inplace = True, axis = 1) #drop column vrijeme
-            #TODO!
             """
             Postaviti flag na drugu vrijednost ako je tocka prije validirana?
             Ovisi o statusu...
@@ -125,7 +125,7 @@ class RESTWriter(object):
         #rename i adapt frejm
         frejm.rename(columns={'flag':'valjan'}, inplace = True)
         frejm['valjan'] = frejm['valjan'].map(self.int_to_boolean)
-        frejm.drop(['status', 'koncentracija', 'statusString'], inplace = True, axis = 1)
+        frejm.drop(['status', 'nivoValidacije','koncentracija', 'statusString'], inplace = True, axis = 1)
         #convert to json string uz pomoc pandasa
         frejm['id'] = frejm['id'].astype(np.int64)
         jstring = frejm.to_json(orient = 'records')

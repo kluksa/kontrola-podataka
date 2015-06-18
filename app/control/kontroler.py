@@ -208,7 +208,6 @@ class Kontroler(QtCore.QObject):
         promjena raspona max broja sata za minutni graf. ulazni paremetar x je
         broj sati, integer
         """
-        #TODO!
         self.brojSatiMinutni = int(x)
         if self.gKanal != None and self.pickedDate != None and self.sat != None:
             self.crtaj_minutni_graf(self.sat)
@@ -249,6 +248,9 @@ class Kontroler(QtCore.QObject):
         #set model to views
         self.gui.restIzbornik.treeView.setModel(self.modelProgramaMjerenja)
         self.gui.restIzbornik.model = self.modelProgramaMjerenja
+        #clear kalendar u restIzbornik
+        dummy = {'ok':[], 'bad':[]}
+        self.gui.restIzbornik.calendarWidget.refresh_dates(dummy)
         #clear glavni kanal i datum, clear sve grafove
         self.gKanal = None
         self.pickedDate = None
@@ -285,7 +287,6 @@ class Kontroler(QtCore.QObject):
         if tip:
             try:
                 statusMapa = self.webZahtjev.get_statusMap()
-                self.dokument.set_statusMap(statusMapa)
                 self.gui.koncPanel.satniGraf.set_statusMap(statusMapa)
                 self.gui.koncPanel.minutniGraf.set_statusMap(statusMapa)
                 self.gui.visednevniPanel.satniRest.set_statusMap(statusMapa)
@@ -455,6 +456,10 @@ class Kontroler(QtCore.QObject):
                 self.modelProgramaMjerenja.set_usedMjerenja(self.kalendarStatus)
             except pomocne_funkcije.AppExcept:
                 logging.info('Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal)), exc_info=True)
+        #test validacije izabranog dana za inicijalno bojanje kalendara
+        datum = QtCore.QDate().fromString(self.pickedDate,'yyyy-MM-dd')
+        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
+            self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
         #update boju na kalendaru ovisno o ucitanim podacima
         self.promjena_boje_kalendara()
 
@@ -467,6 +472,7 @@ class Kontroler(QtCore.QObject):
         metoda priprema kontolor za crtanje, priprema podatke, updatea labele na
         panelima i pokrece proces crtanja.
         """
+        self.upload_minutne_na_REST_smart_prompt() #naredba mora biti prva u nizu
         # ovo potencijalno traje... wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         # reinicijalizacija membera (self.gKanal, self.pocetnoVrijeme....)
@@ -642,7 +648,6 @@ class Kontroler(QtCore.QObject):
         agregiranom grafu. Za zadani sat, odredjuje rubove intervala te
         poziva crtanje minutnog grafa.
         """
-        #TODO! modifikacija za prikaz vise satnih podataka? samo pomakni lowLim za n sati...
         self.sat = izabrani_sat
         dodatni_sati = self.brojSatiMinutni - 1 #1 sat je uracunat.
         if self.zavrsnoVrijeme >= self.sat >= self.pocetnoVrijeme:
@@ -716,6 +721,77 @@ class Kontroler(QtCore.QObject):
             logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
             self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
         ###############################################################################
+
+    """
+    Postoje vise slicnih metoda zbog funkcionalnosti. Ako samo ostane metoda
+    upload_minutne_na_REST_smart_prompt nece biti moguce spremiti promjernu ako
+    se promjeni jedan flag u nevaljan ako su svi validirani...nespretno...
+
+    upload_minutne_na_REST
+    -generalna metoda
+    -trazi potvrdu spremanja na REST
+
+    upload_minutne_na_REST_smart_prompt
+    -metoda se koristi prikikom prebacivanja datuma / programa mjerenja
+    -pita za spremanje ako postoje nevalidirani podaci
+    -ne sprema podatke ako su vec svi validirani... nece ni prikazati upit.
+
+    upload_minutnih_na_REST_common
+    -zajednicka funkcionalnost koja sprema na REST
+    -ne provjerava da li su memberi self.pickedDate i self.gKanal zadani.
+     za to su zasluzne metode koje pozivaju ovu funkciju.
+    """
+    def upload_minutne_na_REST_smart_prompt(self):
+        """
+        automatska metoda za spremanje minutnih podataka na REST. Razlikuje se od
+        metode upload_minutne_na_REST po sljedecem:
+        - pita za potvrdu spremanja na REST samo ako postoje podaci koji nisu validirani
+        """
+        if self.gKanal is not None and self.pickedDate is not None:
+            frejm = self.dokument.data[self.gKanal]
+            lenSvih = len(frejm)
+            validirani = frejm[abs(frejm['flag']) == 1000]
+            lenValidiranih = len(validirani)
+            if lenSvih != lenValidiranih:
+                # prompt izbora za spremanje filea, question
+                msg = "spremi trenutno aktivne podatke?"
+                odgovor = QtGui.QMessageBox.question(self.gui,
+                                                     "Potvrdi upload na REST servis",
+                                                     msg,
+                                                     QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+                if odgovor == QtGui.QMessageBox.Yes:
+                    self.upload_minutnih_na_REST_common()
+
+    def upload_minutnih_na_REST_common(self):
+        """
+        Zajednicki dio za spremanje minutnog slajsa frejma na REST-
+        """
+        try:
+            # promjeni cursor u wait cursor
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+            #reci dokumentu da spremi minutne podatke na rest
+            datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
+            #convert from qdate to string representation
+            datumi = [i.toString('yyyy-MM-dd') for i in datumi]
+            for datum in datumi:
+                self.dokument.persist_minutne_podatke(key=self.gKanal, date=datum)
+            #update status kalendara
+            self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+            self.promjena_boje_kalendara()
+            #report success
+            msg = " ".join(['Minutni podaci za',
+                            str(self.gKanal),
+                            'su spremljeni na REST servis.'])
+            self.prikazi_error_msg(msg)
+        except (Exception, pomocne_funkcije.AppExcept):
+            logging.error('Error prilikom uploada na rest servis', exc_info=True)
+            msg = 'Podaci nisu spremljeni na REST servis. Doslo je do pogreske prilikom rada.'
+            # report fail
+            self.prikazi_error_msg(msg)
+        finally:
+            # vrati izgled cursora nazad na normalni
+            QtGui.QApplication.restoreOverrideCursor()
+
     def upload_minutne_na_REST(self):
         """
         Za trenutno aktivni kanal i datum, spremi slajs minutnog frejma na
@@ -724,43 +800,18 @@ class Kontroler(QtCore.QObject):
         """
         if self.gKanal is not None and self.pickedDate is not None:
             # prompt izbora za spremanje filea, question
-            msg = " ".join(['Spremi minutne podatke od',
+            msg = " ".join(['Spremi trenutne minutne podatke za',
                             str(self.gKanal),
-                            ':',
-                            self.pickedDate,
                             'na REST web servis?'])
             odgovor = QtGui.QMessageBox.question(self.gui,
                                                  "Potvrdi upload na REST servis",
                                                  msg,
                                                  QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
             if odgovor == QtGui.QMessageBox.Yes:
-                try:
-                    # promjeni cursor u wait cursor
-                    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                    #reci dokumentu da spremi minutne podatke na rest
-                    datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
-                    #convert from qdate to string representation
-                    datumi = [i.toString('yyyy-MM-dd') for i in datumi]
-                    for datum in datumi:
-                        self.dokument.persist_minutne_podatke(key=self.gKanal, date=datum)
-                    #update status kalendara
-                    self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
-                    self.promjena_boje_kalendara()
-                    #report success
-                    msg = " ".join(['Minutni podaci za',
-                                    str(self.gKanal),
-                                    'su spremljeni na REST servis.'])
-                    self.prikazi_error_msg(msg)
-                except (Exception, pomocne_funkcije.AppExcept):
-                    logging.error('Error prilikom uploada na rest servis', exc_info=True)
-                    msg = 'Podaci nisu spremljeni na REST servis. Doslo je do pogreske prilikom rada.'
-                    # report fail
-                    self.prikazi_error_msg(msg)
-                finally:
-                    # vrati izgled cursora nazad na normalni
-                    QtGui.QApplication.restoreOverrideCursor()
-                    #ponovno ucitaj podatake sa RESTA za isti datum i glavni kanal kao i one koje si spremio
-                    self.ponisti_izmjene()
+                self.upload_minutnih_na_REST_common()
+                #ponovno ucitaj podatake sa RESTA za isti datum i glavni kanal kao i one koje si spremio
+                self.ponisti_izmjene()
+
         else:
             msg = 'Nije moguce spremiti minutne podatke na REST jer nije izabran glavni kanal i datum.'
             self.prikazi_error_msg(msg)
@@ -896,7 +947,6 @@ class Kontroler(QtCore.QObject):
             jsonText = self.webZahtjev.get_satne_podatke(mapa)
             df = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
             frames, metaData = self.adapt_rest_satni_frejm(df)
-            #TODO! naredba za crtanje....
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
         except ValueError:
             logging.error('App exception', exc_info=True)

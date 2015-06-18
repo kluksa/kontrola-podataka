@@ -38,17 +38,6 @@ class DataModel(QtCore.QObject):
         self.citac = reader
         self.pisac = writer
         self.agregator = agregator
-        self.statusMap = {} #mapa statusa
-        self.kontrolaBitPolozaj = None # polozaj bita statusa za predhodno validirane podatke
-###############################################################################
-    def set_statusMap(self, mapa):
-        """
-        Setter za opis bitova statusa.
-        """
-        self.statusMap = mapa
-        for i in self.statusMap.keys():
-            if self.statusMap[i] == 'KONTROLA_PROVEDENA':
-                self.kontrolaBitPolozaj = i
 ###############################################################################
     def set_writer(self, writer):
         """
@@ -109,14 +98,14 @@ class DataModel(QtCore.QObject):
     def pronadji_kontorlirane(self, x):
         """
         Pomocna funkcija da koja pronalazi podatke koji su predhodno validirani.
-        Ulazni parametar x je status. Izlaz ja 1000 ako je kontrola prethodno
-        obavljena, 1 ako nije.
+        Ulazni parametar su vrijednosti stupca validacije (0 ako validacija nije
+        provedena, 1 ako je podatak prethodno validiran). Funkcija vraca 1 ako
+        podatak nije validiran, a 1000 ako je podatak validiran.
         """
-        value = int(x) & (1 << int(self.kontrolaBitPolozaj))
-        if value > 0:
-            return 1000
-        else:
+        if x == 0:
             return 1
+        elif x == 1:
+            return 1000
 ###############################################################################
     def citaj(self, key=None, date=None, ndana=1):
         """
@@ -130,9 +119,8 @@ class DataModel(QtCore.QObject):
             df['status'] = df['status'].astype(np.int64)
             df['id'] = df['id'].astype(np.int64)
             if len(df):
-                if self.kontrolaBitPolozaj in self.statusMap.keys():
-                    serija = df['status'].map(self.pronadji_kontorlirane)
-                    df.loc[:,'flag'] = df.loc[:,'flag'] * serija
+                serija = df['nivoValidacije'].map(self.pronadji_kontorlirane)
+                df.loc[:,'flag'] = df.loc[:,'flag'] * serija
                 self.set_frame(key = kljuc, frame = df)
             else:
                 tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
@@ -248,6 +236,8 @@ class DataModel(QtCore.QObject):
         mini = dan+datetime.timedelta(minutes=1)
         #dohvati slajs frejma
         slajs = self.get_frame(key=kanal, tmin=mini, tmax=maxi)
+        if len(slajs) == 0:
+            return False #nema podataka
         #test validiranost slajsa
         testValidacije = slajs['flag'].map(self.test_stupnja_validacije)
         lenSvih = len(testValidacije)

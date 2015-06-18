@@ -379,11 +379,12 @@ class SatniMinutniKanvas(Kanvas):
         bit_position. Napravi binary and takvog broja i ulaznog broja.
         Ako oba broja imaju bit 1 na istoj poziciji vrati True, inace vrati False.
         """
-        temp = 1 << int(bit_position) #left shift bit za neki broj pozicija
-        if int(broj) & temp > 0: # binary and izmjedju ulaznog broja i testnog broja
-            return True
-        else:
-            return False
+        if bit_position != None:
+            temp = 1 << int(bit_position) #left shift bit za neki broj pozicija
+            if int(broj) & temp > 0: # binary and izmjedju ulaznog broja i testnog broja
+                return True
+            else:
+                return False
 
     def check_status_flags(self, broj):
         """
@@ -482,28 +483,15 @@ class SatniMinutniKanvas(Kanvas):
                                    zorder=pomocni[key].zorder,
                                    label=pomocni[key].label)
 
-    def provjera_obavljene_kontrole(self, x):
-        """
-        Pomocna funkcija, za svaki status x provjerava da li je kontrola provedena.
-        Ako je kontrola provedena vraca 0
-        Ako kontrola nije provedena vraca x
-        """
-        if self.check_bit(x, self.kontrolaProvedenaBit):
-            return 0
-        else:
-            return x
-
     def crtaj_oznake_statusa(self):
         """
         Crtanje oznaka za sve tocke gdje je status razlicit od nule, a da nije
         provedena kontrola nad tim podacima.
         Prikazuje se scatter plot (samo tocke) ispod gornjeg ruba grafa.
         """
-        if self.konfig.statusWarning.crtaj:
+        if self.konfig.statusWarning.crtaj and self.okolisniUvjetiBit != None:
             frejm = self.data[self.gKanal]
             if isinstance(frejm, pd.core.frame.DataFrame):
-                #ako je kontrola provedena promjeni status u 0
-                frejm[self.konfig.STATUS] = frejm[self.konfig.STATUS].map(self.provjera_obavljene_kontrole)
                 #eliminacija svih kojima je status 0
                 frejm = frejm[frejm[self.konfig.STATUS] != 0]
                 #u frejmu su samo indeksi koji nisu prije kontrolirani a imaju neki status kod razlicit od 0

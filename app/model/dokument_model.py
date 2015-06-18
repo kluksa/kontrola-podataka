@@ -235,6 +235,8 @@ class DataModel(QtCore.QObject):
         maxi = dan+datetime.timedelta(days=1)
         mini = dan+datetime.timedelta(minutes=1)
         #dohvati slajs frejma
+        if kanal not in self.data:
+            return False #kanal nije ucitan
         slajs = self.get_frame(key=kanal, tmin=mini, tmax=maxi)
         if len(slajs) == 0:
             return False #nema podataka

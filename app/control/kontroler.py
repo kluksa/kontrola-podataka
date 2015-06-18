@@ -472,6 +472,7 @@ class Kontroler(QtCore.QObject):
         metoda priprema kontolor za crtanje, priprema podatke, updatea labele na
         panelima i pokrece proces crtanja.
         """
+        #TODO! check za dan! i prebaci na dirty schemu
         self.upload_minutne_na_REST_smart_prompt() #naredba mora biti prva u nizu
         # ovo potencijalno traje... wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
@@ -747,7 +748,13 @@ class Kontroler(QtCore.QObject):
         metode upload_minutne_na_REST po sljedecem:
         - pita za potvrdu spremanja na REST samo ako postoje podaci koji nisu validirani
         """
-        if self.gKanal is not None and self.pickedDate is not None:
+        #check da ne radi gluposti za datume u buducnosti.
+        datum = QtCore.QDate().fromString(self.pickedDate, 'yyyy-MM-dd')
+        danas = QtCore.QDate.currentDate()
+        if self.gKanal is not None and self.pickedDate is not None and datum < danas:
+            #TODO! ako kljuc ne postoji u podacima samo izadji (nema podataka)
+            if self.gKanal not in self.dokument.data:
+                return None
             frejm = self.dokument.data[self.gKanal]
             lenSvih = len(frejm)
             validirani = frejm[abs(frejm['flag']) == 1000]
@@ -947,6 +954,8 @@ class Kontroler(QtCore.QObject):
             jsonText = self.webZahtjev.get_satne_podatke(mapa)
             df = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
             frames, metaData = self.adapt_rest_satni_frejm(df)
+            metaData['pocetnoVrijeme'] = pd.to_datetime(mapa['datumOd'])
+            metaData['zavrsnoVrijeme'] = pd.to_datetime(mapa['datumDo'])
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
         except ValueError:
             logging.error('App exception', exc_info=True)
@@ -970,6 +979,7 @@ class Kontroler(QtCore.QObject):
         frejm i mapu sa meta_podacima
         """
         frejm = frejm.set_index(frejm['vrijeme'])
+        #TODO! min max vrijeme kao pandas timestamp...
         pocetno = frejm.index.min()
         zavrsno = frejm.index.max()
         kanal = frejm.loc[pocetno, 'programMjerenjaId']

@@ -27,10 +27,6 @@ class GlavniProzor(base, form):
 
         #set up inicijalizaciju
         self.setup_main_window()
-
-        """
-        Todo... treba srediti toggle tickova grida isl do kraja
-        """
 ###############################################################################
     def setup_main_window(self):
         """

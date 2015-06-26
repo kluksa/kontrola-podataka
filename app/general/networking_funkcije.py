@@ -4,45 +4,39 @@ Created on Wed Jan 21 10:58:46 2015
 
 @author: User
 """
-from requests.auth import HTTPBasicAuth
-import requests
 import logging
-import xml.etree.ElementTree as ET
-from PyQt4 import QtCore
+import requests
 import json
+import xml.etree.ElementTree as ET
+from requests.auth import HTTPBasicAuth
 
-import app.general.pomocne_funkcije as pomocne_funkcije
-###############################################################################
-###############################################################################
-class WebZahtjev(QtCore.QObject):
+class WebZahtjev(object):
     """
     Klasa zaduzena za komunikaciju sa REST servisom
 
-    INSTANCIRAN:
-    - u modulu kontroler.py prilikom inicijalizacije objekta Kontroler
+    INSTANCIRAN U:
+    - modul kontroler.py prilikom inicijalizacije objekta Kontroler
     - referenca na taj objekt se prosljedjuje svima koji komuniciraju sa REST-om
 
-    drugi modluli koji ga koriste:
+    KORISTI SE U:
     -datareader.RESTReader (source)
     -datareader.RESTWriter (source)
     """
-###############################################################################
     def __init__(self, base, resursi, auth):
-        """inicijalizacija sa baznim url-om i dictom resursa i tupleom
-        (user, password)"""
-        QtCore.QObject.__init__(self)
+        """
+        inicijalizira se sa:
+        - base url REST servisa
+        - mapom sa relativnim putevima (od baznog url-a) do specificnih servisa
+        - tuple (user, password) potreban za autorizaciju
+        """
         self._base = base
         self._resursi = resursi
         self.user, self.pswd = auth
 
-        #, auth = HTTPBasicAuth(self.user, self.pswd)
-        #, auth = (self.user, self.pswd)
-###############################################################################
     def get_satne_podatke(self, mapa):
         """
         Metoda dohvaca satno agregirane podatke sa REST servisa.
-        ulazni parametar je mapa podataka
-
+        - ulazni parametar mapa je dictionary sa poljima:
         {
             'datumOd': string, format mora biti "YYYY-MM-DDThh:mm:ss"
             'datumDo': string, format mora biti "YYYY-MM-DDThh:mm:ss"
@@ -51,66 +45,85 @@ class WebZahtjev(QtCore.QObject):
             'validacija': int, nivo validacije
         }
 
-        metoda vraca json string
+        Metoda vraca json string ili prazan string ako dodje do greske u radu.
         """
-        url = self._base + self._resursi['satniPodaci']+'/'
-        res = "/".join([str(mapa['kanal']),str(mapa['datumOd']),str(mapa['datumDo'])])
-        url = url+res
-        payload = {"samo_valjani":mapa['valjani'],
-                   "nivo_validacije":mapa['validacija']}
         try:
+            msg = 'get_satne_podatke pozvan sa argumentima, args={0}'.format(str(mapa))
+            logging.debug(msg)
+            url = self._base + self._resursi['satniPodaci']+'/'
+            res = "/".join([str(mapa['kanal']), str(mapa['datumOd']), str(mapa['datumDo'])])
+            url = url+res
+            payload = {"samo_valjani":mapa['valjani'],
+                       "nivo_validacije":mapa['validacija']}
             r = requests.get(url,
                              timeout=39.1,
-                             auth = HTTPBasicAuth(self.user, self.pswd),
+                             auth=HTTPBasicAuth(self.user, self.pswd),
                              params=payload)
-            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
+            assert r.ok == True, 'Bad request'
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            msg = "get_satni_podaci procesiran, response code={0}, request url={1}".format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = 'output get_satne_podatke:\n{0}'.format(str(r.text))
+            logging.debug(msg)
             return r.text
         except AssertionError as e1:
-            tekst = 'WebZahtjev.get_satne_podatke:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return ''
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.get_satne_podatke:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+            msg = "Request exception - {0}\nrequest url={1}\ndodatni parametri zahtjeva={2}".format(str(e2), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
         except Exception as e3:
-            tekst = 'WebZahtjev.get_satne_podatke:Opceniti fail.\n{0}'.format(e3)
-            raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
+            msg = "General exception - {0}\nrequest url={1}\ndodatni parametri zahtjeva={2}".format(str(e3), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
+
     def get_statusMap(self):
         """
         Metoda dohvaca podatke o statusima sa REST servisa
-        vraca dictionary:
+        vraca mapu (dictionary):
         {broj bita [int] : opisni string [str]}
+        U slucaju pogreske prilikom rada vraca praznu mapu
         """
-        url = self._base + self._resursi['statusMap']
         try:
-            r = requests.get(url, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            #assert dobar response (status code 200) i xml content-type
-            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
+            url = self._base + self._resursi['statusMap']
+            logging.debug('get_statusMap pozvan')
+            r = requests.get(url,
+                             timeout=39.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             jsonStr = r.text
-            #parse and asemble statusMap
             x = json.loads(jsonStr)
             rezultat = {}
             for i in range(len(x)):
                 rezultat[x[i]['i']] = x[i]['s']
+            msg = 'get_statusMap procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = 'output status map dictionary:\n{0}'.format(str(rezultat))
+            logging.debug(msg)
             return rezultat
         except AssertionError as e1:
-            tekst = 'WebZahtjev.get_statusMap:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return {}
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.get_statusMap:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+            msg = "Request exception - {0}\nrequest url={1}".format(str(e2), url)
+            logging.error(msg, exc_info=True)
+            return {}
         except Exception as e3:
-            tekst = 'WebZahtjev.get_statusMap:Opceniti fail.\n{0}'.format(e3)
-            raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
+            msg = "General exception - {0}\nrequest url={1}".format(str(e3), url)
+            logging.error(msg, exc_info=True)
+            return {}
+
     def parse_xml(self, x):
         """
         Pomocna funkcija za internu upotrebu, NE POZIVAJ IZVAN MODULA.
         Parsira xml sa programima mjerenja preuzetih sa rest servisa,
         input: string
-        output: dictionary sa bitnim podacima
+        output: (nested) dictionary sa bitnim podacima. Primarni kljuc je program
+        mjerenja id, sekundarni kljucevi su opisni (npr. 'komponentaNaziv')
         """
         rezultat = {}
         root = ET.fromstring(x)
@@ -132,141 +145,213 @@ class WebZahtjev(QtCore.QObject):
                 'komponentaMjernaJedinica':komponentaMjernaJedinica,
                 'komponentaFormula':komponentaFormula,
                 'usporednoMjerenje':usporednoMjerenje}
-        #vrati trazeni dictionary
         return rezultat
-###############################################################################
+
     def get_programe_mjerenja(self):
         """
         Metoda salje zahtjev za svim programima mjerenja prema REST servisu.
         Uz pomoc funkcije parse_xml, prepakirava dobivene podatke u mapu
-        'zanimljivih' podataka
+        'zanimljivih' podataka. Vraca (nested) dictionary programa mjerenja ili
+        prazan dictionary u slucaju pogreske prilikom rada.
         """
-        #pointaj url prema trazenom podatku iz wadl filea
-        url = self._base + self._resursi['programMjerenja']
-        #pripremi zahtjev metode
-        payload = {"id":"findAll", "name":"GET"}
         try:
-            r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            #r = requests.get(url, params = payload, timeout = 9.1, auth = HTTPDigestAuth(self.user, self.pswd))
-            #assert dobar response (status code 200) i xml content-type
-            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
+            url = self._base + self._resursi['programMjerenja']
+            payload = {"id":"findAll", "name":"GET"}
+            logging.debug('get_programe_mjerenja pozvan')
+            r = requests.get(url,
+                             params=payload,
+                             timeout=39.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
             assert r.headers['Content-Type'] == 'application/xml', 'Bad response, not xml'
-            #xml parsing
             rezultat = self.parse_xml(r.text)
+            msg = 'get_programe_mjerenja procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = 'output dictionary programa mjerenja:\n{0}'.format(str(rezultat))
+            logging.debug(msg)
             return rezultat
         except AssertionError as e1:
-            tekst = 'WebZahtjev.get_programe_mjerenja:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return {}
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.get_programe_mjerenja:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}".format(str(e2), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return {}
         except Exception as e3:
-            tekst = 'WebZahtjev.get_programe_mjerenja:Opceniti fail.\n{0}'.format(e3)
-            raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}".format(str(e3), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return {}
+
     def get_sirovi(self, programMjerenja, datum, brojdana):
         """
-        Novi REST servis, za zadani program mjerenja (int) i datum (string,
-        u formatu YYYY-MM-DD) dohvati sirove podatke
+        Za zadani program mjerenja (int) i datum (string, formata YYYY-MM-DD)
+        dohvati sirove (minutne) podatke sa REST servisa.
+        Output funkcije je json string ili prazan string ako je doslo do pogreske
+        prilikom rada.
         """
-        #point url na trazeni dio REST servisa
-        url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
-        #pripremi zahtjev
-        payload = {"id":"getPodaci", "name":"GET", "broj_dana":brojdana}
         try:
-            r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            #assert dobar response (status code 200), json content-type
-            assert r.ok == True, 'Bad request, response code={0}, url={1}'.format(r.status_code, r.url)
+            url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
+            payload = {"id":"getPodaci", "name":"GET", "broj_dana":brojdana}
+            msg = 'get_sirovi pozvan sa argumentima, id={0}, datum={1}, brojdana={2}'.format(str(programMjerenja), str(datum), str(brojdana))
+            logging.debug(msg)
+            assert brojdana >= 1, 'Broj dana mora biti veci ili jednak 1.'
+            r = requests.get(url,
+                             params=payload,
+                             timeout=39.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            msg = 'get_sirovi procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = 'get_sirovi output frame:\n{0}'.format(str(r.text))
+            logging.debug(msg)
             return r.text
         except AssertionError as e1:
-            tekst = 'WebZahtjev.get_sirovi:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return ''
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.get_sirovi:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}".format(str(e2), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
         except Exception as e3:
-            tekst = 'WebZahtjev.get_sirovi:Opceniti fail.\n{0}'.format(e3)
-            raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}".format(str(e3), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
+
     def upload_json_minutnih(self, program=None, jstring=None, date=None):
         """
-        Za zadani json string minutnih podataka, predaj zahtjev za spremanje u REST servis.
-        Dodatni parametar je program mjerenja id
+        Spremanje minutnih podataka na REST servis.
+        ulazni parametrni su:
+        -program : program mjerenja id
+        -jstring : json string minutnih podataka koji se treba uploadati
+        -date : datum
+
+        Funkcija vraca True ako su podaci uspjesno predani REST servisu.
+        Funkcija vraca False ako podaci nisu uspjesno predani REST servisu.
         """
-        #point url na REST  servis
-        url = self._base + self._resursi['siroviPodaci']+ '/'+str(program)+'/'+str(date)
-        #pripiremi zahtjev
-        payload = {"id":"putPodaci", "name":"PUT"}
-        headers = {'Content-type': 'application/json'}
         try:
-            assert jstring is not None, 'Ulazni parametar je None, json string nije zadan.'
-            assert len(jstring) > 0, 'Ulazni json string je prazan'
+            url = self._base + self._resursi['siroviPodaci']+'/'+str(program)+'/'+str(date)
+            payload = {"id":"putPodaci", "name":"PUT"}
+            headers = {'Content-type': 'application/json'}
+            msg = 'upload_json_minutnih pozvan sa argumentima: id={0}, datum={1}:\n{2}'.format(str(program), str(date), str(jstring))
+            logging.debug(msg)
+            if not isinstance(jstring, str):
+                raise ValueError('Ulazni parametar nije tipa string.')
+            if len(jstring) == 0:
+                raise ValueError('Ulazni json string je prazan')
             r = requests.put(url,
                              params=payload,
                              data=jstring,
                              headers=headers,
                              timeout=39.1,
-                             auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, jstring)
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
+            msg = 'upload_json_minutnih procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            return True
+        except ValueError as e0:
+            msg = "Value error - {0}".format(str(e0))
+            logging.error(msg, exc_info=True)
+            return False
         except AssertionError as e1:
-            tekst = 'WebZahtjev.upload_json_minutnih:Assert fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return False
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.upload_json_minutnih:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e2), url, str(payload), str(headers))
+            logging.error(msg, exc_info=True)
+            return False
+        except Exception as e3:
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e3), url, str(payload), str(headers))
+            logging.error(msg, exc_info=True)
+            return False
 
-###############################################################################
     def get_zero_span(self, programMjerenja, datum, kolicina):
         """
         Dohvati zero-span vrijednosti
-        program mjerenja je tipa int, datum je string
+        ulazni parametri su:
+        -programMjerenja : integer, id programa mjerenja
+        -datum : string formata 'YYYY-MM-DD'
+        -kolicina : integer, broj dana koji treba dohvatiti
 
-        path -- "program/datum"
+        Funkcija vraca json string sa trazenim podacima ili prazan string ako je
+        doslo do problema prilikom rada.
         """
         try:
-            #point url na trazeni dio REST servisa
             url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
-            #pripremi zahtjev
             payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
-            #request
-            r = requests.get(url, params = payload, timeout = 39.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request/response code={0}, url={1}'.format(r.status_code, r.url)
+            msg = 'get_zero_span pozvan sa parametrima: id={0}, datum={1}, brojdana={2}'.format(str(programMjerenja), str(datum), str(kolicina))
+            logging.debug(msg)
+            r = requests.get(url,
+                             params=payload,
+                             timeout=39.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
             assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
+            msg = 'get_zero_span procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = 'get_zero_span output:\n{0}'.format(str(r.text))
+            logging.debug(msg)
             return r.text
-        except requests.exceptions.RequestException as e1:
-            tekst = 'WebZahtjev.get_zero_span:Request fail (http error, timeout...).\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
-        except AssertionError as e2:
-            tekst = 'WebZahtjev.get_zero_span:Assert fail. Bad response.\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
+        except AssertionError as e1:
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return ''
+        except requests.exceptions.RequestException as e2:
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}".format(str(e2), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
         except Exception as e3:
-            tekst = 'WebZahtjev.get_zero_span:exception. {0}'.format(e3)
-            raise pomocne_funkcije.AppExcept(tekst) from e3
-###############################################################################
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}".format(str(e3), url, str(payload))
+            logging.error(msg, exc_info=True)
+            return ''
+
     def upload_ref_vrijednost_zs(self, jS, kanal):
         """
-        funkcija za upload nove vrijednosti referentne tocke zero ili span
-        na REST servis.
+        Funkcija sluzi za upload nove referentne vrijednosti zero ili span
+        na REST.
+        ulazni parametri:
+        - kanal : integer,  id programa mjerenja
+        - jS : string, json string sa podacima o novoj referentnog vrijednosti
 
-        kanal je int vrijednost trenutno programMjerenjaId
-        jS je json string sa podacima o novoj referentnoj vrijednosti
+        Funkcija vraca True ako je nova vrijednost uspjesno predana REST servisu.
+        Funkcija vraca False ako nova vrijednost nije uspjesno predana REST servisu.
         """
-        #point url na REST  servis
-        url = self._base + self._resursi['zerospan']+'/'+str(kanal)
-        #pripiremi zahtjev
-        payload = {"id":"putZeroSpanReferentnuVrijednost", "name":"PUT"}
-        headers = {'Content-type': 'application/json'}
         try:
-            assert jS is not None, 'Ulazni parametar je None, json string nije zadan.'
-            assert len(jS) > 0, 'Ulazni json string je prazan'
-            r = requests.put(url, params = payload, data = jS, headers = headers, timeout = 9.1, auth = HTTPBasicAuth(self.user, self.pswd))
-            assert r.ok == True, 'Bad request, response code={0}, url={1}, json={2}'.format(r.status_code, r.url, jS)
+            url = self._base + self._resursi['zerospan']+'/'+str(kanal)
+            payload = {"id":"putZeroSpanReferentnuVrijednost", "name":"PUT"}
+            headers = {'Content-type': 'application/json'}
+            msg = 'upload_ref_vrijednost_zs parametri: id={0}:\n{1}'.format(str(kanal), str(jS))
+            logging.debug(msg)
+            if not isinstance(jS, str):
+                raise ValueError('Ulazni json string je krivo zadan.')
+            if len(jS) == 0:
+                raise ValueError('Ulazni json string je prazan')
+            r = requests.put(url,
+                             params=payload,
+                             data=jS,
+                             headers=headers,
+                             timeout=9.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
+            msg = 'upload_ref_vrijednost_zs procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            return True
+        except ValueError as e0:
+            msg = "Value error - {0}".format(str(e0))
+            logging.error(msg, exc_info=True)
+            return False
         except AssertionError as e1:
-            tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Assert fail.\n{0}'.format(e1)
-            logging.error('assert fail (bad response, los request..)', exc_info = True)
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return False
         except requests.exceptions.RequestException as e2:
-            tekst = 'WebZahtjev.upload_ref_vrijednost_zs:Request fail (http error, timeout...).\n{0}'.format(e2)
-            raise pomocne_funkcije.AppExcept(tekst) from e2
-###############################################################################
-###############################################################################
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e2), url, str(payload), str(headers))
+            logging.error(msg, exc_info=True)
+            return False
+        except Exception as e3:
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e3), url, str(payload), str(headers))
+            logging.error(msg, exc_info=True)
+            return False

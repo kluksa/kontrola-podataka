@@ -21,7 +21,6 @@ from PyQt4 import QtGui
 
 import app.view.glavniprozor as glavniprozor
 
-
 def setup_logging(file='applog.log', mode='a', lvl='INFO'):
     """
     pattern of use:
@@ -49,34 +48,35 @@ def setup_logging(file='applog.log', mode='a', lvl='INFO'):
                             filemode=mode,
                             format='{levelname}:::{asctime}:::{module}:::{funcName}:::{message}',
                             style='{')
-    except OSError as err:
-        print('Error prilikom konfiguracije logera.', err)
-        print('Application exit')
-        #ugasi interpreter...exit iz programa.
-        exit()
+    except Exception as err:
+        print('Error sa loggerom.', err)
+        #exit iz programa.
+        raise SystemExit('Error prilikom konfiguracije loggera, Application exit.')
 
+def main():
+    config = configparser.ConfigParser()
+    try:
+        config.read('config.ini')
+    except Exception as err:
+        print('Greska kod ucitavanja config.ini, ', err)
+        # kill interpreter
+        raise SystemExit('Error prilikom citanja konfig filea, Application exit.')
 
-config = configparser.ConfigParser()
-try:
-    config.read('config.ini')
-except Exception as err:
-    print('Greska kod ucitavanja config.ini')
-    print('Application exit')
-    print(err)
-    # kill interpreter
-    exit()
-# dohvati postevke za logger (section, option, fallback ako log ne postoji)
-filename = config.get('LOG_SETUP', 'file', fallback='applog.log')
-filemode = config.get('LOG_SETUP', 'mode', fallback='a')
-level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
-#setup logging
-#setup_logging(file = filename, mode = filemode, lvl=level)
+    # dohvati postevke za logger (section, option, fallback ako log ne postoji)
+    filename = config.get('LOG_SETUP', 'file', fallback='applog.log')
+    filemode = config.get('LOG_SETUP', 'mode', fallback='a')
+    level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
+    #setup logging
+    #setup_logging(file = filename, mode = filemode, lvl=level)
 
-#instancira QApplication objekt i starta main event loop
-aplikacija = QtGui.QApplication(sys.argv)
-#inicijaliziraj aplikaciju sa config objektom
-glavniProzor = glavniprozor.GlavniProzor(cfg=config)
-#prikaz GUI na ekran
-glavniProzor.show()
-#clean exit iz aplikacije
-sys.exit(aplikacija.exec_())
+    #instancira QApplication objekt i starta main event loop
+    aplikacija = QtGui.QApplication(sys.argv)
+    #inicijaliziraj aplikaciju sa config objektom
+    glavniProzor = glavniprozor.GlavniProzor(cfg=config)
+    #prikaz GUI na ekran
+    glavniProzor.show()
+    #clean exit iz aplikacije
+    sys.exit(aplikacija.exec_())
+
+if __name__ == '__main__':
+    main()

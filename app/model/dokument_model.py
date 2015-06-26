@@ -4,216 +4,377 @@ Created on Wed Jan 21 14:45:37 2015
 
 @author: User
 """
-
-import pandas as pd
+import logging
 import datetime
-from PyQt4 import QtCore
 import numpy as np
+import pandas as pd
+from PyQt4 import QtCore
 
-import app.general.pomocne_funkcije as pomocne_funkcije
-###############################################################################
-###############################################################################
+
 class DataModel(QtCore.QObject):
     """
     Subklasan QtCore.QObject radi emita u metodi self.change_flag()
 
     Data model aplikacije
-    Podaci se spremaju u mapu datafrejmova {programMjerenja:DataFrame,...}
-    programMjerenja je tipa int - vezan za programMjerenjaId u bazi
+    Podaci se spremaju u mapu pandas datafrejmova (self.data)
+    {programMjerenjaId:DataFrame,...}
 
-    struktura DataFrejma:
-    index:
-        -datetime index --> type : pd.tseries.index.DatetimeIndex
-    stupci:
-        -"koncentracija" --> dtype: np.float64
-        -"status" --> dtype: np.float64
-        -"flag" --> dtype: np.int64
-        -"id" --> dtype : int
-        -"statusString" -->dtype : string
+    programMjerenjaId je integer koji odgovara id broju programa mjerenja u bazi.
     """
-###############################################################################
-    def __init__(self, reader = None, writer = None, agregator = None, parent = None):
+
+    def __init__(self, reader=None, writer=None, agregator=None, parent=None):
+        """
+        Da bi objekt funkcionirao kako treba, potrebno mu je prosljediti reference
+        na objekte readera, writera i agregatora. Postoje metode setteri za
+        te objekte tako da se objekt moze inicijalizirati i bez njih, ali se onda
+        reader, writer i agregator moraju naknadno postaviti sa setterom.
+        """
         QtCore.QObject.__init__(self, parent)
         self.data = {}
-        self.citac = reader
-        self.pisac = writer
-        self.agregator = agregator
-###############################################################################
-    def set_writer(self, writer):
-        """
-        Setter objekta writera u model.
-        writer mora definirati metode:
+        self.citac = None
+        self.pisac = None
+        self.agregator = None
+        self.dataDirty = False
 
-        write_minutni(key = None, date = None, frejm = None)
-            key --> kanal
-            date --> string, datum formata 'YYYY-MM-DD'
-            frejm --> slajs minutnog frejma
+        if reader != None:
+            self.set_reader(reader)
+        if writer != None:
+            self.set_writer(writer)
+        if agregator != None:
+            self.set_agregator(agregator)
 
-        write_agregirani(key = None, date = None, frejm = None)
-            key --> kanal
-            date --> string, datum formata 'YYYY-MM-DD'
-            frejm --> slajs agregiranog frejma
-        """
-        self.pisac = writer
-###############################################################################
     def set_reader(self, reader):
         """
         Setter objekta citaca u model.
-        citac mora definirati:
 
-        metodu: read(key = None, date = None)
+        Zbog kompatibilnosti citac mora definirati metode:
+
+        read(key = None, date = None)
             -uzima 2 keyword argumenta
-            key --> kanal
-            date --> datum string formata 'YYYY-MM-DD'
-            -MORA vratiti tuple
-                (kljuc pod kojim se podatak zapisuje u dokument, dobro formatirani dataframe)
+                key --> kanal
+                date --> datum string formata 'YYYY-MM-DD'
+            -MORA vratiti tuple (kljuc, frejm)
+                - kljuc --> kljuc pod kojim se podatak zapisuje u dokument
+                - frejm --> dobro formatirani dataframe (za detalje o stupcima
+                vidi data_reader.py, metodu adaptiraj_ulazni_json())
         """
         self.citac = reader
-###############################################################################
+        msg = 'reader {0} postavljen u dokument'.format(repr(reader))
+        logging.info(msg)
+
+    def set_writer(self, writer):
+        """
+        Setter objekta writera u model.
+        Zbog kompatibilnosti writer mora definirati metode:
+
+        write_minutni(key = None, date = None, frejm = None)
+            -argumenti:
+                key --> integer, program mjerenja id u bazi
+                date --> string, datum formata 'YYYY-MM-DD'
+                frejm --> slajs minutnog frejma
+            -izlaz:
+                -vraca True ako je uspjesno spremljen na REST
+                -vraca False ako nije uspjesno spremljen na REST
+        """
+        self.pisac = writer
+        msg = 'writer {0} postavljen u dokument'.format(repr(writer))
+        logging.info(msg)
+
     def set_agregator(self, agreg):
         """
-        Setter objekta agregatora u model. Agregator mora imati metodu agregiraj
-        koja uzima 'minutni' frejm i vraca satno agregirani frame.
+        Setter objekta agregatora u model.
+
+        Zbog kompatibilnosti agregator mora definirati metode:
+
+        agregiraj(frejm):
+            -argumenti:
+                frejm --> pandas DataFrame (slajs kojeg treba agregirati)
+            -izlaz:
+                -satno agregirani DataFrame sa stupcima
         """
         self.agregator = agreg
-###############################################################################
-    def persist_minutne_podatke(self, key = None, date = None):
+        msg = 'agregator {0} postavljen u dokument'.format(repr(agreg))
+        logging.info(msg)
+
+    def set_dirty(self, x):
         """
-        -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
-        -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
+        Setter membera koji prati da li je doslo do promjene flaga u podacima.
+        x je boolean, False ako nije doslo do promjene, True ako je doslo do
+        promjene
         """
-        #adapt time da uhvatis slajs (tmin, tmax)
-        t = pd.to_datetime(date)
-        tmin = t + datetime.timedelta(minutes=1)
-        tmax = t + datetime.timedelta(days=1)
-        #dohvati trazeni slajs
-        frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
-        #pozovi metodu pisaca za spremanje samo ako frejm nije prazan
-        if len(frejm):
-            self.pisac.write_minutni(key = key, date = date, frejm = frejm)
-        else:
-            tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
-            raise pomocne_funkcije.AppExcept(tekst)
-###############################################################################
-    def pronadji_kontorlirane(self, x):
+        self.dataDirty = x
+        msg = 'set_dirty, dirty={0}'.format(str(x))
+        logging.debug(msg)
+
+    def is_dirty(self):
         """
-        Pomocna funkcija da koja pronalazi podatke koji su predhodno validirani.
-        Ulazni parametar su vrijednosti stupca validacije (0 ako validacija nije
-        provedena, 1 ako je podatak prethodno validiran). Funkcija vraca 1 ako
-        podatak nije validiran, a 1000 ako je podatak validiran.
+        Funkcija vraca boolean. True ako je doslo do promjene flaga na trenutnim
+        podacima. False u suprotnom slucaju.
         """
-        if x == 0:
-            return 1
-        elif x == 1:
-            return 1000
-###############################################################################
+        return bool(self.dataDirty)
+
     def citaj(self, key=None, date=None, ndana=1):
         """
+        Metoda dokumenta zaduzena za citanje sa REST servisa. Operativni dio
+        citanja delegiraDelegira citacu (self.citac).
+
         -key je kljuc pod kojim ce se spremiti podaci u mapu self.data
         -date je datum formata 'YYYY-MM-DD' koji se treba ucitati
+
+        Vraca True ako je podatak ucitan i spremljen u self.data, a False ako nije.
         """
-        kljuc, df = self.citac.read(key=key, date=date, ndana=ndana)
         try:
-            assert type(key) == int, 'Assert fail, ulazni kljuc nije tipa integer'
+            kljuc, df = self.citac.read(key=key, date=date, ndana=ndana)
+            assert isinstance(key, int), 'Assert fail, ulazni kljuc nije tipa integer'
             self.dataframe_structure_test(df)
             df['status'] = df['status'].astype(np.int64)
             df['id'] = df['id'].astype(np.int64)
             if len(df):
                 serija = df['nivoValidacije'].map(self.pronadji_kontorlirane)
-                df.loc[:,'flag'] = df.loc[:,'flag'] * serija
-                self.set_frame(key = kljuc, frame = df)
+                df.loc[:, 'flag'] = df.loc[:, 'flag'] * serija
+                self.set_frame(key=kljuc, frame=df)
+                self.set_dirty(False)
+                return True
             else:
                 tekst = " ".join(['Podaci za', str(key), str(date), 'nisu ucitani. Prazan frejm'])
-                raise pomocne_funkcije.AppExcept(tekst)
-        except AssertionError as e:
-            tekst = 'Frejm nije spremljen u model. DataModel.set_frame:Assert fail.\n{0}'.format(e)
-            raise pomocne_funkcije.AppExcept(tekst) from e
-###############################################################################
+                logging.info(tekst)
+                self.set_dirty(False)
+                return False
+
+        except (AttributeError, TypeError):
+            tekst = 'Frejm nije spremljen u model. Neispravan reader.'
+            logging.error(tekst, exc_info=True)
+            self.set_dirty(False)
+            return False
+        except AssertionError:
+            tekst = 'Frejm nije spremljen u model. Neispravan frejm.'
+            logging.error(tekst, exc_info=True)
+            self.set_dirty(False)
+            return False
+
     def dataframe_structure_test(self, frame):
         """provjera da li je dataframe dobre strukture"""
         assert type(frame) == pd.core.frame.DataFrame, 'Assert fail, ulaz nije DataFrame objekt'
         assert type(frame.index) == pd.tseries.index.DatetimeIndex, 'Assert fail, DataFrame nema vremenski indeks'
-        assert 'koncentracija' in list(frame.columns), 'Assert fail, nedostaje stupac koncentracija'
-        assert 'status' in list(frame.columns), 'Assert fail, nedostaje stupac status'
-        assert 'flag' in list(frame.columns), 'Assert fail, nedostaje stupac flag'
-        assert 'id' in list(frame.columns), 'Assert fail, nedostaje stupac id'
-        assert 'statusString' in list(frame.columns), 'Assert fail, nedostaje stupac statusString'
-###############################################################################
-    def set_frame(self, key = None, frame = None):
-        """postavi frame u self.data pod kljucem key"""
-        #BUG FIX approach 1.
+        stupci = list(frame.columns)
+        assert 'koncentracija' in stupci, 'Assert fail, nedostaje stupac "koncentracija"'
+        assert 'status' in stupci, 'Assert fail, nedostaje stupac "status"'
+        assert 'flag' in stupci, 'Assert fail, nedostaje stupac "flag"'
+        assert 'id' in stupci, 'Assert fail, nedostaje stupac "id"'
+        assert 'statusString' in stupci, 'Assert fail, nedostaje stupac "statusString"'
+        assert 'nivoValidacije' in stupci, 'Assert fail, nedostaje stupac "nivoValidacije"'
+
+    def pronadji_kontorlirane(self, x):
+        """
+        Adapter funkcija koja sluzi za ucinkovito trazenje vec validiranih podataka.
+        Funkcija vraca multiplikator za vrijednost flag (za taj indeks).
+        """
+        if x == 0:
+            return 1
+        elif x == 1:
+            return 1000
+
+    def set_frame(self, key=None, frame=None):
+        """
+        Funkcija postavlja frame u mapu self.data pod kljucem key.
+        key --> integer, program mjerenja id
+        frame --> ucitani pandas DataFrame
+        """
         #recast 'statusString to str type
         frame['statusString'] = frame['statusString'].astype(str)
-        #SORT DATAFRAME
-        frame.sort_index(inplace = True)
-        #replace self.data[key]
+        frame.sort_index(inplace=True)
         self.data[key] = frame
-###############################################################################
-    def dohvati_minutne_frejmove(self, lista = None, tmin = None, tmax = None):
+
+    def persist_minutne_podatke(self, key=None, date=None):
         """
-        Funkcija vraca mapu minutnih slajsova. Ulazni parametar je lista kljuceva
-        i vremenske granice slajsa.
+        Funkcija je zaduzena za spremanje minutnih podataka. Operativni dio
+        spremanja na REST delegira writeru (self.pisac).
+
+        -key je kljuc pod kojim su spremljeni podaci u mapu self.data
+        -date je datum formata 'YYYY-MM-DD' koji se treba spremiti
+
+        P.S. iako u self.data moze biti zapisano vise dana, spremaj jedan po jedan.
+
+        funckija vraca True ako je slajs frema spremljen, a False ako slice nije
+        spremljen na REST
         """
-        out = {}
-        for kljuc in lista:
-            if kljuc in self.data.keys():
-                out[kljuc] = self.get_frame(key = kljuc, tmin = tmin, tmax = tmax)
-        return out
-###############################################################################
-    def dohvati_agregirane_frejmove(self, lista = None, tmin = None, tmax = None):
+        t = pd.to_datetime(date)
+        tmin = t + datetime.timedelta(minutes=1)
+        tmax = t + datetime.timedelta(days=1)
+        msg = 'dokument, naredba za spremanje slajsa podataka za:\nkanal={0}\ndatum={1}\ntmin{2}\ntmax{3}'.format(str(key), str(date), str(tmin), str(tmax))
+        logging.info(msg)
+        frejm = self.get_frame(key=key, tmin=tmin, tmax=tmax)
+        if len(frejm):
+            uspjeh = self.pisac.write_minutni(key=key, date=date, frejm=frejm)
+            if uspjeh:
+                self.set_dirty(False)
+                msg = 'podaci za kanal={0} i datum={1} su uspjesno spremljeni na REST'.format(str(key), str(date))
+                logging.info(msg)
+                return True
+            else:
+                return False
+        else:
+            #podaci nisu spremljeni na rest servis
+            msg = 'podaci za kanal={0} i datum={1} nisu spremljeni na REST. Prazan frejm.'.format(str(key), str(date))
+            logging.info(msg)
+            return False
+
+    def get_frame(self, key=None, tmin=None, tmax=None):
         """
-        Funkcija vraca mapu minutnih slajsova. Ulazni parametar je lista kljuceva
-        i vremenske granice slajsa.
+        Funkcija dohvaca trazeni slice frejma.
+        key --> integer, program mjerenja id
+        tmin --> pandas timestamp (pd.tslib.Timestamp)
+             --> indeks od kojega se uzima slajs, rub je ukljucen
+        tmax --> pandas timestamp (pd.tslib.Timestamp)
+             --> indeks do kojega se uzima slajs, rub je ukljucen
+
+        Funkcija vraca trazeni slajs, ili defaultni prazan DataFrame objekt u
+        slucaju pogreske prilikom rada.
+        P.S. ako u trazenom vremenskom slajsu nema podataka, vraca se prazan
+        frame.
         """
-        out = {}
-        for kljuc in lista:
-            if kljuc in self.data.keys():
-                out[kljuc] = self.get_agregirani_frame(key = kljuc, tmin = tmin, tmax = tmax)
-        return out
-###############################################################################
-    def get_frame(self, key = None, tmin = None, tmax = None):
-        """funkcija dohvaca trazeni slice frejma"""
         try:
-            assert key is not None, 'dokument.get_frame:Assert fail, key = None'
-            assert isinstance(tmin, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
-            assert isinstance(tmax, pd.tslib.Timestamp), 'dokument.get_frame:Assert fail, krivi tip tmin'
-            #za svaki slucaj provjeri da li je min i max ok, ako nije zamjeni ih
+            msg = 'get_frame zahtjev. key={0}, tmin={1}, tmax={2}'.format(str(key), str(tmin), str(tmax))
+            logging.debug(msg)
+            assert key is not None, 'Assert fail, key = None'
+            assert key in self.data, 'Assert fail, key ne postoji u mapi self.data'
+            assert isinstance(tmin, pd.tslib.Timestamp), 'Assert fail, krivi tip tmin'
+            assert isinstance(tmax, pd.tslib.Timestamp), 'Assert fail, krivi tip tmax'
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
-            #napravi kopiju cijelog frejma
             df = self.data[key].copy()
-            #makni sve podatke koji su manji od donje granice
             df = df[df.index >= tmin]
-            #makni sve podatke koji su veci od tMax
             df = df[df.index <= tmax]
-            #vrati dobiveni slice - potencijalo prazan dataframe
+            msg = 'get_frame procesiran. key={0}, tmin={1}, tmax={2}'.format(str(key), str(tmin), str(tmax))
+            logging.debug(msg)
+            msg = 'trazeni slajs:\n{0}'.format(str(df))
+            logging.debug(msg)
             return df
-        except (LookupError, TypeError, AssertionError) as e1:
-            tekst = 'DataModel.get_frame:Lookup/Type fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
-###############################################################################
-    def get_agregirani_frame(self, key = None, tmin = None, tmax = None):
-        """metoda dohvaca trazeni slajs, agregira ga te vraca agregirani frejm"""
-        frejm = self.get_frame(key = key, tmin = tmin, tmax = tmax)
-        return self.agregator.agregiraj(frejm)
-###############################################################################
-    def notify_about_change(self):
-        """Funkcija emitira specificni signal da je doslo do promjene u flaga."""
-        self.emit(QtCore.SIGNAL('model_flag_changed'))
-###############################################################################
-    def change_flag(self, key = None, tmin = None, tmax = None, flag = 0):
-        """Promjena flaga za zadani vremenski interval"""
+        except (LookupError, TypeError, AssertionError):
+            msg = 'Problem prilikom dohvacanja slajsa frejma. key={0}, tmin={1}, tmax={2}'.format(str(key), str(tmin), str(tmax))
+            logging.error(msg, exc_info=True)
+            defaultColumns = ['koncentracija',
+                              'status',
+                              'flag',
+                              'id',
+                              'statusString',
+                              'nivoValidacije']
+            df = pd.DataFrame(columns=defaultColumns)
+            df = df.set_index(df['id'].astype('datetime64[ns]'))
+            return df
+
+    def dohvati_minutne_frejmove(self, lista=None, tmin=None, tmax=None):
+        """
+        Funkcija vraca mapu minutnih slajsova.
+        Ulazni parametari:
+        -lista --> lista integera (programi mjerenja id)
+        -tmin --> donja granica vremenskog intervala (ukljucena)
+        -tmax --> gornja granica vremenskog intervala (ukljucena)
+        """
+        out = {}
+        for kljuc in lista:
+            if kljuc in self.data:
+                out[kljuc] = self.get_frame(key=kljuc, tmin=tmin, tmax=tmax)
+        return out
+
+    def dohvati_agregirane_frejmove(self, lista=None, tmin=None, tmax=None):
+        """
+        Funkcija vraca mapu satno agregiranih slajsova.
+        Ulazni parametari:
+        -lista --> lista integera (programi mjerenja id)
+        -tmin --> donja granica vremenskog intervala (ukljucena)
+        -tmax --> gornja granica vremenskog intervala (ukljucena)
+        """
+        out = {}
+        for kljuc in lista:
+            if kljuc in self.data:
+                out[kljuc] = self.get_agregirani_frame(key=kljuc, tmin=tmin, tmax=tmax)
+        return out
+
+    def get_agregirani_frame(self, key=None, tmin=None, tmax=None):
+        """
+        Metoda dohvaca trazeni slajs, agregira ga te vraca satno agregirani frejm
+        """
+        frejm = self.get_frame(key=key, tmin=tmin, tmax=tmax)
+        try:
+            agregiraniFrejm = self.agregator.agregiraj(frejm)
+            msg = 'agregirani frejm:\n{0}'.format(str(agregiraniFrejm))
+            logging.debug(msg)
+            return agregiraniFrejm
+        except (AttributeError, TypeError):
+            msg = 'Agregator Error, agregator nije postavljen ili nema odgovarajucu metodu "agregiraj"'
+            logging.error(msg)
+            defaultColumns = ['broj podataka',
+                              'status',
+                              'flag',
+                              'avg',
+                              'std',
+                              'min',
+                              'max',
+                              'q05',
+                              'median',
+                              'q95',
+                              'count']
+            df = pd.DataFrame(columns=defaultColumns)
+            df = df.set_index(df['flag'].astype('datetime64[ns]'))
+            return df
+
+
+    def change_flag(self, key=None, tmin=None, tmax=None, flag=0):
+        """
+        Promjena flaga za program mjerenja u zadanom vremenskom intervalu
+        """
         try:
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
-            #direktno promjeni flag u zadanom intervalu
-            self.data[key].loc[tmin:tmax, u'flag'] = flag
-            #objavi svima koji slusaju da je doslo do promjene
-            self.notify_about_change()
-        except (LookupError, TypeError) as e1:
-            tekst = 'DataModel.change_flag:Lookup/Type fail.\n{0}'.format(e1)
-            raise pomocne_funkcije.AppExcept(tekst) from e1
-###############################################################################
+            if key in self.data:
+                self.data[key].loc[tmin:tmax, u'flag'] = flag
+                self.notify_about_change()
+                self.set_dirty(True)
+                msg = 'Flag uspjesno promjenjen na flag={0}.\nid={1}\nvrijeme1={2}\nvrijeme2={3}'.format(str(flag), str(key), str(tmin), str(tmax))
+                logging.info(msg)
+        except (KeyError, LookupError, TypeError):
+            msg = 'Flag nije uspjesno promjenjen.\nid={0}\nvrijeme1={1}\nvrijeme2={2}'.format(str(key), str(tmin), str(tmax))
+            logging.error(msg, exc_info=True)
+
+    def notify_about_change(self):
+        """
+        Funkcija emitira specificni signal da je doslo do promjene u flaga.
+        """
+        logging.debug('promjena flaga, emit promjene statusa')
+        self.emit(QtCore.SIGNAL('model_flag_changed'))
+
+    def provjeri_validiranost_dana(self, kanal, datum):
+        """
+        Provjera da li su u slajsu frejma (za kanal i datum) validirani svi
+        podaci.
+        kanal --> integer
+        datum --> QDate objekt
+
+        Funkcija vraca boolean ovisno da li su svi podaci unutar datuma validirani.
+        """
+        msg = 'provjera validiranosti za kanal={0} i datum={1}'.format(str(kanal), str(datum))
+        logging.debug(msg)
+        dan = pd.to_datetime(datum.toPyDate())
+        maxi = dan+datetime.timedelta(days=1)
+        mini = dan+datetime.timedelta(minutes=1)
+        if kanal not in self.data:
+            logging.debug('Kanal nije ucitan u self.data, vrati False')
+            return False
+        slajs = self.get_frame(key=kanal, tmin=mini, tmax=maxi)
+        if len(slajs) == 0:
+            logging.debug('U trazenom slajsu nema podataka (prazan frame), vrati False')
+            return False
+        testValidacije = slajs['flag'].map(self.test_stupnja_validacije)
+        lenSvih = len(testValidacije)
+        lenDobrih = len(testValidacije[testValidacije == True])
+        if lenSvih == lenDobrih:
+            logging.debug('U trazenom slajsu svi su validirani, vrati True')
+            return True
+        else:
+            logging.debug('U trazenom slajsu neki nisu validirani, vrati False')
+            return False
+
     def test_stupnja_validacije(self, x):
         """
         Pomocna funkcija, provjerava da li je vrijednost 1000 ili -1000. Bitno za
@@ -223,30 +384,3 @@ class DataModel(QtCore.QObject):
             return True
         else:
             return False
-###############################################################################
-    def provjeri_validiranost_dana(self, kanal, datum):
-        """
-        Provjera da li su u slajsu frejma (za kanal i datum) validirani svi
-        podaci.
-        kanal je integer, datum je QDate objekt ,funkcija vraca boolean.
-        """
-        #pronadji rubove slajsa
-        dan = pd.to_datetime(datum.toPyDate())
-        maxi = dan+datetime.timedelta(days=1)
-        mini = dan+datetime.timedelta(minutes=1)
-        #dohvati slajs frejma
-        if kanal not in self.data:
-            return False #kanal nije ucitan
-        slajs = self.get_frame(key=kanal, tmin=mini, tmax=maxi)
-        if len(slajs) == 0:
-            return False #nema podataka
-        #test validiranost slajsa
-        testValidacije = slajs['flag'].map(self.test_stupnja_validacije)
-        lenSvih = len(testValidacije)
-        lenDobrih = len(testValidacije[testValidacije == True])
-        if lenSvih == lenDobrih:
-            return True
-        else:
-            return False
-###############################################################################
-###############################################################################

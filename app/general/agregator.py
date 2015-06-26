@@ -10,8 +10,7 @@ import logging
 class Agregator(object):
     def __init__(self):
         """
-        mozda u buducnosti dozvoliti iniicjalizaciju nekih parametara.
-
+        Mozda u buducnosti dozvoliti iniicjalizaciju nekih parametara.
         """
         pass
 
@@ -20,7 +19,6 @@ class Agregator(object):
     ulaz --> numpy array ili neka lista
     izlaz --> broj
     """
-
     def test_validacije(self, x):
         """
         test da li su svi unutar intervala validirani
@@ -104,7 +102,7 @@ class Agregator(object):
 
     def agregiraj(self, frejm):
         """
-        input- pandasdataframe (datetime index, koncentracija, status, flag)
+        input- pandas dataframe (datetime index, koncentracija, status, flag)
         output - pandas dataframe (datetime index, hrpa agregiranih vrijednosti)
         """
         # provjera da li ulazni frame ima podataka
@@ -162,8 +160,21 @@ class Agregator(object):
         -definicija funkcija koje nas zanimaju
         -funkcije moraju imati kao ulaz listu ili numpy array, izlaz je broj
         """
-        listaFunkcijaIme = [u'avg', u'std', u'min', u'max', u'q05', u'median', u'q95', u'count']
-        listaFunkcija = [self.my_mean, self.my_std, self.my_min, self.my_max, self.h_q05, self.h_q50, self.h_q95,
+        listaFunkcijaIme = [u'avg',
+                            u'std',
+                            u'min',
+                            u'max',
+                            u'q05',
+                            u'median',
+                            u'q95',
+                            u'count']
+        listaFunkcija = [self.my_mean,
+                         self.my_std,
+                         self.my_min,
+                         self.my_max,
+                         self.h_q05,
+                         self.h_q50,
+                         self.h_q95,
                          self.h_size]
 
         """

@@ -15,7 +15,6 @@ class KonfigAplikacije():
     """
     Glavni konfiguracijski objekt aplikacije
     """
-
     def __init__(self, cfg):
         """
         Inicijalizacija sa cfg configparser objektom.
@@ -45,8 +44,8 @@ class KonfigAplikacije():
     def overwrite_konfig_file(self):
         """
         metoda prepisuje svojstva objekta u konfig file.
-        #TODO! Ruzno do bola...treba smisliti nesto prakticnije...
         """
+        logging.debug('pocetak spremanja novih podataka u konfig file')
         sectioni = ['LOG_SETUP','REST_INFO','MAIN_WINDOW','SATNI_REST',
                     'SATNI','MINUTNI','ZERO','SPAN']
         new_config = configparser.ConfigParser()
@@ -266,6 +265,7 @@ class KonfigAplikacije():
         """
         with open('./config.ini', mode='w') as fajl:
             new_config.write(fajl)
+        logging.debug('kraj spremanja podataka u konfig file')
 
     def reset_pomocne(self, mapa):
         """
@@ -275,6 +275,7 @@ class KonfigAplikacije():
         self.dictPomocnih = {}
         for masterkey in mapa:
             self.dictPomocnih[masterkey] = {}
+        logging.debug('kraj reseta mape pomocnih kanala')
 
     def dodaj_pomocni(self, masterkey, key):
         name = 'plot' + str(key)
@@ -342,6 +343,7 @@ class MetaConfig():
 ################################################################################
 class SatniRestGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
         super(SatniRestGrafKonfig, self).__init__()
         #konstante
         self.TIP = 'SATNO AGREGIRANI, REST'
@@ -363,9 +365,11 @@ class SatniRestGrafKonfig(MetaConfig):
                                                         'action_satni_rest_legend',
                                                         False,
                                                         bool)
+        logging.debug('kraj inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
 ################################################################################
 class SatniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki grafa sa satno agregiranim podacima')
         super(SatniGrafKonfig, self).__init__()
         # konstante
         self.TIP = 'SATNI'
@@ -403,9 +407,11 @@ class SatniGrafKonfig(MetaConfig):
         self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
                                            podtip='status_warning_okolis',
                                            oblik='scatter')
+        logging.debug('kraj inicijalizacije postavki grafa sa satno agregiranim podacima')
 ################################################################################
 class MinutniGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki grafa sa minutnim podacima')
         super(MinutniGrafKonfig, self).__init__()
         # konstante
         self.TIP = 'MINUTNI'
@@ -437,9 +443,11 @@ class MinutniGrafKonfig(MetaConfig):
         self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
                                            podtip='status_warning_okolis',
                                            oblik='scatter')
+        logging.debug('kraj inicijalizacije postavki grafa sa minutnim podacima')
 ################################################################################
 class ZeroGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki grafa sa ZERO podacima')
         super(ZeroGrafKonfig, self).__init__()
         # konstante
         self.TIP = 'ZERO'
@@ -465,9 +473,11 @@ class ZeroGrafKonfig(MetaConfig):
                                                         'action_ZERO_legend',
                                                         False,
                                                         bool)
+        logging.debug('kraj inicijalizacije postavki grafa sa ZERO podacima')
 ################################################################################
 class SpanGrafKonfig(MetaConfig):
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki grafa sa SPAN podacima')
         super(SpanGrafKonfig, self).__init__()
         # konstante
         self.TIP = 'SPAN'
@@ -493,9 +503,11 @@ class SpanGrafKonfig(MetaConfig):
                                                         'action_SPAN_legend',
                                                         False,
                                                         bool)
+        logging.debug('kraj inicijalizacije postavki grafa sa SPAN podacima')
 ################################################################################
 class RESTKonfig():
     def __init__(self, cfg):
+        logging.debug('start inicijalizacije postavki REST servisa')
         # konstante za REST
         self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg,
                                                              'REST_INFO',
@@ -527,6 +539,7 @@ class RESTKonfig():
                                                                'status_map',
                                                                'dhz.skz.rs.sirovipodaci/statusi',
                                                                str)
+        logging.debug('kraj inicijalizacije postavki REST servisa')
 ################################################################################
 class GrafDTO():
     """
@@ -555,6 +568,7 @@ class GrafDTO():
 
     def __init__(self, cfg, tip='', podtip='', oblik='plot'):
         # bitni memberi
+        logging.debug('pocetak inicijalizacije graf postavki za {0} - {1} - {2}'.format(tip, podtip, oblik))
         self._sviMarkeri = ['None', 'o', 'ˇ', '^', '<', '>', '|', '_',
                             's', 'p', '*', 'h', '+', 'x', 'd']
 
@@ -602,6 +616,7 @@ class GrafDTO():
                 #fill between satnog grafa, izmedju kojih komponenti se sjenca
                 self.komponenta1 = self.init_komponenta1(cfg, self.tip, self.podtip)
                 self.komponenta2 = self.init_komponenta2(cfg, self.tip, self.podtip)
+        logging.debug('kraj inicijalizacije graf postavki za {0} - {1} - {2}'.format(tip, podtip, oblik))
 
     def init_label(self, cfg, tip, podtip):
         placeholder = podtip + ' label placeholder'
@@ -611,6 +626,7 @@ class GrafDTO():
 
     def set_label(self, x):
         self.label = str(x)
+        logging.debug('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, str(x)))
 
     def init_zorder(self, cfg, tip, podtip):
         podtip += '_zorder_'
@@ -764,36 +780,36 @@ class GrafDTO():
         if self.test_alpha(x):
             self.alpha = x
             self.color = pomocne_funkcije.make_color(self.rgb, x)
-            logging.info('Promjena alfe za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+            logging.debug('Promjena alfe za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_rgb(self, x):
         if self.test_rgb(x):
             self.rgb = x
             self.color = pomocne_funkcije.make_color(x, self.alpha)
-            logging.info('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+            logging.debug('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_crtaj(self, x):
         self.crtaj = x
-        logging.info('Promjena crtaj booleana za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+        logging.debug('Promjena crtaj booleana za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_markerStyle(self, x):
         if self.test_markerStyle(x):
             self.markerStyle = x
-            logging.info('Promjena stila markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+            logging.debug('Promjena stila markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_markerSize(self, x):
         if self.test_markerSize(x):
             self.markerSize = x
-            logging.info(
+            logging.debug(
                 'Promjena velicine markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_lineStyle(self, x):
         if self.test_lineStyle(x):
             self.lineStyle = x
-            logging.info('Promjena stila linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+            logging.debug('Promjena stila linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
 
     def set_lineWidth(self, x):
         if self.test_lineWidth(x):
             self.lineWidth = x
-            logging.info('Promjena sirine linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
+            logging.debug('Promjena sirine linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
             ################################################################################

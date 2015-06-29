@@ -2,23 +2,19 @@
 """
 @author: User
 
-
 U ovom modulu nalaze se pomocne funkcije koje se koriste u drugim dijelovima
 aplikacije. Cilj ih je sve staviti na jedno mjesto radi smanjivanja ponavljanja
 koda u vise raznih modula.
 """
-
-
 import logging
 import matplotlib
 from PyQt4 import QtGui
-###############################################################################
-###############################################################################
+
 class AppExcept(Exception):
     """definicjia vlastite exception klase"""
     pass
-###############################################################################
-###############################################################################
+
+
 def load_config_item(cfg, section, option, default, tip):
     """
     funkcija koja ucitava odredjenu opciju iz config objekta u zadani
@@ -42,36 +38,43 @@ def load_config_item(cfg, section, option, default, tip):
     try:
         if tip == str:
             value = cfg.get(section, option)
-            logging.debug('Config element {0} - {1} postoji, value = {2}'.format(section, option, value))
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
         elif tip == int:
             value = cfg.getint(section, option)
-            logging.debug('Config element {0} - {1} postoji, value = {2}'.format(section, option, value))
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
         elif tip == float:
             value = cfg.getfloat(section, option)
-            logging.debug('Config element {0} - {1} postoji, value = {2}'.format(section, option, value))
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
         elif tip == bool:
             value = cfg.getboolean(section, option)
-            logging.debug('Config element {0} - {1} postoji, value = {2}'.format(section, option, value))
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
         elif tip == list:
             textValue = cfg.get(section, option)
             value = textValue.split(',')
-            logging.debug('Config element {0} - {1} postoji, value = {2}'.format(section, option, value))
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
         elif tip == tuple:
             textValue = cfg.get(section, option)
             value = textValue.split(',')
             value = tuple(value)
+            msg = 'Config element {0} - {1} postoji, value = {2}'.format(section, option, value)
+            logging.debug(msg)
             return value
     except Exception as err:
-        #Ako bilo sto ne valja, vrati default i logiraj stack trace errora
-        logging.debug(err, exc_info = True)
-        logging.debug('Config element {0} - {1} ne postoji ili je lose zadan ,koristi se default = {2}'.format(section, option, default))
+        logging.debug(err, exc_info=True)
+        msg = 'Config element {0} - {1} nije definiran. Koristi se default, value = {2}'.format(section, option, default)
+        logging.debug(msg)
         return default
-###############################################################################
+
 def normalize_rgb(rgbTuple):
     """
     Adapter za crtanje.
@@ -80,7 +83,7 @@ def normalize_rgb(rgbTuple):
     """
     r, g, b = rgbTuple
     return r/255, g/255, b/255
-###############################################################################
+
 def make_color(rgb, a):
     """
     za zadani rgb i alpha vrati matplotlib valjani color
@@ -90,9 +93,9 @@ def make_color(rgb, a):
     #convert to hex color code
     hexcolor = matplotlib.colors.rgb2hex(boja)
     #convert to rgba pripremljen za crtanje
-    color = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha = a)
+    color = matplotlib.colors.colorConverter.to_rgba(hexcolor, alpha=a)
     return color
-###############################################################################
+
 def default_color_to_qcolor(rgb, a):
     """
     Helper funkcija za transformaciju boje u QColor. Funkcija je u biti adapter.
@@ -115,7 +118,7 @@ def default_color_to_qcolor(rgb, a):
     a = int(a*255)
     boja.setAlpha(a)
     return boja
-###############################################################################
+
 def color_to_style_string(tip, target, color):
     """
     Helper funkcija za izradu styleSheet stringa. Funkcija se iskljucivo koristi za
@@ -136,9 +139,9 @@ def color_to_style_string(tip, target, color):
     g = color.green()
     b = color.blue()
     a = int(100*color.alpha()/255)
-    stil = str(tip) + "#" + target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r,g,b,a)+"}"
+    stil = str(tip) + "#" + target + " {background: rgba(" +"{0},{1},{2},{3}%)".format(r, g, b, a)+"}"
     return stil
-###############################################################################
+
 def rgba_to_style_string(rgb, a, tip, target):
     """
     kombinacija funkcija color_to_style_string i default_color_to_qcolor
@@ -150,7 +153,7 @@ def rgba_to_style_string(rgb, a, tip, target):
     boja = default_color_to_qcolor(rgb, a)
     stil = color_to_style_string(tip, target, boja)
     return stil
-###############################################################################
+
 def qcolor_to_default_color(color):
     """
     Helper funkcija za transformacije QColor u defaultnu boju, tj. rgb tuple i
@@ -165,5 +168,4 @@ def qcolor_to_default_color(color):
     g = color.green()
     b = color.blue()
     a = color.alpha()/255
-    return (r,g,b), a
-###############################################################################
+    return (r, g, b), a

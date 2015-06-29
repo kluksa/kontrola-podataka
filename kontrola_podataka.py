@@ -67,7 +67,7 @@ def main():
     filemode = config.get('LOG_SETUP', 'mode', fallback='a')
     level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
     #setup logging
-    #setup_logging(file = filename, mode = filemode, lvl=level)
+    setup_logging(file = filename, mode = filemode, lvl=level)
 
     #instancira QApplication objekt i starta main event loop
     aplikacija = QtGui.QApplication(sys.argv)

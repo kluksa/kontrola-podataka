@@ -145,7 +145,7 @@ class RESTWriter(object):
         frejm.rename(columns={'flag':'valjan'}, inplace=True)
         frejm['valjan'] = frejm['valjan'].map(self.int_to_boolean)
         for stupac in frejm.columns:
-            if stupac not in ['id', 'flag']:
+            if stupac not in ['id', 'valjan']:
                 frejm.drop(stupac, inplace=True, axis=1)
         frejm['id'] = frejm['id'].astype(np.int64)
         jstring = frejm.to_json(orient='records')

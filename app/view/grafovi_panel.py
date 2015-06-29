@@ -47,7 +47,6 @@ class KoncPanel(base2, form2):
         self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
         self.buttonPonisti.clicked.connect(self.ponisti_promjene)
-        self.buttonRestSave.clicked.connect(self.save_na_rest)
         self.brojDanaCombo.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.zoomInSatni.clicked.connect(self.satniGraf.toggle_zoom)
         self.zoomOutSatni.clicked.connect(self.satniGraf.zoom_out)
@@ -105,11 +104,6 @@ class KoncPanel(base2, form2):
     def ponisti_promjene(self):
         """emitiraj signal kontroleru da 'ponisti' promjene za trenutni dan i postaju"""
         self.emit(QtCore.SIGNAL('ponisti_izmjene'))
-###############################################################################
-    def save_na_rest(self):
-        """emitiraj signal kontroleru da spremi podatke za trenutni dan i postaju na
-        rest servis"""
-        self.emit(QtCore.SIGNAL('upload_minutne_na_REST'))
 ###############################################################################
     def promjeni_broj_dana(self, x):
         """

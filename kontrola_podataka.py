@@ -54,6 +54,9 @@ def setup_logging(file='applog.log', mode='a', lvl='INFO'):
         raise SystemExit('Error prilikom konfiguracije loggera, Application exit.')
 
 def main():
+    """
+    Pokretac aplikacije.
+    """
     config = configparser.ConfigParser()
     try:
         config.read('config.ini')
@@ -67,7 +70,7 @@ def main():
     filemode = config.get('LOG_SETUP', 'mode', fallback='a')
     level = config.get('LOG_SETUP', 'lvl', fallback='INFO')
     #setup logging
-    setup_logging(file = filename, mode = filemode, lvl=level)
+    setup_logging(file=filename, mode=filemode, lvl=level)
 
     #instancira QApplication objekt i starta main event loop
     aplikacija = QtGui.QApplication(sys.argv)

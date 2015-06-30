@@ -7,10 +7,9 @@ Created on Thu Jan 22 10:55:55 2015
 from PyQt4 import QtGui, QtCore, uic
 import logging
 import datetime  # potreban za provjeru da li je izabrani dan u buducnosti
-
 import app.model.model_drva as model_drva
-###############################################################################
-###############################################################################
+
+
 base1, form1 = uic.loadUiType('./app/view/ui_files/rest_izbornik.ui')
 class RestIzbornik(base1, form1):
     """
@@ -49,7 +48,6 @@ class RestIzbornik(base1, form1):
         qdan = self.calendarWidget.selectedDate()  #dohvaca QDate objekt
         pdan = qdan.toPyDate()  #convert u datetime.datetime python objekt
         dan = pdan.strftime('%Y-%m-%d')  #transformacija u zadani string format
-
         #provjeri datum, ako je u "buducnosti", zanemari naredbu
         danas = datetime.datetime.now()
         sutra = danas + datetime.timedelta(days=1)
@@ -60,13 +58,13 @@ class RestIzbornik(base1, form1):
                 ind = self.treeView.currentIndex()  #dohvati trenutni aktivni indeks
                 item = self.model.getItem(ind)  #dohvati specificni objekt pod tim indeksom
                 prog = item._data[2]  #dohvati program mjerenja iz liste podataka
-
                 if prog is not None:
                     output = {'programMjerenjaId': int(prog),
                               'datumString': dan}
                     #print('Izabrana kombinacija: {0}'.format(output))
                     self.emit(QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'), output)
-                    logging.info('izabrana kombinacija kanala i datuma : {0}'.format(str(output)))
+                    msg = 'izabrana kombinacija kanala i datuma : {0}'.format(str(output))
+                    logging.info(msg)
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n' + str(err)
             logging.error('App exception', exc_info=True)
@@ -97,8 +95,8 @@ class RestIzbornik(base1, form1):
         self.calendarWidget.setSelectedDate(dan2)
         #informiraj kontroler o promjeni
         self.get_mjerenje_datum(True)
-###############################################################################
-###############################################################################
+
+
 class CustomKalendar(QtGui.QCalendarWidget):
     """
     Subklasa kalendara koja boja odredjene datume u zadane boje.
@@ -109,10 +107,13 @@ class CustomKalendar(QtGui.QCalendarWidget):
     'ok' --> zelena boja
     'bad' --> crvena boja
     """
-    def __init__(self, parent=None, datumi={'ok': [], 'bad': []}):
+    def __init__(self, parent=None, datumi=None):
         QtGui.QCalendarWidget.__init__(self, parent)
         # dict QDate objekata koji se trebaju razlicito obojati
-        self.datumi = datumi
+        if datumi == None:
+            self.datumi = {'ok': [], 'bad': []}
+        else:
+            self.datumi = datumi
         self.setFirstDayOfWeek(QtCore.Qt.Monday)
         #boja za nedovrsene datume
         self.color1 = QtGui.QColor(255, 0, 0)
@@ -144,5 +145,3 @@ class CustomKalendar(QtGui.QCalendarWidget):
         self.datumi = qdatesdict
         # updateCells, forsira ponovno iscrtavanje
         self.updateCells()
-###############################################################################
-###############################################################################

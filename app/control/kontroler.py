@@ -8,7 +8,7 @@ from PyQt4 import QtCore, QtGui
 import datetime
 import pandas as pd
 import json
-import logging #TODO! finish logging...
+import logging
 
 import app.general.networking_funkcije as networking_funkcije  # web zahtjev, interface prema REST servisu
 import app.model.dokument_model as dokument_model  # interni model za zapisivanje podataka u dict pandas datafrejmova
@@ -431,6 +431,35 @@ class Kontroler(QtCore.QObject):
         self.promjena_aktivnog_taba(self.aktivniTab)
         logging.info('Metoda priredi_podatke, kraj.')
 
+    def ponisti_izmjene(self):
+        """
+        Funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
+        trenutno aktivnog kanala za trenutno izabrani datum.
+
+        P.S. funkcija je skoro identicna metodi self.pripremi_podatke i radi na
+        istom principu, ali NE pokrece save podataka kao prvi korak.
+        """
+        logging.info('Metoda ponisti_izmjene, start.')
+        #test da li podatak postoji...
+        if self.gKanal is not None and self.pickedDate is not None:
+            mapa = {'programMjerenjaId': self.gKanal,
+                    'datumString': self.pickedDate}
+
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+            self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
+            self.ucitaj_podatke_ako_nisu_prije_ucitani()
+            QtGui.QApplication.restoreOverrideCursor()
+            argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
+                      'datum': self.pickedDate,
+                      'mjerenjeId': self.gKanal}
+            msg = 'Promjena labela na panelima, argumenti={0}'.format(str(argMap))
+            logging.debug(msg)
+            self.gui.koncPanel.change_glavniLabel(argMap)
+            self.gui.zsPanel.change_glavniLabel(argMap)
+            self.gui.visednevniPanel.change_glavniLabel(argMap)
+            self.promjena_aktivnog_taba(self.aktivniTab)
+        logging.info('Metoda ponisti_izmjene, kraj.')
+
     def upload_minutne_na_REST_prompt(self):
         """
         automatska metoda za spremanje minutnih podataka na REST.
@@ -498,7 +527,6 @@ class Kontroler(QtCore.QObject):
             else:
                 #podaci nisu spremljeni
                 nisuSpremljeni.append(datum)
-                pass
 
         #report uspjesnost spremanja
         msgUspjeh = ", ".join(spremljeni)
@@ -845,29 +873,151 @@ class Kontroler(QtCore.QObject):
             return 1
         else:
             return -1
-################################################################################
-    def ponisti_izmjene(self): #TODO!
-        """
-        Funkcija ponovno ucitava podatke sa REST servisa i poziva na ponovno crtanje
-        trenutno aktivnog kanala za trenutno izabrani datum.
-        """
-        if self.gKanal is not None and self.pickedDate is not None:
-            mapa = {'programMjerenjaId': self.gKanal,
-                    'datumString': self.pickedDate}
 
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-            self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
-            self.ucitaj_podatke_ako_nisu_prije_ucitani()
-            QtGui.QApplication.restoreOverrideCursor()
+    def dodaj_novu_referentnu_vrijednost(self):
+        """
+        Poziv dijaloga za dodavanje nove referentne vrijednosti za zero ili
+        span. Upload na REST servis.
+        """
+        logging.info('dodaj_novu_referentnu_vrijednost, start.')
+        if self.mapaMjerenjeIdToOpis != None and self.gKanal != None:
+            # dict sa opisnim parametrima za kanal
+            postaja = self.mapaMjerenjeIdToOpis[self.gKanal]['postajaNaziv']
+            komponenta = self.mapaMjerenjeIdToOpis[self.gKanal]['komponentaNaziv']
+            formula = self.mapaMjerenjeIdToOpis[self.gKanal]['komponentaFormula']
+            opis = '{0}, {1}( {2} )'.format(postaja, komponenta, formula)
+            dijalog = dodaj_ref_zs.DijalogDodajRefZS(parent=None, opisKanal=opis, idKanal=self.gKanal)
+            if dijalog.exec_():
+                podaci = dijalog.vrati_postavke()
+                try:
+                    #test da li je sve u redu?
+                    msg = 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nReferentna vrijednost je krivo zadana.'
+                    assert isinstance(podaci['vrijednost'], float), msg
+                    #napravi json string za upload (dozvoljeno odstupanje je placeholder)
+                    #int od vremena... output je double zboj milisekundi
+                    jS = {"vrijeme": int(podaci['vrijeme']),
+                          "vrijednost": podaci['vrijednost'],
+                          "vrsta": podaci['vrsta'],
+                          "maxDozvoljeno": 0.0,
+                          "minDozvoljeno": 0.0}
+                    #dict to json dump
+                    jS = json.dumps(jS)
+                    msg = 'json referentne vrijednosti za upload json={0}'.format(str(jS))
+                    logging.debug(msg)
+                    #potvrda za unos!
+                    odgovor = QtGui.QMessageBox.question(self.gui,
+                                                         "Potvrdi upload na REST servis",
+                                                         "Potvrdite spremanje podataka na REST servis",
+                                                         QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
 
-            argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
-                      'datum': self.pickedDate,
-                      'mjerenjeId': self.gKanal}
-            logging.debug('promjena labela na panelima, argumenti={0}'.format(str(argMap)))
-            self.gui.koncPanel.change_glavniLabel(argMap)
-            self.gui.zsPanel.change_glavniLabel(argMap)
-            self.gui.visednevniPanel.change_glavniLabel(argMap)
-            self.promjena_aktivnog_taba(self.aktivniTab)
+                    if odgovor == QtGui.QMessageBox.Yes:
+                        #put json na rest!
+                        logging.debug('dijalog prihvacen, spremi na REST')
+                        uspjeh = self.webZahtjev.upload_ref_vrijednost_zs(jS, self.gKanal)
+                        if uspjeh:
+                            #confirmation da je uspjelo
+                            QtGui.QMessageBox.information(self.gui,
+                                                          "Potvrda unosa na REST",
+                                                          "Podaci sa novom referentnom vrijednosti uspjesno su spremljeni na REST servis")
+                        else:
+                            logging.error('Pogreska kod uploada referentne vrijednosti zero/span na servis.')
+                            self.prikazi_error_msg('Referentna vrijednost nije uspjesno spremljena na REST servis')
+
+                        msg = 'Uspjesno dodana nova referentna vrijednost zero/span. json = {0}'.format(jS)
+                        logging.info(msg)
+                except AssertionError as err:
+                    logging.error('Pogreska kod zadavanja referentne vrijednosti za zero ili span (nije float)',
+                                  exc_info=True)
+                    self.prikazi_error_msg(str(err))
+        else:
+            logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
+            self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
+        logging.info('dodaj_novu_referentnu_vrijednost, start.')
+
+    def promjeni_flag(self, ulaz):
+        """
+        Odgovor kontrolora na zahtjev za promjenom flaga. Kontrolor naredjuje
+        dokumentu da napravi odgovarajucu izmjenu.
+
+        Ulazni parametar je mapa:
+        ulaz['od'] -->pocetno vrijeme, pandas timestamp
+        ulaz['do'] -->zavrsno vrijeme, pandas timestamp
+        ulaz['noviFlag'] -->novi flag
+        ulaz['kanal'] -->kanal koji se mijenja
+
+        P.S. dokument ima vlastiti signal da javi kada je doslo do promjene
+
+        QtCore.SIGNAL('model_flag_changed')
+        """
+        #naredi promjenu flaga
+        msg = 'promjeni_flag, start. Argumenti={0}'.format(str(ulaz))
+        logging.info(msg)
+        self.dokument.change_flag(key=ulaz['kanal'], tmin=ulaz['od'], tmax=ulaz['do'], flag=ulaz['noviFlag'])
+        #mankni sve datume nakon promjene flaga u dokumentu iz "self.kalendarStatus['ok']" liste
+        if self.gKanal in self.kalendarStatus:
+            tsRasponDana = list(pd.date_range(start=ulaz['od'], end=ulaz['do']))
+            strRasponDana = [QtCore.QDate.fromString(dan.strftime('%Y-%m-%d'), 'yyyy-MM-dd') for dan in tsRasponDana]
+            for dan in strRasponDana:
+                if dan in self.kalendarStatus[self.gKanal]['ok']:
+                    self.kalendarStatus[self.gKanal]['ok'].remove(dan)
+            msg = 'Refresh kalendar u rest izborniku, mapa datuma : {0}'.format(str(self.kalendarStatus[self.gKanal]))
+            logging.debug(msg)
+            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+        logging.info('promjeni_flag, kraj')
+
+    def update_kalendarStatus(self, progMjer, datum, tip):
+        """
+        dodavanje datuma na popis ucitanih i ili validiranih ovisno o tipu
+        i programu mjerenja.
+
+        progMjer --> program mjerenja id, integer
+        datum --> string reprezentacija datuma  'yyyy-MM-dd' formata
+        tip --> 'ucitani' ili 'spremljeni'
+        """
+        msg = 'update_kalendarStatus, start. Argumenti : progMjer={0} , datum={1} , tip={2}'.format(str(progMjer), str(datum), str(tip))
+        logging.info(msg)
+        pyDanas = datetime.datetime.now().strftime('%Y-%m-%d')
+        qDanas = QtCore.QDate.fromString(pyDanas, 'yyyy-MM-dd')
+        datumi = self.napravi_listu_dana(datum, self.brojDanaSatni)
+        for datum in datumi:
+            if datum != qDanas:
+                if progMjer in self.kalendarStatus:
+                    if tip == 'spremljeni':
+                        if datum not in self.kalendarStatus[progMjer]['ok']:
+                            self.kalendarStatus[progMjer]['ok'].append(datum)
+                    else:
+                        if datum not in self.kalendarStatus[progMjer]['bad']:
+                            self.kalendarStatus[progMjer]['bad'].append(datum)
+                        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
+                            self.kalendarStatus[progMjer]['ok'].append(datum)
+                else:
+                    self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
+        logging.info('update_kalendarStatus, kraj')
+
+    def promjena_boje_kalendara(self):
+        """
+        Funkcija mjenja boju kalendara ovisno o podacima za glavni kanal.
+        self.kalendarStatus je mapa koja za svaki kanal prati koji su datumi
+        ucitani, a koji su spremljeni na REST servis.
+
+        P.S. izdvojeno van kao funkcija samo radi citljivosti.
+        """
+        logging.debug('zahtvev za updateom boja na kalendaru rest izbornika')
+        if self.gKanal in self.kalendarStatus:
+            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+
+    def promjeni_datum(self, x):
+        """
+        Odgovor na zahtjev za pomicanjem datuma za 1 dan (gumbi sljedeci/prethodni)
+        Emitiraj signal da izbornik promjeni datum ovisno o x. Ako je x == 1
+        prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
+        """
+        if x == 1:
+            logging.info('naredba za prebacivanje na sljedeci dan u kalendaru')
+            self.gui.restIzbornik.sljedeci_dan()
+        else:
+            logging.info('naredba za prebacivanje na predhodni dan u kalendaru')
+            self.gui.restIzbornik.prethodni_dan()
 
     def promjeni_max_broj_dana_satnog(self, x):
         """
@@ -892,119 +1042,13 @@ class Kontroler(QtCore.QObject):
         if self.gKanal != None and self.pickedDate != None and self.sat != None:
             self.crtaj_minutni_graf(self.sat)
 
-    def dodaj_novu_referentnu_vrijednost(self):
-        """
-        Poziv dijaloga za dodavanje nove referentne vrijednosti za zero ili
-        span. Upload na REST servis.
-        """
-        if self.mapaMjerenjeIdToOpis is not None and self.gKanal is not None:
-            # dict sa opisnim parametrima za kanal
-            postaja = self.mapaMjerenjeIdToOpis[self.gKanal]['postajaNaziv']
-            komponenta = self.mapaMjerenjeIdToOpis[self.gKanal]['komponentaNaziv']
-            formula = self.mapaMjerenjeIdToOpis[self.gKanal]['komponentaFormula']
-            opis = '{0}, {1}( {2} )'.format(postaja, komponenta, formula)
-
-            dijalog = dodaj_ref_zs.DijalogDodajRefZS(parent=None, opisKanal=opis, idKanal=self.gKanal)
-            if dijalog.exec_():
-                podaci = dijalog.vrati_postavke()
-                try:
-                    # test da li je sve u redu?
-                    assert isinstance(podaci['vrijednost'],
-                                      float), 'Neuspjeh. Podaci nisu spremljeni na REST servis.\nReferentna vrijednost je krivo zadana.'
-                    #napravi json string za upload (dozvoljeno odstupanje je placeholder)
-                    #int od vremena... output je double zboj milisekundi
-                    jS = {"vrijeme": int(podaci['vrijeme']),
-                          "vrijednost": podaci['vrijednost'],
-                          "vrsta": podaci['vrsta'],
-                          "maxDozvoljeno": 0.0,
-                          "minDozvoljeno": 0.0}
-                    #dict to json dump
-                    jS = json.dumps(jS)
-                    logging.debug('json referentne vrijednosti za upload json={0}'.format(str(jS)))
-                    #potvrda za unos!
-                    odgovor = QtGui.QMessageBox.question(self.gui,
-                                                         "Potvrdi upload na REST servis",
-                                                         "Potvrdite spremanje podataka na REST servis",
-                                                         QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-
-                    if odgovor == QtGui.QMessageBox.Yes:
-                        #put json na rest!
-                        logging.debug('dijalog prihvacen, spremi na REST')
-                        uspjeh = self.webZahtjev.upload_ref_vrijednost_zs(jS, self.gKanal)
-                        if uspjeh:
-                            #confirmation da je uspjelo
-                            QtGui.QMessageBox.information(self.gui, "Potvrda unosa na REST",
-                                                          "Podaci sa novom referentnom vrijednosti uspjesno su spremljeni na REST servis")
-                        else:
-                            logging.error('Pogreska kod uploada referentne vrijednosti zero/span na servis.')
-                            self.prikazi_error_msg('Referentna vrijednost nije uspjesno spremljena na REST servis')
-
-                        logging.info('Uspjesno dodana nova referentna vrijednost zero/span. json = {0}'.format(jS))
-                except AssertionError as err:
-                    logging.error('Pogreska kod zadavanja referentne vrijednosti za zero ili span (nije float)',
-                                  exc_info=True)
-                    self.prikazi_error_msg(str(err))
-        else:
-            logging.info('pokusaj dodavanje ref vrijednosti bez ucitanih kanala mjerenja ili bez izabranog kanala')
-            self.prikazi_error_msg('Neuspjeh. Programi mjerenja nisu ucitani ili kanal nije izabran')
-
-    def update_kalendarStatus(self, progMjer, datum, tip):
-        """
-        dodavanje datuma na popis ucitanih i ili validiranih ovisno o tipu
-        i programu mjerenja.
-
-        progMjer --> program mjerenja id, integer
-        datum --> string reprezentacija datuma  'yyyy-MM-dd' formata
-        tip --> 'ucitani' ili 'spremljeni'
-        """
-        pyDanas = datetime.datetime.now().strftime('%Y-%m-%d')
-        qDanas = QtCore.QDate.fromString(pyDanas, 'yyyy-MM-dd')
-        datumi = self.napravi_listu_dana(datum, self.brojDanaSatni)
-        for datum in datumi:
-            if datum != qDanas:
-                if progMjer in self.kalendarStatus:
-                    if tip == 'spremljeni':
-                        if datum not in self.kalendarStatus[progMjer]['ok']:
-                            self.kalendarStatus[progMjer]['ok'].append(datum)
-                    else:
-                        if datum not in self.kalendarStatus[progMjer]['bad']:
-                            self.kalendarStatus[progMjer]['bad'].append(datum)
-                        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
-                            self.kalendarStatus[progMjer]['ok'].append(datum)
-                else:
-                    self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
-
-    def promjena_boje_kalendara(self):
-        """
-        Funkcija mjenja boju kalendara ovisno o podacima za glavni kanal.
-        self.kalendarStatus je mapa koja za svaki kanal prati koji su datumi
-        ucitani, a koji su spremljeni na REST servis.
-
-        P.S. izdvojeno van kao funkcija samo radi citljivosti.
-        """
-        logging.debug('zahtvev za updateom boja na kalendaru rest izbornika')
-        if self.gKanal in self.kalendarStatus:
-            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
-
-    def promjeni_datum(self, x):
-        """
-        Odgovor na zahtjev za pomicanjem datuma za 1 dan (gumbi sljedeci/prethodni)
-        Emitiraj signal da izbornik promjeni datum ovisno o x. Ako je x == 1
-        prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
-        """
-        if x == 1:
-            logging.debug('naredba za prebacivanje na sljedeci dan u kalendaru')
-            self.gui.restIzbornik.sljedeci_dan()
-        else:
-            logging.debug('naredba za prebacivanje na predhodni dan u kalendaru')
-            self.gui.restIzbornik.prethodni_dan()
-
     def update_zs_broj_dana(self, x):
         """
         Preuzimanje zahtjeva za promjenom broja dana na zero span grafu.
         Ponovno crtanje grafa.
         """
-        logging.debug('zaprimljen zahtjev za promjenom broja dana na zero i span grafu. N={0}'.format(str(x)))
+        msg = 'zaprimljen zahtjev za promjenom broja dana na zero i span grafu. N={0}'.format(str(x))
+        logging.debug(msg)
         self.brojDana = int(x)
         self.crtaj_zero_span()
 
@@ -1013,36 +1057,8 @@ class Kontroler(QtCore.QObject):
         funkcija se pokrece nakon izlaska iz dijaloga za promjenu grafova.
         Naredba da se ponovno nacrtaju svi grafovi.
         """
-        logging.debug('Apply promjenu izgleda grafova. Ponovo crtanje')
+        logging.info('Apply promjenu izgleda grafova. Ponovo crtanje')
         self.drawStatus = [False, False] # promjena izgleda grafa, tretiraj kao da nisu nacrtani
         if self.gKanal != None:
             mapa = {'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate}
             self.priredi_podatke(mapa)
-
-    def promjeni_flag(self, ulaz):
-        """
-        Odgovor kontrolora na zahtjev za promjenom flaga. Kontrolor naredjuje
-        dokumentu da napravi odgovarajucu izmjenu.
-
-        Ulazni parametar je mapa:
-        ulaz['od'] -->pocetno vrijeme, pandas timestamp
-        ulaz['do'] -->zavrsno vrijeme, pandas timestamp
-        ulaz['noviFlag'] -->novi flag
-        ulaz['kanal'] -->kanal koji se mijenja
-
-        P.S. dokument ima vlastiti signal da javi kada je doslo do promjene
-
-        QtCore.SIGNAL('model_flag_changed')
-        """
-        #naredi promjenu flaga
-        logging.debug('naredba dokumentu za promjenu flaga. argumenti={0}'.format(str(ulaz)))
-        self.dokument.change_flag(key=ulaz['kanal'], tmin=ulaz['od'], tmax=ulaz['do'], flag=ulaz['noviFlag'])
-        #mankni sve datume nakon promjene flaga u dokumentu iz "self.kalendarStatus['ok']" liste
-        if self.gKanal in self.kalendarStatus:
-            tsRasponDana = list(pd.date_range(start=ulaz['od'], end=ulaz['do']))
-            strRasponDana = [QtCore.QDate.fromString(dan.strftime('%Y-%m-%d'), 'yyyy-MM-dd') for dan in tsRasponDana]
-            for dan in strRasponDana:
-                if dan in self.kalendarStatus[self.gKanal]['ok']:
-                    self.kalendarStatus[self.gKanal]['ok'].remove(dan)
-            #refresh kalendar
-            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])

@@ -529,10 +529,18 @@ class Kontroler(QtCore.QObject):
                 nisuSpremljeni.append(datum)
 
         #report uspjesnost spremanja
-        msgUspjeh = ", ".join(spremljeni)
-        msgNeuspjeh = ", ".join(nisuSpremljeni)
         naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
-        poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh, 'Neuspjesno spremljeni datumi:', msgNeuspjeh])
+        if len(nisuSpremljeni) == 0:
+            msgUspjeh = ", ".join(spremljeni)
+            poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh])
+        elif len(spremljeni) == 0:
+            msgNeuspjeh = ", ".join(nisuSpremljeni)
+            poruka = "\n".join(['Neuspjesno spremljeni datumi:', msgNeuspjeh])
+        else:
+            msgUspjeh = ", ".join(spremljeni)
+            msgNeuspjeh = ", ".join(nisuSpremljeni)
+            naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
+            poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh, 'Neuspjesno spremljeni datumi:', msgNeuspjeh])
         # prikazi information dialog
         QtGui.QMessageBox.information(self.gui, naslov, poruka)
         # vrati izgled cursora nazad na normalni
@@ -580,12 +588,16 @@ class Kontroler(QtCore.QObject):
         logging.debug(msg)
         msg = 'pocetak ucitavanja kanala za datum={0} i brojdana={1}'.format(str(self.pickedDate), str(self.brojDanaSatni))
         logging.debug(msg)
+        #popis datuma - lista QDate objekata
+        datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
         #kreni ucitavati po potrebi
         for kanal in self.sviBitniKanali:
             uspjeh = self.dokument.citaj(key=kanal, date=self.pickedDate, ndana=self.brojDanaSatni)
             if uspjeh:
                 #update kalendarStatus
-                self.update_kalendarStatus(kanal, self.pickedDate, 'ucitani')
+                for datum in datumi:
+                    adapter = datum.toString('yyyy-MM-dd') #convert QDate to string
+                    self.update_kalendarStatus(kanal, adapter, 'ucitani')
                 #dodaj glavni kanal u setGlavnihKanala
                 self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
                 self.modelProgramaMjerenja.set_usedMjerenja(self.kalendarStatus)
@@ -595,9 +607,10 @@ class Kontroler(QtCore.QObject):
                 msg = 'Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal))
                 logging.info(msg)
         #test validacije izabranog dana za inicijalno bojanje kalendara
-        datum = QtCore.QDate().fromString(self.pickedDate, 'yyyy-MM-dd')
-        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
-            self.update_kalendarStatus(self.gKanal, self.pickedDate, 'spremljeni')
+        for datum in datumi:
+            if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
+                adapter = datum.toString('yyyy-MM-dd') #convert QDate to string
+                self.update_kalendarStatus(self.gKanal, adapter, 'spremljeni')
         #update boju na kalendaru ovisno o ucitanim podacima
         self.promjena_boje_kalendara()
         logging.info('kraj ucitavanja podataka')
@@ -978,20 +991,23 @@ class Kontroler(QtCore.QObject):
         logging.info(msg)
         pyDanas = datetime.datetime.now().strftime('%Y-%m-%d')
         qDanas = QtCore.QDate.fromString(pyDanas, 'yyyy-MM-dd')
-        datumi = self.napravi_listu_dana(datum, self.brojDanaSatni)
-        for datum in datumi:
-            if datum != qDanas:
-                if progMjer in self.kalendarStatus:
-                    if tip == 'spremljeni':
-                        if datum not in self.kalendarStatus[progMjer]['ok']:
-                            self.kalendarStatus[progMjer]['ok'].append(datum)
-                    else:
-                        if datum not in self.kalendarStatus[progMjer]['bad']:
-                            self.kalendarStatus[progMjer]['bad'].append(datum)
-                        if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
-                            self.kalendarStatus[progMjer]['ok'].append(datum)
+        datum = QtCore.QDate.fromString(datum, 'yyyy-MM-dd')
+        if datum != qDanas:
+            if progMjer in self.kalendarStatus:
+                if tip == 'spremljeni':
+                    if datum not in self.kalendarStatus[progMjer]['ok']:
+                        self.kalendarStatus[progMjer]['ok'].append(datum)
                 else:
-                    self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
+                    if datum not in self.kalendarStatus[progMjer]['bad']:
+                        self.kalendarStatus[progMjer]['bad'].append(datum)
+                    #provjera validiranosti
+                    test1 = self.dokument.provjeri_validiranost_dana(self.gKanal, datum)
+                    #provjera postojanja medju validiranima
+                    test2 = datum not in self.kalendarStatus[progMjer]['ok']
+                    if test1 and test2:
+                        self.kalendarStatus[progMjer]['ok'].append(datum)
+            else:
+                self.kalendarStatus[progMjer] = {'ok': [], 'bad': [datum]}
         logging.info('update_kalendarStatus, kraj')
 
     def promjena_boje_kalendara(self):

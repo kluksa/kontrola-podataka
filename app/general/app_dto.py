@@ -7,10 +7,9 @@ Created on Mon Mar  2 14:42:54 2015
 import logging
 import random
 import configparser
-
 import app.general.pomocne_funkcije as pomocne_funkcije
 
-################################################################################
+
 class KonfigAplikacije():
     """
     Glavni konfiguracijski objekt aplikacije
@@ -29,7 +28,6 @@ class KonfigAplikacije():
         """
         logging.debug('Inicijalizacija DTO za sve grafove, start')
         self.conf = cfg
-
         # mapa dto objekata pomocnih grafova - spremljnih pod kljucem programMjerenjaId
         self.dictPomocnih = {}
 
@@ -43,11 +41,11 @@ class KonfigAplikacije():
 
     def overwrite_konfig_file(self):
         """
-        metoda prepisuje svojstva objekta u konfig file.
+        Metoda prepisuje svojstva objekta u konfig file.
         """
         logging.debug('pocetak spremanja novih podataka u konfig file')
-        sectioni = ['LOG_SETUP','REST_INFO','MAIN_WINDOW','SATNI_REST',
-                    'SATNI','MINUTNI','ZERO','SPAN']
+        sectioni = ['LOG_SETUP', 'REST_INFO', 'MAIN_WINDOW', 'SATNI_REST',
+                    'SATNI', 'MINUTNI', 'ZERO', 'SPAN']
         new_config = configparser.ConfigParser()
         for section in sectioni:
             new_config.add_section(section)
@@ -259,13 +257,10 @@ class KonfigAplikacije():
         new_config.set('SPAN', 'warning_lineWidth_', str(self.span.Warning1.lineWidth))
         new_config.set('SPAN', 'warning_zorder_', str(self.span.Warning1.zorder))
         new_config.set('SPAN', 'warning_label_', str(self.span.Warning1.label))
-        """
-        Svi bitni elementi su upisani u novi new_config objekt. Pregazi stari
-        config.ini sa novim podacima.
-        """
+        #Pregazi stari config.ini sa novim podacima iz objekta new_config
         with open('./config.ini', mode='w') as fajl:
             new_config.write(fajl)
-        logging.debug('kraj spremanja podataka u konfig file')
+        logging.debug('Kraj spremanja podataka u konfig file "config.ini"')
 
     def reset_pomocne(self, mapa):
         """
@@ -275,20 +270,30 @@ class KonfigAplikacije():
         self.dictPomocnih = {}
         for masterkey in mapa:
             self.dictPomocnih[masterkey] = {}
-        logging.debug('kraj reseta mape pomocnih kanala')
+        logging.debug('Reset mape pomocnih kanala gotov. Svi pomocni grafovi su izbrisani.')
 
     def dodaj_pomocni(self, masterkey, key):
+        """
+        --> key : programMjerenjaId grafa koji se dodaje
+        --> masterkey : programMjerenjaId "glavnog grafa"
+        Metoda dodaje  id grafa u mapu pomocnih grafova pod kljucem masterkey.
+        """
         name = 'plot' + str(key)
         if masterkey in self.dictPomocnih:
             self.dictPomocnih[masterkey][key] = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')
-            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
         else:
             self.dictPomocnih[masterkey] = {key:GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')}
-            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+        msg = 'Pomocni graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
+        logging.debug(msg)
 
     def makni_pomocni(self, masterkey, key):
+        """
+        Metoda brise pomocni graf (key je id programa mjerenja) sa popisa pomocnih
+        grafova za graf masterkey (id programa mjerenja 'glavnog kanala').
+        """
         self.dictPomocnih[masterkey].pop(key)
-        logging.info('Pomocni graf maknut, mjerenjeId = {0}'.format(key))
+        msg = 'Graf id={0} maknut sa popisa pomocnih za programMjerenjaId={1}'.format(key, masterkey)
+        logging.debug(msg)
 
     def dodaj_random_pomocni(self, masterkey, key, naziv):
         """
@@ -296,19 +301,21 @@ class KonfigAplikacije():
         """
         name = 'plot'+str(key)
         graf = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='line')
-        rgb = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
+        rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         graf.set_rgb(rgb)
         graf.set_label('pomocni graf -- {0}'.format(naziv))
-
         if masterkey in self.dictPomocnih:
             self.dictPomocnih[masterkey][key] = graf
-            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
         else:
             self.dictPomocnih[masterkey] = {key:graf}
-            logging.info('Pomocni graf dodan, mjerenjeId = {0}'.format(key))
+        msg = 'Pomocni graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
+        logging.debug(msg)
 
-################################################################################
+
 class MetaConfig():
+    """
+    Zajednicke postavke za grafove.
+    """
     def __init__(self):
         """
         Definira zajednicke metoda za konfig graf klase.
@@ -329,28 +336,31 @@ class MetaConfig():
         self.Warning1 = None
         self.Warning2 = None
 
-    ###definicije setter metoda za boolean vrijednosti (za toggle).
     def set_grid(self, x):
         """boolean setter za prikaz cursora"""
         self.Grid = x
-        logging.info('Grid boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        msg = 'Grid status promjenjen, value={0}'.format(x)
+        logging.debug(msg)
 
     def set_legend(self, x):
         """boolean setter za prikaz legende"""
         self.Legend = x
-        logging.info('Legend boolean value promjenjen, nova vrijednost = {0}'.format(x))
+        msg = 'Legend status promjenjen, value={0}'.format(x)
+        logging.debug(msg)
 
-################################################################################
+
 class SatniRestGrafKonfig(MetaConfig):
+    """
+    Konfiguracija grafa satno agregiranih podataka preuzetih sa REST servisa.
+    Sluzi za visednevni prikaz.
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
+        logging.debug('Pocetak inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
         super(SatniRestGrafKonfig, self).__init__()
-        #konstante
         self.TIP = 'SATNO AGREGIRANI, REST'
         self.MIDLINE = 'avg'
         self.STATUS = 'status'
         self.COUNT = 'obuhvat'
-
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='SATNI_REST', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='SATNI', podtip='VOK', oblik='scatter') #potreban za highlight
@@ -365,13 +375,16 @@ class SatniRestGrafKonfig(MetaConfig):
                                                         'action_satni_rest_legend',
                                                         False,
                                                         bool)
-        logging.debug('kraj inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki grafa sa visednevnim prikazom satnih podataka')
+
+
 class SatniGrafKonfig(MetaConfig):
+    """
+    Konfiguracija grafa satno agregiranih podataka.
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki grafa sa satno agregiranim podacima')
+        logging.debug('Pocetak inicijalizacije postavki grafa sa satno agregiranim podacima')
         super(SatniGrafKonfig, self).__init__()
-        # konstante
         self.TIP = 'SATNI'
         self.MIDLINE = 'avg'
         self.MINIMUM = 'min'
@@ -379,7 +392,6 @@ class SatniGrafKonfig(MetaConfig):
         self.STATUS = 'status'
         self.COUNT = 'count'
         self.FLAG = 'flag'
-
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='SATNI', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='SATNI', podtip='VOK', oblik='scatter')
@@ -400,25 +412,28 @@ class SatniGrafKonfig(MetaConfig):
                                                         'action_satni_legend',
                                                         False,
                                                         bool)
-        #status warning plot
-        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
+        self.statusWarning = GrafDTO(cfg,
+                                     tip='MAIN_WINDOW',
                                      podtip='status_warning',
                                      oblik='scatter')
-        self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
+        self.statusWarningOkolis = GrafDTO(cfg,
+                                           tip='MAIN_WINDOW',
                                            podtip='status_warning_okolis',
                                            oblik='scatter')
-        logging.debug('kraj inicijalizacije postavki grafa sa satno agregiranim podacima')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki grafa sa satno agregiranim podacima')
+
+
 class MinutniGrafKonfig(MetaConfig):
+    """
+    Konfiguracija grafa minutnih podataka.
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki grafa sa minutnim podacima')
+        logging.debug('Pocetak inicijalizacije postavki grafa sa minutnim podacima')
         super(MinutniGrafKonfig, self).__init__()
-        # konstante
         self.TIP = 'MINUTNI'
         self.MIDLINE = 'koncentracija'
         self.STATUS = 'status'
         self.FLAG = 'flag'
-
         #podaci o grafovima
         self.Midline = GrafDTO(cfg, tip='MINUTNI', podtip='midline', oblik='line')
         self.VOK = GrafDTO(cfg, tip='MINUTNI', podtip='VOK', oblik='scatter')
@@ -436,20 +451,24 @@ class MinutniGrafKonfig(MetaConfig):
                                                         'action_minutni_legend',
                                                         False,
                                                         bool)
-        #status warning
-        self.statusWarning = GrafDTO(cfg, tip='MAIN_WINDOW',
+        self.statusWarning = GrafDTO(cfg,
+                                     tip='MAIN_WINDOW',
                                      podtip='status_warning',
                                      oblik='scatter')
-        self.statusWarningOkolis = GrafDTO(cfg, tip='MAIN_WINDOW',
+        self.statusWarningOkolis = GrafDTO(cfg,
+                                           tip='MAIN_WINDOW',
                                            podtip='status_warning_okolis',
                                            oblik='scatter')
-        logging.debug('kraj inicijalizacije postavki grafa sa minutnim podacima')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki grafa sa minutnim podacima')
+
+
 class ZeroGrafKonfig(MetaConfig):
+    """
+    Konfiguracija grafa ZERO podataka.
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki grafa sa ZERO podacima')
+        logging.debug('Pocetak inicijalizacije postavki grafa sa ZERO podacima')
         super(ZeroGrafKonfig, self).__init__()
-        # konstante
         self.TIP = 'ZERO'
         self.MIDLINE = 'vrijednost'
         self.WARNING_LOW = 'minDozvoljeno'
@@ -473,13 +492,16 @@ class ZeroGrafKonfig(MetaConfig):
                                                         'action_ZERO_legend',
                                                         False,
                                                         bool)
-        logging.debug('kraj inicijalizacije postavki grafa sa ZERO podacima')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki grafa sa ZERO podacima')
+
+
 class SpanGrafKonfig(MetaConfig):
+    """
+    Konfiguracija grafa SPAN podataka.
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki grafa sa SPAN podacima')
+        logging.debug('Pocetak inicijalizacije postavki grafa sa SPAN podacima')
         super(SpanGrafKonfig, self).__init__()
-        # konstante
         self.TIP = 'SPAN'
         self.MIDLINE = 'vrijednost'
         self.WARNING_LOW = 'minDozvoljeno'
@@ -503,12 +525,15 @@ class SpanGrafKonfig(MetaConfig):
                                                         'action_SPAN_legend',
                                                         False,
                                                         bool)
-        logging.debug('kraj inicijalizacije postavki grafa sa SPAN podacima')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki grafa sa SPAN podacima')
+
+
 class RESTKonfig():
+    """
+    Konfiguracija REST servisa (base url, relative url do ciljanih servisa).
+    """
     def __init__(self, cfg):
-        logging.debug('start inicijalizacije postavki REST servisa')
-        # konstante za REST
+        logging.debug('Pocetak inicijalizacije postavki REST servisa')
         self.RESTBaseUrl = pomocne_funkcije.load_config_item(cfg,
                                                              'REST_INFO',
                                                              'base_url',
@@ -539,8 +564,9 @@ class RESTKonfig():
                                                                'status_map',
                                                                'dhz.skz.rs.sirovipodaci/statusi',
                                                                str)
-        logging.debug('kraj inicijalizacije postavki REST servisa')
-################################################################################
+        logging.debug('Kraj inicijalizacije postavki REST servisa')
+
+
 class GrafDTO():
     """
     Objekt u kojem se pohranjuju postavke pojedinog grafa.
@@ -567,28 +593,22 @@ class GrafDTO():
     """
 
     def __init__(self, cfg, tip='', podtip='', oblik='plot'):
-        # bitni memberi
-        logging.debug('pocetak inicijalizacije graf postavki za {0} - {1} - {2}'.format(tip, podtip, oblik))
+        msg = 'Pocetak inicijalizacije postavki grafa za {0} - {1} - {2}'.format(tip, podtip, oblik)
+        logging.debug(msg)
         self._sviMarkeri = ['None', 'o', 'ˇ', '^', '<', '>', '|', '_',
                             's', 'p', '*', 'h', '+', 'x', 'd']
-
         self._sveLinije = ['None', '-', '--', '-.', ':']
-
         self._sveAgregiraneKomponente = ['avg', 'q05', 'q95', 'min', 'max', 'medijan']
-
         self.tip = tip
         self.podtip = podtip
         self.oblik = oblik
-        """neovisno o obliku se definiraju:
-        rgb, alpha, status crtanja, zorder, label grafa
-        """
+        #rgb, alpha, status crtanja, zorder, label grafa se definiraju neovisno o obliku
         self.rgb = self.init_rgb(cfg, self.tip, self.podtip)
         self.alpha = self.init_alpha(cfg, self.tip, self.podtip)
         self.color = pomocne_funkcije.make_color(self.rgb, self.alpha)
         self.crtaj = self.init_crtaj(cfg, self.tip, self.podtip)
         self.zorder = self.init_zorder(cfg, self.tip, self.podtip)
         self.label = self.init_label(cfg, self.tip, self.podtip)
-
         if oblik == 'plot':
             #marker i linija
             self.markerStyle = self.init_markerStyle(cfg, self.tip, self.podtip)
@@ -616,19 +636,24 @@ class GrafDTO():
                 #fill between satnog grafa, izmedju kojih komponenti se sjenca
                 self.komponenta1 = self.init_komponenta1(cfg, self.tip, self.podtip)
                 self.komponenta2 = self.init_komponenta2(cfg, self.tip, self.podtip)
-        logging.debug('kraj inicijalizacije graf postavki za {0} - {1} - {2}'.format(tip, podtip, oblik))
+        msg = 'Kraj inicijalizacije postavki grafa za {0} - {1} - {2}'.format(tip, podtip, oblik)
+        logging.debug(msg)
 
     def init_label(self, cfg, tip, podtip):
+        """inicijalizacija labela grafa"""
         placeholder = podtip + ' label placeholder'
         podtip += '_label_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, placeholder, str)
         return str(val)
 
     def set_label(self, x):
+        """setter za label grafa"""
         self.label = str(x)
-        logging.debug('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, str(x)))
+        msg = 'Promjena rgb za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+        logging.debug(msg)
 
     def init_zorder(self, cfg, tip, podtip):
+        """inicijalizacija zorder grafa"""
         podtip += '_zorder_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 2, int)
         if self.test_zorder(val):
@@ -637,16 +662,21 @@ class GrafDTO():
             return 2
 
     def set_zorder(self, x):
+        """setter zorder grafa"""
         if self.test_zorder(x):
             self.zorder = x
+            msg = 'Promjena zorder za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
 
     def test_zorder(self, x):
+        """provjera ispravnosti zorder"""
         if x > 1:
             return True
         else:
             return False
 
     def init_komponenta1(self, cfg, tip, podtip):
+        """inicijalizacija prve komponente za sjencanje grafa (od)"""
         podtip += '_komponenta1_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'q05', str)
         if self.test_fill_komponenta(val):
@@ -655,6 +685,7 @@ class GrafDTO():
             return 'q05'
 
     def init_komponenta2(self, cfg, tip, podtip):
+        """inicijalizacija druge komponente za sjencanje grafa (do)"""
         podtip += '_komponenta2_'
         val = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'q95', str)
         if self.test_fill_komponenta(val):
@@ -662,25 +693,29 @@ class GrafDTO():
         else:
             return 'q95'
 
-    def set_komponenta1(self, x):
-        if self.test_fill_komponenta:
-            self.komponenta1 = x
-            logging.info(
-                'Promjena fill komponente za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_komponenta2(self, x):
-        if self.test_fill_komponenta:
-            self.komponenta2 = x
-            logging.info(
-                'Promjena fill komponente za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
     def test_fill_komponenta(self, x):
+        """provjera ispravnosti zadane komponente za sjencanje grafa"""
         if x in self._sveAgregiraneKomponente:
             return True
         else:
             return False
 
+    def set_komponenta1(self, x):
+        """setter prve komponente za sjencanje grafa (od)"""
+        if self.test_fill_komponenta:
+            self.komponenta1 = x
+            msg = 'Promjena fill komponente za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def set_komponenta2(self, x):
+        """setter druge komponente za sjencanje grafa (od)"""
+        if self.test_fill_komponenta:
+            self.komponenta2 = x
+            msg = 'Promjena fill komponente za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
     def init_rgb(self, cfg, tip, podtip):
+        """inicjalizacija rgb boje grafa"""
         podtip += '_rgb_'
         rgb = pomocne_funkcije.load_config_item(cfg, tip, podtip, (0, 0, 255), tuple)
         # dohvati samo prva 3 elementa
@@ -692,52 +727,8 @@ class GrafDTO():
         else:
             return 0, 0, 255
 
-    def init_alpha(self, cfg, tip, podtip):
-        podtip += '_alpha_'
-        alpha = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
-        if self.test_alpha(alpha):
-            return alpha
-        else:
-            return 1.0
-
-    def init_crtaj(self, cfg, tip, podtip):
-        podtip += '_crtaj_'
-        boolCrtaj = pomocne_funkcije.load_config_item(cfg, tip, podtip, True, bool)
-        return boolCrtaj
-
-    def init_markerStyle(self, cfg, tip, podtip):
-        podtip += '_markerStyle_'
-        marker = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'o', str)
-        if self.test_markerStyle(marker):
-            return marker
-        else:
-            return 'o'
-
-    def init_markerSize(self, cfg, tip, podtip):
-        podtip += '_markerSize_'
-        size = pomocne_funkcije.load_config_item(cfg, tip, podtip, 12, int)
-        if self.test_markerSize(size):
-            return size
-        else:
-            return 12
-
-    def init_lineStyle(self, cfg, tip, podtip):
-        podtip += '_lineStyle_'
-        stil = pomocne_funkcije.load_config_item(cfg, tip, podtip, '-', str)
-        if self.test_lineStyle(stil):
-            return stil
-        else:
-            return '-'
-
-    def init_lineWidth(self, cfg, tip, podtip):
-        podtip += '_lineWidth_'
-        sirina = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
-        if self.test_lineWidth(sirina):
-            return sirina
-        else:
-            return 1.0
-
     def test_rgb(self, x):
+        """provjera ispravnosti rgb boje grafa"""
         out = True
         for i in x:
             if 0 <= i <= 255:
@@ -746,70 +737,138 @@ class GrafDTO():
                 out = (out and False)
         return out
 
+    def set_rgb(self, x):
+        """setter rgb boje grafa"""
+        if self.test_rgb(x):
+            self.rgb = x
+            self.color = pomocne_funkcije.make_color(x, self.alpha)
+            msg = 'Promjena rgb (boje) za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def init_alpha(self, cfg, tip, podtip):
+        """inicjalizacija alpha, prozirnosti grafa"""
+        podtip += '_alpha_'
+        alpha = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
+        if self.test_alpha(alpha):
+            return alpha
+        else:
+            return 1.0
+
     def test_alpha(self, x):
+        """provjera ispravnosti alpha, prozirnosti grafa"""
         if x >= 0.0 and x <= 1.0:
             return True
         else:
             return False
 
+    def set_alpha(self, x):
+        """setter alpha, prozirnosti grafa"""
+        if self.test_alpha(x):
+            self.alpha = x
+            self.color = pomocne_funkcije.make_color(self.rgb, x)
+            msg = 'Promjena alpha (prozirnost) za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def init_crtaj(self, cfg, tip, podtip):
+        """inicjalizacija statusa crtanja grafa"""
+        podtip += '_crtaj_'
+        boolCrtaj = pomocne_funkcije.load_config_item(cfg, tip, podtip, True, bool)
+        return boolCrtaj
+
+    def set_crtaj(self, x):
+        """setter statusa crtanja grafa"""
+        self.crtaj = x
+        msg = 'Promjena statusa crtanja za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+        logging.debug(msg)
+
+    def init_markerStyle(self, cfg, tip, podtip):
+        """inicjalizacija stila markera grafa"""
+        podtip += '_markerStyle_'
+        marker = pomocne_funkcije.load_config_item(cfg, tip, podtip, 'o', str)
+        if self.test_markerStyle(marker):
+            return marker
+        else:
+            return 'o'
+
     def test_markerStyle(self, x):
+        """provjera ispravnosti stila markera grafa"""
         if x in self._sviMarkeri:
             return True
         else:
             return False
 
+    def set_markerStyle(self, x):
+        """setter stila markera grafa"""
+        if self.test_markerStyle(x):
+            self.markerStyle = x
+            msg = 'Promjena stila markera za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def init_markerSize(self, cfg, tip, podtip):
+        """inicjalizacija velicine markera grafa"""
+        podtip += '_markerSize_'
+        size = pomocne_funkcije.load_config_item(cfg, tip, podtip, 12, int)
+        if self.test_markerSize(size):
+            return size
+        else:
+            return 12
+
     def test_markerSize(self, x):
+        """provjera ispravnosti velicine markera grafa"""
         if x > 0:
             return True
         else:
             return False
 
+    def set_markerSize(self, x):
+        """setter velicine markera grafa"""
+        if self.test_markerSize(x):
+            self.markerSize = x
+            msg = 'Promjena velicine markera za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def init_lineStyle(self, cfg, tip, podtip):
+        """inicijalizacija stila linije grafa"""
+        podtip += '_lineStyle_'
+        stil = pomocne_funkcije.load_config_item(cfg, tip, podtip, '-', str)
+        if self.test_lineStyle(stil):
+            return stil
+        else:
+            return '-'
+
     def test_lineStyle(self, x):
+        """provjera ispravnosti stila linije grafa"""
         if x in self._sveLinije:
             return True
         else:
             return False
 
+    def set_lineStyle(self, x):
+        """setter stila linije grafa"""
+        if self.test_lineStyle(x):
+            self.lineStyle = x
+            msg = 'Promjena stila linije za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)
+
+    def init_lineWidth(self, cfg, tip, podtip):
+        """inicijalizacija sirine linije grafa"""
+        podtip += '_lineWidth_'
+        sirina = pomocne_funkcije.load_config_item(cfg, tip, podtip, 1.0, float)
+        if self.test_lineWidth(sirina):
+            return sirina
+        else:
+            return 1.0
+
     def test_lineWidth(self, x):
+        """provjera ispravnosti sirine linije grafa"""
         if x > 0:
             return True
         else:
             return False
 
-    def set_alpha(self, x):
-        if self.test_alpha(x):
-            self.alpha = x
-            self.color = pomocne_funkcije.make_color(self.rgb, x)
-            logging.debug('Promjena alfe za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_rgb(self, x):
-        if self.test_rgb(x):
-            self.rgb = x
-            self.color = pomocne_funkcije.make_color(x, self.alpha)
-            logging.debug('Promjena rgb za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_crtaj(self, x):
-        self.crtaj = x
-        logging.debug('Promjena crtaj booleana za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_markerStyle(self, x):
-        if self.test_markerStyle(x):
-            self.markerStyle = x
-            logging.debug('Promjena stila markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_markerSize(self, x):
-        if self.test_markerSize(x):
-            self.markerSize = x
-            logging.debug(
-                'Promjena velicine markera za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
-    def set_lineStyle(self, x):
-        if self.test_lineStyle(x):
-            self.lineStyle = x
-            logging.debug('Promjena stila linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-
     def set_lineWidth(self, x):
+        """setter sirine linije grafa"""
         if self.test_lineWidth(x):
             self.lineWidth = x
-            logging.debug('Promjena sirine linije za {0} - {1}, nova vrijednost = {2}'.format(self.tip, self.podtip, x))
-            ################################################################################
+            msg = 'Promjena sirine linije za {0} - {1}, nova vrijednost={2}'.format(self.tip, self.podtip, str(x))
+            logging.debug(msg)

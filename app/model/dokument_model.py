@@ -140,7 +140,6 @@ class DataModel(QtCore.QObject):
                 logging.info(tekst)
                 self.set_dirty(False)
                 return False
-
         except (AttributeError, TypeError):
             tekst = 'Frejm nije spremljen u model. Neispravan reader.'
             logging.error(tekst, exc_info=True)

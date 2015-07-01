@@ -8,8 +8,7 @@ Created on Tue Nov  4 15:56:53 2014
 from PyQt4 import QtGui, QtCore
 import app.general.pomocne_funkcije as pomocne_funkcije
 
-###############################################################################
-###############################################################################
+
 class PomocniGrafovi(QtCore.QAbstractTableModel):
     """
     Ova klasa je "model" za dinamicki prikaz pomocnih grafova u qtableview widgetu
@@ -22,16 +21,14 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
     2. markeri ->lista svih markera koji ulaze u izbor, opisni ('Krug'...)
     3. linije ->lista svih stilova linija, opisni ('Dash-Dot'...)
     """
-    ###############################################################################
-    def __init__(self, grafInfo=[], parent=None):
+    def __init__(self, grafInfo=None, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent)
-
-        # spremi ulaznu mapu u privatni member
-        self.grafInfo = grafInfo
-        #headeri tablice
         self.headeri = ['Postaja', 'Komponenta', 'Usporedno']
+        if grafInfo == None:
+            self.grafInfo = []
+        else:
+            self.grafInfo = grafInfo
 
-    ###############################################################################
     def rowCount(self, parent=QtCore.QModelIndex()):
         """
         Nuzna metoda za rad klase
@@ -39,7 +36,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         return len(self.grafInfo)
 
-    ###############################################################################
     def columnCount(self, parent=QtCore.QModelIndex()):
         """
         Nuzna metoda za rad klase
@@ -49,7 +45,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         return 3
 
-    ###############################################################################
     def flags(self, index):
         """
         -vraca van stanje svakog indeksa u prikazu tablice.
@@ -57,7 +52,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
 
-    ###############################################################################
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
         Metoda zaduzena za postavljanje novih vrijednosti u model(editable).
@@ -95,7 +89,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 usporedno = self.grafInfo[3]
                 self.grafInfo[row][0] = self.pomocnaMapa[postaja][komponenta][usporedno]
                 return True
-            ###############################################################################
 
     def data(self, index, role):
         """
@@ -104,7 +97,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         if not index.isValid():
             return None
-
         if role == QtCore.Qt.DisplayRole:
             row = index.row()
             column = index.column()
@@ -114,9 +106,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 value = self.grafInfo[row][2]  # stupac "Komponenta"
             elif column == 2:
                 value = self.grafInfo[row][3]  # stupac "Usporedno"
-
             return value
-
         if role == QtCore.Qt.EditRole:
             row = index.row()
             column = index.column()
@@ -126,9 +116,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 value = self.grafInfo[row][2]  # stupac "Komponenta"
             elif column == 2:
                 value = self.grafInfo[row][3]  # stupac "Usporedno"
-
             return value
-
         if role == QtCore.Qt.DecorationRole:
             row = index.row()
             column = index.column()
@@ -143,7 +131,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 pixmap.fill(boja)
                 icon = QtGui.QIcon(pixmap)
                 return icon
-            ###############################################################################
 
     def headerData(self, section, orientation, role):
         """
@@ -154,7 +141,6 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
                 return self.headeri[section]
             else:
                 return section
-            ###############################################################################
 
     def insertRows(self, position, rows, parent=QtCore.QModelIndex(), sto=None):
         """
@@ -165,18 +151,15 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         # mora se pozvati zbog sinhorizacije view-ova
         self.beginInsertRows(parent, position, position + rows - 1)
-
         #insert u podatke
         for i in range(rows):
             value = sto[i]
             self.grafInfo.insert(position, value)
-
         #mora se pozvati zbog sinhorizacije view-ova
         self.endInsertRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti
         return True
 
-    ###############################################################################
     def removeRows(self, position, rows, parent=QtCore.QModelIndex()):
         """
         metoda za brisanje redova iz tablice
@@ -186,17 +169,14 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         """
         # mora se pozvati zbog sinhronizacije view-ova
         self.beginRemoveRows(parent, position, position + rows - 1)
-
         #sami delete
         for i in range(rows):
             self.grafInfo.pop(position)
-
         #mora se pozvati zbog sinhronizacije view-ova
         self.endRemoveRows()
         #funkcija mora vratiti True da signalizira da su redovi umetnuti
         return True
 
-    ###############################################################################
     def vrati_nested_listu(self):
         """
         funkcija vraca nested listu koja sadrzi podatke u modelu

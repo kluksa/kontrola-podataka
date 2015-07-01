@@ -5,11 +5,10 @@ Created on Fri Feb  6 12:53:28 2015
 @author: User
 """
 from PyQt4 import QtGui, QtCore, uic
-
 import app.model.table_model as table_model
 import app.view.dodavanje_pomocnih as dodavanje_pomocnih
-###############################################################################
-###############################################################################
+
+
 base8, form8 = uic.loadUiType('./app/view/ui_files/pomocni_grafovi_widget.ui')
 class PomocniIzbor(base8, form8):
     """
@@ -45,27 +44,41 @@ class PomocniIzbor(base8, form8):
         element 4 : agregirani kanal --> dulji opis kanala
         element 5 : dulji opis kanala --> agregirani kanal
     """
-
-    def __init__(self, parent=None, defaulti={}, stablo=None, cListe=[], opisKanala={}, listHelpera=[]):
+    def __init__(self,
+                 parent=None,
+                 defaulti=None,
+                 stablo=None,
+                 cListe=None,
+                 opisKanala=None,
+                 listHelpera=None):
         super(base8, self).__init__(parent)
         self.setupUi(self)
 
         # __init__ parametri
-        self.defaulti = defaulti
+        if defaulti == None:
+            self.defaulti = {}
+        else:
+            self.defaulti = defaulti
         self.drvo = stablo
-        self.comboListe = cListe
-        self.mapaKanali = opisKanala
-        self.dictHelperi = listHelpera
+        if cListe == None:
+            self.comboListe = []
+        else:
+            self.comboListe = cListe
+        if opisKanala == None:
+            self.mapaKanali = {}
+        else:
+            self.mapaKanali = opisKanala
+        if listHelpera == None:
+            self.dictHelperi = []
+        else:
+            self.dictHelperi = listHelpera
         self.tmodel = None
-
         #dodavanje stabla u tree view... izbor postaje
         self.treeView.setModel(self.drvo)
-
         #inicijalizacija parametara za tablicu
         initlista = [self.drvo,
                      self.comboListe,
                      self.mapaKanali]
-
         #inicijalizacija tablice
         self.tableView = Tablica(lista=initlista)
         #set selecting by rows
@@ -74,9 +87,8 @@ class PomocniIzbor(base8, form8):
         self.tableView.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         #postavljanje tablice u layout dijaloga
         self.tableViewLayout.addWidget(self.tableView)
-
         self.veze()
-    ###############################################################################
+
     def setup_table_model(self, x):
         """
         setup table modela ovisno o aktivnom kanalu
@@ -95,7 +107,6 @@ class PomocniIzbor(base8, form8):
             self.izabraniGlavniKanal = None
             self.dodajGrafGumb.setEnabled(False)
 
-    ###############################################################################
     def veze(self):
         """
         Povezivanje kontrolnih widgeta sa akcijama
@@ -107,7 +118,6 @@ class PomocniIzbor(base8, form8):
                      QtCore.SIGNAL('update_dto(PyQt_PyObject)'),
                      self.update_dto)
 
-    ###############################################################################
     def napravi_table_model(self, kanal):
         """
         konstrukcija modela za QTableView
@@ -154,10 +164,8 @@ class PomocniIzbor(base8, form8):
                         pomocni[key].label]
                 #dodaj element na nested listu
                 nLista.append(temp)
-
         return table_model.PomocniGrafovi(grafInfo=nLista)
 
-    ###############################################################################
     def dodaj_graf(self):
         """
         Funkcija dodaje graf u table model preko dijaloga za dodavanje pomocnih
@@ -202,10 +210,10 @@ class PomocniIzbor(base8, form8):
                     stablo=self.drvo,
                     copcije=self.comboListe,
                     mapa=self.mapaKanali)
-
                 if dijalog.exec_():
                     pomocniKanal = dijalog.vrati_default_graf()
-                    if pomocniKanal[0] is not None:  #neko mjerenje mora biti izabrano (programMjerenjaId != None)
+                    #neko mjerenje mora biti izabrano (programMjerenjaId != None)
+                    if pomocniKanal[0] is not None:
                         #dodaj pomocniKanal u self.tmodel (table model)
                         self.tmodel.insertRows(0, 1, sto=[pomocniKanal])
                         #dodaj novi dto objekt u defaulte
@@ -213,12 +221,10 @@ class PomocniIzbor(base8, form8):
                         self.defaulti.dodaj_pomocni(self.izabraniGlavniKanal, key)
                         #set vrijednosti
                         self.change_pomocni(self.izabraniGlavniKanal, key, pomocniKanal)
-
         else:
             #javi problem, model dostupnih programa mjerenja nije uspjesno instanciran
             tekst = 'Mapa sa programima mjerenja nije instancirana.\nNije moguce dodati nove grafove.\nPokusaj obnoviti vezu sa REST servisom.'
             QtGui.QMessageBox.information(self, "Problem kod dodavanja grafova", tekst)
-        ###############################################################################
 
     def change_pomocni(self, masterkey, key, lista):
         """
@@ -236,7 +242,6 @@ class PomocniIzbor(base8, form8):
         self.defaulti.dictPomocnih[masterkey][key].set_zorder(lista[10])
         self.defaulti.dictPomocnih[masterkey][key].set_label(lista[11])
 
-    ###############################################################################
     def update_dto(self, lista):
         """
         update postojeceg pomocnog grafa
@@ -244,7 +249,6 @@ class PomocniIzbor(base8, form8):
         key = lista[0]
         self.change_pomocni(key, lista)
 
-    ###############################################################################
     def makni_pomocni_graf(self):
         """Brisanje selektiranog reda u qtableview"""
         try:
@@ -258,10 +262,8 @@ class PomocniIzbor(base8, form8):
             self.tmodel.removeRows(red, 1)
             #makni dto objekt iz dicta pomocnih
             self.defaulti.makni_pomocni(self.izabraniGlavniKanal, keyid)
-        ###############################################################################
 
-###############################################################################
-###############################################################################
+
 class Tablica(QtGui.QTableView):
     """
     Ova klasa je zaduzena za prikaz modela pomocnih grafova.
@@ -271,22 +273,16 @@ class Tablica(QtGui.QTableView):
     Cilj je umjesto line editora omoguciti poziv dijaloga za izbor opcija
     pomocnih grafova.
     """
-
     def __init__(self, parent=None, lista=None):
         QtGui.QTableView.__init__(self, parent)
-
         self.initLista = lista
-
         self.delegat = PromjeniPomocniDelegate(self, lista=self.initLista)
-
         # postavi isti delegate za sva 3 stupca [postaja, komponenta, usporedno]
         self.setItemDelegateForColumn(0, self.delegat)
         self.setItemDelegateForColumn(1, self.delegat)
         self.setItemDelegateForColumn(2, self.delegat)
 
 
-###############################################################################
-###############################################################################
 class PromjeniPomocniDelegate(QtGui.QItemDelegate):
     """
     Mali hack, u biti ne delegira nista, direktno poziva dijalog za
@@ -296,10 +292,11 @@ class PromjeniPomocniDelegate(QtGui.QItemDelegate):
 
     def __init__(self, parent, lista=None):
         QtGui.QItemDelegate.__init__(self, parent)
-
         if lista is not None:
-            self.lista = lista  # [program mjerenja tree, combo liste za marker i line, info mapa o programima mjerenja]
-        ###############################################################################
+            #[program mjerenja tree,
+            # combo liste za marker i line,
+            # info mapa o programima mjerenja]
+            self.lista = lista
 
     def createEditor(self, parent, option, index):
         """
@@ -310,7 +307,6 @@ class PromjeniPomocniDelegate(QtGui.QItemDelegate):
         # pronadji defultni graf za izabrani redak
         red = index.row()
         grafRed = index.model().grafInfo[red]
-
         if self.lista is not None:
             #inicijaliziraj i prikazi dijalog sa izabranim redkom
             dijalog = dodavanje_pomocnih.OpcijePomocnog(
@@ -319,13 +315,12 @@ class PromjeniPomocniDelegate(QtGui.QItemDelegate):
                 stablo=self.lista[0],  #tree programa mjerenja
                 copcije=self.lista[1],  #vijednosti za comboboxeve
                 mapa=self.lista[2])  #mapa koja povezuje program mjerenja i info (stanica, komponenta...)
-
             if dijalog.exec_():
                 pomocniKanal = dijalog.vrati_default_graf()
-                if pomocniKanal[0] is not None:  #neko mjerenje mora biti izabrano (programMjerenjaId != None)
+                #neko mjerenje mora biti izabrano (programMjerenjaId != None)
+                if pomocniKanal[0] is not None:
                     #zamjeni pomocni Kanal sa updateanom verzijom
                     index.model().grafInfo[red] = pomocniKanal
                     #dodatno, update graf dto
-                    self.emit(QtCore.SIGNAL('update_dto(PyQt_PyObject)'), pomocniKanal)
-                    ###############################################################################
-                    ###############################################################################
+                    self.emit(QtCore.SIGNAL('update_dto(PyQt_PyObject)'),
+                              pomocniKanal)

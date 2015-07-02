@@ -93,6 +93,10 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'),
                      self.gui.visednevniPanel.set_gKanal)
+        ###MANUAL SAVE NA REST###
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('upload_minutne_na_REST_gumb'),
+                     self.upload_minutne_na_REST_gumb)
         ###PROMJENA BROJA DANA U ZERO/SPAN PANELU###
         self.connect(self.gui.zsPanel,
                      QtCore.SIGNAL('update_zs_broj_dana(PyQt_PyObject)'),
@@ -541,10 +545,50 @@ class Kontroler(QtCore.QObject):
             msgNeuspjeh = ", ".join(nisuSpremljeni)
             naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
             poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh, 'Neuspjesno spremljeni datumi:', msgNeuspjeh])
-        # prikazi information dialog
-        QtGui.QMessageBox.information(self.gui, naslov, poruka)
         # vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
+        # prikazi information dialog
+        QtGui.QMessageBox.information(self.gui, naslov, poruka)
+
+    def upload_minutne_na_REST_gumb(self):
+        """spremanje trenutnih opdataka na REST"""
+        if self.pickedDate is None or self.gKanal is None:
+            return None
+        datum = QtCore.QDate().fromString(self.pickedDate, 'yyyy-MM-dd')
+        danas = QtCore.QDate.currentDate()
+        if datum > danas:
+            return None
+        if self.gKanal not in self.dokument.data:
+            msg = 'U dokumentu (mapa dokument.data) ne postoji kljuc, key={0}. Return None'.format(str(self.gKanal))
+            logging.debug(msg)
+            return None
+        datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
+        datumi = [i.toString('yyyy-MM-dd') for i in datumi]
+
+        frejm = self.dokument.data[self.gKanal]
+        msg = 'Frejm podataka koji treba spremiti:\n{0}'.format(str(frejm))
+        logging.debug(msg)
+        lenSvih = len(frejm)
+        msg = 'broj podataka : {0}'.format(str(lenSvih))
+        logging.debug(msg)
+        validirani = frejm[abs(frejm['flag']) == 1000]
+        lenValidiranih = len(validirani)
+        msg = 'broj validiranih : {0}'.format(str(lenValidiranih))
+        logging.debug(msg)
+        msg = 'stanje dokumenta (dirty, da li je korisnik mjenjao flag) : {0}'.format(str(self.dokument.is_dirty()))
+        logging.debug(msg)
+        if lenSvih != lenValidiranih or self.dokument.is_dirty():
+            msg = 'Potvrdi spremanje podataka na rest za datume:\n{0}'.format(str(datumi))
+            odgovor = QtGui.QMessageBox.question(self.gui,
+                                                 "Upload na REST",
+                                                 msg,
+                                                 QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+            if odgovor == QtGui.QMessageBox.Yes:
+                logging.debug('dijalog je prihvacen, kreni spremati podatke na REST')
+                self.upload_minutnih_na_REST_common()
+                #nesretno nazvana funkcija... poziva na ponovno povlacenje istog
+                #seta podataka sa resta i ponovno crtanje.
+                self.ponisti_izmjene()
 
     def pripremi_membere_prije_ucitavanja_zahtjeva(self, mapa):
         """

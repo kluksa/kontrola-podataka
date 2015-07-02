@@ -42,6 +42,7 @@ class KoncPanel(base2, form2):
         self.buttonSljedeci.clicked.connect(self.prebaci_dan_naprijed)
         self.buttonPrethodni.clicked.connect(self.prebaci_dan_nazad)
         self.buttonPonisti.clicked.connect(self.ponisti_promjene)
+        self.buttonRESTUpload.clicked.connect(self.upload_na_REST)
         self.brojDanaCombo.currentIndexChanged.connect(self.promjeni_broj_dana)
         self.zoomInSatni.clicked.connect(self.satniGraf.toggle_zoom)
         self.zoomOutSatni.clicked.connect(self.satniGraf.zoom_out)
@@ -189,6 +190,13 @@ class KoncPanel(base2, form2):
         self.minutniVrijeme.setText(str(arg['vrijeme']))
         self.minutniKoncentracija.setText(str(arg['koncentracija']))
         self.minutniStatus.setPlainText(str(arg['status']))
+
+    def upload_na_REST(self):
+        """
+        callback za pritisak na gumb za spremanje na REST.
+        prosljedjuje signal kontroleru
+        """
+        self.emit(QtCore.SIGNAL('upload_minutne_na_REST_gumb'))
 
 base3, form3 = uic.loadUiType('./app/view/ui_files/zero_span_panel.ui')
 class ZeroSpanPanel(base3, form3):

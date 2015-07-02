@@ -280,6 +280,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="buttonRESTUpload">
+       <property name="text">
+        <string>Spremi na REST</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="buttonSljedeci">
        <property name="text">
         <string>Sljedeci</string>

@@ -16,6 +16,7 @@ import logging
 import datetime
 from PyQt4 import QtCore, QtGui, uic
 import app.view.canvas as canvas
+import app.model.table_model as modeli #BitModel()
 
 
 base2, form2 = uic.loadUiType('./app/view/ui_files/konc_graf_panel.ui')
@@ -60,6 +61,11 @@ class KoncPanel(base2, form2):
         self.toggleLegendSatni.setChecked(self.konfig.satni.Legend)
         self.toggleGridMinutni.setChecked(self.konfig.minutni.Grid)
         self.toggleLegendMinutni.setChecked(self.konfig.minutni.Legend)
+        # modeli i view-ovi za provjeru statusa
+        self.satniBitModel = modeli.BitModel()
+        self.minutniBitModel = modeli.BitModel()
+        self.satniBitView.setModel(self.satniBitModel)
+        self.minutniBitView.setModel(self.minutniBitModel)
 
     def toggle_satni_grid(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""
@@ -150,15 +156,19 @@ class KoncPanel(base2, form2):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan naprjed
         """
-        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), 1)
-        logging.info('request pomak dana unaprijed')
+        value = int(self.brojDanaCombo.currentText()) #integer broj dana
+        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), value)
+        msg = 'request pomak {0} dana unaprijed'.format(value)
+        logging.info(msg)
 
     def prebaci_dan_nazad(self):
         """
         Signaliziraj kontroleru da treba prebaciti kalendar 1 dan nazad
         """
-        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), -1)
-        logging.info('request pomak dana unazad')
+        value = int(self.brojDanaCombo.currentText()) #integer broj dana
+        self.emit(QtCore.SIGNAL('promjeni_datum(PyQt_PyObject)'), -value)
+        msg = 'request pomak {0} dana unazad'.format(value)
+        logging.info(msg)
 
     def set_labele_satne_tocke(self, arg):
         """
@@ -169,13 +179,14 @@ class KoncPanel(base2, form2):
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
-        self.satniStatus.clear()
         self.satniVrijeme.setText(str(arg['vrijeme']))
         self.satniAverage.setText(str(arg['average']))
         self.satniMin.setText(str(arg['min']))
         self.satniMax.setText(str(arg['max']))
         self.satniCount.setText(str(arg['count']))
-        self.satniStatus.setPlainText(str(arg['status']))
+        chklist, smap = arg['status']
+        self.satniBitModel.set_data_and_smap(chklist, smap)
+        self.satniBitView.update()
 
     def set_labele_minutne_tocke(self, arg):
         """
@@ -186,10 +197,11 @@ class KoncPanel(base2, form2):
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
-        self.minutniStatus.clear()
         self.minutniVrijeme.setText(str(arg['vrijeme']))
         self.minutniKoncentracija.setText(str(arg['koncentracija']))
-        self.minutniStatus.setPlainText(str(arg['status']))
+        chklist, smap = arg['status']
+        self.minutniBitModel.set_data_and_smap(chklist, smap)
+        self.minutniBitView.update()
 
     def upload_na_REST(self):
         """
@@ -448,6 +460,10 @@ class RestPregledSatnih(base14, form14):
         #init na pocetno stanje
         self.toggleGridRestSatni.setChecked(self.konfig.satniRest.Grid)
         self.toggleLegendRestSatni.setChecked(self.konfig.satniRest.Legend)
+        # modeli i view-ovi za status
+        self.restSatniBitModel = modeli.BitModel()
+        self.restSatniBitView.setModel(self.restSatniBitModel)
+
 
     def toggle_grid_satniRest(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""
@@ -533,4 +549,6 @@ class RestPregledSatnih(base14, form14):
         self.labelVrijeme.setText(str(mapa['vrijeme']))
         self.labelAverage.setText(str(mapa['average']))
         self.labelObuhvat.setText(str(mapa['obuhvat']))
-        self.plainTextEditStatus.setPlainText(str(mapa['status']))
+        chklist, smap = mapa['status']
+        self.restSatniBitModel.set_data_and_smap(chklist, smap)
+        self.restSatniBitView.update()

@@ -70,27 +70,15 @@ class RestIzbornik(base1, form1):
             logging.error('App exception', exc_info=True)
             self.emit(QtCore.SIGNAL('prikazi_error_msg(PyQt_PyObject)'), tekst)
 
-    def sljedeci_dan(self):
+    def pomakni_dan(self, brojDana):
         """
-        Metoda "pomice dan" u kalendaru naprijed za 1 dan od trenutno selektiranog
-        """
-        # dohvati trenutno selektirani dan
-        dan = self.calendarWidget.selectedDate()
-        #uvecaj za 1
-        dan2 = dan.addDays(1)
-        #postavi novi dan kao trenutno selektirani
-        self.calendarWidget.setSelectedDate(dan2)
-        #informiraj kontroler o promjeni
-        self.get_mjerenje_datum(True)
-
-    def prethodni_dan(self):
-        """
-        Metoda "pomice dan" u kalendaru nazad za 1 dan od trenutno selektiranog
+        Metoda "pomice dan" u kalendaru za neki broj dana od trenutno selektiranog.
+        brojDana moze biti negativan (pomicanje unazad) i pozitivan (pomicanje unaprijed)
         """
         # dohvati trenutno selektirani dan
         dan = self.calendarWidget.selectedDate()
         #smanji za 1
-        dan2 = dan.addDays(-1)
+        dan2 = dan.addDays(brojDana)
         #postavi novi dan kao trenutno selektirani
         self.calendarWidget.setSelectedDate(dan2)
         #informiraj kontroler o promjeni

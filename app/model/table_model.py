@@ -7,6 +7,7 @@ Created on Tue Nov  4 15:56:53 2014
 
 from PyQt4 import QtGui, QtCore
 import app.general.pomocne_funkcije as pomocne_funkcije
+import math
 
 
 class PomocniGrafovi(QtCore.QAbstractTableModel):
@@ -182,3 +183,57 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
         funkcija vraca nested listu koja sadrzi podatke u modelu
         """
         return self.grafInfo
+
+
+class BitModel(QtCore.QAbstractTableModel):
+    """
+    Model za prikaz statusa bit po bit.
+    """
+    def __init__(self, data=None, smap=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+        self.data = data # lista boolean vrijednosti
+        self.smap = smap # status mapa
+
+    def set_data_and_smap(self, lista, mapa):
+        self.data = lista
+        self.smap = mapa
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        if isinstance(self.smap, dict):
+            return math.ceil(len(list(self.smap.keys()))/8)
+        else:
+            return 0
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 8
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        row = index.row()
+        col = index.column()
+        ind = row * 8 + col #indeks u listi
+        if role == QtCore.Qt.DisplayRole:
+            if ind in self.smap:
+                return str(self.smap[ind])
+        if role == QtCore.Qt.BackgroundColorRole:
+            try:
+                if self.data[ind] == True:
+                    return QtGui.QBrush(QtGui.QColor(255, 0, 0, 80))
+                elif self.data[ind] == False:
+                    return QtGui.QBrush(QtGui.QColor(0, 255, 0, 80))
+            except LookupError:
+                return QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        if role == QtCore.Qt.ToolTipRole:
+            try:
+                description = str(self.smap[ind])
+                check = str(self.data[ind])
+                msg = '{0} : {1}'.format(description, check)
+                return msg
+            except LookupError:
+                pass

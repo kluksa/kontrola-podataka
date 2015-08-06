@@ -534,17 +534,9 @@ class Kontroler(QtCore.QObject):
 
         #report uspjesnost spremanja
         naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
-        if len(nisuSpremljeni) == 0:
-            msgUspjeh = ", ".join(spremljeni)
-            poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh])
-        elif len(spremljeni) == 0:
+        if len(nisuSpremljeni) != 0:
             msgNeuspjeh = ", ".join(nisuSpremljeni)
             poruka = "\n".join(['Neuspjesno spremljeni datumi:', msgNeuspjeh])
-        else:
-            msgUspjeh = ", ".join(spremljeni)
-            msgNeuspjeh = ", ".join(nisuSpremljeni)
-            naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
-            poruka = "\n".join(['Uspjesno spremljeni datumi:', msgUspjeh, 'Neuspjesno spremljeni datumi:', msgNeuspjeh])
         # vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
         # prikazi information dialog
@@ -1072,12 +1064,9 @@ class Kontroler(QtCore.QObject):
         Emitiraj signal da izbornik promjeni datum ovisno o x. Ako je x == 1
         prebaci 1 dan naprijed, ako je x == -1 prebaci jedan dan nazad
         """
-        if x == 1:
-            logging.info('naredba za prebacivanje na sljedeci dan u kalendaru')
-            self.gui.restIzbornik.sljedeci_dan()
-        else:
-            logging.info('naredba za prebacivanje na predhodni dan u kalendaru')
-            self.gui.restIzbornik.prethodni_dan()
+        msg = 'naredba za prebacivanje {0} dana u kalendaru'.format(x)
+        logging.info(msg)
+        self.gui.restIzbornik.pomakni_dan(x)
 
     def promjeni_max_broj_dana_satnog(self, x):
         """

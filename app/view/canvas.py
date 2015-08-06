@@ -401,11 +401,8 @@ class SatniMinutniKanvas(Kanvas):
         provjeri stauts integera broj dekodirajuci ga sa hash tablicom
         {bit_pozicija:opisni string}. Vrati csv string opisa.
         """
-        output = []
-        for i in self.statusMap.keys():
-            if self.check_bit(broj, i):
-                output.append(self.statusMap[i])
-        return ", ".join(output)
+        bitchk = [self.check_bit(broj, i) for i in self.statusMap]
+        return [bitchk, self.statusMap]
 
     def crtaj_scatter_value_ovisno_o_flagu(self, komponenta, konfig, flag):
         """
@@ -844,17 +841,16 @@ class SatniKanvas(SatniMinutniKanvas):
                   'min': '',
                   'max': '',
                   'count':'',
-                  'status':''}
+                  'status':[[], self.statusMap]}
         if xpoint in list(self.data[self.gKanal].index):
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
-            if ystatus != 0:
-                ystatus = self.check_status_flags(ystatus)
+            ystatus = self.check_status_flags(ystatus)
             output = {'vrijeme':str(xpoint),
                       'average':round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3),
                       'min':round(self.data[self.gKanal].loc[xpoint, self.konfig.MINIMUM], 3),
                       'max':round(self.data[self.gKanal].loc[xpoint, self.konfig.MAKSIMUM], 3),
                       'count':int(self.data[self.gKanal].loc[xpoint, self.konfig.COUNT]),
-                      'status':str(ystatus)}
+                      'status':ystatus}
         #emit signal to update
         self.emit(QtCore.SIGNAL('set_labele_satne_tocke(PyQt_PyObject)'), output)
 
@@ -1065,15 +1061,14 @@ class SatniRestKanvas(SatniKanvas):
         output = {'vrijeme': '',
                   'average': '',
                   'obuhvat': '',
-                  'status': 'Nema podataka'}
+                  'status': [[], self.statusMap]}
         if xpoint in list(self.data[self.gKanal].index):
             ystatus = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
-            if ystatus != 0:
-                ystatus = self.check_status_flags(ystatus)
+            ystatus = self.check_status_flags(ystatus)
             output = {'vrijeme':str(xpoint),
                       'average':round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3),
                       'obuhvat':self.data[self.gKanal].loc[xpoint, self.konfig.COUNT],
-                      'status':str(ystatus)}
+                      'status':ystatus}
         #emit signal to update label
         self.emit(QtCore.SIGNAL('set_labele_rest_satne_tocke(PyQt_PyObject)'), output)
 
@@ -1172,15 +1167,14 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         output = {'vrijeme': '',
                   'koncentracija': '',
-                  'status': ''}
+                  'status': [[], self.statusMap]}
         if xpoint in list(self.data[self.gKanal].index):
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
-            if ystat != 0:
-                ystat = self.check_status_flags(ystat)
+            ystat = self.check_status_flags(ystat)
             konc = round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3)
             output = {'vrijeme': str(xpoint),
                       'koncentracija':konc,
-                      'status': str(ystat)}
+                      'status': ystat}
         #emit za promjenu minutnog statusa
         self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)
 

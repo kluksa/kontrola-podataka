@@ -293,7 +293,7 @@
        <property name="title">
         <string>Izabrani podatak :</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
+       <layout class="QVBoxLayout" name="verticalLayoutSatnoAgregiraniStatus">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <property name="topMargin">
@@ -385,28 +385,6 @@
           <property name="text">
            <string>Status :</string>
           </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QTableView" name="restSatniBitView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>110</height>
-           </size>
-          </property>
-          <attribute name="horizontalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
          </widget>
         </item>
        </layout>

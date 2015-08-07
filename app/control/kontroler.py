@@ -392,6 +392,14 @@ class Kontroler(QtCore.QObject):
         self.gui.zsPanel.spanGraf.clear_graf()
         self.gui.visednevniPanel.satniRest.clear_graf()
         logging.debug('Grafovi cleared')
+        #clear tablice
+        clmap = {}
+        self.gui.koncPanel.satnoAgregiraniModel.set_data(clmap)
+        self.gui.koncPanel.satnoAgregiraniView.update()
+        self.gui.koncPanel.minutniModel.set_data(clmap)
+        self.gui.koncPanel.minutniView.update()
+        self.gui.visednevniPanel.restAgregiraniModel.set_data(clmap)
+        self.gui.visednevniPanel.restAgregiraniView.update()
         logging.info('Request user_log_out, kraj.')
 
     def priredi_podatke(self, mapa):

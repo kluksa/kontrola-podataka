@@ -193,15 +193,15 @@ class BitModel(QtCore.QAbstractTableModel):
     """
     def __init__(self, data=None, smap=None, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent=parent)
-        self.data = data # lista boolean vrijednosti
+        self.booldata = data # lista boolean vrijednosti
         self.smap = smap # status mapa
 
     def set_data_and_smap(self, lista, mapa):
-        self.data = lista
+        self.booldata = lista
         self.smap = mapa
         self.trueIndeksi = []
-        for i in range(len(self.data)):
-            if self.data[i] is True:
+        for i in range(len(self.booldata)):
+            if self.booldata[i] is True:
                 self.trueIndeksi.append(i)
         self.layoutChanged.emit()
 
@@ -234,9 +234,9 @@ class BitModel(QtCore.QAbstractTableModel):
                 return str(self.smap[ind])
         if role == QtCore.Qt.BackgroundColorRole:
             try:
-                if self.data[ind] == True:
+                if self.booldata[ind] == True:
                     return QtGui.QBrush(QtGui.QColor(255, 0, 0, 80))
-                elif self.data[ind] == False:
+                elif self.booldata[ind] == False:
                     return QtGui.QBrush(QtGui.QColor(0, 255, 0, 80))
             except Exception as err:
                 logging.error(str(err), exc_info=True)
@@ -244,7 +244,7 @@ class BitModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.ToolTipRole:
             try:
                 description = str(self.smap[ind])
-                check = str(self.data[ind])
+                check = str(self.booldata[ind])
                 msg = '{0} : {1}'.format(description, check)
                 return msg
             except Exception as err:
@@ -433,41 +433,41 @@ class ZeroSpanModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         if not index.isValid():
             return None
-        row = index.column()
+        row = index.row()
         col = index.column()
         if role == QtCore.Qt.DisplayRole:
             if row == 0 and isinstance(self.dataZero, dict):
                 if col == 0:
                     if 'xtocka' in self.dataZero:
-                        return str(self.dataZero['xtocka'])
+                        return self.dataZero['xtocka']
                 elif col == 1:
                     if 'ytocka' in self.dataZero:
-                        return str(self.dataZero['ytocka'])
+                        return self.dataZero['ytocka']
                 elif col == 2:
                     if 'minDozvoljenoOdstupanje' in self.dataZero:
-                        return str(self.dataZero['minDozvoljenoOdstupanje'])
+                        return self.dataZero['minDozvoljenoOdstupanje']
                 elif col == 3:
                     if 'maxDozvoljenoOdstupanje' in self.dataZero:
-                        return str(self.dataZero['maxDozvoljenoOdstupanje'])
+                        return self.dataZero['maxDozvoljenoOdstupanje']
                 elif col == 4:
                     if 'status' in self.dataZero:
-                        return str(self.dataZero['status'])
+                        return self.dataZero['status']
             if row == 1 and isinstance(self.dataSpan, dict):
                 if col == 0:
                     if 'xtocka' in self.dataSpan:
-                        return str(self.dataSpan['xtocka'])
+                        return self.dataSpan['xtocka']
                 elif col == 1:
                     if 'ytocka' in self.dataSpan:
-                        return str(self.dataSpan['ytocka'])
+                        return self.dataSpan['ytocka']
                 elif col == 2:
                     if 'minDozvoljenoOdstupanje' in self.dataSpan:
-                        return str(self.dataSpan['minDozvoljenoOdstupanje'])
+                        return self.dataSpan['minDozvoljenoOdstupanje']
                 elif col == 3:
                     if 'maxDozvoljenoOdstupanje' in self.dataSpan:
-                        return str(self.dataSpan['maxDozvoljenoOdstupanje'])
+                        return self.dataSpan['maxDozvoljenoOdstupanje']
                 elif col == 4:
                     if 'status' in self.dataSpan:
-                        return str(self.dataSpan['status'])
+                        return self.dataSpan['status']
 
 
     def headerData(self, section, orientation, role):

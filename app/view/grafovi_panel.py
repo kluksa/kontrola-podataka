@@ -16,7 +16,46 @@ import logging
 import datetime
 from PyQt4 import QtCore, QtGui, uic
 import app.view.canvas as canvas
-import app.model.table_model as modeli #BitModel()
+import app.model.table_model as modeli
+
+
+class ContextTableView(QtGui.QTableView):
+    """
+    subclassani QTableView sa podrskom za kontekstni meni
+    """
+    def __init__(self, parent=None):
+        QtGui.QTableView.__init__(self, parent=parent)
+        #initial settings crud!
+        self.setMaximumHeight(110)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                           QtGui.QSizePolicy.Fixed)
+        self.horizontalHeader().setVisible(False)
+        self.verticalHeader().setVisible(False)
+        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+
+    def contextMenuEvent(self, event):
+        """
+        event koji definira kontekstni menu..
+        """
+        self.selected = self.selectionModel().selection().indexes()
+        #define context menu items
+        menu = QtGui.QMenu()
+        opis = QtGui.QAction('opis', self)
+        menu.addAction(opis)
+        #connect context menu items
+        opis.triggered.connect(self.emit_izabrani_fault)
+        #display context menu
+        menu.exec_(self.mapToGlobal(event.pos()))
+
+    def emit_izabrani_fault(self, x):
+        """
+        funkcija emitira string sa sadrzajem selektirane kucice
+        """
+        if self.selected:
+            ind = self.selected[0]
+            value = self.model().data(ind, QtCore.Qt.DisplayRole)
+            self.emit(QtCore.SIGNAL('izabrani_fault(PyQt_PyObject)'),
+                      str(value))
 
 
 base2, form2 = uic.loadUiType('./app/view/ui_files/konc_graf_panel.ui')
@@ -64,13 +103,40 @@ class KoncPanel(base2, form2):
         # modeli i view-ovi za provjeru statusa
         self.satniBitModel = modeli.BitModel()
         self.minutniBitModel = modeli.BitModel()
+        self.satniBitView = ContextTableView(parent=self)
+        self.verticalLayoutSatnoAgregiraniStatus.addWidget(self.satniBitView)
         self.satniBitView.setModel(self.satniBitModel)
+        self.minutniBitView = ContextTableView(parent=self)
+        self.verticalLayoutMinutniStatus.addWidget(self.minutniBitView)
         self.minutniBitView.setModel(self.minutniBitModel)
         # modeli i view-ovi za podatke o izabranoj tocki
         self.satnoAgregiraniModel = modeli.SatnoAgregiraniPodaciModel()
         self.satnoAgregiraniView.setModel(self.satnoAgregiraniModel)
         self.minutniModel = modeli.MinutniPodaciModel()
         self.minutniView.setModel(self.minutniModel)
+        #context menu connection
+        self.connect(self.satniBitView,
+                     QtCore.SIGNAL('izabrani_fault(PyQt_PyObject)'),
+                     self.display_agregirani_fault_info)
+
+        self.connect(self.minutniBitView,
+                     QtCore.SIGNAL('izabrani_fault(PyQt_PyObject)'),
+                     self.display_minutni_fault_info)
+
+    def display_minutni_fault_info(self, fault):
+        """
+        prikazi dijalog sa informacijom o minutnom faultu za trenutno aktivnu
+        tocku
+        """
+        #TODO!
+        msg = 'fault:{0}\n jos treba dohvatiti id podatka'.format(fault)
+        QtGui.QMessageBox.information(self, 'Djelomicna implementacija', msg)
+
+
+    def display_agregirani_fault_info(self, fault):
+        msg = 'NOT IMPLEMENTED - fault:{0}'.format(fault)
+        QtGui.QMessageBox.information(self, '???', msg)
+
 
     def toggle_satni_grid(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""
@@ -417,7 +483,6 @@ class ZeroSpanPanel(base3, form3):
         mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
         mapa['status'] = status
         """
-        print(mapa)
         self.zsModel.set_data_zero(mapa)
         self.zeroSpanTableView.update()
 
@@ -432,8 +497,6 @@ class ZeroSpanPanel(base3, form3):
         mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
         mapa['status'] = status
         """
-        #TODO!
-        print(mapa)
         self.zsModel.set_data_span(mapa)
         self.zeroSpanTableView.update()
 
@@ -466,6 +529,9 @@ class RestPregledSatnih(base14, form14):
         self.toggleLegendRestSatni.setChecked(self.konfig.satniRest.Legend)
         # modeli i view-ovi za status
         self.restSatniBitModel = modeli.BitModel()
+        self.restSatniBitView = ContextTableView(parent=self)
+        self.verticalLayoutSatnoAgregiraniStatus.addWidget(self.restSatniBitView)
+        #TODO!
         self.restSatniBitView.setModel(self.restSatniBitModel)
         # modeli i view za prikaz podataka
         self.restAgregiraniModel = modeli.RestAgregiraniModel()

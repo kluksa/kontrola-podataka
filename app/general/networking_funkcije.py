@@ -244,8 +244,6 @@ class WebZahtjev(object):
             #TODO! output jsona za upload, remove later
             logging.error('!!!!!!!!!!!!outoging json string - upload minutnih na rest!!!!!!!!!!!!')
             logging.error(msg)
-
-
             if not isinstance(jstring, str):
                 raise ValueError('Ulazni parametar nije tipa string.')
             if len(jstring) == 0:

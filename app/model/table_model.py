@@ -8,6 +8,7 @@ Created on Tue Nov  4 15:56:53 2014
 from PyQt4 import QtGui, QtCore
 import app.general.pomocne_funkcije as pomocne_funkcije
 import math
+import logging
 
 
 class PomocniGrafovi(QtCore.QAbstractTableModel):
@@ -188,6 +189,7 @@ class PomocniGrafovi(QtCore.QAbstractTableModel):
 class BitModel(QtCore.QAbstractTableModel):
     """
     Model za prikaz statusa bit po bit.
+    Broj stupaca --> 6
     """
     def __init__(self, data=None, smap=None, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent=parent)
@@ -197,16 +199,20 @@ class BitModel(QtCore.QAbstractTableModel):
     def set_data_and_smap(self, lista, mapa):
         self.data = lista
         self.smap = mapa
+        self.trueIndeksi = []
+        for i in range(len(self.data)):
+            if self.data[i] is True:
+                self.trueIndeksi.append(i)
         self.layoutChanged.emit()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         if isinstance(self.smap, dict):
-            return math.ceil(len(list(self.smap.keys()))/8)
+            return math.ceil(len(self.trueIndeksi)/6)
         else:
             return 0
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 8
+        return 6
 
     def flags(self, index):
         if index.isValid():
@@ -217,7 +223,12 @@ class BitModel(QtCore.QAbstractTableModel):
             return None
         row = index.row()
         col = index.column()
-        ind = row * 8 + col #indeks u listi
+        ind = row * 6 + col #indeks u listi
+        try:
+            ind = self.trueIndeksi[ind] #convert indeksa
+        except LookupError as err:
+            logging.error(str(err), exc_info=True)
+            ind = None
         if role == QtCore.Qt.DisplayRole:
             if ind in self.smap:
                 return str(self.smap[ind])
@@ -227,7 +238,8 @@ class BitModel(QtCore.QAbstractTableModel):
                     return QtGui.QBrush(QtGui.QColor(255, 0, 0, 80))
                 elif self.data[ind] == False:
                     return QtGui.QBrush(QtGui.QColor(0, 255, 0, 80))
-            except LookupError:
+            except Exception as err:
+                logging.error(str(err), exc_info=True)
                 return QtGui.QBrush(QtGui.QColor(255, 255, 255))
         if role == QtCore.Qt.ToolTipRole:
             try:
@@ -235,5 +247,232 @@ class BitModel(QtCore.QAbstractTableModel):
                 check = str(self.data[ind])
                 msg = '{0} : {1}'.format(description, check)
                 return msg
-            except LookupError:
+            except Exception as err:
+                logging.error(str(err), exc_info=True)
                 pass
+
+
+class SatnoAgregiraniPodaciModel(QtCore.QAbstractTableModel):
+    """
+    Prikaz vrijednosti za izabranu satno agregiranu tocku
+    """
+    def __init__(self, data=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+        if self.data is None:
+            self.data = {'average':None, 'min':None, 'max':None, 'count':None}
+        else:
+            self.data = data
+        self.headeri = ['srednjak', 'min', 'max', 'broj podataka']
+
+    def set_data(self, mapa):
+        self.data = mapa
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return 1
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 4
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        col = index.column()
+        if role == QtCore.Qt.DisplayRole and isinstance(self.data, dict):
+            if col == 0:
+                if 'average' in self.data:
+                    return str(self.data['average'])
+            elif col == 1:
+                if 'min' in self.data:
+                    return str(self.data['min'])
+            elif col == 2:
+                if 'max' in self.data:
+                    return str(self.data['max'])
+            elif col == 3:
+                if 'count' in self.data:
+                    return str(self.data['count'])
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.headeri[section]
+
+class MinutniPodaciModel(QtCore.QAbstractTableModel):
+    """
+    prikaz vrijednosti za izabranu minutnu tocku
+    """
+    def __init__(self, data=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+        if self.data is None:
+            self.data = {'koncentraicja':None}
+        else:
+            self.data = data
+        self.headeri = ['koncentracija']
+
+    def set_data(self, mapa):
+        self.data = mapa
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return 1
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 1
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        col = index.column()
+        if role == QtCore.Qt.DisplayRole and isinstance(self.data, dict):
+            if col == 0:
+                if 'koncentracija' in self.data:
+                    return str(self.data['koncentracija'])
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.headeri[section]
+
+class RestAgregiraniModel(QtCore.QAbstractTableModel):
+    """
+    prikaz vrijednosti za izabranu minutnu tocku
+    """
+    def __init__(self, data=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+        if self.data is None:
+            self.data = {'srednjak':None, 'obuhvat':None}
+        else:
+            self.data = data
+        self.headeri = ['srednjak', 'obuhvat']
+
+    def set_data(self, mapa):
+        self.data = mapa
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return 1
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 2
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        col = index.column()
+        if role == QtCore.Qt.DisplayRole and isinstance(self.data, dict):
+            if col == 0:
+                if 'average' in self.data:
+                    return str(self.data['average'])
+            elif col == 1:
+                if 'obuhvat' in self.data:
+                    return str(self.data['obuhvat'])
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.headeri[section]
+
+class ZeroSpanModel(QtCore.QAbstractTableModel):
+    """
+    prikaz vrijednosti zero i span
+    """
+    def __init__(self, dataZero=None, dataSpan=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+
+        if dataZero is None:
+            self.dataZero = {'xtocka':'',
+                             'ytocka':'',
+                             'minDozvoljenoOdstupanje':'',
+                             'maxDozvoljenoOdstupanje':'',
+                             'status':''}
+        else:
+            self.dataZero = dataZero
+
+        if dataSpan is None:
+            self.dataSpan = {'xtocka':'',
+                             'ytocka':'',
+                             'minDozvoljenoOdstupanje':'',
+                             'maxDozvoljenoOdstupanje':'',
+                             'status':''}
+        else:
+            self.dataSpan = dataSpan
+
+        self.xheaderi = ['vrijeme', 'vrijednost', 'min. odstupanje', 'max. odstupanje', 'status']
+        self.yheaderi = ['ZERO', 'SPAN']
+
+    def set_data_zero(self, mapa):
+        self.dataZero = mapa
+        self.layoutChanged.emit()
+
+    def set_data_span(self, mapa):
+        self.dataSpan = mapa
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return 2
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 5
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        row = index.column()
+        col = index.column()
+        if role == QtCore.Qt.DisplayRole:
+            if row == 0 and isinstance(self.dataZero, dict):
+                if col == 0:
+                    if 'xtocka' in self.dataZero:
+                        return str(self.dataZero['xtocka'])
+                elif col == 1:
+                    if 'ytocka' in self.dataZero:
+                        return str(self.dataZero['ytocka'])
+                elif col == 2:
+                    if 'minDozvoljenoOdstupanje' in self.dataZero:
+                        return str(self.dataZero['minDozvoljenoOdstupanje'])
+                elif col == 3:
+                    if 'maxDozvoljenoOdstupanje' in self.dataZero:
+                        return str(self.dataZero['maxDozvoljenoOdstupanje'])
+                elif col == 4:
+                    if 'status' in self.dataZero:
+                        return str(self.dataZero['status'])
+            if row == 1 and isinstance(self.dataSpan, dict):
+                if col == 0:
+                    if 'xtocka' in self.dataSpan:
+                        return str(self.dataSpan['xtocka'])
+                elif col == 1:
+                    if 'ytocka' in self.dataSpan:
+                        return str(self.dataSpan['ytocka'])
+                elif col == 2:
+                    if 'minDozvoljenoOdstupanje' in self.dataSpan:
+                        return str(self.dataSpan['minDozvoljenoOdstupanje'])
+                elif col == 3:
+                    if 'maxDozvoljenoOdstupanje' in self.dataSpan:
+                        return str(self.dataSpan['maxDozvoljenoOdstupanje'])
+                elif col == 4:
+                    if 'status' in self.dataSpan:
+                        return str(self.dataSpan['status'])
+
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.xheaderi[section]
+            if orientation == QtCore.Qt.Vertical:
+                return self.yheaderi[section]

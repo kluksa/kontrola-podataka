@@ -53,14 +53,15 @@ class WebZahtjev(object):
             url = self._base + self._resursi['satniPodaci']+'/'
             res = "/".join([str(mapa['kanal']), str(mapa['datumOd']), str(mapa['datumDo'])])
             url = url+res
+            head = {"accept":"application/json"}
             payload = {"samo_valjani":mapa['valjani'],
                        "nivo_validacije":mapa['validacija']}
             r = requests.get(url,
                              timeout=39.1,
+                             headers=head,
                              auth=HTTPBasicAuth(self.user, self.pswd),
                              params=payload)
             assert r.ok == True, 'Bad request'
-            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             msg = "get_satni_podaci procesiran, response code={0}, request url={1}".format(r.status_code, r.url)
             logging.debug(msg)
             msg = 'output get_satne_podatke:\n{0}'.format(str(r.text))
@@ -89,11 +90,12 @@ class WebZahtjev(object):
         try:
             url = self._base + self._resursi['statusMap']
             logging.debug('get_statusMap pozvan')
+            head = {"accept":"application/json"}
             r = requests.get(url,
                              timeout=39.1,
+                             headers = head,
                              auth=HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request'
-            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             jsonStr = r.text
             x = json.loads(jsonStr)
             rezultat = {}
@@ -156,14 +158,15 @@ class WebZahtjev(object):
         """
         try:
             url = self._base + self._resursi['programMjerenja']
+            head = {"accept":"application/xml"}
             payload = {"id":"findAll", "name":"GET"}
             logging.debug('get_programe_mjerenja pozvan')
             r = requests.get(url,
                              params=payload,
                              timeout=39.1,
+                             headers=head,
                              auth=HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request'
-            assert r.headers['Content-Type'] == 'application/xml', 'Bad response, not xml'
             rezultat = self.parse_xml(r.text)
             msg = 'get_programe_mjerenja procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
             logging.debug(msg)
@@ -193,15 +196,16 @@ class WebZahtjev(object):
         try:
             url = self._base + self._resursi['siroviPodaci']+'/'+str(programMjerenja)+'/'+datum
             payload = {"id":"getPodaci", "name":"GET", "broj_dana":brojdana}
+            head = {"accept":"application/json"}
             msg = 'get_sirovi pozvan sa argumentima, id={0}, datum={1}, brojdana={2}'.format(str(programMjerenja), str(datum), str(brojdana))
             logging.debug(msg)
             assert brojdana >= 1, 'Broj dana mora biti veci ili jednak 1.'
             r = requests.get(url,
                              params=payload,
                              timeout=39.1,
+                             headers=head,
                              auth=HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request'
-            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             msg = 'get_sirovi procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
             logging.debug(msg)
             msg = 'get_sirovi output frame:\n{0}'.format(str(r.text))
@@ -288,13 +292,14 @@ class WebZahtjev(object):
             url = self._base + self._resursi['zerospan']+'/'+str(programMjerenja)+'/'+datum
             payload = {"id":"getZeroSpanLista", "name":"GET", "broj_dana":int(kolicina)}
             msg = 'get_zero_span pozvan sa parametrima: id={0}, datum={1}, brojdana={2}'.format(str(programMjerenja), str(datum), str(kolicina))
+            head = {"accept":"application/json"}
             logging.debug(msg)
             r = requests.get(url,
                              params=payload,
                              timeout=39.1,
+                             headers=head,
                              auth=HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response'
-            assert r.headers['Content-Type'] == 'application/json', 'Bad response, not json'
             msg = 'get_zero_span procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
             logging.debug(msg)
             msg = 'get_zero_span output:\n{0}'.format(str(r.text))

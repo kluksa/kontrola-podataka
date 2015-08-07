@@ -66,6 +66,11 @@ class KoncPanel(base2, form2):
         self.minutniBitModel = modeli.BitModel()
         self.satniBitView.setModel(self.satniBitModel)
         self.minutniBitView.setModel(self.minutniBitModel)
+        # modeli i view-ovi za podatke o izabranoj tocki
+        self.satnoAgregiraniModel = modeli.SatnoAgregiraniPodaciModel()
+        self.satnoAgregiraniView.setModel(self.satnoAgregiraniModel)
+        self.minutniModel = modeli.MinutniPodaciModel()
+        self.minutniView.setModel(self.minutniModel)
 
     def toggle_satni_grid(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""
@@ -179,11 +184,9 @@ class KoncPanel(base2, form2):
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
+        self.satnoAgregiraniModel.set_data(arg)
+        self.satnoAgregiraniView.update()
         self.satniVrijeme.setText(str(arg['vrijeme']))
-        self.satniAverage.setText(str(arg['average']))
-        self.satniMin.setText(str(arg['min']))
-        self.satniMax.setText(str(arg['max']))
-        self.satniCount.setText(str(arg['count']))
         chklist, smap = arg['status']
         self.satniBitModel.set_data_and_smap(chklist, smap)
         self.satniBitView.update()
@@ -197,8 +200,9 @@ class KoncPanel(base2, form2):
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
+        self.minutniModel.set_data(arg)
+        self.minutniView.update()
         self.minutniVrijeme.setText(str(arg['vrijeme']))
-        self.minutniKoncentracija.setText(str(arg['koncentracija']))
         chklist, smap = arg['status']
         self.minutniBitModel.set_data_and_smap(chklist, smap)
         self.minutniBitView.update()
@@ -246,6 +250,9 @@ class ZeroSpanPanel(base3, form3):
         self.toggleLegendZero.setChecked(self.konfig.zero.Legend)
         self.toggleGridSpan.setChecked(self.konfig.span.Grid)
         self.toggleLegendSpan.setChecked(self.konfig.span.Legend)
+        #table view.
+        self.zsModel = modeli.ZeroSpanModel()
+        self.zeroSpanTableView.setModel(self.zsModel)
         #zoom sinhronizacija
         #ZERO
         self.connect(self.zeroGraf,
@@ -410,11 +417,9 @@ class ZeroSpanPanel(base3, form3):
         mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
         mapa['status'] = status
         """
-        self.zeroVrijeme.setText(mapa['xtocka'])
-        self.zeroValue.setText(mapa['ytocka'])
-        self.zeroMinD.setText(mapa['minDozvoljenoOdstupanje'])
-        self.zeroMaxD.setText(mapa['maxDozvoljenoOdstupanje'])
-        self.zeroStatus.setText(mapa['status'])
+        print(mapa)
+        self.zsModel.set_data_zero(mapa)
+        self.zeroSpanTableView.update()
 
     def prikazi_info_span(self, mapa):
         """
@@ -427,11 +432,10 @@ class ZeroSpanPanel(base3, form3):
         mapa['maxDozvoljenoOdstupanje'] = max dozvoljeno odstupanje
         mapa['status'] = status
         """
-        self.spanVrijeme.setText(mapa['xtocka'])
-        self.spanValue.setText(mapa['ytocka'])
-        self.spanMinD.setText(mapa['minDozvoljenoOdstupanje'])
-        self.spanMaxD.setText(mapa['maxDozvoljenoOdstupanje'])
-        self.spanStatus.setText(mapa['status'])
+        #TODO!
+        print(mapa)
+        self.zsModel.set_data_span(mapa)
+        self.zeroSpanTableView.update()
 
 
 base14, form14 = uic.loadUiType('./app/view/ui_files/visednevni_prikaz.ui')
@@ -463,6 +467,10 @@ class RestPregledSatnih(base14, form14):
         # modeli i view-ovi za status
         self.restSatniBitModel = modeli.BitModel()
         self.restSatniBitView.setModel(self.restSatniBitModel)
+        # modeli i view za prikaz podataka
+        self.restAgregiraniModel = modeli.RestAgregiraniModel()
+        self.restAgregiraniView.setModel(self.restAgregiraniModel)
+
 
 
     def toggle_grid_satniRest(self, x):
@@ -546,9 +554,9 @@ class RestPregledSatnih(base14, form14):
         mapa['status'] = status
         mapa['obuhvat'] = obuhvat
         """
+        self.restAgregiraniModel.set_data(mapa)
+        self.restAgregiraniView.update()
         self.labelVrijeme.setText(str(mapa['vrijeme']))
-        self.labelAverage.setText(str(mapa['average']))
-        self.labelObuhvat.setText(str(mapa['obuhvat']))
         chklist, smap = mapa['status']
         self.restSatniBitModel.set_data_and_smap(chklist, smap)
         self.restSatniBitView.update()

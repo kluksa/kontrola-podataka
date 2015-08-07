@@ -1167,6 +1167,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         output = {'vrijeme': '',
                   'koncentracija': '',
+                  'id':0,
                   'status': [[], self.statusMap]}
         if xpoint in list(self.data[self.gKanal].index):
             ystat = self.data[self.gKanal].loc[xpoint, self.konfig.STATUS]
@@ -1174,7 +1175,8 @@ class MinutniKanvas(SatniMinutniKanvas):
             konc = round(self.data[self.gKanal].loc[xpoint, self.konfig.MIDLINE], 3)
             output = {'vrijeme': str(xpoint),
                       'koncentracija':konc,
-                      'status': ystat}
+                      'status': ystat,
+                      'id':self.data[self.gKanal].loc[xpoint, 'id']}
         #emit za promjenu minutnog statusa
         self.emit(QtCore.SIGNAL('set_labele_minutne_tocke(PyQt_PyObject)'), output)
 

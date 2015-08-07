@@ -11,7 +11,6 @@ Wrapper koji sadrzi:
     3. satni canvas (canvas za prikaz satno agregiranih podataka)
     4. minutni canvas (canvas za prikaz minutnih podataka)
 """
-
 import logging
 import datetime
 from PyQt4 import QtCore, QtGui, uic
@@ -114,6 +113,7 @@ class KoncPanel(base2, form2):
         self.satnoAgregiraniView.setModel(self.satnoAgregiraniModel)
         self.minutniModel = modeli.MinutniPodaciModel()
         self.minutniView.setModel(self.minutniModel)
+        self.minutniId = 0
         #context menu connection
         self.connect(self.satniBitView,
                      QtCore.SIGNAL('izabrani_fault(PyQt_PyObject)'),
@@ -129,9 +129,8 @@ class KoncPanel(base2, form2):
         tocku
         """
         #TODO!
-        msg = 'fault:{0}\n jos treba dohvatiti id podatka'.format(fault)
-        QtGui.QMessageBox.information(self, 'Djelomicna implementacija', msg)
-
+        out = 'fault:{0}\n id:{1}'.format(fault, str(self.minutniId))
+        QtGui.QMessageBox.information(self, 'Djelomicna implementacija', out)
 
     def display_agregirani_fault_info(self, fault):
         msg = 'NOT IMPLEMENTED - fault:{0}'.format(fault)
@@ -269,6 +268,8 @@ class KoncPanel(base2, form2):
         self.minutniModel.set_data(arg)
         self.minutniView.update()
         self.minutniVrijeme.setText(str(arg['vrijeme']))
+        #TODO!
+        self.minutniId = arg['id']
         chklist, smap = arg['status']
         self.minutniBitModel.set_data_and_smap(chklist, smap)
         self.minutniBitView.update()

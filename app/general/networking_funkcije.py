@@ -363,3 +363,31 @@ class WebZahtjev(object):
             msg = "General exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e3), url, str(payload), str(headers))
             logging.error(msg, exc_info=True)
             return False
+
+    def dohvati_status_info_za_podatak(self, podatakId, statusString):
+        """
+        Metoda dohvaca status info za minutni podatak uz pomoc njegovog id (int)
+        i opisa statusa (string)
+        """
+        try:
+            path = self._base + self._resursi['siroviPodaci'] + '/' + 'opis_statusa'
+            url = "/".join([path, str(podatakId), str(statusString)])
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=39.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
+            return r.text
+        except AssertionError as e1:
+            msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
+            logging.error(msg, exc_info=True)
+            return msg
+        except requests.exceptions.RequestException as e2:
+            msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
+            logging.error(msg, exc_info=True)
+            return msg
+        except Exception as e3:
+            msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
+            logging.error(msg, exc_info=True)
+            return msg

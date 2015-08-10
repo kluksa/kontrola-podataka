@@ -180,7 +180,6 @@ class Kontroler(QtCore.QObject):
         """
         display informacijskog dijaloga sa opisom statusa minutnog podatka
         """
-        #TODO! bolji dijalog?
         podatak = arg['id']
         status = arg['statusString']
         response = self.webZahtjev.dohvati_status_info_za_podatak(podatak, status)
@@ -562,15 +561,15 @@ class Kontroler(QtCore.QObject):
                 #podaci nisu spremljeni
                 nisuSpremljeni.append(datum)
 
-        #report uspjesnost spremanja
-        naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
         if len(nisuSpremljeni) != 0:
+            #report uspjesnost spremanja
+            naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
             msgNeuspjeh = ", ".join(nisuSpremljeni)
             poruka = "\n".join(['Neuspjesno spremljeni datumi:', msgNeuspjeh])
+            QtGui.QApplication.restoreOverrideCursor()
+            QtGui.QMessageBox.information(self.gui, naslov, poruka)
         # vrati izgled cursora nazad na normalni
         QtGui.QApplication.restoreOverrideCursor()
-        # prikazi information dialog
-        QtGui.QMessageBox.information(self.gui, naslov, poruka)
 
     def upload_minutne_na_REST_gumb(self):
         """spremanje trenutnih opdataka na REST"""

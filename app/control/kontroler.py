@@ -171,6 +171,23 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_sati_minutnog(PyQt_PyObject)'),
                      self.promjeni_max_broj_sati_minutnog)
+        ###MINUTNI STATUS BIT INFO###
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('get_minutni_fault_info(PyQt_PyObject)'),
+                     self.prikazi_info_statusa_podatka)
+
+    def prikazi_info_statusa_podatka(self, arg):
+        """
+        display informacijskog dijaloga sa opisom statusa minutnog podatka
+        """
+        #TODO! bolji dijalog?
+        podatak = arg['id']
+        status = arg['statusString']
+        response = self.webZahtjev.dohvati_status_info_za_podatak(podatak, status)
+        msg = 'Minutni podatak id={0}, status={1}'.format(podatak, status)
+        title = 'Opis statusa minutnog podatka'
+        tekst = "\n".join([msg, response])
+        QtGui.QMessageBox.information(self.gui, title, tekst)
 
     def prikazi_error_msg(self, poruka):
         """

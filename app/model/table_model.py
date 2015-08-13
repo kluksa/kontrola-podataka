@@ -311,7 +311,7 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
             self.data = {'koncentraicja':None}
         else:
             self.data = data
-        self.headeri = ['koncentracija']
+        self.headeri = ['koncentracija', 'mjeritelj']
 
     def set_data(self, mapa):
         self.data = mapa
@@ -321,7 +321,7 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
         return 1
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 1
+        return 2
 
     def flags(self, index):
         if index.isValid():
@@ -335,6 +335,9 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
             if col == 0:
                 if 'koncentracija' in self.data:
                     return str(self.data['koncentracija'])
+            if col == 1:
+                if 'mjeritelj' in self.data:
+                    return str(self.data['mjeritelj'])
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:

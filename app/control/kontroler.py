@@ -189,7 +189,7 @@ class Kontroler(QtCore.QObject):
             output = "Opis ne postoji."
             QtGui.QMessageBox.information(self.gui, title, output)
         else:
-            tekst = [" : ".join([str(key) ,str(opisi[key])]) for key in opisi]
+            tekst = [" ".join([str(key) ,str(opisi[key])]) for key in opisi]
             output = "\n".join(tekst)
             QtGui.QMessageBox.information(self.gui, title, output)
 

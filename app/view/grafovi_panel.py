@@ -12,6 +12,7 @@ Wrapper koji sadrzi:
     4. minutni canvas (canvas za prikaz minutnih podataka)
 """
 import logging
+import copy
 import datetime
 from PyQt4 import QtCore, QtGui, uic
 import app.view.canvas as canvas
@@ -70,13 +71,14 @@ class KoncPanel(base2, form2):
     """
     Klasa panela u kojem se nalaze koncentracijski grafovi i kontrole za pojedini graf
     """
-    def __init__(self, konfig, parent=None):
+    def __init__(self, konfig=None, parent=None):
         """
         za inicijalizaciju panela potreban je konfig objekt aplikacije (konfig)
         """
         super(base2, self).__init__(parent)
         self.setupUi(self)
         self.konfig = konfig
+        self.parent = parent
         #inicijalizacija canvasa (samo sa djelom konfiga koji je potreban za
         #funkcioniranje klase i sa mapom pomocnih kanala)
         self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig)
@@ -265,11 +267,21 @@ class KoncPanel(base2, form2):
         ulazni parametar arg je dictionary sa vrjiednostima labela. Sve vrijednosti
         moraju biti stringovi!
         """
-        self.minutniModel.set_data(arg)
-        self.minutniView.update()
-        self.minutniVrijeme.setText(str(arg['vrijeme']))
         self.minutniId = arg['id']
         chklist, smap = arg['status']
+        #TODO! do pametnije implementacije
+        user = self.parent.kontrola.webZahtjev.dohvati_zadnju_osobu_koja_je_mjenjala_podatak(self.minutniId)
+        #dohvati samo ime
+        try:
+            ind = user.find(':') + 1
+            user = user[ind:].strip()
+        except Exception:
+            user = 'n/a'
+        patch = copy.deepcopy(arg)
+        patch['mjeritelj'] = user
+        self.minutniModel.set_data(patch)
+        self.minutniView.update()
+        self.minutniVrijeme.setText(str(arg['vrijeme']))
         self.minutniBitModel.set_data_and_smap(chklist, smap)
         self.minutniBitView.update()
 

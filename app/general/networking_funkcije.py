@@ -382,12 +382,46 @@ class WebZahtjev(object):
         except AssertionError as e1:
             msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
             logging.error(msg, exc_info=True)
-            return msg
+            return '{}'
         except requests.exceptions.RequestException as e2:
             msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
             logging.error(msg, exc_info=True)
-            return msg
+            return '{}'
         except Exception as e3:
             msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
             logging.error(msg, exc_info=True)
-            return msg
+            return '{}'
+
+    def dohvati_zadnju_osobu_koja_je_mjenjala_podatak(self, podatakId):
+        """
+        Metoda dohvaca zadnju osobu koja je mjenjala podatak
+        """
+        try:
+            path = self._base + self._resursi['siroviPodaci'] + '/' + 'opis_statusa'
+            url = "/".join([path, str(podatakId), 'KONTROLA'])
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=39.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
+            opisi = json.loads(r.text)
+            if len(opisi.keys()) != 0:
+                tekst = [" ".join([str(key) ,str(opisi[key])]) for key in opisi]
+                output = "\n".join(tekst)
+                return output
+            else:
+                return "n/a"
+        except AssertionError as e1:
+            msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
+            logging.error(msg, exc_info=True)
+            return "n/a"
+        except requests.exceptions.RequestException as e2:
+            msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
+            logging.error(msg, exc_info=True)
+            return "n/a"
+        except Exception as e3:
+            msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
+            logging.error(msg, exc_info=True)
+            return "n/a"
+

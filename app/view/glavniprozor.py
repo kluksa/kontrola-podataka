@@ -37,7 +37,7 @@ class GlavniProzor(base, form):
         self.konfiguracija = app_dto.KonfigAplikacije(self.config)
         logging.debug('postavljen konfig objekt')
         #inicijalizacija panela sa grafovima koncentracije
-        self.koncPanel = grafovi_panel.KoncPanel(self.konfiguracija)
+        self.koncPanel = grafovi_panel.KoncPanel(konfig=self.konfiguracija, parent=self)
         self.koncPanelLayout.addWidget(self.koncPanel)
         logging.debug('postavljen panel sa grafovima koncentracije')
         #inicijalizacija panela sa zero/span grafovima

@@ -267,6 +267,7 @@ class Kontroler(QtCore.QObject):
         logging.debug(msg)
         # inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
+        self.satniAgregator.set_webrequest(self.webZahtjev) #XXX! postavljanje validnog webrequesta u agregator
         logging.debug('webZahtjev inicijaliziran')
         #inicijalizacija REST readera
         self.restReader = data_reader.RESTReader(source=self.webZahtjev)

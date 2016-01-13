@@ -296,7 +296,8 @@ class DataModel(QtCore.QObject):
         """
         frejm = self.get_frame(key=key, tmin=tmin, tmax=tmax)
         try:
-            agregiraniFrejm = self.agregator.agregiraj(frejm)
+            #XXX! modificirana metoda
+            agregiraniFrejm = self.agregator.agregiraj(frejm, key)
             msg = 'agregirani frejm:\n{0}'.format(str(agregiraniFrejm))
             logging.debug(msg)
             return agregiraniFrejm

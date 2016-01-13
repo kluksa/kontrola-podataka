@@ -315,6 +315,10 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
 
     def set_data(self, mapa):
         self.data = mapa
+#        #TODO! extendanje za n kljuceva
+#        self.headeri = ['koncentracija']
+#        for key in mapa:
+#            self.headeri.append(key)
         self.layoutChanged.emit()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -322,6 +326,8 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 2
+        #TODO! extendanje za n kljuceva, vidi grafovi_panel za ostatak koda
+#        return len(self.headeri)
 
     def flags(self, index):
         if index.isValid():
@@ -338,6 +344,10 @@ class MinutniPodaciModel(QtCore.QAbstractTableModel):
             if col == 1:
                 if 'mjeritelj' in self.data:
                     return str(self.data['mjeritelj'])
+            #TODO! extendanje za n kljuceva
+#            key = self.headeri[col]
+#            if key in self.data:
+#                return str(self.data[key])
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:

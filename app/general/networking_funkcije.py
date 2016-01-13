@@ -33,6 +33,41 @@ class WebZahtjev(object):
         self._resursi = resursi
         self.user, self.pswd = auth
 
+    def get_broj_u_satu(self, programMjerenjaId):
+        """
+        Metoda dohvaca minimalni broj podataka u satu za neki programMjerenjaID.
+        Output je integer ili u slucaju pogreske default vrijednost od 45
+        """
+        #XXX! nova metoda
+        try:
+            msg = 'get_broj_u_satu pozvan sa argumentom, args={0}'.format(str(programMjerenjaId))
+            logging.debug(msg)
+            url = self._base + self._resursi['programMjerenja']+'/podaci/'+str(programMjerenjaId)
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=15.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
+            msg = "get_broj_u_satu procesiran, response code={0}, request url={1}".format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = "output get_broj_u_satu:\n{0}".format(str(r.text))
+            logging.debug(msg)
+            out = json.loads(r.text)
+            return int(out['brojUSatu'])
+        except AssertionError as e1:
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}\nkoristim default = 60".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return 60
+        except requests.exceptions.RequestException as e2:
+            msg = "Request exception - {0}\nrequest url={1}\nkoristim default = 60".format(str(e2), url)
+            logging.error(msg, exc_info=True)
+            return 60
+        except Exception as e3:
+            msg = "General exception - {0}\nrequest url={1}\nkoristim default = 60".format(str(e3), url)
+            logging.error(msg, exc_info=True)
+            return 60
+
     def get_satne_podatke(self, mapa):
         """
         Metoda dohvaca satno agregirane podatke sa REST servisa.
@@ -405,23 +440,19 @@ class WebZahtjev(object):
                              headers=head,
                              auth=HTTPBasicAuth(self.user, self.pswd))
             assert r.ok == True, 'Bad request/response'
+            return r.text
             opisi = json.loads(r.text)
-            if len(opisi.keys()) != 0:
-                tekst = [" ".join([str(key) ,str(opisi[key])]) for key in opisi]
-                output = "\n".join(tekst)
-                return output
-            else:
-                return "n/a"
+            return opisi
         except AssertionError as e1:
             msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
             logging.error(msg, exc_info=True)
-            return "n/a"
+            return {}
         except requests.exceptions.RequestException as e2:
             msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
             logging.error(msg, exc_info=True)
-            return "n/a"
+            return {}
         except Exception as e3:
             msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
             logging.error(msg, exc_info=True)
-            return "n/a"
+            return {}
 

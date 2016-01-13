@@ -21,7 +21,12 @@ class Agregator(object):
     """
     def __init__(self):
         """U buducnosti dozvoliti iniicjalizaciju nekih parametara?"""
-        pass
+        self.webrequest = None
+
+    def set_webrequest(self, x):
+        """setter interfacea prema REST servisu. Potrebno je prosljediti webRequest instancu."""
+        #XXX! validan web zahtjev za dohvacanje broja podataka u satu
+        self.webrequest = x
 
     def test_validacije(self, x):
         """
@@ -132,13 +137,14 @@ class Agregator(object):
             return np.NaN
         return len(x)
 
-    def agregiraj(self, frejm):
+    def agregiraj(self, frejm, pId):
         """
         Glavna funkcija za agregiranje minutnih podataka.
         input
         frejm --> pandas dataframe
             -mora imati stupce : koncentracija, status, flag
             -mora imati vremenski indeks (datetime index)
+        pId --> integer program mjerenja ID
         output --> pandas dataframe
             -ima stupce :
                 broj podataka, status, flag, acg, std,
@@ -210,15 +216,22 @@ class Agregator(object):
             agregirani[col] = temp
         #iz frejma agregiranih treba maknuti sve gdje je 'broj podataka' np.Nan
         agregirani = agregirani[np.isnan(agregirani[u'broj podataka']) == False]
-        #provjera za broj valjanih podataka (flag > 0). Mora biti barem 75% (45 podataka)
+        #provjera za broj valjanih podataka (flag > 0). Mora biti barem 75% podataka
         #valjanih u svakom satu, inace se sat automatski flagira lose.
+        try:
+            #XXX! pokusaj dohvacanja ukupnog broja podataka u satu
+            brojusatu = self.webrequest.get_broj_u_satu(str(pId))
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
+            brojusatu = 60
+        brojvaljanih = int(brojusatu * 0.75) #75% round down
+        print(brojvaljanih) #TODO!
         for i in agregirani.index:
-            if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i, u'count'] < 45:
+            if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i, u'count'] < brojvaljanih:
                 if agregirani.loc[i, u'flag'] == 1000:
                     agregirani.loc[i, u'flag'] = -1000
                 else:
                     agregirani.loc[i, u'flag'] = -1
-
         #Problem prilikom agregiranja. ako sve indekse unutar jednog sata prebacimo
         #da su losi, funkcije koje racunaju srednje vrijednosti isl. ne reazlikuju
         #taj slucaj od nepostojecih podataka te uvijek vrate np.NaN (not a number).

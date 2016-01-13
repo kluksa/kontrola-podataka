@@ -13,6 +13,7 @@ Wrapper koji sadrzi:
 """
 import logging
 import copy
+import json
 import datetime
 from PyQt4 import QtCore, QtGui, uic
 import app.view.canvas as canvas
@@ -272,13 +273,20 @@ class KoncPanel(base2, form2):
         #TODO! do pametnije implementacije
         user = self.parent.kontrola.webZahtjev.dohvati_zadnju_osobu_koja_je_mjenjala_podatak(self.minutniId)
         #dohvati samo ime
-        try:
-            ind = user.find(':') + 1
-            user = user[ind:].strip()
-        except Exception:
-            user = 'n/a'
         patch = copy.deepcopy(arg)
-        patch['mjeritelj'] = user
+        #TODO! extend za N kljuceva, vidi table_model.py za nastavak
+#        try:
+#            mapa = json.loads(user)
+#            for key in mapa:
+#                kljuc = key[:-1] #micanje : sa kraja stringa
+#                patch[kljuc] = mapa[key]
+#        except:
+#            patch['mjeritelj'] = 'n/a'
+        try:
+            mapa = json.loads(user)
+            patch['mjeritelj'] = mapa['mjeritelj:']
+        except Exception:
+            patch['mjeritelj'] = 'n/a'
         self.minutniModel.set_data(patch)
         self.minutniView.update()
         self.minutniVrijeme.setText(str(arg['vrijeme']))

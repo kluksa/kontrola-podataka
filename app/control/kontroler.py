@@ -908,7 +908,7 @@ class Kontroler(QtCore.QObject):
         #merge frejmove
         result = pd.concat([zeroref, spanref])
         #sortiraj po indeksu
-        result.sort(inplace=True)
+        result.sort(inplace=True, ascending=False)
         return result
 
 

@@ -219,13 +219,12 @@ class Agregator(object):
         #provjera za broj valjanih podataka (flag > 0). Mora biti barem 75% podataka
         #valjanih u svakom satu, inace se sat automatski flagira lose.
         try:
-            #XXX! pokusaj dohvacanja ukupnog broja podataka u satu
+            #pokusaj dohvacanja ukupnog broja podataka u satu, fallback default je 60
             brojusatu = self.webrequest.get_broj_u_satu(str(pId))
         except Exception as err:
             logging.error(str(err), exc_info=True)
             brojusatu = 60
         brojvaljanih = int(brojusatu * 0.75) #75% round down
-        print(brojvaljanih) #TODO!
         for i in agregirani.index:
             if np.isnan(agregirani.loc[i, u'count']) or agregirani.loc[i, u'count'] < brojvaljanih:
                 if agregirani.loc[i, u'flag'] == 1000:

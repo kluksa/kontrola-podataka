@@ -311,6 +311,9 @@ class ZeroSpanPanel(base3, form3):
         self.konfig = konfig
         self.zoomStackZS = []
         self.initial_zoom_level = (None, None, None)
+        #TODO! zero i span referentne tablice
+        self.zerospanRefTableModel = modeli.ZeroSpanRefModel()
+        self.zerospanRefView.setModel(self.zerospanRefTableModel)
         #inicijalizacija canvasa (pomocni nisu potrebni)
         self.zeroGraf = canvas.ZeroKanvas(konfig.zero)
         self.spanGraf = canvas.SpanKanvas(konfig.span)
@@ -361,6 +364,10 @@ class ZeroSpanPanel(base3, form3):
         self.connect(self.spanGraf,
                      QtCore.SIGNAL('add_zoom_level(PyQt_PyObject)'),
                      self.add_zoom_level_to_stack)
+
+    def update_zero_span_referentne_vrijednosti(self, referentni):
+        """Update tablica referentnih vrijednosti zero i spana"""
+        self.zerospanRefTableModel.set_frejm(referentni)
 
     def zoom_out(self):
         """

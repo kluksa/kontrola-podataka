@@ -422,6 +422,7 @@ class Kontroler(QtCore.QObject):
         self.gui.koncPanel.minutniView.update()
         self.gui.visednevniPanel.restAgregiraniModel.set_data(clmap)
         self.gui.visednevniPanel.restAgregiraniView.update()
+        self.gui.zsPanel.zerospanRefTableModel.clear_frejm() #XXX! clear tablice sa referentnim vrijednostima
         logging.info('Request user_log_out, kraj.')
 
     def priredi_podatke(self, mapa):
@@ -709,6 +710,10 @@ class Kontroler(QtCore.QObject):
             self.drawStatus[0] = True
         elif x is 1 and not self.drawStatus[1]:
             self.crtaj_zero_span()
+            if hasattr(self, 'webZahtjev'):
+                referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
+                #TODO! update gui & logout reset to nothing & promjena datum vrijeme...
+                self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
 
     def crtaj_satni_graf(self):
@@ -849,6 +854,63 @@ class Kontroler(QtCore.QObject):
             finally:
                 QtGui.QApplication.restoreOverrideCursor()
                 logging.info('crtaj_zero_span, kraj')
+
+    def get_tablice_zero_span_referentnih_vrijednosti(self):
+        """
+        Metoda je zaduzena da sa REST servisa prikupi referentne vrijednosti
+        za zero i span. Te da updatea tablice.
+        """
+        #TODO!
+        msg = 'update_tablice_zero_span_referentnih_vrijednosti za self.gKanal={0}'.format(str(self.gKanal))
+        logging.info(msg)
+        zeroRefCheck = True
+        spanRefCheck = True
+        #zero
+        try:
+            zeroref = self.webZahtjev.get_zerospan_referentne_liste(self.gKanal, 'zero')
+            zeroref = pd.read_json(zeroref, orient='records', convert_dates=['pocetakPrimjene'])
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
+            msg = """
+                Error je kod dohvacanja zero referentnih vrijednosti sa REST.
+                Moguce nije valjani json.
+                Kanal: {0}
+                JSON: {1}""".format(str(self.gKanal), str(zeroref))
+            logging.error(msg)
+            zeroRefCheck = False
+        if not zeroRefCheck:
+            zeroref = pd.DataFrame(columns=['id', 'pocetakPrimjene', 'vrsta', 'vrijednost'])
+        #span
+        try:
+            spanref = self.webZahtjev.get_zerospan_referentne_liste(self.gKanal, 'span')
+            spanref = pd.read_json(spanref, orient='records', convert_dates=['pocetakPrimjene'])
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
+            msg = """
+                Error je kod dohvacanja span referentnih vrijednosti sa REST.
+                Moguce nije valjani json.
+                Kanal: {0}
+                JSON: {1}""".format(str(self.gKanal), str(spanref))
+            logging.error(msg)
+            spanRefCheck = False
+        if not spanRefCheck:
+            spanref = pd.DataFrame(columns=['id', 'pocetakPrimjene', 'vrsta', 'vrijednost'])
+        #merge tablica u jednu
+        #flip na indeks vremena
+        zeroref.set_index('pocetakPrimjene', inplace=True)
+        spanref.set_index('pocetakPrimjene', inplace=True)
+        #ostavi samo zero i span (rename stupac 'vrijednost')
+        zeroref.rename(columns={'vrijednost':'ZERO'}, inplace=True)
+        spanref.rename(columns={'vrijednost':'SPAN'}, inplace=True)
+        #drop 'id', 'vrsta' from frame
+        zeroref.drop(['id', 'vrsta'], axis=1, inplace=True)
+        spanref.drop(['id', 'vrsta'], axis=1, inplace=True)
+        #merge frejmove
+        result = pd.concat([zeroref, spanref])
+        #sortiraj po indeksu
+        result.sort(inplace=True)
+        return result
+
 
     def dohvati_zero_span(self):
         """

@@ -9,6 +9,8 @@ from PyQt4 import QtGui, QtCore
 import app.general.pomocne_funkcije as pomocne_funkcije
 import math
 import logging
+import numpy as np
+import pandas as pd
 
 
 class PomocniGrafovi(QtCore.QAbstractTableModel):
@@ -489,3 +491,58 @@ class ZeroSpanModel(QtCore.QAbstractTableModel):
                 return self.xheaderi[section]
             if orientation == QtCore.Qt.Vertical:
                 return self.yheaderi[section]
+
+class ZeroSpanRefModel(QtCore.QAbstractTableModel):
+    """
+    prikaz vrijednosti zero i span
+    """
+    def __init__(self, frejm=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+
+        if not isinstance(frejm, pd.core.frame.DataFrame):
+            frejm = pd.DataFrame(columns=['ZERO', 'SPAN'])
+            msg = 'ZeroSpanRefModel.__init__() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
+            logging.error(msg)
+        self.frejm = frejm
+
+    def set_frejm(self, frejm):
+        if not isinstance(frejm, pd.core.frame.DataFrame):
+            frejm = pd.DataFrame(columns=['ZERO', 'SPAN'])
+            msg = 'ZeroSpanRefModel.set_frejm() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
+            logging.error(msg)
+        self.frejm = frejm
+        self.layoutChanged.emit()
+
+    def clear_frejm(self):
+        frejm = pd.DataFrame(columns=['ZERO', 'SPAN'])
+        self.frejm = frejm
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return len(self.frejm)
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return len(self.frejm.columns)
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        row = index.row()
+        col = index.column()
+        if role == QtCore.Qt.DisplayRole:
+            value = self.frejm.iloc[row, col]
+            if np.isnan(value):
+                return ''
+            else:
+                return str(value)
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.frejm.columns[section]
+            if orientation == QtCore.Qt.Vertical:
+                return str(self.frejm.index[section])

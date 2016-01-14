@@ -33,12 +33,43 @@ class WebZahtjev(object):
         self._resursi = resursi
         self.user, self.pswd = auth
 
+    def get_zerospan_referentne_liste(self, programMjerenjaId, tip):
+        """Metoda dohvaca listu referentnih vrijednosti za neki program mjerenja
+        i tip.Input je programMjerenjaId (integer), tip (string, 'zero' ili 'span').
+        """
+        try:
+            msg = 'get_zero_ref_listu pozvan sa argumentom, args={0}'.format(str(programMjerenjaId))
+            logging.debug(msg)
+            url = self._base + self._resursi['zerospan']+'/referentne_vrijednosti/'+str(programMjerenjaId)+'/'+str(tip)
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=15.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request'
+            msg = "get_zero_ref_listu procesiran, response code={0}, request url={1}".format(r.status_code, r.url)
+            logging.debug(msg)
+            msg = "output get_zero_ref_listu:\n{0}".format(str(r.text))
+            logging.debug(msg)
+            return r.text
+        except AssertionError as e1:
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}\nkoristim default = 60".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return 60
+        except requests.exceptions.RequestException as e2:
+            msg = "Request exception - {0}\nrequest url={1}\nkoristim default = 60".format(str(e2), url)
+            logging.error(msg, exc_info=True)
+            return 60
+        except Exception as e3:
+            msg = "General exception - {0}\nrequest url={1}\nkoristim default = 60".format(str(e3), url)
+            logging.error(msg, exc_info=True)
+            return 60
+
     def get_broj_u_satu(self, programMjerenjaId):
         """
         Metoda dohvaca minimalni broj podataka u satu za neki programMjerenjaID.
         Output je integer ili u slucaju pogreske default vrijednost od 45
         """
-        #XXX! nova metoda
         try:
             msg = 'get_broj_u_satu pozvan sa argumentom, args={0}'.format(str(programMjerenjaId))
             logging.debug(msg)

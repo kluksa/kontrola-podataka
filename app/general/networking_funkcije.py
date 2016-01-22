@@ -9,6 +9,7 @@ import requests
 import json
 import xml.etree.ElementTree as ET
 from requests.auth import HTTPBasicAuth
+from PyQt4 import QtGui, QtCore
 
 class WebZahtjev(object):
     """
@@ -221,6 +222,8 @@ class WebZahtjev(object):
         Uz pomoc funkcije parse_xml, prepakirava dobivene podatke u mapu
         'zanimljivih' podataka. Vraca (nested) dictionary programa mjerenja ili
         prazan dictionary u slucaju pogreske prilikom rada.
+
+        -bitno za test login funkcionalnosti... bogatiji report
         """
         try:
             url = self._base + self._resursi['programMjerenja']
@@ -242,14 +245,29 @@ class WebZahtjev(object):
         except AssertionError as e1:
             msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
             logging.error(msg, exc_info=True)
+            #TODO! prikaz warning popup prozora kod loseg odgovora (sve osim 200)
+            QtGui.QApplication.restoreOverrideCursor()
+            msg = "Neuspjesan login.\n\ncode={0} , {1}\n\nurl={2}".format(r.status_code, r.reason, r.url)
+            QtGui.QMessageBox.warning(QtGui.QWidget(), 'login error', msg)
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             return {}
         except requests.exceptions.RequestException as e2:
             msg = "Request exception - {0}\nrequest url={1}\nparametri={2}".format(str(e2), url, str(payload))
             logging.error(msg, exc_info=True)
+            #TODO! prikaz warning popup prozora kod greske sa requests library-om
+            QtGui.QApplication.restoreOverrideCursor()
+            msg = "Neuspjesan login.\n\n{0}\n\nrequest url={1}\n\nparametri={2}".format(str(e2), url, str(payload))
+            QtGui.QMessageBox.warning(QtGui.QWidget(), 'login error', msg)
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             return {}
         except Exception as e3:
             msg = "General exception - {0}\nrequest url={1}\nparametri={2}".format(str(e3), url, str(payload))
             logging.error(msg, exc_info=True)
+            #TODO! prikaz warning popup prozora kod greske sa requests library-om
+            QtGui.QApplication.restoreOverrideCursor()
+            msg = "Neuspjesan login.\n\n{0}\n\nrequest url={1}\n\nparametri={2}".format(str(e3), url, str(payload))
+            QtGui.QMessageBox.warning(QtGui.QWidget(), 'login error', msg)
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             return {}
 
     def get_sirovi(self, programMjerenja, datum, brojdana):

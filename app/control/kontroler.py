@@ -808,7 +808,7 @@ class Kontroler(QtCore.QObject):
         logging.info('crtaj_zero_span, start')
         # clear grafove
         logging.debug('Clear zero i span grafa prije crtanja')
-        self.gui.zsPanel.zeroGraf.clear_zero_span()
+        self.gui.zsPanel.spanGraf.clear_zero_span()
         self.gui.zsPanel.zeroGraf.clear_zero_span()
 
         # provjeri da li je izabran glavni kanal i datum.
@@ -869,6 +869,9 @@ class Kontroler(QtCore.QObject):
         try:
             zeroref = self.webZahtjev.get_zerospan_referentne_liste(self.gKanal, 'zero')
             zeroref = pd.read_json(zeroref, orient='records', convert_dates=['pocetakPrimjene'])
+            zeroref.set_index('pocetakPrimjene', inplace=True) #set vremenski indeks
+            zeroref.rename(columns={'vrijednost':'ZERO'}, inplace=True) #rename stupca u ZERO
+            zeroref.drop(['id', 'vrsta'], axis=1, inplace=True) #drop nebitne stupce
         except Exception as err:
             logging.error(str(err), exc_info=True)
             msg = """
@@ -879,11 +882,14 @@ class Kontroler(QtCore.QObject):
             logging.error(msg)
             zeroRefCheck = False
         if not zeroRefCheck:
-            zeroref = pd.DataFrame(columns=['id', 'pocetakPrimjene', 'vrsta', 'vrijednost'])
+            zeroref = pd.DataFrame(columns=['ZERO'])
         #span
         try:
             spanref = self.webZahtjev.get_zerospan_referentne_liste(self.gKanal, 'span')
             spanref = pd.read_json(spanref, orient='records', convert_dates=['pocetakPrimjene'])
+            spanref.set_index('pocetakPrimjene', inplace=True) #set vremenski indeks
+            spanref.rename(columns={'vrijednost':'SPAN'}, inplace=True) #rename stupca u SPAN
+            spanref.drop(['id', 'vrsta'], axis=1, inplace=True) #drop nebitne stupce
         except Exception as err:
             logging.error(str(err), exc_info=True)
             msg = """
@@ -894,23 +900,13 @@ class Kontroler(QtCore.QObject):
             logging.error(msg)
             spanRefCheck = False
         if not spanRefCheck:
-            spanref = pd.DataFrame(columns=['id', 'pocetakPrimjene', 'vrsta', 'vrijednost'])
+            spanref = pd.DataFrame(columns=['SPAN'])
         #merge tablica u jednu
-        #flip na indeks vremena
-        zeroref.set_index('pocetakPrimjene', inplace=True)
-        spanref.set_index('pocetakPrimjene', inplace=True)
-        #ostavi samo zero i span (rename stupac 'vrijednost')
-        zeroref.rename(columns={'vrijednost':'ZERO'}, inplace=True)
-        spanref.rename(columns={'vrijednost':'SPAN'}, inplace=True)
-        #drop 'id', 'vrsta' from frame
-        zeroref.drop(['id', 'vrsta'], axis=1, inplace=True)
-        spanref.drop(['id', 'vrsta'], axis=1, inplace=True)
         #merge frejmove
         result = pd.concat([zeroref, spanref])
         #sortiraj po indeksu
         result.sort(inplace=True, ascending=False)
         return result
-
 
     def dohvati_zero_span(self):
         """

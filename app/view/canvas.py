@@ -1580,6 +1580,14 @@ class ZeroSpanKanvas(Kanvas):
                   'maxDozvoljenoOdstupanje':'',
                   'status':''}
         self.updateaj_labele_na_panelu('normal', argMap)
+        #TODO! napisi da nema podataka
+        self.axes.text(0.5,
+                       0.5,
+                       'Nije moguce pristupiti zero span podacima za trazeni kanal.',
+                       horizontalalignment='center',
+                       verticalalignment='center',
+                       fontsize=8,
+                       transform=self.axes.transAxes)
         self.draw()
 
     def span_select(self, tmin, tmax):

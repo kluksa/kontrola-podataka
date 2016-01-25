@@ -1306,7 +1306,6 @@ class ZeroSpanKanvas(Kanvas):
         yok = []
         xbad = x
         ybad = y
-
         if self.konfig.WARNING_HIGH in frejm.columns and self.konfig.WARNING_LOW in frejm.columns:
             warningUp = list(frejm[self.konfig.WARNING_HIGH]) #warning up
             warningLow = list(frejm[self.konfig.WARNING_LOW]) #warning low
@@ -1328,7 +1327,6 @@ class ZeroSpanKanvas(Kanvas):
                                      inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
             xbad = list(badTocke.index)
             ybad = list(badTocke[self.konfig.MIDLINE])
-
         out = {'x': x,
                'y': y,
                'warningUp': warningUp,

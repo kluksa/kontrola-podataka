@@ -175,6 +175,21 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('get_minutni_fault_info(PyQt_PyObject)'),
                      self.prikazi_info_statusa_podatka)
+        ###refresh ZERO / SPAN panela###
+        self.connect(self.gui.zsPanel,
+                     QtCore.SIGNAL('refresh_zs_panela'),
+                     self.refresh_zero_span_panela)
+
+    def refresh_zero_span_panela(self):
+        print('testni REFRESH')
+        #TODO!
+        self.crtaj_zero_span()
+        if hasattr(self, 'webZahtjev'):
+            referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
+            self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
+        self.drawStatus[1] = True
+
+
 
     def prikazi_info_statusa_podatka(self, arg):
         """
@@ -710,9 +725,9 @@ class Kontroler(QtCore.QObject):
             self.drawStatus[0] = True
         elif x is 1 and not self.drawStatus[1]:
             self.crtaj_zero_span()
+            #TODO! zero i span referentne vrijednosti
             if hasattr(self, 'webZahtjev'):
                 referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
-                #TODO! update gui & logout reset to nothing & promjena datum vrijeme...
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
 
@@ -810,41 +825,46 @@ class Kontroler(QtCore.QObject):
         logging.debug('Clear zero i span grafa prije crtanja')
         self.gui.zsPanel.spanGraf.clear_zero_span()
         self.gui.zsPanel.zeroGraf.clear_zero_span()
-
         # provjeri da li je izabran glavni kanal i datum.
         msg = 'provjera membera prije crtanja. self.gKanal={0} , self.pickedDate={1}'.format(str(self.gKanal), str(self.pickedDate))
         logging.debug(msg)
         if self.gKanal is not None and self.pickedDate is not None:
+            #dohvati zero i span podatke sa REST-a
             try:
                 #promjeni cursor u wait cursor
                 QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                #redefinicija argumenata
+                tmax = datetime.datetime.strptime(self.pickedDate, '%Y-%m-%d')
+                tmin = tmax - datetime.timedelta(days=self.brojDana)
+                arg = {'kanalId': self.gKanal,
+                       'pocetnoVrijeme': tmin,
+                       'zavrsnoVrijeme': tmax}
                 #dohvati frejmove
                 self.zeroFrejm, self.spanFrejm = self.dohvati_zero_span()
-                #nastavi dalje samo ako barem jedan od frejmova nije prazan
-                if len(self.zeroFrejm) > 0 or len(self.spanFrejm) > 0:
-                    #fix duplicate rows (if any)
-                    self.zeroFrejm.drop_duplicates(subset='vrijeme',
-                                                   take_last=True,
-                                                   inplace=True)
-                    self.zeroFrejm.sort()
-                    self.spanFrejm.drop_duplicates(subset='vrijeme',
-                                                   take_last=True,
-                                                   inplace=True)
-                    self.spanFrejm.sort()
-                    #redefinicija argumenata
-                    tmax = datetime.datetime.strptime(self.pickedDate, '%Y-%m-%d')
-                    tmin = tmax - datetime.timedelta(days=self.brojDana)
-                    arg = {'kanalId': self.gKanal,
-                           'pocetnoVrijeme': tmin,
-                           'zavrsnoVrijeme': tmax}
-                    #naredi crtanje
-                    logging.debug('naredba za crtanje zero i span grafa')
-                    msg = 'ZERO graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.zeroFrejm))
-                    logging.info(msg)
-                    msg = 'SPAN graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.spanFrejm))
-                    logging.info(msg)
-                    self.gui.zsPanel.zeroGraf.crtaj(self.zeroFrejm, arg)
-                    self.gui.zsPanel.spanGraf.crtaj(self.spanFrejm, arg)
+                #crtanje zero
+                if len(self.zeroFrejm) > 0:
+                    if 'vrijeme' in self.zeroFrejm.columns:
+                        #fix duplicate rows (if any)
+                        self.zeroFrejm.drop_duplicates(subset='vrijeme',
+                                                       take_last=True,
+                                                       inplace=True)
+                        self.zeroFrejm.sort()
+                        logging.debug('naredba za crtanje zero grafa')
+                        msg = 'ZERO graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.zeroFrejm))
+                        logging.info(msg)
+                        self.gui.zsPanel.zeroGraf.crtaj(self.zeroFrejm, arg)
+                #crtanje span
+                if len(self.spanFrejm) > 0:
+                    if 'vrijeme' in self.spanFrejm.columns:
+                        #fix duplicate rows (if any)
+                        self.spanFrejm.drop_duplicates(subset='vrijeme',
+                                                       take_last=True,
+                                                       inplace=True)
+                        self.spanFrejm.sort()
+                        logging.debug('naredba za crtanje span grafa')
+                        msg = 'SPAN graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.spanFrejm))
+                        logging.info(msg)
+                        self.gui.zsPanel.spanGraf.crtaj(self.spanFrejm, arg)
             except AttributeError:
                 #moguci fail ako se funkcija pozove prije inicijalizacije REST interfacea.
                 logging.error('web interface nije incijaliziran, Potrebno se ulogirati.', exc_info=True)
@@ -853,14 +873,14 @@ class Kontroler(QtCore.QObject):
                 logging.error('greska kod parsanja json stringa za zero i span.', exc_info=True)
             finally:
                 QtGui.QApplication.restoreOverrideCursor()
-                logging.info('crtaj_zero_span, kraj')
+            logging.info('crtaj_zero_span, kraj')
+
 
     def get_tablice_zero_span_referentnih_vrijednosti(self):
         """
         Metoda je zaduzena da sa REST servisa prikupi referentne vrijednosti
         za zero i span. Te da updatea tablice.
         """
-        #TODO!
         msg = 'update_tablice_zero_span_referentnih_vrijednosti za self.gKanal={0}'.format(str(self.gKanal))
         logging.info(msg)
         zeroRefCheck = True
@@ -902,7 +922,6 @@ class Kontroler(QtCore.QObject):
         if not spanRefCheck:
             spanref = pd.DataFrame(columns=['SPAN'])
         #merge tablica u jednu
-        #merge frejmove
         result = pd.concat([zeroref, spanref])
         #sortiraj po indeksu
         result.sort(inplace=True, ascending=False)
@@ -1188,6 +1207,12 @@ class Kontroler(QtCore.QObject):
         logging.debug(msg)
         self.brojDana = int(x)
         self.crtaj_zero_span()
+        #TODO! zero i span referentne vrijednosti
+        if hasattr(self, 'webZahtjev'):
+            referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
+            self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
+        self.drawStatus[1] = True
+
 
     def apply_promjena_izgleda_grafova(self):
         """

@@ -364,6 +364,12 @@ class ZeroSpanPanel(base3, form3):
         self.connect(self.spanGraf,
                      QtCore.SIGNAL('add_zoom_level(PyQt_PyObject)'),
                      self.add_zoom_level_to_stack)
+        #REFRESH
+        self.pushButtonRefresh.clicked.connect(self.naredi_refresh_zs_panela)
+
+    def naredi_refresh_zs_panela(self):
+        """naredba za refresh zero i span panela"""
+        self.emit(QtCore.SIGNAL('refresh_zs_panela'))
 
     def update_zero_span_referentne_vrijednosti(self, referentni):
         """Update tablica referentnih vrijednosti zero i spana"""

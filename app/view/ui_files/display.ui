@@ -33,7 +33,7 @@
        <number>0</number>
       </property>
       <property name="movable">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <widget class="QWidget" name="grafoviWidget">
        <property name="sizePolicy">
@@ -78,6 +78,12 @@
         <string>PREGLED AGREGIRANIH</string>
        </attribute>
        <layout class="QVBoxLayout" name="visednevniLayout"/>
+      </widget>
+      <widget class="QWidget" name="komentari">
+       <attribute name="title">
+        <string>KOMENTARI</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="komentariLayout"/>
       </widget>
      </widget>
     </item>

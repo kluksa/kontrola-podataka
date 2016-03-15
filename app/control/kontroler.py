@@ -3,12 +3,17 @@
 Created on Thu Jan 22 09:52:37 2015
 
 @author: User
+
+-promjena flaga kod povezanih kanala
+-crtanje povezanih kanala... ( combo za switch fokusa u displayu? )
+- nedostaje graph info za povezane kanale....izgled..
 """
 from PyQt4 import QtCore, QtGui
 import datetime
 import pandas as pd
 import json
 import logging
+from functools import partial
 
 import app.general.networking_funkcije as networking_funkcije  # web zahtjev, interface prema REST servisu
 import app.model.dokument_model as dokument_model  # interni model za zapisivanje podataka u dict pandas datafrejmova
@@ -35,6 +40,7 @@ class Kontroler(QtCore.QObject):
         self.aktivniTab = self.gui.tabWidget.currentIndex()  #koji je tab trenutno aktivan? bitno za crtanje
         self.pickedDate = None  #zadnje izabrani datum, string 'yyyy-mm-dd'
         self.gKanal = None  #trenutno aktivni glavni kanal, integer
+        self.zadnjiPovezaniKanal = None
         self.sat = None  #zadnje izabrani sat na satnom grafu, bitno za crtanje minutnog
         self.pocetnoVrijeme = None  #donji rub vremenskog slajsa izabranog dana
         self.zavrsnoVrijeme = None  #gornji rub vremenskog slajsa izabranog dana
@@ -53,8 +59,26 @@ class Kontroler(QtCore.QObject):
         self.agregiraniFrejmovi = {}  #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
         self.brojDanaSatni = 1 #member prati koliko dana se prikazuje za satno agregirani graf
         self.brojSatiMinutni = 1 #member prati koliko sati se prikazuje na minutno agregiranom grafu
+        self.frejmKomentara = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar']) #frejm komentara
+        #setup radio selection (ako ih treba vise...traba ih definitati u ui fileu i dodati na popise)
+        self.koncRadioButtons = [
+            self.gui.koncPanel.koncRadioButton1,
+            self.gui.koncPanel.koncRadioButton2,
+            self.gui.koncPanel.koncRadioButton3,
+            self.gui.koncPanel.koncRadioButton4]
+        self.zsRadioButtons = [
+            self.gui.zsPanel.zsRadioButton1,
+            self.gui.zsPanel.zsRadioButton2,
+            self.gui.zsPanel.zsRadioButton3,
+            self.gui.zsPanel.zsRadioButton4]
+        self.vdRadioButtons = [
+            self.gui.visednevniPanel.vdRadioButton1,
+            self.gui.visednevniPanel.vdRadioButton2,
+            self.gui.visednevniPanel.vdRadioButton3,
+            self.gui.visednevniPanel.vdRadioButton4]
         ###povezivanje akcija sa funkcijama###
         self.setup_veze()
+        self.setup_radio_buttons([])
         logging.debug('Inicijalizacija kontrolora, kraj')
 
     def setup_veze(self):
@@ -179,17 +203,93 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel,
                      QtCore.SIGNAL('refresh_zs_panela'),
                      self.refresh_zero_span_panela)
+        ###DODAVANJE KOMENTARA###
+        self.connect(self.gui.koncPanel.satniGraf,
+                     QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'),
+                     self.dodaj_novi_komentar)
+        self.connect(self.gui.koncPanel.minutniGraf,
+                     QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'),
+                     self.dodaj_novi_komentar)
+        ###concentration radio buttons###
+        for i in range(len(self.koncRadioButtons)):
+            button = self.koncRadioButtons[i]
+            zsbutton = self.zsRadioButtons[i]
+            vdbutton = self.vdRadioButtons[i]
+            button.clicked.connect(partial(self.toggle_konc_radio, ind=i))
+            zsbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
+            vdbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
+
+    def dodaj_novi_komentar(self, mapa):
+        """
+        Dodavanje novog komentara u frejm sa komentarima.
+        mapa ima kljuceve ['od', 'do', 'kanal', 'tekst']
+        """
+        od = mapa['od']
+        do = mapa['do']
+        tekst = mapa['tekst']
+        kanal = mapa['kanal']
+        postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaNaziv']
+        formula = self.mapaMjerenjeIdToOpis[kanal]['komponentaFormula']
+        frejmrow = pd.DataFrame([{
+            'Od':od,
+            'Do':do,
+            'Postaja':postaja,
+            'Kanal':kanal,
+            'Formula':formula,
+            'Komentar':tekst}])
+        self.frejmKomentara = self.frejmKomentara.append(frejmrow, ignore_index=True)
+        #TODO! ako postoje komentari...promjeni tekst taba u zeleno
+        frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
+                                                      od=self.pocetnoVrijeme,
+                                                      do=self.zavrsnoVrijeme)
+        if len(frejm):
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
+        else:
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
+
+    def toggle_konc_radio(self, ind=0):
+        """
+        ponovno crtanje grafa i update labela...
+        """
+        try:
+            logging.debug('toggle radio gumba na poziciji ind={0}'.format(str(ind)))
+            kanal = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali'][ind]
+            self.gKanal = kanal
+            self.zadnjiPovezaniKanal = kanal
+            self.drawStatus = [False, False]
+            argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
+                      'datum': self.pickedDate,
+                      'mjerenjeId': self.gKanal}
+            msg = 'Promjena labela na panelima, argumenti={0}'.format(str(argMap))
+            logging.debug(msg)
+            self.gui.koncPanel.change_glavniLabel(argMap)
+            self.gui.zsPanel.change_glavniLabel(argMap)
+            self.gui.visednevniPanel.change_glavniLabel(argMap)
+            #mirror click na drugoj radio skupini
+            if not self.koncRadioButtons[ind].isChecked():
+                self.koncRadioButtons[ind].blockSignals(True)
+                self.koncRadioButtons[ind].setChecked(True)
+                self.koncRadioButtons[ind].blockSignals(False)
+            if not self.zsRadioButtons[ind].isChecked():
+                self.zsRadioButtons[ind].blockSignals(True)
+                self.zsRadioButtons[ind].setChecked(True)
+                self.zsRadioButtons[ind].blockSignals(False)
+            if not self.vdRadioButtons[ind].isChecked():
+                self.vdRadioButtons[ind].blockSignals(True)
+                self.vdRadioButtons[ind].setChecked(True)
+                self.vdRadioButtons[ind].blockSignals(False)
+            self.promjena_aktivnog_taba(self.aktivniTab)
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
 
     def refresh_zero_span_panela(self):
-        print('testni REFRESH')
-        #TODO!
         self.crtaj_zero_span()
         if hasattr(self, 'webZahtjev'):
             referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
             self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
         self.drawStatus[1] = True
-
-
 
     def prikazi_info_statusa_podatka(self, arg):
         """
@@ -282,7 +382,7 @@ class Kontroler(QtCore.QObject):
         logging.debug(msg)
         # inicijalizacija webZahtjeva
         self.webZahtjev = networking_funkcije.WebZahtjev(baseurl, resursi, self.appAuth)
-        self.satniAgregator.set_webrequest(self.webZahtjev) #XXX! postavljanje validnog webrequesta u agregator
+        self.satniAgregator.set_webrequest(self.webZahtjev)
         logging.debug('webZahtjev inicijaliziran')
         #inicijalizacija REST readera
         self.restReader = data_reader.RESTReader(source=self.webZahtjev)
@@ -330,12 +430,23 @@ class Kontroler(QtCore.QObject):
         self.mapaMjerenjeIdToOpis = mapa
         #clear sve pomocne grafove (popis kanala nije nuzno isti pa se moraju rekonstuirati defaultni pomocni grafovi)
         self.gui.konfiguracija.reset_pomocne(self.mapaMjerenjeIdToOpis)
-        #dodaj pomocne grafove 'random boje' ovisno da li su u NOX ili PM grupi
+        #clear sve povezane grafove
+        self.gui.konfiguracija.reset_povezane(self.mapaMjerenjeIdToOpis)
+
+        #sredjivanje povezanih kanala (NOx grupa i PM grupa)
         for kanal in self.mapaMjerenjeIdToOpis:
             pomocni = self.nadji_default_pomocne_za_kanal(kanal)
             for i in pomocni:
-                naziv = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
-                self.gui.konfiguracija.dodaj_random_pomocni(kanal, i, naziv)
+                self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali'].append(i)
+                #dodavanje povezanih grafova u konfig... za sada random line
+                if i != kanal:
+                    naziv = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                    self.gui.konfiguracija.dodaj_random_povezani(kanal, i, naziv)
+            #sortiraj povezane kanale, predak je bitan zbog radio buttona
+            lista = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
+            lista = sorted(lista)
+            self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali'] = lista
+
         #root objekt za tree strukturu.
         tree = model_drva.TreeItem(['stanice', None, None, None], parent=None)
         #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
@@ -347,17 +458,32 @@ class Kontroler(QtCore.QObject):
         stanice = sorted(stanice)
         postaje = [model_drva.TreeItem([name, None, None, None], parent=tree) for name in stanice]
         strPostaje = [str(i) for i in postaje]
-        for i in mapa:
-            stanica = mapa[i]['postajaNaziv']  #parent = stanice[stanica]
-            komponenta = mapa[i]['komponentaNaziv']
-            mjernaJedinica = mapa[i]['komponentaMjernaJedinica']
-            formula = mapa[i]['komponentaFormula']
-            opis = " ".join([formula, '[', mjernaJedinica, ']'])
-            usporedno = mapa[i]['usporednoMjerenje']
-            data = [komponenta, usporedno, i, opis]
-            redniBrojPostaje = strPostaje.index(stanica)
-            #kreacija TreeItem objekta
-            model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])
+        skipMeList = [] #popis kanala koje treba preskociti za tree model
+        for i in self.mapaMjerenjeIdToOpis:
+            if i in skipMeList:
+                continue
+            else:
+                stanica = self.mapaMjerenjeIdToOpis[i]['postajaNaziv']  #parent = stanice[stanica]
+                komponenta = self.mapaMjerenjeIdToOpis[i]['komponentaNaziv']
+                formula = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                listaPovezanihKanala = self.mapaMjerenjeIdToOpis[i]['povezaniKanali']
+                if len(listaPovezanihKanala) > 1:
+                    #update kanala koje treba preskociti u konstrukciji tree modela
+                    for k in listaPovezanihKanala:
+                        skipMeList.append(k)
+                    #grupacija PM i NOx
+                    if formula in ['NO', 'NO2', 'NOx']:
+                        komponenta = 'Dusikovi oksidi'
+                    elif formula in ['PM1', 'PM2.5', 'PM10']:
+                        komponenta = 'PM'
+                mjernaJedinica = self.mapaMjerenjeIdToOpis[i]['komponentaMjernaJedinica']
+                opis = " ".join([formula, '[', mjernaJedinica, ']'])
+                usporedno = self.mapaMjerenjeIdToOpis[i]['usporednoMjerenje']
+
+                data = [komponenta, usporedno, i, opis]
+                redniBrojPostaje = strPostaje.index(stanica)
+                #kreacija TreeItem objekta
+                model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])
         #napravi model
         self.modelProgramaMjerenja = model_drva.ModelDrva(tree)
         logging.debug('konstuiraj_tree_model, kraj.')
@@ -371,6 +497,7 @@ class Kontroler(QtCore.QObject):
         npr. ako je izabrani kanal Desinic NO, funkcija vraca id mjerenja za
         NO2 i NOx sa Desinica (ako postoje)
         """
+        #TODO! treba srediti...check za instrument...potencijalni problem kod usporednih mjerenja...
         msg = 'nadji_default_pomocne_za_kanal id={0}, start'.format(str(kanal))
         logging.debug(msg)
         setovi = [('NOx', 'NO', 'NO2'), ('PM10', 'PM1', 'PM2.5')]
@@ -421,6 +548,7 @@ class Kontroler(QtCore.QObject):
         logging.debug('Boje kalendara cleared')
         #clear glavni kanal i datum, clear sve grafove
         self.gKanal = None
+        self.zadnjiPovezaniKanal = None
         self.pickedDate = None
         logging.debug('Glavni kanal i trenutno izabrani datum, cleared')
         self.gui.koncPanel.satniGraf.clear_graf()
@@ -437,7 +565,9 @@ class Kontroler(QtCore.QObject):
         self.gui.koncPanel.minutniView.update()
         self.gui.visednevniPanel.restAgregiraniModel.set_data(clmap)
         self.gui.visednevniPanel.restAgregiraniView.update()
-        self.gui.zsPanel.zerospanRefTableModel.clear_frejm() #XXX! clear tablice sa referentnim vrijednostima
+        self.gui.zsPanel.zerospanRefTableModel.clear_frejm()
+        #clear radio buttons
+        self.setup_radio_buttons([])
         logging.info('Request user_log_out, kraj.')
 
     def priredi_podatke(self, mapa):
@@ -468,17 +598,34 @@ class Kontroler(QtCore.QObject):
         self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
+        #bojanje taba s komentarima ako ih ima...
+        frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
+                                                      od=self.pocetnoVrijeme,
+                                                      do=self.zavrsnoVrijeme)
+        if len(frejm):
+            #TODO! postoje komentari...promjeni tekst taba u zeleno
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
+        else:
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
+
+
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
-        argMap = {'opis': self.mapaMjerenjeIdToOpis[self.gKanal],
-                  'datum': self.pickedDate,
-                  'mjerenjeId': self.gKanal}
-        msg = 'Promjena labela na panelima, argumenti={0}'.format(str(argMap))
-        logging.debug(msg)
-        self.gui.koncPanel.change_glavniLabel(argMap)
-        self.gui.zsPanel.change_glavniLabel(argMap)
-        self.gui.visednevniPanel.change_glavniLabel(argMap)
-        self.promjena_aktivnog_taba(self.aktivniTab)
+        #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske
+        try:
+            lista = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+            loc = lista.index(self.zadnjiPovezaniKanal)
+            self.koncRadioButtons[loc].setChecked(True)
+            self.zsRadioButtons[loc].setChecked(True)
+            self.vdRadioButtons[loc].setChecked(True)
+            self.koncRadioButtons[loc].clicked.emit(True)
+        except Exception:
+            self.koncRadioButtons[0].setChecked(True)
+            self.zsRadioButtons[0].setChecked(True)
+            self.vdRadioButtons[0].setChecked(True)
+            self.koncRadioButtons[0].clicked.emit(True)
         logging.info('Metoda priredi_podatke, kraj.')
 
     def ponisti_izmjene(self):
@@ -514,6 +661,8 @@ class Kontroler(QtCore.QObject):
         """
         automatska metoda za spremanje minutnih podataka na REST.
         - pita za potvrdu spremanja na REST samo ako postoje podaci koji nisu validirani
+
+        -u slucaju povezanih kanala, testira se samo glavni kanal...
         """
         logging.info('Metoda upload_minutne_na_REST_prompt, start')
         #check da ne radi probleme sa datumima u buducnosti ili sa nepostojecim datumima
@@ -557,6 +706,8 @@ class Kontroler(QtCore.QObject):
     def upload_minutnih_na_REST_common(self):
         """
         Implementacija spremanja minutnih podataka na REST.
+
+        sprema se dan po dan, i za sve kanalie u listi povezanih kanala.
         """
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
@@ -566,21 +717,22 @@ class Kontroler(QtCore.QObject):
         datumi = [i.toString('yyyy-MM-dd') for i in datumi]
         spremljeni = []
         nisuSpremljeni = []
-        #spremanje na REST dan po dan (samo podataka za trenutni glavni kanal)
+        #hook za povezane kanale...
+        kanali = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
         for datum in datumi:
-            uspjeh = self.dokument.persist_minutne_podatke(key=self.gKanal, date=datum)
-            if uspjeh:
-                #podaci su spremljeni.. updejtaj kalendar za datum da je spremljen
-                self.update_kalendarStatus(self.gKanal, datum, 'spremljeni')
-                self.promjena_boje_kalendara()
-                spremljeni.append(datum)
-            else:
-                #podaci nisu spremljeni
-                nisuSpremljeni.append(datum)
-
+            for kanal in kanali:
+                uspjeh = self.dokument.persist_minutne_podatke(key=kanal, date=datum)
+                if uspjeh:
+                    #podaci su spremljeni.. updejtaj kalendar za datum da je spremljen
+                    self.update_kalendarStatus(kanal, datum, 'spremljeni')
+                    self.promjena_boje_kalendara()
+                    spremljeni.append((kanal, datum))
+                else:
+                    #podaci nisu spremljeni
+                    nisuSpremljeni.append((kanal, datum))
         if len(nisuSpremljeni) != 0:
             #report uspjesnost spremanja
-            naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(self.gKanal))
+            naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(kanali))
             msgNeuspjeh = ", ".join(nisuSpremljeni)
             poruka = "\n".join(['Neuspjesno spremljeni datumi:', msgNeuspjeh])
             QtGui.QApplication.restoreOverrideCursor()
@@ -628,6 +780,43 @@ class Kontroler(QtCore.QObject):
                 #seta podataka sa resta i ponovno crtanje.
                 self.ponisti_izmjene()
 
+    def setup_radio_buttons(self, lista):
+        """
+        postavljanje radio gumbi u aplikaciji.
+        Ulazni parametar je lista id programa mjerenja povezanih kanala.
+        """
+        #block all signals, hide everything, uncheck everything
+        for i in self.koncRadioButtons:
+            i.blockSignals(True)
+            i.setVisible(False)
+            i.setChecked(False)
+        for i in self.zsRadioButtons:
+            i.blockSignals(True)
+            i.setVisible(False)
+            i.setChecked(False)
+        for i in self.vdRadioButtons:
+            i.blockSignals(True)
+            i.setVisible(False)
+            i.setChecked(False)
+
+        #set visible needed ammount of elements, set their names
+        for i in range(len(lista)):
+            tekst = self.mapaMjerenjeIdToOpis[lista[i]]['komponentaFormula']
+            self.koncRadioButtons[i].setVisible(True)
+            self.koncRadioButtons[i].setText(tekst)
+            self.zsRadioButtons[i].setVisible(True)
+            self.zsRadioButtons[i].setText(tekst)
+            self.vdRadioButtons[i].setVisible(True)
+            self.vdRadioButtons[i].setText(tekst)
+
+        #unblock all signals
+        for i in self.koncRadioButtons:
+            i.blockSignals(False)
+        for i in self.zsRadioButtons:
+            i.blockSignals(False)
+        for i in self.vdRadioButtons:
+            i.blockSignals(False)
+
     def pripremi_membere_prije_ucitavanja_zahtjeva(self, mapa):
         """
         Funkcija analizira zahtjev preuzet u obliku mape
@@ -638,7 +827,10 @@ class Kontroler(QtCore.QObject):
         logging.info(msg)
         # reset status crtanja
         self.drawStatus = [False, False]
-        self.gKanal = int(mapa['programMjerenjaId'])  # informacija o glavnom kanalu
+        noviglavnikanal = int(mapa['programMjerenjaId'])
+        lista = self.mapaMjerenjeIdToOpis[noviglavnikanal]['povezaniKanali']
+        self.gKanal = noviglavnikanal
+        self.setup_radio_buttons(lista)
         msg = 'postavljen glavni kanal, id={0}'.format(str(self.gKanal))
         logging.info(msg)
         datum = mapa['datumString']  # datum je string formata YYYY-MM-DD
@@ -661,8 +853,7 @@ class Kontroler(QtCore.QObject):
         Ako zahtjev nije prije odradjen, ucitava se u dokument.
         """
         logging.info('start ucitavanja podataka')
-        self.sviBitniKanali = []  # varijabla sa listom svih programMjerenjaId koje treba ucitati
-        self.sviBitniKanali.append(self.gKanal)  # dodaj glavni kanal na popis
+        self.sviBitniKanali = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
         #pronadji sve ostale kanale potrebne za crtanje
         for key in self.gui.konfiguracija.dictPomocnih[self.gKanal]:
             self.sviBitniKanali.append(key)
@@ -680,6 +871,9 @@ class Kontroler(QtCore.QObject):
                 for datum in datumi:
                     adapter = datum.toString('yyyy-MM-dd') #convert QDate to string
                     self.update_kalendarStatus(kanal, adapter, 'ucitani')
+                    #test za validiranost podataka...
+                    if self.dokument.provjeri_validiranost_dana(kanal, datum):
+                        self.update_kalendarStatus(kanal, adapter, 'spremljeni')
                 #dodaj glavni kanal u setGlavnihKanala
                 self.setGlavnihKanala = self.setGlavnihKanala.union([self.gKanal])
                 self.modelProgramaMjerenja.set_usedMjerenja(self.kalendarStatus)
@@ -688,11 +882,7 @@ class Kontroler(QtCore.QObject):
             else:
                 msg = 'Kanal nije ucitan u dokument, kanal = {0}'.format(str(kanal))
                 logging.info(msg)
-        #test validacije izabranog dana za inicijalno bojanje kalendara
-        for datum in datumi:
-            if self.dokument.provjeri_validiranost_dana(self.gKanal, datum):
-                adapter = datum.toString('yyyy-MM-dd') #convert QDate to string
-                self.update_kalendarStatus(self.gKanal, adapter, 'spremljeni')
+        self.gui.restIzbornik.treeView.model().layoutChanged.emit()
         #update boju na kalendaru ovisno o ucitanim podacima
         self.promjena_boje_kalendara()
         logging.info('kraj ucitavanja podataka')
@@ -725,11 +915,37 @@ class Kontroler(QtCore.QObject):
             self.drawStatus[0] = True
         elif x is 1 and not self.drawStatus[1]:
             self.crtaj_zero_span()
-            #TODO! zero i span referentne vrijednosti
             if hasattr(self, 'webZahtjev'):
                 referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
+        elif x is 3:
+            #TODO! filter za kanal i vremenski raspon (ako izbacim od i do... samo filter za komentar?)
+            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
+                                                          od=self.pocetnoVrijeme,
+                                                          do=self.zavrsnoVrijeme)
+            self.gui.komentariPanel.set_frejm_u_model(frejm)
+
+    def nadji_komentare_za_kanal_i_datum(self, kanal, od=None, do=None):
+        """
+        metoda vraca slajs frejma komentara za zadani kanal u vremenskom rasponu
+        od - do.
+        kanal -- integer
+        od -- pandas timestamp
+        do -- pandas timestamp
+        """
+        try:
+            temp = self.frejmKomentara.copy()
+            temp = temp[temp['Kanal']==kanal]
+            if od != None:
+                temp = temp[temp['Od'] >= od]
+            if do != None:
+                temp = temp[temp['Do'] <= do]
+            return temp
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
+            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+            return frejm
 
     def crtaj_satni_graf(self):
         """
@@ -981,6 +1197,11 @@ class Kontroler(QtCore.QObject):
         """
         logging.info('nacrtaj_rest_satne, start')
         try:
+            maska = [i.isChecked() for i in self.vdRadioButtons]
+            ind = maska.index(True)
+            povezani = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+            kanal = povezani[ind]
+            mapa['kanal'] = kanal #set izabrani podkanal...
             jsonText = self.webZahtjev.get_satne_podatke(mapa)
             df = pd.read_json(jsonText, orient='records', convert_dates=['vrijeme'])
             frames, metaData = self.adapt_rest_satni_frejm(df)
@@ -1108,17 +1329,19 @@ class Kontroler(QtCore.QObject):
         #naredi promjenu flaga
         msg = 'promjeni_flag, start. Argumenti={0}'.format(str(ulaz))
         logging.info(msg)
-        self.dokument.change_flag(key=ulaz['kanal'], tmin=ulaz['od'], tmax=ulaz['do'], flag=ulaz['noviFlag'])
-        #mankni sve datume nakon promjene flaga u dokumentu iz "self.kalendarStatus['ok']" liste
-        if self.gKanal in self.kalendarStatus:
-            tsRasponDana = list(pd.date_range(start=ulaz['od'], end=ulaz['do']))
-            strRasponDana = [QtCore.QDate.fromString(dan.strftime('%Y-%m-%d'), 'yyyy-MM-dd') for dan in tsRasponDana]
-            for dan in strRasponDana:
-                if dan in self.kalendarStatus[self.gKanal]['ok']:
-                    self.kalendarStatus[self.gKanal]['ok'].remove(dan)
-            msg = 'Refresh kalendar u rest izborniku, mapa datuma : {0}'.format(str(self.kalendarStatus[self.gKanal]))
-            logging.debug(msg)
-            self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[self.gKanal])
+        kanalizapromjenu = self.mapaMjerenjeIdToOpis[ulaz['kanal']]['povezaniKanali']
+        for kanal in kanalizapromjenu:
+            self.dokument.change_flag(key=kanal, tmin=ulaz['od'], tmax=ulaz['do'], flag=ulaz['noviFlag'])
+            #mankni sve datume nakon promjene flaga u dokumentu iz "self.kalendarStatus['ok']" liste
+            if kanal in self.kalendarStatus:
+                tsRasponDana = list(pd.date_range(start=ulaz['od'], end=ulaz['do']))
+                strRasponDana = [QtCore.QDate.fromString(dan.strftime('%Y-%m-%d'), 'yyyy-MM-dd') for dan in tsRasponDana]
+                for dan in strRasponDana:
+                    if dan in self.kalendarStatus[kanal]['ok']:
+                        self.kalendarStatus[kanal]['ok'].remove(dan)
+                msg = 'Refresh kalendar u rest izborniku, mapa datuma : {0}'.format(str(self.kalendarStatus[kanal]))
+                logging.debug(msg)
+                self.gui.restIzbornik.calendarWidget.refresh_dates(self.kalendarStatus[kanal])
         logging.info('promjeni_flag, kraj')
 
     def update_kalendarStatus(self, progMjer, datum, tip):
@@ -1207,7 +1430,6 @@ class Kontroler(QtCore.QObject):
         logging.debug(msg)
         self.brojDana = int(x)
         self.crtaj_zero_span()
-        #TODO! zero i span referentne vrijednosti
         if hasattr(self, 'webZahtjev'):
             referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
             self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)

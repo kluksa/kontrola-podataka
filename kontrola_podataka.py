@@ -1,12 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
-- last change in:
-networking_funkcije.py
-agregator.py
-dokument_model.py
-kontroler.py
-
 Created on Fri Oct 31 14:06:55 2014
 
 @author: User

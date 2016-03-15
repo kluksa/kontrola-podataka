@@ -13,6 +13,7 @@ import app.general.app_dto as app_dto
 import app.control.kontroler as kontroler
 import app.view.auth_login as auth_login
 import app.view.glavni_dijalog as glavni_dijalog
+from app.view.pregled_komentara import PregledKomentara
 
 
 base, form = uic.loadUiType('./app/view/ui_files/display.ui')
@@ -48,6 +49,9 @@ class GlavniProzor(base, form):
         self.visednevniPanel = grafovi_panel.RestPregledSatnih(self.konfiguracija)
         self.visednevniLayout.addWidget(self.visednevniPanel)
         logging.debug('postavljen panel za visednevni prikaz agregiranih podataka sa rest-a')
+        #inicijalizacija panela za komentare
+        self.komentariPanel = PregledKomentara()
+        self.komentariLayout.addWidget(self.komentariPanel)
         #inicijalizacija i postavljanje kontrolnog widgeta (tree view/kalendar...)
         self.restIzbornik = rest_izbornik.RestIzbornik()
         self.dockWidget.setWidget(self.restIzbornik)

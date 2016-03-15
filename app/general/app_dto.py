@@ -30,6 +30,8 @@ class KonfigAplikacije():
         self.conf = cfg
         # mapa dto objekata pomocnih grafova - spremljnih pod kljucem programMjerenjaId
         self.dictPomocnih = {}
+        # mapa dto objekata povezanih grafova - spremljenih pod kljucem programMjerenjaId
+        self.dictPovezanih = {}
 
         self.satni = SatniGrafKonfig(cfg)
         self.minutni = MinutniGrafKonfig(cfg)
@@ -272,6 +274,16 @@ class KonfigAplikacije():
             self.dictPomocnih[masterkey] = {}
         logging.debug('Reset mape pomocnih kanala gotov. Svi pomocni grafovi su izbrisani.')
 
+    def reset_povezane(self, mapa):
+        """
+        Reset nested dicta povezanih kanala na nulu
+        - ulaz (mapa) je dict svih programa mjerenja...
+        """
+        self.dictPovezanih = {}
+        for masterkey in mapa:
+            self.dictPovezanih[masterkey] = {}
+        logging.debug('Reset mape povezanih kanala je gotov. Svi povezani kanali su izbrisiani.')
+
     def dodaj_pomocni(self, masterkey, key):
         """
         --> key : programMjerenjaId grafa koji se dodaje
@@ -284,6 +296,20 @@ class KonfigAplikacije():
         else:
             self.dictPomocnih[masterkey] = {key:GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')}
         msg = 'Pomocni graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
+        logging.debug(msg)
+
+    def dodaj_povezani(self, masterkey, key):
+        """
+        --> key : programMjerenjaId grafa koji se dodaje
+        --> masterkey : programMjerenjaId "glavnog grafa"
+        Metoda dodaje  id grafa u mapu pomocnih grafova pod kljucem masterkey.
+        """
+        name = 'plot' + str(key)
+        if masterkey in self.dictPovezanih:
+            self.dictPovezanih[masterkey][key] = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')
+        else:
+            self.dictPovezanih[masterkey] = {key:GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='plot')}
+        msg = 'Pvezani graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
         logging.debug(msg)
 
     def makni_pomocni(self, masterkey, key):
@@ -309,6 +335,22 @@ class KonfigAplikacije():
         else:
             self.dictPomocnih[masterkey] = {key:graf}
         msg = 'Pomocni graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
+        logging.debug(msg)
+
+    def dodaj_random_povezani(self, masterkey, key, naziv):
+        """
+        dodavanje povezanog grafa ali sa random postavkama... samo za inicijalizaciju
+        """
+        name = 'plot'+str(key)
+        graf = GrafDTO(self.conf, tip='POMOCNI', podtip=name, oblik='line')
+        rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        graf.set_rgb(rgb)
+        graf.set_label('povezani graf -- {0}'.format(naziv))
+        if masterkey in self.dictPovezanih:
+            self.dictPovezanih[masterkey][key] = graf
+        else:
+            self.dictPovezanih[masterkey] = {key:graf}
+        msg = 'Povezani graf id={0} dodan za glavni graf programMjerenjaId={1}'.format(key, masterkey)
         logging.debug(msg)
 
 

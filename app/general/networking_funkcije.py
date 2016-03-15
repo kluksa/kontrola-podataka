@@ -213,7 +213,8 @@ class WebZahtjev(object):
                 'komponentaNaziv':komponentaNaziv,
                 'komponentaMjernaJedinica':komponentaMjernaJedinica,
                 'komponentaFormula':komponentaFormula,
-                'usporednoMjerenje':usporednoMjerenje}
+                'usporednoMjerenje':usporednoMjerenje,
+                'povezaniKanali':[i]} #TODO! dodan je povezan kanal...
         return rezultat
 
     def get_programe_mjerenja(self):

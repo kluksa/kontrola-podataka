@@ -229,11 +229,13 @@ class BitModel(QtCore.QAbstractTableModel):
         try:
             ind = self.trueIndeksi[ind] #convert indeksa
         except LookupError as err:
-            logging.error(str(err), exc_info=True)
+            logging.debug(str(err), exc_info=True) #expected index error
             ind = None
         if role == QtCore.Qt.DisplayRole:
             if ind in self.smap:
                 return str(self.smap[ind])
+            else:
+                return ''
         if role == QtCore.Qt.BackgroundColorRole:
             try:
                 if self.booldata[ind] == True:
@@ -241,7 +243,7 @@ class BitModel(QtCore.QAbstractTableModel):
                 elif self.booldata[ind] == False:
                     return QtGui.QBrush(QtGui.QColor(0, 255, 0, 80))
             except Exception as err:
-                logging.error(str(err), exc_info=True)
+                logging.debug(str(err), exc_info=True) #XXX! ocekivani index errori
                 return QtGui.QBrush(QtGui.QColor(255, 255, 255))
         if role == QtCore.Qt.ToolTipRole:
             try:
@@ -250,8 +252,8 @@ class BitModel(QtCore.QAbstractTableModel):
                 msg = '{0} : {1}'.format(description, check)
                 return msg
             except Exception as err:
-                logging.error(str(err), exc_info=True)
-                pass
+                logging.debug(str(err), exc_info=True) #XXX! ocekivani index errori
+                return ''
 
 
 class SatnoAgregiraniPodaciModel(QtCore.QAbstractTableModel):
@@ -546,3 +548,85 @@ class ZeroSpanRefModel(QtCore.QAbstractTableModel):
                 return self.frejm.columns[section]
             if orientation == QtCore.Qt.Vertical:
                 return str(self.frejm.index[section])
+
+class KomentarModel(QtCore.QAbstractTableModel):
+    """
+    prikaz frejma komentara
+    """
+    def __init__(self, frejm=None, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
+
+        if not isinstance(frejm, pd.core.frame.DataFrame):
+            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+            msg = 'KomentarModel.__init__() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
+            logging.error(msg)
+        self.frejm = frejm
+
+    def set_frejm(self, frejm):
+        if not isinstance(frejm, pd.core.frame.DataFrame):
+            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+            msg = 'KomentarModel.__init__() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
+            logging.error(msg)
+        self.frejm = frejm
+        self.layoutChanged.emit()
+
+    def dohvati_tekst_za_red(self, red):
+        ind = self.frejm.index[red]
+        return self.frejm.loc[ind, 'Komentar']
+
+    def clear_frejm(self):
+        self.frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return len(self.frejm)
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return len(self.frejm.columns)
+
+    def flags(self, index):
+        if index.isValid():
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        row = index.row()
+        col = index.column()
+        red = self.frejm.index[row]
+        if role == QtCore.Qt.DisplayRole:
+            if col == 0:
+                value = self.frejm.loc[red, 'Kanal']
+                return str(value)
+            elif col == 1:
+                value = self.frejm.loc[red, 'Postaja']
+                return str(value)
+            elif col == 2:
+                value = self.frejm.loc[red, 'Formula']
+                return str(value)
+            elif col == 3:
+                value = self.frejm.loc[red, 'Od']
+                return str(value)
+            elif col == 4:
+                value = self.frejm.loc[red, 'Do']
+                return str(value)
+            elif col == 5:
+                #kratak slajs pocetka...
+                value = self.frejm.loc[red, 'Komentar'][0:50]
+                return str(value)
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                if section == 0:
+                    return 'Kanal'
+                elif section == 1:
+                    return 'Postaja'
+                elif section == 2:
+                    return 'Formula'
+                elif section == 3:
+                    return 'Od'
+                elif section == 4:
+                    return 'Do'
+                elif section == 5:
+                    return 'Komentar'

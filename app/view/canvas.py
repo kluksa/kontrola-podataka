@@ -12,6 +12,7 @@ import functools
 import pandas as pd
 import numpy as np
 from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
+from app.view.dijalog_komentar import DijalogKomentar
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector
@@ -474,8 +475,7 @@ class SatniMinutniKanvas(Kanvas):
 
     def crtaj_pomocne(self):
         """
-        Metoda za crtanje pomocnih grafova. Ulazni parametar popis je set id
-        oznaka programa mjerenja.
+        Metoda za crtanje pomocnih grafova.
         """
         logging.debug('crtanje pomocnih grafova, start')
         pomocni = self.masterKonfig.dictPomocnih[self.gKanal]
@@ -496,6 +496,29 @@ class SatniMinutniKanvas(Kanvas):
                                    zorder=pomocni[key].zorder,
                                    label=pomocni[key].label)
         logging.debug('crtanje pomocnih grafova, kraj')
+
+    def crtaj_povezane(self):
+        """crtanje povezanih kanala."""
+        logging.debug('crtanje povezanih grafova, start')
+        povezani = self.masterKonfig.dictPovezanih[self.gKanal]
+        for key in povezani:
+            if key in self.data:
+                frejm = self.data[key]
+                if len(frejm):
+                    x = list(frejm.index)
+                    y = list(frejm[self.konfig.MIDLINE])
+                    self.axes.plot(x,
+                                   y,
+                                   marker=povezani[key].markerStyle,
+                                   markersize=povezani[key].markerSize,
+                                   linestyle=povezani[key].lineStyle,
+                                   linewidth=povezani[key].lineWidth,
+                                   color=povezani[key].color,
+                                   markeredgecolor=povezani[key].color,
+                                   zorder=povezani[key].zorder,
+                                   label=povezani[key].label)
+        logging.debug('crtanje povezanih grafova, kraj')
+
 
     def crtaj_oznake_statusa(self):
         """
@@ -648,13 +671,31 @@ class SatniMinutniKanvas(Kanvas):
         menu.setTitle('Promjeni flag')
         action1 = QtGui.QAction("Flag: dobar", menu)
         action2 = QtGui.QAction("Flag: los", menu)
+        action3 = QtGui.QAction("Komentar", menu)
         menu.addAction(action1)
         menu.addAction(action2)
+        menu.addAction(action3)
         #povezi akcije menua sa metodama
         action1.triggered.connect(functools.partial(self.promjena_flaga, flag=1000))
         action2.triggered.connect(functools.partial(self.promjena_flaga, flag=-1000))
+        action3.triggered.connect(self.dodaj_komentar)
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
+
+    def dodaj_komentar(self):
+        """
+        Dodavanje komentara za neki raspon
+        """
+        #TODO!
+        popupDijalog = DijalogKomentar(tmin=self.__lastTimeMin, tmax=self.__lastTimeMax)
+        ok = popupDijalog.exec_()
+        if ok:
+            tekst = popupDijalog.get_tekst()
+            mapa = {'kanal':self.gKanal,
+                    'od':self.__lastTimeMin,
+                    'do':self.__lastTimeMax,
+                    'tekst':tekst}
+            self.emit(QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'), mapa)
 
     def promjena_flaga(self, flag=1):
         """
@@ -698,6 +739,8 @@ class SatniMinutniKanvas(Kanvas):
         if self.gKanal in self.data:
             #naredba za crtanje glavnog grafa, overload za pojedini graf
             self.crtaj_glavni_kanal()
+            #naredba za crtanje povezanih
+            self.crtaj_povezane()
             #naredba za crtanje pomocnih
             self.crtaj_pomocne()
             ###micanje tocaka od rubova, tickovi, legenda...
@@ -865,7 +908,6 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         Resolve pick eventa za satni graf.
         ljevi klik misa --> highlight tocke i naredba za crtanje minutnog grafa
-        middle klik misa --> annotation sa agregiranim podacima
         desni klik misa --> poziv kontektsnog menija za promjenu flaga
         """
         msg = 'pick event = {0}'.format(str(event))
@@ -882,6 +924,22 @@ class SatniKanvas(SatniMinutniKanvas):
                     self.highlight_pick((xpoint, ypoint),
                                         self.highlightSize)
                 elif event.button == 3:
+                    logging.debug('emit naredbe za crtanje minutnog grafa')
+                    #crtanje minutnog
+                    self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
+                              xpoint)
+                    #XXX! napravi button release event za spanSelector
+                    mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
+                                                                            event.canvas,
+                                                                            event.x,
+                                                                            event.y,
+                                                                            button=1,
+                                                                            key=event.key,
+                                                                            step=event.step,
+                                                                            dblclick=event.dblclick,
+                                                                            guiEvent=event.guiEvent)
+                    #moram direktno releasati spanSelector sa modificiranim mouse eventom
+                    self.spanSelector.release(mouseEventRelease)
                     #highlight odabir, size pointa
                     self.highlight_pick((xpoint, ypoint),
                                         self.highlightSize)
@@ -934,7 +992,6 @@ class SatniKanvas(SatniMinutniKanvas):
                 lowlim = t1 - datetime.timedelta(minutes=59)
                 lowlim = pd.to_datetime(lowlim)
                 self.show_context_menu(loc, lowlim, t2) #poziv kontekstnog menija
-
 
 class SatniRestKanvas(SatniKanvas):
     """
@@ -1191,7 +1248,6 @@ class MinutniKanvas(SatniMinutniKanvas):
         """
         Resolve pick eventa za minutni graf.
         ljevi klik misa --> highlight tocke i naredba za crtanje minutnog grafa
-        middle klik misa --> annotation sa agregiranim podacima
         desni klik misa --> poziv kontektsnog menija za promjenu flaga
         """
         msg = 'pick event = {0}'.format(str(event))
@@ -1203,6 +1259,18 @@ class MinutniKanvas(SatniMinutniKanvas):
                     #highlight odabir, size pointa
                     self.highlight_pick((xpoint, ypoint), self.highlightSize)
                 elif event.button == 3:
+                    #XXX! napravi button release event za spanSelector
+                    mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
+                                                                            event.canvas,
+                                                                            event.x,
+                                                                            event.y,
+                                                                            button=1,
+                                                                            key=event.key,
+                                                                            step=event.step,
+                                                                            dblclick=event.dblclick,
+                                                                            guiEvent=event.guiEvent)
+                    #moram direktno releasati spanSelector sa modificiranim mouse eventom
+                    self.spanSelector.release(mouseEventRelease)
                     #highlight odabir, size pointa
                     self.highlight_pick((xpoint, ypoint), self.highlightSize)
                     loc = QtGui.QCursor.pos() #lokacija klika
@@ -1578,7 +1646,7 @@ class ZeroSpanKanvas(Kanvas):
                   'maxDozvoljenoOdstupanje':'',
                   'status':''}
         self.updateaj_labele_na_panelu('normal', argMap)
-        #TODO! napisi da nema podataka
+        #napisi da nema podataka
         self.axes.text(0.5,
                        0.5,
                        'Nije moguce pristupiti zero span podacima za trazeni kanal.',

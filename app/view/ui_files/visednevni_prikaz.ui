@@ -150,7 +150,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="groupBoxRadio">
      <property name="title">
       <string>Aktivni kanal :</string>
      </property>

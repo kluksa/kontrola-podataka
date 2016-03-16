@@ -3,10 +3,6 @@
 Created on Thu Jan 22 09:52:37 2015
 
 @author: User
-
--promjena flaga kod povezanih kanala
--crtanje povezanih kanala... ( combo za switch fokusa u displayu? )
-- nedostaje graph info za povezane kanale....izgled..
 """
 from PyQt4 import QtCore, QtGui
 import datetime
@@ -568,6 +564,8 @@ class Kontroler(QtCore.QObject):
         self.gui.zsPanel.zerospanRefTableModel.clear_frejm()
         #clear radio buttons
         self.setup_radio_buttons([])
+        #clear tab sa tabovima
+        self.gui.komentariPanel.clear_tab_komentara()
         logging.info('Request user_log_out, kraj.')
 
     def priredi_podatke(self, mapa):
@@ -784,7 +782,12 @@ class Kontroler(QtCore.QObject):
         """
         postavljanje radio gumbi u aplikaciji.
         Ulazni parametar je lista id programa mjerenja povezanih kanala.
+        #TODO! bitno za prebacivanje povezanih kanala
         """
+        self.gui.koncPanel.groupBoxRadio.setVisible(True)
+        self.gui.zsPanel.groupBoxRadio.setVisible(True)
+        self.gui.visednevniPanel.groupBoxRadio.setVisible(True)
+
         #block all signals, hide everything, uncheck everything
         for i in self.koncRadioButtons:
             i.blockSignals(True)
@@ -816,6 +819,12 @@ class Kontroler(QtCore.QObject):
             i.blockSignals(False)
         for i in self.vdRadioButtons:
             i.blockSignals(False)
+
+        if len(lista) == 1:
+            #hide groupboxove
+            self.gui.koncPanel.groupBoxRadio.setVisible(False)
+            self.gui.zsPanel.groupBoxRadio.setVisible(False)
+            self.gui.visednevniPanel.groupBoxRadio.setVisible(False)
 
     def pripremi_membere_prije_ucitavanja_zahtjeva(self, mapa):
         """
@@ -920,10 +929,8 @@ class Kontroler(QtCore.QObject):
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
         elif x is 3:
-            #TODO! filter za kanal i vremenski raspon (ako izbacim od i do... samo filter za komentar?)
-            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
-                                                          od=self.pocetnoVrijeme,
-                                                          do=self.zavrsnoVrijeme)
+            #TODO! filter za kanal
+            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal)
             self.gui.komentariPanel.set_frejm_u_model(frejm)
 
     def nadji_komentare_za_kanal_i_datum(self, kanal, od=None, do=None):

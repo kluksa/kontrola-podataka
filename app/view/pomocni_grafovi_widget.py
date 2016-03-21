@@ -288,7 +288,7 @@ class PomocniIzbor(base8, form8):
         update postojeceg pomocnog grafa
         """
         key = lista[0]
-        self.change_pomocni(key, lista)
+        self.change_pomocni(self.izabraniGlavniKanal, key, lista)
 
     def makni_pomocni_graf(self):
         """Brisanje selektiranog reda u qtableview"""

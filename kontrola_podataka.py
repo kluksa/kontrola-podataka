@@ -4,6 +4,7 @@
 #TODO!
 -spremanje komentara pod odredjeni program mjerenja?
 
+
 Created on Fri Oct 31 14:06:55 2014
 
 @author: User

@@ -6,6 +6,7 @@ Created on Fri Feb  6 12:53:28 2015
 """
 from PyQt4 import QtGui, QtCore, uic
 import app.model.table_model as table_model
+import app.model.model_drva as model_drva
 import app.view.dodavanje_pomocnih as dodavanje_pomocnih
 
 
@@ -53,7 +54,6 @@ class PomocniIzbor(base8, form8):
                  listHelpera=None):
         super(base8, self).__init__(parent)
         self.setupUi(self)
-
         # __init__ parametri
         if defaulti == None:
             self.defaulti = {}
@@ -87,7 +87,42 @@ class PomocniIzbor(base8, form8):
         self.tableView.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         #postavljanje tablice u layout dijaloga
         self.tableViewLayout.addWidget(self.tableView)
+
+        #TODO! treba sklepati full tree sa svim kanalima...(bez kombiniranja NO, NO2 isl...)
+        self.expandedDrvo = self.return_full_tree_model()
+
         self.veze()
+
+
+    def return_full_tree_model(self):
+        """
+        sklapanje tree modela sa svim pojedinacnim kanalima
+        """
+        #root objekt za tree strukturu.
+        tree = model_drva.TreeItem(['stanice', None, None, None], parent=None)
+        #za svaku individualnu stanicu napravi TreeItem objekt, reference objekta spremi u dict
+        stanice = []
+        for i in sorted(list(self.mapaKanali.keys())):
+            stanica = self.mapaKanali[i]['postajaNaziv']
+            if stanica not in stanice:
+                stanice.append(stanica)
+        stanice = sorted(stanice)
+        postaje = [model_drva.TreeItem([name, None, None, None], parent=tree) for name in stanice]
+        strPostaje = [str(i) for i in postaje]
+        for i in self.mapaKanali:
+            komponenta = self.mapaKanali[i]['komponentaNaziv']
+            stanica = self.mapaKanali[i]['postajaNaziv']  #parent = stanice[stanica]
+            formula = self.mapaKanali[i]['komponentaFormula']
+            mjernaJedinica = self.mapaKanali[i]['komponentaMjernaJedinica']
+            opis = " ".join([formula, '[', mjernaJedinica, ']'])
+            usporedno = self.mapaKanali[i]['usporednoMjerenje']
+            data = [komponenta, usporedno, i, opis]
+            redniBrojPostaje = strPostaje.index(stanica)
+            #kreacija TreeItem objekta
+            model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])
+        #napravi i vrati model
+        return model_drva.ModelDrva(tree)
+
 
     def setup_table_model(self, x):
         """
@@ -205,9 +240,15 @@ class PomocniIzbor(base8, form8):
                     -sluzi da bi iz indeksa treeView-a mogli doci do podataka o stanici
                     komponenti i usprednom mjerenju
                 """
+                #TODO!
+#                dijalog = dodavanje_pomocnih.OpcijePomocnog(
+#                    default=None,
+#                    stablo=self.drvo,
+#                    copcije=self.comboListe,
+#                    mapa=self.mapaKanali)
                 dijalog = dodavanje_pomocnih.OpcijePomocnog(
-                    default=[],
-                    stablo=self.drvo,
+                    default=None,
+                    stablo=self.expandedDrvo,
                     copcije=self.comboListe,
                     mapa=self.mapaKanali)
                 if dijalog.exec_():

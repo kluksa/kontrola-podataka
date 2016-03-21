@@ -9,6 +9,7 @@ import datetime
 import pandas as pd
 import json
 import logging
+import copy
 from functools import partial
 
 import app.general.networking_funkcije as networking_funkcije  # web zahtjev, interface prema REST servisu
@@ -234,7 +235,7 @@ class Kontroler(QtCore.QObject):
             'Formula':formula,
             'Komentar':tekst}])
         self.frejmKomentara = self.frejmKomentara.append(frejmrow, ignore_index=True)
-        #TODO! ako postoje komentari...promjeni tekst taba u zeleno
+        #ako postoje komentari...promjeni tekst taba u zeleno
         frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
                                                       od=self.pocetnoVrijeme,
                                                       do=self.zavrsnoVrijeme)
@@ -459,24 +460,35 @@ class Kontroler(QtCore.QObject):
             if i in skipMeList:
                 continue
             else:
-                stanica = self.mapaMjerenjeIdToOpis[i]['postajaNaziv']  #parent = stanice[stanica]
-                komponenta = self.mapaMjerenjeIdToOpis[i]['komponentaNaziv']
-                formula = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                #konstrukcija tree modela
                 listaPovezanihKanala = self.mapaMjerenjeIdToOpis[i]['povezaniKanali']
                 if len(listaPovezanihKanala) > 1:
                     #update kanala koje treba preskociti u konstrukciji tree modela
                     for k in listaPovezanihKanala:
                         skipMeList.append(k)
+                    formula = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                    tmpLista = [self.mapaMjerenjeIdToOpis[x]['komponentaFormula'] for x in listaPovezanihKanala]
                     #grupacija PM i NOx
                     if formula in ['NO', 'NO2', 'NOx']:
                         komponenta = 'Dusikovi oksidi'
+                        indeks = listaPovezanihKanala[tmpLista.index('NO')]
                     elif formula in ['PM1', 'PM2.5', 'PM10']:
                         komponenta = 'PM'
-                mjernaJedinica = self.mapaMjerenjeIdToOpis[i]['komponentaMjernaJedinica']
-                opis = " ".join([formula, '[', mjernaJedinica, ']'])
-                usporedno = self.mapaMjerenjeIdToOpis[i]['usporednoMjerenje']
+                        try:
+                            indeks = listaPovezanihKanala[tmpLista.index('PM1')]
+                        except Exception:
+                            indeks = i
+                else:
+                    indeks = i
+                    komponenta = self.mapaMjerenjeIdToOpis[indeks]['komponentaNaziv']
 
-                data = [komponenta, usporedno, i, opis]
+                stanica = self.mapaMjerenjeIdToOpis[indeks]['postajaNaziv']  #parent = stanice[stanica]
+                formula = self.mapaMjerenjeIdToOpis[indeks]['komponentaFormula']
+                mjernaJedinica = self.mapaMjerenjeIdToOpis[indeks]['komponentaMjernaJedinica']
+                opis = " ".join([formula, '[', mjernaJedinica, ']'])
+                usporedno = self.mapaMjerenjeIdToOpis[indeks]['usporednoMjerenje']
+
+                data = [komponenta, usporedno, indeks, opis]
                 redniBrojPostaje = strPostaje.index(stanica)
                 #kreacija TreeItem objekta
                 model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])
@@ -601,7 +613,7 @@ class Kontroler(QtCore.QObject):
                                                       od=self.pocetnoVrijeme,
                                                       do=self.zavrsnoVrijeme)
         if len(frejm):
-            #TODO! postoje komentari...promjeni tekst taba u zeleno
+            #postoje komentari...promjeni tekst taba u zeleno
             self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
             self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
         else:
@@ -612,18 +624,25 @@ class Kontroler(QtCore.QObject):
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
         #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske
+        lista = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+        formule = [self.mapaMjerenjeIdToOpis[x]['komponentaFormula'] for x in lista]
         try:
-            lista = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
             loc = lista.index(self.zadnjiPovezaniKanal)
             self.koncRadioButtons[loc].setChecked(True)
             self.zsRadioButtons[loc].setChecked(True)
             self.vdRadioButtons[loc].setChecked(True)
             self.koncRadioButtons[loc].clicked.emit(True)
         except Exception:
-            self.koncRadioButtons[0].setChecked(True)
-            self.zsRadioButtons[0].setChecked(True)
-            self.vdRadioButtons[0].setChecked(True)
-            self.koncRadioButtons[0].clicked.emit(True)
+            if 'NO' in formule:
+                loc = formule.index('NO')
+            elif 'PM1' in formule:
+                loc = formule.index('PM1')
+            else:
+                loc = 0 #izbor prvog
+            self.koncRadioButtons[loc].setChecked(True)
+            self.zsRadioButtons[loc].setChecked(True)
+            self.vdRadioButtons[loc].setChecked(True)
+            self.koncRadioButtons[loc].clicked.emit(True)
         logging.info('Metoda priredi_podatke, kraj.')
 
     def ponisti_izmjene(self):
@@ -782,7 +801,6 @@ class Kontroler(QtCore.QObject):
         """
         postavljanje radio gumbi u aplikaciji.
         Ulazni parametar je lista id programa mjerenja povezanih kanala.
-        #TODO! bitno za prebacivanje povezanih kanala
         """
         self.gui.koncPanel.groupBoxRadio.setVisible(True)
         self.gui.zsPanel.groupBoxRadio.setVisible(True)
@@ -862,7 +880,7 @@ class Kontroler(QtCore.QObject):
         Ako zahtjev nije prije odradjen, ucitava se u dokument.
         """
         logging.info('start ucitavanja podataka')
-        self.sviBitniKanali = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+        self.sviBitniKanali = copy.deepcopy(self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali'])
         #pronadji sve ostale kanale potrebne za crtanje
         for key in self.gui.konfiguracija.dictPomocnih[self.gKanal]:
             self.sviBitniKanali.append(key)
@@ -929,7 +947,6 @@ class Kontroler(QtCore.QObject):
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
         elif x is 3:
-            #TODO! filter za kanal
             frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal)
             self.gui.komentariPanel.set_frejm_u_model(frejm)
 

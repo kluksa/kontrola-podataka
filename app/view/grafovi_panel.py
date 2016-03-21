@@ -311,7 +311,7 @@ class ZeroSpanPanel(base3, form3):
         self.konfig = konfig
         self.zoomStackZS = []
         self.initial_zoom_level = (None, None, None)
-        #TODO! zero i span referentne tablice
+        #zero i span referentne tablice
         self.zerospanRefTableModel = modeli.ZeroSpanRefModel()
         self.zerospanRefView.setModel(self.zerospanRefTableModel)
         #inicijalizacija canvasa (pomocni nisu potrebni)
@@ -485,6 +485,8 @@ class ZeroSpanPanel(base3, form3):
         -'datum' = string, datum formata YYYY-MM-DD
 
         Informacija o izboru se postavlja u label.
+
+        PS. izostavimo mjernu jedinicu...
         """
         mapa = ulaz['opis']
         mjerenjeId = ulaz['mjerenjeId']
@@ -492,8 +494,9 @@ class ZeroSpanPanel(base3, form3):
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
-        mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+#        mjernaJedinica = mapa['komponentaMjernaJedinica']
+#        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+        opis = '{0}, {1}( {2} ). Datum : {3} . mjerenjeId:{4}'.format(postaja, komponenta, formula, datum, mjerenjeId)
         self.glavniLabel.setText(opis)
         logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
 

@@ -574,8 +574,6 @@ class RestPregledSatnih(base14, form14):
         self.restAgregiraniView.setModel(self.restAgregiraniModel)
         self.restAgregiraniView.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
 
-
-
     def toggle_grid_satniRest(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""
         self.konfig.satniRest.set_grid(x)

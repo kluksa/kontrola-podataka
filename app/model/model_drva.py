@@ -149,6 +149,8 @@ class ModelDrva(QtCore.QAbstractItemModel):
                 return item.data(3)
             elif index.column() == 2:
                 return item.data(2)
+            elif index.column() == 3:
+                return item.data(1)
         if role == QtCore.Qt.BackgroundRole:
             mjerenje = item.data(2)
             if mjerenje == None:
@@ -212,7 +214,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         npr. return 2 (view ce imati 2 stupca (tree, sto god odredis u metodi
         data da vrati u tom stupcu))
         """
-        return 3
+        return 4
 
     def parent(self, index):
         """
@@ -234,7 +236,7 @@ class ModelDrva(QtCore.QAbstractItemModel):
         """
         headeri
         """
-        headeri = ['Stanica/komponenta', 'Formula', 'Id']
+        headeri = ['Stanica/komponenta', 'Formula', 'Id', 'Usporedno']
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return headeri[section]
 

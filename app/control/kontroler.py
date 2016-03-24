@@ -505,13 +505,13 @@ class Kontroler(QtCore.QObject):
         npr. ako je izabrani kanal Desinic NO, funkcija vraca id mjerenja za
         NO2 i NOx sa Desinica (ako postoje)
         """
-        #TODO! treba srediti...check za instrument...potencijalni problem kod usporednih mjerenja...
         msg = 'nadji_default_pomocne_za_kanal id={0}, start'.format(str(kanal))
         logging.debug(msg)
         setovi = [('NOx', 'NO', 'NO2'), ('PM10', 'PM1', 'PM2.5')]
         output = set()
         postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaId']
         formula = self.mapaMjerenjeIdToOpis[kanal]['komponentaFormula']
+        usporednoMjerenje = self.mapaMjerenjeIdToOpis[kanal]['usporednoMjerenje']
         ciljaniSet = None
         for kombinacija in setovi:
             if formula in kombinacija:
@@ -524,7 +524,8 @@ class Kontroler(QtCore.QObject):
         for programMjerenja in self.mapaMjerenjeIdToOpis:
             if self.mapaMjerenjeIdToOpis[programMjerenja]['postajaId'] == postaja and programMjerenja != kanal:
                 if self.mapaMjerenjeIdToOpis[programMjerenja]['komponentaFormula'] in ciljaniSet:
-                    output.add(programMjerenja)
+                    if self.mapaMjerenjeIdToOpis[programMjerenja]['usporednoMjerenje'] == usporednoMjerenje: #usporedno mjerenje se mora poklapati...
+                        output.add(programMjerenja)
         msg = 'output set srodnih kanala set={0}'.format(str(output))
         logging.debug(msg)
         msg = 'nadji_default_pomocne_za_kanal id={0}, kraj'.format(str(kanal))
@@ -1232,6 +1233,7 @@ class Kontroler(QtCore.QObject):
             metaData['pocetnoVrijeme'] = pd.to_datetime(mapa['datumOd'])
             metaData['zavrsnoVrijeme'] = pd.to_datetime(mapa['datumDo'])
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
+
         except (ValueError, AssertionError):
             #parsig error kod jsona
             logging.error('App exception prilikom crtanja rest satnih podataka', exc_info=True)

@@ -13,7 +13,6 @@ import pandas as pd
 import numpy as np
 from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from app.view.dijalog_komentar import DijalogKomentar
-from app.general.pomocne_funkcije import KonverterJedinice, konvert_frejm #TODO!
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure #import figure
 from matplotlib.widgets import RectangleSelector, SpanSelector
@@ -687,6 +686,7 @@ class SatniMinutniKanvas(Kanvas):
         """
         Dodavanje komentara za neki raspon
         """
+        #TODO!
         popupDijalog = DijalogKomentar(tmin=self.__lastTimeMin, tmax=self.__lastTimeMax)
         ok = popupDijalog.exec_()
         if ok:
@@ -712,8 +712,7 @@ class SatniMinutniKanvas(Kanvas):
         logging.debug(msg)
         self.emit(QtCore.SIGNAL('promjeni_flag(PyQt_PyObject)'), arg)
 
-    def crtaj(self, frejmovi, mapaParametara, mapaIdToOpis):
-        #TODO! crtanje sa konverzijom podataka...
+    def crtaj(self, frejmovi, mapaParametara):
         """
         PROMJENA : direktno prosljedjivanje frejmova za crtanje...bez signala
 
@@ -734,36 +733,6 @@ class SatniMinutniKanvas(Kanvas):
         self.clear_graf_sans_draw()
         #reinicijalizacija membera i podataka
         self.data = frejmovi
-        ########################################################################
-        #TODO! adaptiranje satnih i minutnih podataka...samo za display...
-        endMjernaJedinica = self.parent().comboBoxMjernaJedinica.currentText() #TODO! gadan hack za trenutnu mjernu jedinicu
-        if isinstance(self, SatniKanvas):
-            #stupci za konvert : q95, median, avg, min, q05, max, std
-            target_cols = ['q95', 'q05', 'median', 'min', 'max', 'avg', 'std']
-            #redo Axes y label
-            nazivOsi = " ".join([str(self.konfig.TIP), '[', str(endMjernaJedinica), ']'])
-            self.axes.set_ylabel(nazivOsi)
-        elif isinstance(self, MinutniKanvas):
-            #stupci za konvert : koncentracija
-            target_cols = ['koncentracija']
-            #redo Axes y label
-            nazivOsi = " ".join([str(self.konfig.TIP), '[', str(endMjernaJedinica), ']'])
-            self.axes.set_ylabel(nazivOsi)
-        else:
-            target_cols = []
-            #handle ostalih kanvasa...
-        for key in self.data:
-            startMjernaJedinica = mapaIdToOpis[key]['komponentaMjernaJedinica']
-            #print(type(self.parent())) #TODO! app.view.grafovi_panel.KoncPanel
-            konvVUM = mapaIdToOpis[key]['konvVUM']
-            konverter = KonverterJedinice()
-            konverter.set_trenutnaJedinica(startMjernaJedinica)
-            konverter.set_konVolumen(konvVUM)
-            konverter_func = konverter.get_convert_function(endMjernaJedinica)
-            frejm = self.data[key]
-            self.data[key] = konvert_frejm(frejm=frejm, stupci=target_cols, func=konverter_func)
-        ########################################################################
-
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
         self.gKanal = mapaParametara['kanalId']
@@ -959,6 +928,7 @@ class SatniKanvas(SatniMinutniKanvas):
                     #crtanje minutnog
                     self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
                               xpoint)
+                    #XXX! napravi button release event za spanSelector
                     mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
                                                                             event.canvas,
                                                                             event.x,
@@ -1289,6 +1259,7 @@ class MinutniKanvas(SatniMinutniKanvas):
                     #highlight odabir, size pointa
                     self.highlight_pick((xpoint, ypoint), self.highlightSize)
                 elif event.button == 3:
+                    #XXX! napravi button release event za spanSelector
                     mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
                                                                             event.canvas,
                                                                             event.x,

@@ -205,7 +205,6 @@ class WebZahtjev(object):
             komponentaMjernaJedinica = programMjerenja.find('.komponentaId/mjerneJediniceId/oznaka').text
             komponentaFormula = programMjerenja.find('.komponentaId/formula').text
             usporednoMjerenje = programMjerenja.find('usporednoMjerenje').text
-            konvVUM = programMjerenja.find('.komponentaId/konvVUM').text
             #dodavanje mjerenja u dictionary
             rezultat[i] = {
                 'postajaId':postajaId,
@@ -215,7 +214,6 @@ class WebZahtjev(object):
                 'komponentaMjernaJedinica':komponentaMjernaJedinica,
                 'komponentaFormula':komponentaFormula,
                 'usporednoMjerenje':usporednoMjerenje,
-                'konvVUM':float(konvVUM), #TODO! dodan je konverzijski volumen
                 'povezaniKanali':[i]} #TODO! dodan je povezan kanal...
         return rezultat
 

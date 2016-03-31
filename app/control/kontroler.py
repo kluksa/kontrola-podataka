@@ -188,11 +188,6 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'),
                      self.promjeni_max_broj_dana_satnog)
-        ###PROMJENA MJERNE JEDINICE satni i minutni graf###
-        #TODO! force redraw satnog i minutnog grafa zbog promjene mjerne jedinice
-        self.connect(self.gui.koncPanel,
-                     QtCore.SIGNAL('promjena_mjerne_jedinice'),
-                     self.konvert_satni_i_minutni_graf)
         ###PROMJENA MAX BROJA SATI ZA MINUTNI GRAF###
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_sati_minutnog(PyQt_PyObject)'),
@@ -998,8 +993,7 @@ class Kontroler(QtCore.QObject):
                 tmax=self.zavrsnoVrijeme)
             #naredba za crtanje satnog grafa
             logging.debug('start naredbe za crtanje satnog grafa')
-            #TODO! crtanje satno agregiranih podataka... konvert mjerne jedinice
-            self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg, self.mapaMjerenjeIdToOpis)
+            self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
             #promjena labela u panelima sa grafovima, opis
             try:
                 #opis naredbi koje sljede:
@@ -1057,8 +1051,7 @@ class Kontroler(QtCore.QObject):
                 tmax=highLim)
             #naredba za crtanje
             logging.debug('naredba za crtanje minutnog grafa')
-            #TODO! crtanje minutnih podataka -- konvert mjerne jedinice
-            self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg, self.mapaMjerenjeIdToOpis)
+            self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg)
         logging.info('crtaj_minutni_graf, kraj')
 
     def crtaj_zero_span(self):
@@ -1430,14 +1423,6 @@ class Kontroler(QtCore.QObject):
         msg = 'naredba za prebacivanje {0} dana u kalendaru'.format(x)
         logging.info(msg)
         self.gui.restIzbornik.pomakni_dan(x)
-
-    def konvert_satni_i_minutni_graf(self):
-        """
-        ponovno crtanje satnog i minutnog grafa -- konverzija zbog promjene mjerne jedinice
-        """
-        #TODO!
-        if self.gKanal != None and self.pickedDate != None:
-            self.priredi_podatke({'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate})
 
     def promjeni_max_broj_dana_satnog(self, x):
         """

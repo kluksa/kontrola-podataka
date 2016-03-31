@@ -3,16 +3,13 @@
 Created on Thu Jan 22 09:52:37 2015
 
 @author: User
-
--promjena flaga kod povezanih kanala
--crtanje povezanih kanala... ( combo za switch fokusa u displayu? )
-- nedostaje graph info za povezane kanale....izgled..
 """
 from PyQt4 import QtCore, QtGui
 import datetime
 import pandas as pd
 import json
 import logging
+import copy
 from functools import partial
 
 import app.general.networking_funkcije as networking_funkcije  # web zahtjev, interface prema REST servisu
@@ -191,6 +188,11 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_dana_satnog(PyQt_PyObject)'),
                      self.promjeni_max_broj_dana_satnog)
+        ###PROMJENA MJERNE JEDINICE satni i minutni graf###
+        #TODO! force redraw satnog i minutnog grafa zbog promjene mjerne jedinice
+        self.connect(self.gui.koncPanel,
+                     QtCore.SIGNAL('promjena_mjerne_jedinice'),
+                     self.konvert_satni_i_minutni_graf)
         ###PROMJENA MAX BROJA SATI ZA MINUTNI GRAF###
         self.connect(self.gui.koncPanel,
                      QtCore.SIGNAL('promjeni_max_broj_sati_minutnog(PyQt_PyObject)'),
@@ -238,7 +240,7 @@ class Kontroler(QtCore.QObject):
             'Formula':formula,
             'Komentar':tekst}])
         self.frejmKomentara = self.frejmKomentara.append(frejmrow, ignore_index=True)
-        #TODO! ako postoje komentari...promjeni tekst taba u zeleno
+        #ako postoje komentari...promjeni tekst taba u zeleno
         frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
                                                       od=self.pocetnoVrijeme,
                                                       do=self.zavrsnoVrijeme)
@@ -463,24 +465,35 @@ class Kontroler(QtCore.QObject):
             if i in skipMeList:
                 continue
             else:
-                stanica = self.mapaMjerenjeIdToOpis[i]['postajaNaziv']  #parent = stanice[stanica]
-                komponenta = self.mapaMjerenjeIdToOpis[i]['komponentaNaziv']
-                formula = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                #konstrukcija tree modela
                 listaPovezanihKanala = self.mapaMjerenjeIdToOpis[i]['povezaniKanali']
                 if len(listaPovezanihKanala) > 1:
                     #update kanala koje treba preskociti u konstrukciji tree modela
                     for k in listaPovezanihKanala:
                         skipMeList.append(k)
+                    formula = self.mapaMjerenjeIdToOpis[i]['komponentaFormula']
+                    tmpLista = [self.mapaMjerenjeIdToOpis[x]['komponentaFormula'] for x in listaPovezanihKanala]
                     #grupacija PM i NOx
                     if formula in ['NO', 'NO2', 'NOx']:
                         komponenta = 'Dusikovi oksidi'
+                        indeks = listaPovezanihKanala[tmpLista.index('NO')]
                     elif formula in ['PM1', 'PM2.5', 'PM10']:
                         komponenta = 'PM'
-                mjernaJedinica = self.mapaMjerenjeIdToOpis[i]['komponentaMjernaJedinica']
-                opis = " ".join([formula, '[', mjernaJedinica, ']'])
-                usporedno = self.mapaMjerenjeIdToOpis[i]['usporednoMjerenje']
+                        try:
+                            indeks = listaPovezanihKanala[tmpLista.index('PM1')]
+                        except Exception:
+                            indeks = i
+                else:
+                    indeks = i
+                    komponenta = self.mapaMjerenjeIdToOpis[indeks]['komponentaNaziv']
 
-                data = [komponenta, usporedno, i, opis]
+                stanica = self.mapaMjerenjeIdToOpis[indeks]['postajaNaziv']  #parent = stanice[stanica]
+                formula = self.mapaMjerenjeIdToOpis[indeks]['komponentaFormula']
+                mjernaJedinica = self.mapaMjerenjeIdToOpis[indeks]['komponentaMjernaJedinica']
+                opis = " ".join([formula, '[', mjernaJedinica, ']'])
+                usporedno = self.mapaMjerenjeIdToOpis[indeks]['usporednoMjerenje']
+
+                data = [komponenta, usporedno, indeks, opis]
                 redniBrojPostaje = strPostaje.index(stanica)
                 #kreacija TreeItem objekta
                 model_drva.TreeItem(data, parent=postaje[redniBrojPostaje])
@@ -497,13 +510,13 @@ class Kontroler(QtCore.QObject):
         npr. ako je izabrani kanal Desinic NO, funkcija vraca id mjerenja za
         NO2 i NOx sa Desinica (ako postoje)
         """
-        #TODO! treba srediti...check za instrument...potencijalni problem kod usporednih mjerenja...
         msg = 'nadji_default_pomocne_za_kanal id={0}, start'.format(str(kanal))
         logging.debug(msg)
         setovi = [('NOx', 'NO', 'NO2'), ('PM10', 'PM1', 'PM2.5')]
         output = set()
         postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaId']
         formula = self.mapaMjerenjeIdToOpis[kanal]['komponentaFormula']
+        usporednoMjerenje = self.mapaMjerenjeIdToOpis[kanal]['usporednoMjerenje']
         ciljaniSet = None
         for kombinacija in setovi:
             if formula in kombinacija:
@@ -516,7 +529,8 @@ class Kontroler(QtCore.QObject):
         for programMjerenja in self.mapaMjerenjeIdToOpis:
             if self.mapaMjerenjeIdToOpis[programMjerenja]['postajaId'] == postaja and programMjerenja != kanal:
                 if self.mapaMjerenjeIdToOpis[programMjerenja]['komponentaFormula'] in ciljaniSet:
-                    output.add(programMjerenja)
+                    if self.mapaMjerenjeIdToOpis[programMjerenja]['usporednoMjerenje'] == usporednoMjerenje: #usporedno mjerenje se mora poklapati...
+                        output.add(programMjerenja)
         msg = 'output set srodnih kanala set={0}'.format(str(output))
         logging.debug(msg)
         msg = 'nadji_default_pomocne_za_kanal id={0}, kraj'.format(str(kanal))
@@ -568,6 +582,8 @@ class Kontroler(QtCore.QObject):
         self.gui.zsPanel.zerospanRefTableModel.clear_frejm()
         #clear radio buttons
         self.setup_radio_buttons([])
+        #clear tab sa tabovima
+        self.gui.komentariPanel.clear_tab_komentara()
         logging.info('Request user_log_out, kraj.')
 
     def priredi_podatke(self, mapa):
@@ -603,7 +619,7 @@ class Kontroler(QtCore.QObject):
                                                       od=self.pocetnoVrijeme,
                                                       do=self.zavrsnoVrijeme)
         if len(frejm):
-            #TODO! postoje komentari...promjeni tekst taba u zeleno
+            #postoje komentari...promjeni tekst taba u zeleno
             self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
             self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
         else:
@@ -614,18 +630,25 @@ class Kontroler(QtCore.QObject):
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
         #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske
+        lista = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+        formule = [self.mapaMjerenjeIdToOpis[x]['komponentaFormula'] for x in lista]
         try:
-            lista = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
             loc = lista.index(self.zadnjiPovezaniKanal)
             self.koncRadioButtons[loc].setChecked(True)
             self.zsRadioButtons[loc].setChecked(True)
             self.vdRadioButtons[loc].setChecked(True)
             self.koncRadioButtons[loc].clicked.emit(True)
         except Exception:
-            self.koncRadioButtons[0].setChecked(True)
-            self.zsRadioButtons[0].setChecked(True)
-            self.vdRadioButtons[0].setChecked(True)
-            self.koncRadioButtons[0].clicked.emit(True)
+            if 'NO' in formule:
+                loc = formule.index('NO')
+            elif 'PM1' in formule:
+                loc = formule.index('PM1')
+            else:
+                loc = 0 #izbor prvog
+            self.koncRadioButtons[loc].setChecked(True)
+            self.zsRadioButtons[loc].setChecked(True)
+            self.vdRadioButtons[loc].setChecked(True)
+            self.koncRadioButtons[loc].clicked.emit(True)
         logging.info('Metoda priredi_podatke, kraj.')
 
     def ponisti_izmjene(self):
@@ -785,6 +808,10 @@ class Kontroler(QtCore.QObject):
         postavljanje radio gumbi u aplikaciji.
         Ulazni parametar je lista id programa mjerenja povezanih kanala.
         """
+        self.gui.koncPanel.groupBoxRadio.setVisible(True)
+        self.gui.zsPanel.groupBoxRadio.setVisible(True)
+        self.gui.visednevniPanel.groupBoxRadio.setVisible(True)
+
         #block all signals, hide everything, uncheck everything
         for i in self.koncRadioButtons:
             i.blockSignals(True)
@@ -816,6 +843,12 @@ class Kontroler(QtCore.QObject):
             i.blockSignals(False)
         for i in self.vdRadioButtons:
             i.blockSignals(False)
+
+        if len(lista) == 1:
+            #hide groupboxove
+            self.gui.koncPanel.groupBoxRadio.setVisible(False)
+            self.gui.zsPanel.groupBoxRadio.setVisible(False)
+            self.gui.visednevniPanel.groupBoxRadio.setVisible(False)
 
     def pripremi_membere_prije_ucitavanja_zahtjeva(self, mapa):
         """
@@ -853,7 +886,7 @@ class Kontroler(QtCore.QObject):
         Ako zahtjev nije prije odradjen, ucitava se u dokument.
         """
         logging.info('start ucitavanja podataka')
-        self.sviBitniKanali = self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali']
+        self.sviBitniKanali = copy.deepcopy(self.mapaMjerenjeIdToOpis[self.gKanal]['povezaniKanali'])
         #pronadji sve ostale kanale potrebne za crtanje
         for key in self.gui.konfiguracija.dictPomocnih[self.gKanal]:
             self.sviBitniKanali.append(key)
@@ -920,10 +953,7 @@ class Kontroler(QtCore.QObject):
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
         elif x is 3:
-            #TODO! filter za kanal i vremenski raspon (ako izbacim od i do... samo filter za komentar?)
-            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
-                                                          od=self.pocetnoVrijeme,
-                                                          do=self.zavrsnoVrijeme)
+            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal)
             self.gui.komentariPanel.set_frejm_u_model(frejm)
 
     def nadji_komentare_za_kanal_i_datum(self, kanal, od=None, do=None):
@@ -968,7 +998,8 @@ class Kontroler(QtCore.QObject):
                 tmax=self.zavrsnoVrijeme)
             #naredba za crtanje satnog grafa
             logging.debug('start naredbe za crtanje satnog grafa')
-            self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg)
+            #TODO! crtanje satno agregiranih podataka... konvert mjerne jedinice
+            self.gui.koncPanel.satniGraf.crtaj(self.agregiraniFrejmovi, arg, self.mapaMjerenjeIdToOpis)
             #promjena labela u panelima sa grafovima, opis
             try:
                 #opis naredbi koje sljede:
@@ -1026,7 +1057,8 @@ class Kontroler(QtCore.QObject):
                 tmax=highLim)
             #naredba za crtanje
             logging.debug('naredba za crtanje minutnog grafa')
-            self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg)
+            #TODO! crtanje minutnih podataka -- konvert mjerne jedinice
+            self.gui.koncPanel.minutniGraf.crtaj(self.frejmovi, arg, self.mapaMjerenjeIdToOpis)
         logging.info('crtaj_minutni_graf, kraj')
 
     def crtaj_zero_span(self):
@@ -1208,6 +1240,7 @@ class Kontroler(QtCore.QObject):
             metaData['pocetnoVrijeme'] = pd.to_datetime(mapa['datumOd'])
             metaData['zavrsnoVrijeme'] = pd.to_datetime(mapa['datumDo'])
             self.gui.visednevniPanel.satniRest.crtaj(frames, metaData)
+
         except (ValueError, AssertionError):
             #parsig error kod jsona
             logging.error('App exception prilikom crtanja rest satnih podataka', exc_info=True)
@@ -1397,6 +1430,14 @@ class Kontroler(QtCore.QObject):
         msg = 'naredba za prebacivanje {0} dana u kalendaru'.format(x)
         logging.info(msg)
         self.gui.restIzbornik.pomakni_dan(x)
+
+    def konvert_satni_i_minutni_graf(self):
+        """
+        ponovno crtanje satnog i minutnog grafa -- konverzija zbog promjene mjerne jedinice
+        """
+        #TODO!
+        if self.gKanal != None and self.pickedDate != None:
+            self.priredi_podatke({'programMjerenjaId':self.gKanal, 'datumString':self.pickedDate})
 
     def promjeni_max_broj_dana_satnog(self, x):
         """

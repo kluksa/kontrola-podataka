@@ -74,6 +74,7 @@ class GlavniIzbor(base5, form5):
             defaulti=self.defaulti,
             listHelpera=self.konverzije)
         self.zsLay.addWidget(self.zs)
+
         self.pomocni = pomocni_grafovi_widget.PomocniIzbor(
             defaulti=self.defaulti,
             stablo=self.drvo,

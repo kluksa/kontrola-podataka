@@ -18,6 +18,7 @@ import datetime
 from PyQt4 import QtCore, QtGui, uic
 import app.view.canvas as canvas
 import app.model.table_model as modeli
+from app.general.pomocne_funkcije import KonverterJedinice #TODO!
 
 
 class BitTableView(QtGui.QTableView):
@@ -80,6 +81,13 @@ class KoncPanel(base2, form2):
         self.setupUi(self)
         self.konfig = konfig
         self.parent = parent
+
+        #TODO!
+        konverter = KonverterJedinice()
+        lista = konverter.moguceJedinice
+        self.comboBoxMjernaJedinica.addItems(lista)
+        self.comboBoxMjernaJedinica.currentIndexChanged.connect(self.promjeni_jedinicu)
+
         #inicijalizacija canvasa (samo sa djelom konfiga koji je potreban za
         #funkcioniranje klase i sa mapom pomocnih kanala)
         self.satniGraf = canvas.SatniKanvas(konfig.satni, konfig)
@@ -131,6 +139,11 @@ class KoncPanel(base2, form2):
         self.connect(self.minutniBitView,
                      QtCore.SIGNAL('izabrani_fault(PyQt_PyObject)'),
                      self.display_minutni_fault_info)
+
+    def promjeni_jedinicu(self, x):
+#        jedinica = self.comboBoxMjernaJedinica.currentText()
+#        print(jedinica)
+        self.emit(QtCore.SIGNAL('promjena_mjerne_jedinice'))
 
     def display_minutni_fault_info(self, fault):
         """
@@ -209,8 +222,10 @@ class KoncPanel(base2, form2):
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
-        mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+        #mjernaJedinica = mapa['komponentaMjernaJedinica']
+        #TODO!
+        #opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+        opis = '{0}, {1}( {2} ). Datum : {3} . mjerenjeId:{4}'.format(postaja, komponenta, formula, datum, mjerenjeId)
         self.glavniLabel.setText(opis)
         msg = 'glavniLabel promjenjen, value = {0}'.format(opis)
         logging.info(msg)
@@ -311,7 +326,7 @@ class ZeroSpanPanel(base3, form3):
         self.konfig = konfig
         self.zoomStackZS = []
         self.initial_zoom_level = (None, None, None)
-        #TODO! zero i span referentne tablice
+        #zero i span referentne tablice
         self.zerospanRefTableModel = modeli.ZeroSpanRefModel()
         self.zerospanRefView.setModel(self.zerospanRefTableModel)
         #inicijalizacija canvasa (pomocni nisu potrebni)
@@ -485,6 +500,8 @@ class ZeroSpanPanel(base3, form3):
         -'datum' = string, datum formata YYYY-MM-DD
 
         Informacija o izboru se postavlja u label.
+
+        PS. izostavimo mjernu jedinicu...
         """
         mapa = ulaz['opis']
         mjerenjeId = ulaz['mjerenjeId']
@@ -492,8 +509,9 @@ class ZeroSpanPanel(base3, form3):
         postaja = mapa['postajaNaziv']
         komponenta = mapa['komponentaNaziv']
         formula = mapa['komponentaFormula']
-        mjernaJedinica = mapa['komponentaMjernaJedinica']
-        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+#        mjernaJedinica = mapa['komponentaMjernaJedinica']
+#        opis = '{0}, {1}( {2} ) [{3}]. Datum : {4} . mjerenjeId:{5}'.format(postaja, komponenta, formula, mjernaJedinica, datum, mjerenjeId)
+        opis = '{0}, {1}( {2} ). Datum : {3} . mjerenjeId:{4}'.format(postaja, komponenta, formula, datum, mjerenjeId)
         self.glavniLabel.setText(opis)
         logging.info('glavniLabel promjenjen, value = {0}'.format(opis))
 
@@ -570,8 +588,6 @@ class RestPregledSatnih(base14, form14):
         self.restAgregiraniModel = modeli.RestAgregiraniModel()
         self.restAgregiraniView.setModel(self.restAgregiraniModel)
         self.restAgregiraniView.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
-
-
 
     def toggle_grid_satniRest(self, x):
         """prosljeduje naredbu za toggle grida na satnom grafu"""

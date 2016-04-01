@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from requests.auth import HTTPBasicAuth
 from PyQt4 import QtGui, QtCore
 
+
 class WebZahtjev(object):
     """
     Klasa zaduzena za komunikaciju sa REST servisom
@@ -326,9 +327,6 @@ class WebZahtjev(object):
             headers = {'Content-type': 'application/json'}
             msg = 'upload_json_minutnih pozvan sa argumentima: id={0}, datum={1}:\n{2}'.format(str(program), str(date), str(jstring))
             logging.debug(msg)
-            #TODO! output jsona za upload, remove later
-            logging.error('!!!!!!!!!!!!outoging json string - upload minutnih na rest!!!!!!!!!!!!')
-            logging.error(msg)
             if not isinstance(jstring, str):
                 raise ValueError('Ulazni parametar nije tipa string.')
             if len(jstring) == 0:

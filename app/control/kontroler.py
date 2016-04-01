@@ -751,7 +751,8 @@ class Kontroler(QtCore.QObject):
         if len(nisuSpremljeni) != 0:
             #report uspjesnost spremanja
             naslov = 'Spremanje minutnih podataka na REST za kanal {}'.format(str(kanali))
-            msgNeuspjeh = ", ".join(nisuSpremljeni)
+            failStrLista = [str(i) for i in nisuSpremljeni]
+            msgNeuspjeh = ", ".join(failStrLista)
             poruka = "\n".join(['Neuspjesno spremljeni datumi:', msgNeuspjeh])
             QtGui.QApplication.restoreOverrideCursor()
             QtGui.QMessageBox.information(self.gui, naslov, poruka)
@@ -772,7 +773,6 @@ class Kontroler(QtCore.QObject):
             return None
         datumi = self.napravi_listu_dana(self.pickedDate, self.brojDanaSatni)
         datumi = [i.toString('yyyy-MM-dd') for i in datumi]
-
         frejm = self.dokument.data[self.gKanal]
         msg = 'Frejm podataka koji treba spremiti:\n{0}'.format(str(frejm))
         logging.debug(msg)

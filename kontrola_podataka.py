@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 #TODO!
--mjerne jedinice...promjene u [kontroler, pomocne_funkcije, canvas, grafovi_panel]
-
 -spremanje komentara pod odredjeni program mjerenja?
+
 Created on Fri Oct 31 14:06:55 2014
 
 @author: User

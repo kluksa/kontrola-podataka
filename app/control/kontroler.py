@@ -56,7 +56,7 @@ class Kontroler(QtCore.QObject):
         self.agregiraniFrejmovi = {}  #mapa aktualnih agregiranih frejmova (programMjerenjaId:slajs)
         self.brojDanaSatni = 1 #member prati koliko dana se prikazuje za satno agregirani graf
         self.brojSatiMinutni = 1 #member prati koliko sati se prikazuje na minutno agregiranom grafu
-        self.frejmKomentara = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar']) #frejm komentara
+        self.frejmKomentara = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar']) #frejm komentara
         #setup radio selection (ako ih treba vise...traba ih definitati u ui fileu i dodati na popise)
         self.koncRadioButtons = [
             self.gui.koncPanel.koncRadioButton1,
@@ -216,35 +216,72 @@ class Kontroler(QtCore.QObject):
             zsbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
             vdbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
 
+    def get_bitne_komentare(self, programMjerenjaId, pocetak, kraj):
+        """
+        metoda dohvaca sve komentare za zadani programMjerenjaId i neki vremenski
+        raspon.
+        
+        programMjerenjaId - integer, glavni kanal
+        pocetak - pandas timestamp
+        kraj - pandas timestamp
+        
+        output je dobro formatirani pandas datafrejm sa podacima
+        """
+        #TODO!
+        # prosiri granice vremena za 7 dana... malo sira slika
+        start = pocetak - datetime.timedelta(days=7)
+        end = kraj + datetime.timedelta(days=7)
+        jString = self.webZahtjev.dohvati_komentare_za_id_start_kraj(programMjerenjaId, start, end)
+
+        frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
+        
+        if len(frejm):
+            #adapt frejm -- stupci [Od, Do, Kanal, Komentar]
+            frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
+            frejm.drop('id', axis=1, inplace=True)
+            #set new frejm to model komentara
+            self.gui.komentariPanel.set_frejm_u_model(frejm)
+            #update visual hint
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
+        else:
+            #sklepaj prazan frejm i postavi ga u model
+            frejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
+            self.gui.komentariPanel.set_frejm_u_model(frejm)
+            #update visual hint
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
+
+
     def dodaj_novi_komentar(self, mapa):
         """
         Dodavanje novog komentara u frejm sa komentarima.
         mapa ima kljuceve ['od', 'do', 'kanal', 'tekst']
+        "od", "do" su pandas timestampovi
+        "kanal" je int
+        "tekst" je string
         """
-        od = mapa['od']
-        do = mapa['do']
-        tekst = mapa['tekst']
-        kanal = mapa['kanal']
-        postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaNaziv']
-        formula = self.mapaMjerenjeIdToOpis[kanal]['komponentaFormula']
-        frejmrow = pd.DataFrame([{
-            'Od':od,
-            'Do':do,
-            'Postaja':postaja,
-            'Kanal':kanal,
-            'Formula':formula,
-            'Komentar':tekst}])
-        self.frejmKomentara = self.frejmKomentara.append(frejmrow, ignore_index=True)
-        #ako postoje komentari...promjeni tekst taba u zeleno
-        frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
-                                                      od=self.pocetnoVrijeme,
-                                                      do=self.zavrsnoVrijeme)
-        if len(frejm):
-            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
-            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
-        else:
-            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
-            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
+        #TODO!
+        #format values
+        od = mapa['od'].value / 1000000
+        do = mapa['do'].value / 1000000
+        tekst = str(mapa['tekst'])
+        kanal = int(mapa['kanal'])
+        
+        popisKanala = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
+        
+        for kanalId in popisKanala:
+            data = {"pocetak":od, "kraj":do, "programMjerenjaId":kanalId, "tekst":tekst}
+            jString = json.dumps(data)
+            #push komentar na REST
+            check = self.webZahtjev.put_komentar_na_rest(jString)
+            #report fail
+            if not check:
+                msg = "Komentar nije uspjesno spremljen \n{0}".format(str(jString))
+                QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom spremanja komentara', msg)
+                
+        #update komentare
+        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
 
     def toggle_konc_radio(self, ind=0):
         """
@@ -374,7 +411,8 @@ class Kontroler(QtCore.QObject):
                    'programMjerenja': str(self.gui.konfiguracija.REST.RESTProgramMjerenja),
                    'zerospan': str(self.gui.konfiguracija.REST.RESTZeroSpan),
                    'satniPodaci': str(self.gui.konfiguracija.REST.RESTSatniPodaci),
-                   'statusMap': str(self.gui.konfiguracija.REST.RESTStatusMap)}
+                   'statusMap': str(self.gui.konfiguracija.REST.RESTStatusMap),
+                   'komentari':str(self.gui.konfiguracija.REST.RESTkomentari)}
         msg = 'base url={0}\nresursi={1}'.format(baseurl, str(resursi))
         logging.debug(msg)
         # inicijalizacija webZahtjeva
@@ -609,19 +647,8 @@ class Kontroler(QtCore.QObject):
         self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
-        #bojanje taba s komentarima ako ih ima...
-        frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal,
-                                                      od=self.pocetnoVrijeme,
-                                                      do=self.zavrsnoVrijeme)
-        if len(frejm):
-            #postoje komentari...promjeni tekst taba u zeleno
-            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
-            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
-        else:
-            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
-            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
-
-
+        #TODO! update komentara za kanal i vremensko razdoblje
+        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
         #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske
@@ -948,29 +975,8 @@ class Kontroler(QtCore.QObject):
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
         elif x is 3:
-            frejm = self.nadji_komentare_za_kanal_i_datum(self.gKanal)
-            self.gui.komentariPanel.set_frejm_u_model(frejm)
-
-    def nadji_komentare_za_kanal_i_datum(self, kanal, od=None, do=None):
-        """
-        metoda vraca slajs frejma komentara za zadani kanal u vremenskom rasponu
-        od - do.
-        kanal -- integer
-        od -- pandas timestamp
-        do -- pandas timestamp
-        """
-        try:
-            temp = self.frejmKomentara.copy()
-            temp = temp[temp['Kanal']==kanal]
-            if od != None:
-                temp = temp[temp['Od'] >= od]
-            if do != None:
-                temp = temp[temp['Do'] <= do]
-            return temp
-        except Exception as err:
-            logging.error(str(err), exc_info=True)
-            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
-            return frejm
+            #TODO! update komentare
+            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
 
     def crtaj_satni_graf(self):
         """

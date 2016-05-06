@@ -503,4 +503,113 @@ class WebZahtjev(object):
             msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
             logging.error(msg, exc_info=True)
             return {}
+            
+    def dohvati_sve_komentare_za_id(self, programMjerenjaId):
+        """
+        Metoda dohvaca sve komentare za zadani program mjerenja (integer)
+        
+        output je json string ili "[]" u slucaju nedostatka podataka ili greske
+        """
+        #TODO!
+        try:
+            path = self._base + self._resursi['komentari']
+            url = "/".join([path, str(programMjerenjaId)])
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=39.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
+            return r.text
+        except AssertionError as e1:
+            msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
+            logging.error(msg, exc_info=True)
+            return '[]'
+        except requests.exceptions.RequestException as e2:
+            msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
+            logging.error(msg, exc_info=True)
+            return '[]'
+        except Exception as e3:
+            msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
+            logging.error(msg, exc_info=True)
+            return '[]'
+            
+    def dohvati_komentare_za_id_start_kraj(self, programMjerenjaId, pocetak, kraj):
+        """
+        Metoda dohvaca kmentare za program mjerenja unutar vremenskog raspona
+        [pocetak, kraj]
+        
+        ulazni parametri:
+        programMjerenjaId - int
+        pocetak - string tipa YYYY-MM-DDTHH:MM:SS
+        kraj - string tipa YYYY-MM-DDTHH:MM:SS
+        
+        output je json string ili "[]" u slucaju nedostatka podataka ili greske
+        """
+        #TODO!
+        try:
+            #convet timestamps to propperly formatted strings
+            start = str(pocetak).replace(" ", "T")
+            end = str(kraj).replace(" ", "T")
+            path = self._base +  self._resursi['komentari']
+            url = "/".join([path, str(programMjerenjaId), start, end])
+            head = {"accept":"application/json"}
+            r = requests.get(url,
+                             timeout=39.1,
+                             headers=head,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
+            return r.text
+        except AssertionError as e1:
+            msg = 'Assertion error - {0}\nstatus code={1}\nrequest url={2}'.format(str(e1), str(r.status_code), str(url))
+            print(msg)
+            logging.error(msg, exc_info=True)
+            return '[]'
+        except requests.exceptions.RequestException as e2:
+            msg = 'Request exception - {0}\nrequest url={1}'.format(str(e2), str(url))
+            logging.error(msg, exc_info=True)
+            print(msg)
+            return '[]'
+        except Exception as e3:
+            msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
+            logging.error(msg, exc_info=True)
+            print(msg)
+            return '[]'
+                
+    def put_komentar_na_rest(self, jString):
+        """
+        Metoda uploada ispravno formatirani json string komentar na REST
+        """
+        #TODO!
+        try:
+            path = self._base + self._resursi['komentari']
+            url = path
+            head = {'Content-type': 'application/json'}
+            payload = {"id":"putXml", "name":"PUT"}
+            r = requests.put(url,
+                             params=payload,
+                             data=jString,
+                             headers=head,
+                             timeout=15.1,
+                             auth=HTTPBasicAuth(self.user, self.pswd))
+            assert r.ok == True, 'Bad request/response'
+            msg = 'put_komentar_na_rest procesiran, response code={0}, request url={1}'.format(r.status_code, r.url)
+            logging.debug(msg)
+            return True
+        except ValueError as e0:
+            msg = "Value error - {0}".format(str(e0))
+            logging.error(msg, exc_info=True)
+            return False
+        except AssertionError as e1:
+            msg = "Assertion error - {0}\nresponse code={1}\nrequest url={2}".format(str(e1), r.status_code, r.url)
+            logging.error(msg, exc_info=True)
+            return False
+        except requests.exceptions.RequestException as e2:
+            msg = "Request exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e2), url, str(payload), str(head))
+            logging.error(msg, exc_info=True)
+            return False
+        except Exception as e3:
+            msg = "General exception - {0}\nrequest url={1}\nparametri={2}\nheaderi={3}".format(str(e3), url, str(payload), str(head))
+            logging.error(msg, exc_info=True)
+            return False
 

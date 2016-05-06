@@ -63,6 +63,7 @@ class KonfigAplikacije():
         new_config.set('REST_INFO', 'satni_podaci', str(self.REST.RESTSatniPodaci))
         new_config.set('REST_INFO', 'zero_span', str(self.REST.RESTZeroSpan))
         new_config.set('REST_INFO', 'status_map', str(self.REST.RESTStatusMap))
+        new_config.set('REST_INFO', 'komentari', str(self.REST.RESTkomentari))
         #MAIN WINDOW
         new_config.set('MAIN_WINDOW', 'action_satni_grid', str(self.satni.Grid))
         new_config.set('MAIN_WINDOW', 'action_satni_legend', str(self.satni.Legend))
@@ -605,6 +606,11 @@ class RESTKonfig():
                                                                'REST_INFO',
                                                                'status_map',
                                                                'dhz.skz.rs.sirovipodaci/statusi',
+                                                               str)
+        self.RESTkomentari = pomocne_funkcije.load_config_item(cfg,
+                                                               'REST_INFO',
+                                                               'komentari',
+                                                               'dhz.skz.rs.komentar',
                                                                str)
         logging.debug('Kraj inicijalizacije postavki REST servisa')
 

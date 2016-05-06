@@ -19,7 +19,7 @@ class PregledKomentara(QtGui.QWidget):
         self.splitter = QtGui.QSplitter()
 
         self.plainTextEdit = QtGui.QPlainTextEdit()
-#        self.plainTextEdit.setEnabled(False)
+        #self.plainTextEdit.setEnabled(False)
 
         self.tableView = QtGui.QTableView()
         self.tableView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)

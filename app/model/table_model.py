@@ -557,14 +557,14 @@ class KomentarModel(QtCore.QAbstractTableModel):
         QtCore.QAbstractTableModel.__init__(self, parent=parent)
 
         if not isinstance(frejm, pd.core.frame.DataFrame):
-            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+            frejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
             msg = 'KomentarModel.__init__() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
             logging.error(msg)
         self.frejm = frejm
 
     def set_frejm(self, frejm):
         if not isinstance(frejm, pd.core.frame.DataFrame):
-            frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+            frejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
             msg = 'KomentarModel.__init__() problem. nije zadan frejm. koristim prazan frejm kao default. frejm={0}'.format(str(frejm))
             logging.error(msg)
         self.frejm = frejm
@@ -575,14 +575,14 @@ class KomentarModel(QtCore.QAbstractTableModel):
         return self.frejm.loc[ind, 'Komentar']
 
     def clear_frejm(self):
-        self.frejm = pd.DataFrame(columns=['Postaja', 'Kanal', 'Formula', 'Od', 'Do', 'Komentar'])
+        self.frejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
         self.layoutChanged.emit()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self.frejm)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 3
+        return 4
 
     def flags(self, index):
         if index.isValid():
@@ -596,24 +596,33 @@ class KomentarModel(QtCore.QAbstractTableModel):
         red = self.frejm.index[row]
         if role == QtCore.Qt.DisplayRole:
             if col == 0:
-                value = self.frejm.loc[red, 'Od']
+                value = self.frejm.loc[red, 'Kanal']
                 return str(value)
             elif col == 1:
-                value = self.frejm.loc[red, 'Do']
+                value = self.frejm.loc[red, 'Od']
                 return str(value)
             elif col == 2:
+                value = self.frejm.loc[red, 'Do']
+                return str(value)
+            elif col == 3:
                 value = self.frejm.loc[red, 'Komentar'][0:80]
                 return str(value)
+            else:
+                return ''
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 if section == 0:
-                    return 'Od'
+                    return 'Kanal'
                 elif section == 1:
-                    return 'Do'
+                    return 'Od'                   
                 elif section == 2:
+                    return 'Do'
+                elif section == 3:
                     return 'Komentar'
+                else:
+                    return ''
 
     def sort(self, column, order):
             """
@@ -626,10 +635,12 @@ class KomentarModel(QtCore.QAbstractTableModel):
                 poredak = True
             stupac = ''
             if column == 0:
-                stupac = 'Od'
+                stupac = 'Kanal'
             elif column == 1:
-                stupac = 'Do'
+                stupac = 'Od'
             elif column == 2:
+                stupac = 'Do'
+            elif column == 3:
                 stupac = 'Komentar'
             self.frejm.sort(columns=[stupac], inplace=True, ascending=poredak)
             self.emit(QtCore.SIGNAL("layoutChanged()"))

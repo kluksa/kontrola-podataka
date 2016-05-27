@@ -252,23 +252,42 @@ class Kontroler(QtCore.QObject):
             self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
             self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
 
+    def pronadji_sve_kanale_na_postaji(self, postaja):
+        """metoda vraca listu svih kanala na postaji (lista integera)"""
+        #TODO!
+        output = []
+        for key in self.mapaMjerenjeIdToOpis:
+            if self.mapaMjerenjeIdToOpis[key]['postajaId'] == postaja:
+                output.append(key)
+        return output
 
     def dodaj_novi_komentar(self, mapa):
         """
         Dodavanje novog komentara u frejm sa komentarima.
-        mapa ima kljuceve ['od', 'do', 'kanal', 'tekst']
+        mapa ima kljuceve ['od', 'do', 'kanal', 'tekst', 'spremiSvima']
         "od", "do" su pandas timestampovi
         "kanal" je int
         "tekst" je string
+        "spremiSvima" je boolean
         """
         #TODO!
+        #promjeni cursor u wait cursor
+        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+
         #format values
         od = mapa['od'].value / 1000000
         do = mapa['do'].value / 1000000
         tekst = str(mapa['tekst'])
         kanal = int(mapa['kanal'])
-        
-        popisKanala = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
+        spremiSvimaNaPostaji = bool(mapa['dodajSvima'])
+
+        if spremiSvimaNaPostaji:
+            #nadji sve kanale na postaji
+            postaja = self.mapaMjerenjeIdToOpis[kanal]['postajaId']
+            popisKanala = self.pronadji_sve_kanale_na_postaji(postaja)
+        else:
+            #samo povezani kanali
+            popisKanala = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
         
         for kanalId in popisKanala:
             data = {"pocetak":od, "kraj":do, "programMjerenjaId":kanalId, "tekst":tekst}
@@ -282,6 +301,11 @@ class Kontroler(QtCore.QObject):
                 
         #update komentare
         self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+
+        #promjeni cursor u normalni cursor
+        QtGui.QApplication.restoreOverrideCursor()
+
+
 
     def toggle_konc_radio(self, ind=0):
         """

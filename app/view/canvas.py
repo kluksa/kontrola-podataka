@@ -691,10 +691,25 @@ class SatniMinutniKanvas(Kanvas):
         ok = popupDijalog.exec_()
         if ok:
             tekst = popupDijalog.get_tekst()
+            dodajSvima = popupDijalog.get_checkbox_state() #dodavanje svim kanalima na postaji
             mapa = {'kanal':self.gKanal,
                     'od':self.__lastTimeMin,
                     'do':self.__lastTimeMax,
-                    'tekst':tekst}
+                    'tekst':tekst,
+                    'dodajSvima':dodajSvima}
+            if dodajSvima:
+                #ako je checkbox za spremanje na sve kanale koji su na postaji OK, trazi dodatnu provjeru
+                potvrda = QtGui.QMessageBox.question(self,
+                                                     'Potvrdi spremanje komentara',
+                                                     'Da li ste sigurni da zelite dodati komentar svim uredjajima na postaji?',
+                                                     QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel)
+                if potvrda == QtGui.QMessageBox.Ok:
+                    logging.debug('Potvrda za spremanje an sve kanale - OK')
+                    print('Check je ON, potvrda je OK. Komentar se dodaje svima.')
+                else:
+                    logging.debug('Potvrda za spremanje an sve kanale - CANCEL')
+                    mapa['dodajSvima'] = False
+            #emit signala za dodavanje komentara
             self.emit(QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'), mapa)
 
     def promjena_flaga(self, flag=1):

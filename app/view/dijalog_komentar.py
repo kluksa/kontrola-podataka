@@ -39,3 +39,7 @@ class DijalogKomentar(base51, form51):
 
     def set_tekst(self, tekst):
         self.plainTextEdit.setPlainText(tekst)
+        
+    def get_checkbox_state(self):
+        return self.checkBoxDodajSvima.isChecked()
+        

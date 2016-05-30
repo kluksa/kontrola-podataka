@@ -15,8 +15,11 @@ class DijalogKomentar(base51, form51):
 
         self.tmin = tmin
         self.tmax = tmax
+        
+        self.setup_label()
 
-        if tmin == tmax:
+    def setup_label(self):
+        if self.tmin == self.tmax:
             msg = " ".join([
                 'Komentar za vrijeme',
                 '<b>',
@@ -33,6 +36,14 @@ class DijalogKomentar(base51, form51):
                 str(self.tmax),
                 '</b>'])
         self.label.setText(msg)
+
+    def set_time_min(self, defaultTimeMin):
+        self.tmin = defaultTimeMin
+        self.setup_label()
+    
+    def set_time_max(self, defaultTimeMax):
+        self.tmax = defaultTimeMax
+        self.setup_label()
 
     def get_tekst(self):
         return self.plainTextEdit.toPlainText()

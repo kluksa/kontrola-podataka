@@ -682,12 +682,18 @@ class SatniMinutniKanvas(Kanvas):
         #prikazi menu na definiranoj tocki grafa
         menu.popup(pos)
 
-    def dodaj_komentar(self):
+    def dodaj_komentar(self, defaultTekst=None, defaultTimeMin=None, defaultTimeMax=None):
         """
         Dodavanje komentara za neki raspon
         """
         #TODO!
         popupDijalog = DijalogKomentar(tmin=self.__lastTimeMin, tmax=self.__lastTimeMax)
+        if defaultTekst:
+            popupDijalog.set_tekst(defaultTekst)
+        if defaultTimeMin:
+            popupDijalog.set_time_min(defaultTimeMin)
+        if defaultTimeMax:
+            popupDijalog.set_time_max(defaultTimeMax)
         ok = popupDijalog.exec_()
         if ok:
             tekst = popupDijalog.get_tekst()
@@ -697,7 +703,10 @@ class SatniMinutniKanvas(Kanvas):
                     'do':self.__lastTimeMax,
                     'tekst':tekst,
                     'dodajSvima':dodajSvima}
-            if dodajSvima:
+            if not dodajSvima:
+                #emit signala za dodavanje komentara
+                self.emit(QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'), mapa)
+            else:
                 #ako je checkbox za spremanje na sve kanale koji su na postaji OK, trazi dodatnu provjeru
                 potvrda = QtGui.QMessageBox.question(self,
                                                      'Potvrdi spremanje komentara',
@@ -705,12 +714,14 @@ class SatniMinutniKanvas(Kanvas):
                                                      QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel)
                 if potvrda == QtGui.QMessageBox.Ok:
                     logging.debug('Potvrda za spremanje an sve kanale - OK')
-                    print('Check je ON, potvrda je OK. Komentar se dodaje svima.')
+                    #emit signala za dodavanje komentara
+                    self.emit(QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'), mapa)
                 else:
                     logging.debug('Potvrda za spremanje an sve kanale - CANCEL')
-                    mapa['dodajSvima'] = False
-            #emit signala za dodavanje komentara
-            self.emit(QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'), mapa)
+                    #redisplay the dialog...
+                    self.dodaj_komentar(defaultTekst=tekst,
+                                        defaultTimeMin=self.__lastTimeMin,
+                                        defaultTimeMax=self.__lastTimeMax)
 
     def promjena_flaga(self, flag=1):
         """

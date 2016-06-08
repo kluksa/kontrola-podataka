@@ -582,7 +582,7 @@ class KomentarModel(QtCore.QAbstractTableModel):
         return len(self.frejm)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 3
+        return 4
 
     def flags(self, index):
         if index.isValid():
@@ -596,12 +596,15 @@ class KomentarModel(QtCore.QAbstractTableModel):
         red = self.frejm.index[row]
         if role == QtCore.Qt.DisplayRole:
             if col == 0:
+                value = self.frejm.loc[red, 'Kanal']
+                return str(int(value))
+            elif col == 1:
                 value = self.frejm.loc[red, 'Od']
                 return str(value)
-            elif col == 1:
+            elif col == 2:
                 value = self.frejm.loc[red, 'Do']
                 return str(value)
-            elif col == 2:
+            elif col == 3:
                 value = self.frejm.loc[red, 'Komentar'][0:80]
                 return str(value)
             else:
@@ -611,10 +614,12 @@ class KomentarModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 if section == 0:
-                    return 'Od'                   
+                    return 'Kanal'
                 elif section == 1:
-                    return 'Do'
+                    return 'Od'                   
                 elif section == 2:
+                    return 'Do'
+                elif section == 3:
                     return 'Komentar'
                 else:
                     return ''
@@ -630,10 +635,12 @@ class KomentarModel(QtCore.QAbstractTableModel):
                 poredak = True
             stupac = ''
             if column == 0:
-                stupac = 'Od'
+                stupac = 'Kanal'
             elif column == 1:
-                stupac = 'Do'
+                stupac = 'Od'
             elif column == 2:
+                stupac = 'Do'
+            elif column == 3:
                 stupac = 'Komentar'
             self.frejm.sort(columns=[stupac], inplace=True, ascending=poredak)
             self.emit(QtCore.SIGNAL("layoutChanged()"))

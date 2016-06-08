@@ -35,7 +35,7 @@ class PregledKomentara(QtGui.QWidget):
 
         self.filterProxy = QtGui.QSortFilterProxyModel()
         self.filterProxy.setSourceModel(self.modelKomentara)
-        self.filterProxy.setFilterKeyColumn(2)
+        self.filterProxy.setFilterKeyColumn(3)
         self.tableView.setModel(self.filterProxy)
 
         self.splitter.setOrientation(QtCore.Qt.Vertical)
@@ -53,6 +53,8 @@ class PregledKomentara(QtGui.QWidget):
     def set_frejm_u_model(self, frejm):
         self.plainTextEdit.clear()
         self.modelKomentara.set_frejm(frejm)
+        #TODO!
+        self.filterProxy.setSourceModel(self.modelKomentara)
         self.tableView.resizeColumnsToContents()
 
     def prikazi_puni_tekst(self, x):

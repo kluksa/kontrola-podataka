@@ -56,6 +56,7 @@ def setup_logging(file='applog.log', mode='a', lvl='INFO'):
         #exit iz programa.
         raise SystemExit('Error prilikom konfiguracije loggera, Application exit.')
 
+
 def main():
     """
     Pokretac aplikacije.

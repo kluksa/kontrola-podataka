@@ -207,6 +207,11 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.koncPanel.minutniGraf,
                      QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'),
                      self.dodaj_novi_komentar)
+        ### update komentara za postaju (svi kanali, klik na postaju a ne na neki uredjaj) ####
+        #TODO!
+        self.connect(self.gui.restIzbornik,
+                     QtCore.SIGNAL('prikazi_komentare_za_stanicu(PyQt_PyObject)'),
+                     self.get_sve_komentare_postaje)
         ###concentration radio buttons###
         for i in range(len(self.koncRadioButtons)):
             button = self.koncRadioButtons[i]
@@ -215,6 +220,42 @@ class Kontroler(QtCore.QObject):
             button.clicked.connect(partial(self.toggle_konc_radio, ind=i))
             zsbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
             vdbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
+
+    def get_sve_komentare_postaje(self, postaja):
+        """
+        metoda dohvaca sve komentare sa postaje
+
+        postaja - string naziv postaje        
+        """
+        outFrejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
+        #TODO!
+        kanaliNaPostaji = set(self.pronadji_sve_kanale_na_postaji(postaja))
+        for i in kanaliNaPostaji:
+            jString = self.webZahtjev.dohvati_sve_komentare_za_id(i)
+            
+            frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
+            
+            if len(frejm):
+                frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
+                frejm.drop('id', axis=1, inplace=True)
+                
+                #merge result with outFrejm
+                outFrejm = outFrejm.append(frejm, ignore_index=True)
+
+        #TODO! update model and visuals...
+        self.gui.komentariPanel.set_frejm_u_model(outFrejm)
+        if len(outFrejm):
+            #set new frejm to model komentara
+            self.gui.komentariPanel.set_frejm_u_model(outFrejm)
+            #update visual hint
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
+        else:
+            self.gui.komentariPanel.set_frejm_u_model(outFrejm)
+            #update visual hint
+            self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
+            self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
+
 
     def get_bitne_komentare(self, programMjerenjaId, pocetak, kraj):
         """
@@ -256,8 +297,13 @@ class Kontroler(QtCore.QObject):
         """metoda vraca listu svih kanala na postaji (lista integera)"""
         #TODO!
         output = []
+        #search by string naziv ili id postaje
+        if isinstance(postaja, str):
+            searchKey = 'postajaNaziv'
+        else:
+            searchKey = 'postajaId'
         for key in self.mapaMjerenjeIdToOpis:
-            if self.mapaMjerenjeIdToOpis[key]['postajaId'] == postaja:
+            if self.mapaMjerenjeIdToOpis[key][searchKey] == postaja:
                 output.append(key)
         return output
 
@@ -998,9 +1044,15 @@ class Kontroler(QtCore.QObject):
                 referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
-        elif x is 3:
-            #TODO! update komentare
-            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+#        elif x is 3:
+#            try:
+#                #TODO! update komentare
+#                self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+#            except Exception as err:
+#                #expected fail.. ako vrijeme i/ili kanal nije izabran
+#                msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+#                logging.info(msg)
+#                logging.info(str(err), exc_info=True)
 
     def crtaj_satni_graf(self):
         """

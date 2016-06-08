@@ -65,6 +65,9 @@ class RestIzbornik(base1, form1):
                     self.emit(QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'), output)
                     msg = 'izabrana kombinacija kanala i datuma : {0}'.format(str(output))
                     logging.info(msg)
+                else:
+                    #TODO!
+                    self.emit(QtCore.SIGNAL('prikazi_komentare_za_stanicu(PyQt_PyObject)'), str(item))
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n' + str(err)
             logging.error('App exception', exc_info=True)

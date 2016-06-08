@@ -22,11 +22,11 @@ class PregledKomentara(QtGui.QWidget):
         #self.plainTextEdit.setEnabled(False)
 
         self.filterLabel = QtGui.QLabel('Filter komentara :')
-        self.filterLineEdit = QtGui.QLineEdit()        
+        self.filterLineEdit = QtGui.QLineEdit()
         hlay = QtGui.QHBoxLayout()
         hlay.addWidget(self.filterLabel)
         hlay.addWidget(self.filterLineEdit)
-        
+
         self.tableView = QtGui.QTableView()
         self.tableView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.tableView.horizontalHeader().setStretchLastSection(True)
@@ -53,12 +53,13 @@ class PregledKomentara(QtGui.QWidget):
     def set_frejm_u_model(self, frejm):
         self.plainTextEdit.clear()
         self.modelKomentara.set_frejm(frejm)
-        #TODO!
         self.filterProxy.setSourceModel(self.modelKomentara)
         self.tableView.resizeColumnsToContents()
 
     def prikazi_puni_tekst(self, x):
-        red = x.row()
+        #map to source index...
+        praviRed = self.filterProxy.mapToSource(x)
+        red = praviRed.row()
         tekst = self.modelKomentara.dohvati_tekst_za_red(red)
         self.plainTextEdit.setPlainText(tekst)
 

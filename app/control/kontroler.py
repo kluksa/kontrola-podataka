@@ -225,20 +225,20 @@ class Kontroler(QtCore.QObject):
         """
         metoda dohvaca sve komentare sa postaje
 
-        postaja - string naziv postaje        
+        postaja - string naziv postaje
         """
         outFrejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
         #TODO!
         kanaliNaPostaji = set(self.pronadji_sve_kanale_na_postaji(postaja))
         for i in kanaliNaPostaji:
             jString = self.webZahtjev.dohvati_sve_komentare_za_id(i)
-            
+
             frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
-            
+
             if len(frejm):
                 frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
                 frejm.drop('id', axis=1, inplace=True)
-                
+
                 #merge result with outFrejm
                 outFrejm = outFrejm.append(frejm, ignore_index=True)
 
@@ -261,11 +261,11 @@ class Kontroler(QtCore.QObject):
         """
         metoda dohvaca sve komentare za zadani programMjerenjaId i neki vremenski
         raspon.
-        
+
         programMjerenjaId - integer, glavni kanal
         pocetak - pandas timestamp
         kraj - pandas timestamp
-        
+
         output je dobro formatirani pandas datafrejm sa podacima
         """
         #TODO!
@@ -275,7 +275,7 @@ class Kontroler(QtCore.QObject):
         jString = self.webZahtjev.dohvati_komentare_za_id_start_kraj(programMjerenjaId, start, end)
 
         frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
-        
+
         if len(frejm):
             #adapt frejm -- stupci [Od, Do, Kanal, Komentar]
             frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
@@ -334,7 +334,7 @@ class Kontroler(QtCore.QObject):
         else:
             #samo povezani kanali
             popisKanala = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
-        
+
         for kanalId in popisKanala:
             data = {"pocetak":od, "kraj":do, "programMjerenjaId":kanalId, "tekst":tekst}
             jString = json.dumps(data)
@@ -344,7 +344,7 @@ class Kontroler(QtCore.QObject):
             if not check:
                 msg = "Komentar nije uspjesno spremljen \n{0}".format(str(jString))
                 QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom spremanja komentara', msg)
-                
+
         #update komentare
         self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
 

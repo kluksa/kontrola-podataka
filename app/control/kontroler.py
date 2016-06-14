@@ -226,6 +226,13 @@ class Kontroler(QtCore.QObject):
         self.connect(self.gui.zsPanel.spanGraf,
                      QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'),
                      self.gui.zsPanel.zeroGraf.plot_linear_fit_pravac)
+        #TODO! zero span intercept update
+        self.connect(self.gui.zsPanel.zeroGraf,
+                     QtCore.SIGNAL('update_ocekivani_fail(PyQt_PyObject)'),
+                     self.update_prekoracenje_zero)
+        self.connect(self.gui.zsPanel.spanGraf,
+                     QtCore.SIGNAL('update_ocekivani_fail(PyQt_PyObject)'),
+                     self.update_prekoracenje_span)
         ###concentration radio buttons###
         for i in range(len(self.koncRadioButtons)):
             button = self.koncRadioButtons[i]
@@ -234,6 +241,18 @@ class Kontroler(QtCore.QObject):
             button.clicked.connect(partial(self.toggle_konc_radio, ind=i))
             zsbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
             vdbutton.clicked.connect(partial(self.toggle_konc_radio, ind=i))
+
+    def update_prekoracenje_span(self, x):
+        """update label sa vremenom ocekivanog prekoracenja span vrijednosti"""
+        #TODO! display panel sa prekoracenjima
+        self.gui.zsPanel.groupBoxPrekoracenje.setVisible(True)
+        self.gui.zsPanel.labelPrekoracenjeSpan.setText(str(x))
+
+    def update_prekoracenje_zero(self, x):
+        """update label sa vremenom ocekivanog prekoracenja zero vrijednosti"""
+        #TODO! display panel sa prekoracenjima
+        self.gui.zsPanel.groupBoxPrekoracenje.setVisible(True)
+        self.gui.zsPanel.labelPrekoracenjeZero.setText(str(x))
 
     def get_sve_komentare_postaje(self, postaja):
         """
@@ -267,7 +286,6 @@ class Kontroler(QtCore.QObject):
             #update visual hint
             self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.black)
             self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon())
-
 
     def get_bitne_komentare(self, programMjerenjaId, pocetak, kraj):
         """
@@ -399,6 +417,8 @@ class Kontroler(QtCore.QObject):
 
     def refresh_zero_span_panela(self):
         self.crtaj_zero_span()
+        #TODO! hide panel sa prekoracenjima
+        self.gui.zsPanel.groupBoxPrekoracenje.setVisible(False)
         if hasattr(self, 'webZahtjev'):
             referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
             self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
@@ -1170,7 +1190,8 @@ class Kontroler(QtCore.QObject):
                 tmin = tmax - datetime.timedelta(days=self.brojDana)
                 arg = {'kanalId': self.gKanal,
                        'pocetnoVrijeme': tmin,
-                       'zavrsnoVrijeme': tmax}
+                       'zavrsnoVrijeme': tmax,
+                       'ndana':self.brojDana}
                 #dohvati frejmove
                 self.zeroFrejm, self.spanFrejm = self.dohvati_zero_span()
                 #crtanje zero

@@ -343,6 +343,8 @@ class ZeroSpanPanel(base3, form3):
         self.zsModel = modeli.ZeroSpanModel()
         self.zeroSpanTableView.setModel(self.zsModel)
         self.zeroSpanTableView.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        #TODO! hide prekoracenja
+        self.groupBoxPrekoracenje.setVisible(False)
         #zoom sinhronizacija
         #ZERO
         self.connect(self.zeroGraf,

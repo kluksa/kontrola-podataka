@@ -101,7 +101,7 @@ class Kanvas(FigureCanvas):
         #iskljuci zoom vezan na ljevi klik
         self.zoomSelector.set_active(False)
 
-        if self.konfig.TIP in ['SATNI', 'MINUTNI']:
+        if self.konfig.TIP in ['SATNI', 'MINUTNI', 'ZERO', 'SPAN']:
             #span selector, inicijalizacija span selectora (izbor vise tocaka po x osi)
             self.spanBoxInfo = dict(alpha=0.3, facecolor='yellow')
             self.spanSelector = SpanSelector(self.axes,
@@ -686,7 +686,6 @@ class SatniMinutniKanvas(Kanvas):
         """
         Dodavanje komentara za neki raspon
         """
-        #TODO!
         popupDijalog = DijalogKomentar(tmin=self.__lastTimeMin, tmax=self.__lastTimeMax)
         if defaultTekst:
             popupDijalog.set_tekst(defaultTekst)
@@ -954,7 +953,7 @@ class SatniKanvas(SatniMinutniKanvas):
                     #crtanje minutnog
                     self.emit(QtCore.SIGNAL('crtaj_minutni_graf(PyQt_PyObject)'),
                               xpoint)
-                    #XXX! napravi button release event za spanSelector
+                    #napravi button release event za spanSelector
                     mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
                                                                             event.canvas,
                                                                             event.x,
@@ -1285,7 +1284,7 @@ class MinutniKanvas(SatniMinutniKanvas):
                     #highlight odabir, size pointa
                     self.highlight_pick((xpoint, ypoint), self.highlightSize)
                 elif event.button == 3:
-                    #XXX! napravi button release event za spanSelector
+                    #napravi button release event za spanSelector
                     mouseEventRelease = matplotlib.backend_bases.MouseEvent('button_release_event',
                                                                             event.canvas,
                                                                             event.x,
@@ -1309,16 +1308,16 @@ class ZeroSpanKanvas(Kanvas):
     Kanvas klasa sa zajednickim elementima za zero i span graf.
     Inicijalizacija sa konfig objektom
     """
+    #TODO!
     def __init__(self, konfig, parent=None, width=6, height=5, dpi=100):
         Kanvas.__init__(self, konfig)
         self.cid = self.mpl_connect('pick_event', self.on_pick)
-        self.spanSelector = None
+        #self.spanSelector = None
         #zoom support
         paket = {'x':self.xlim_original,
                  'y':self.ylim_original,
                  'tip':self.konfig.TIP}
         self.emit(QtCore.SIGNAL('report_original_size(PyQt_PyObject)'), paket)
-
 
     def pronadji_najblizi_time_indeks(self, lista, vrijednost):
         """
@@ -1682,11 +1681,116 @@ class ZeroSpanKanvas(Kanvas):
                        transform=self.axes.transAxes)
         self.draw()
 
+    def zaokruzi_na_najblize_vrijeme(self, xpoint):
+        """
+        Metoda sluzi za zaokruzivanje vremena zadanog ulaznim parametrom xpoint na
+        najblizu punu minutu.
+        """
+        return self.zaokruzi_vrijeme(xpoint, 60)
+
     def span_select(self, tmin, tmax):
         """
-        Zero i span graf nemaju opciju za span selektor.
+        Primjer callback metode za span selektor.
+        t1 i t2 su timestampovi, ali ih treba adaptirati iz matplotlib vremena u
+        "zaokruzene" pandas timestampove. (na minutnom grafu se zaokruzuje na najblizu
+        minutu, dok na satnom na najblizi sat)
         """
-        pass
+        msg = 'span_select called. xmin={0} , xmax={1}'.format(str(tmin), str(tmax))
+        logging.debug(msg)
+        if self.statusGlavniGraf:
+            t1 = matplotlib.dates.num2date(tmin)
+            t2 = matplotlib.dates.num2date(tmax)
+            t1 = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
+            t2 = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
+            t1 = self.zaokruzi_na_najblize_vrijeme(t1)
+            t2 = self.zaokruzi_na_najblize_vrijeme(t2)
+            t1 = pd.to_datetime(t1)
+            t2 = pd.to_datetime(t2)
+            #tocke ne smiju biti iste (izbjegavamo paljenje dijaloga na ljevi klik)
+            if t1 != t2:
+                #pronadji lokaciju kursora u Qt kooridinatama.
+                loc = QtGui.QCursor.pos()
+                self.show_context_menu(loc, t1, t2) #poziv kontekstnog menija
+
+    def show_context_menu(self, pos, tmin, tmax):
+        """
+        Metoda iscrtava kontekstualni meni sa opcijama za promjenom flaga
+        na minutnom i satnom grafu.
+        Promjena se radi na minutnim podacima pa je nuzno pripaziti kod promjene
+        na satnom grafu jer moramo prilikom poziva ove metode pomaknuti tmin
+        59 minuta unazad da uhvatimo sve relevantne podatke.
+        """
+        #TODO!
+        msg = 'show_context_menu called, pos={0} , tmin={1} , tmax={2}'.format(str(pos), str(tmin), str(tmax))
+        logging.debug(msg)
+        #zapamti rubna vremena intervala, trebati ce za druge metode
+        self.__lastTimeMin = tmin
+        self.__lastTimeMax = tmax
+        #definiraj menu i postavi akcije u njega
+        menu = QtGui.QMenu(self)
+        menu.setTitle('Linearna projekcija izabranih vrijednosti (LSE)')
+        action1 = QtGui.QAction("Nacrtaj pravac", menu)
+        action2 = QtGui.QAction("Obrisi sve pravce", menu)
+        menu.addAction(action1)
+        menu.addAction(action2)
+        #povezi akcije menua sa metodama
+        action1.triggered.connect(self.order_plot_linear_fit_pravac)
+        action2.triggered.connect(self.reset_graf)
+        #prikazi menu na definiranoj tocki grafa
+        menu.popup(pos)
+
+    def order_plot_linear_fit_pravac(self):
+        """
+        plot linearnog fita iz selektiranih podataka...
+        """
+        #ako nisu zadane granice uzmi zadnje zadane iz kontekstnog menija
+        args = {'tmin':self.__lastTimeMin,
+                'tmax':self.__lastTimeMax}
+        #dispatch the order to calculate and plot
+        self.emit(QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'), args)
+        #plot self
+        self.plot_linear_fit_pravac(args)
+
+    def plot_linear_fit_pravac(self, mapa):
+        """
+        naredba za plot grafa..fit linearnog modela i crtanje...
+        """
+        #TODO!
+        print('------------------------------')
+        print(str(self))
+        self.__lastTimeMin = mapa['tmin']
+        self.__lastTimeMax = mapa['tmax']
+
+        #get slice of data
+        plotdata = self.data[self.data.index > self.__lastTimeMin]
+        plotdata = plotdata[plotdata.index < self.__lastTimeMax]
+
+        if len(plotdata) > 4:
+            x = np.array([matplotlib.dates.date2num(i) for i in plotdata.vrijeme])
+            y = np.array(plotdata.vrijednost)
+            #TODO!
+            a, b = self.get_line_data(x, y)
+            lx, hx = self.axes.get_xlim()
+            raspon = np.linspace(lx, hx, num=200)
+            self.axes.plot(raspon, a*raspon + b, 'b--')
+            self.draw()
+        else:
+            print('not enough data')
+            pass
+
+    def get_line_data(self, x, y):
+        """
+        use numpy to calculate least squares linear regression coefficients
+        """
+        A = np.vstack([x, np.ones(len(x))]).T
+        a, b = np.linalg.lstsq(A, y)[0]
+        return a, b
+
+    def reset_graf(self):
+        """
+        reset orignalnog grafa
+        """
+        self.emit(QtCore.SIGNAL('reset_zs_graf'))
 
     def setup_ticks(self):
         """

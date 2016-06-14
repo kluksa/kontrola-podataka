@@ -208,10 +208,24 @@ class Kontroler(QtCore.QObject):
                      QtCore.SIGNAL('dodaj_novi_komentar(PyQt_PyObject)'),
                      self.dodaj_novi_komentar)
         ### update komentara za postaju (svi kanali, klik na postaju a ne na neki uredjaj) ####
-        #TODO!
         self.connect(self.gui.restIzbornik,
                      QtCore.SIGNAL('prikazi_komentare_za_stanicu(PyQt_PyObject)'),
                      self.get_sve_komentare_postaje)
+        ### TODO! zero span - span selection linear fit###
+        #connect reset_graf signal - refresh cijeli panel
+        self.connect(self.gui.zsPanel.zeroGraf,
+                     QtCore.SIGNAL('reset_zs_graf'),
+                     self.refresh_zero_span_panela)
+        self.connect(self.gui.zsPanel.spanGraf,
+                     QtCore.SIGNAL('reset_zs_graf'),
+                     self.refresh_zero_span_panela)
+        #TODO! connect zero mora crtati span i obrnuto
+        self.connect(self.gui.zsPanel.zeroGraf,
+                     QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'),
+                     self.gui.zsPanel.spanGraf.plot_linear_fit_pravac)
+        self.connect(self.gui.zsPanel.spanGraf,
+                     QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'),
+                     self.gui.zsPanel.zeroGraf.plot_linear_fit_pravac)
         ###concentration radio buttons###
         for i in range(len(self.koncRadioButtons)):
             button = self.koncRadioButtons[i]
@@ -225,24 +239,22 @@ class Kontroler(QtCore.QObject):
         """
         metoda dohvaca sve komentare sa postaje
 
-        postaja - string naziv postaje        
+        postaja - string naziv postaje
         """
         outFrejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
-        #TODO!
         kanaliNaPostaji = set(self.pronadji_sve_kanale_na_postaji(postaja))
         for i in kanaliNaPostaji:
             jString = self.webZahtjev.dohvati_sve_komentare_za_id(i)
-            
+
             frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
-            
+
             if len(frejm):
                 frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
                 frejm.drop('id', axis=1, inplace=True)
-                
+
                 #merge result with outFrejm
                 outFrejm = outFrejm.append(frejm, ignore_index=True)
 
-        #TODO! update model and visuals...
         self.gui.komentariPanel.set_frejm_u_model(outFrejm)
         if len(outFrejm):
             #set new frejm to model komentara
@@ -261,21 +273,20 @@ class Kontroler(QtCore.QObject):
         """
         metoda dohvaca sve komentare za zadani programMjerenjaId i neki vremenski
         raspon.
-        
+
         programMjerenjaId - integer, glavni kanal
         pocetak - pandas timestamp
         kraj - pandas timestamp
-        
+
         output je dobro formatirani pandas datafrejm sa podacima
         """
-        #TODO!
         # prosiri granice vremena za 7 dana... malo sira slika
         start = pocetak - datetime.timedelta(days=7)
         end = kraj + datetime.timedelta(days=7)
         jString = self.webZahtjev.dohvati_komentare_za_id_start_kraj(programMjerenjaId, start, end)
 
         frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
-        
+
         if len(frejm):
             #adapt frejm -- stupci [Od, Do, Kanal, Komentar]
             frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
@@ -295,7 +306,6 @@ class Kontroler(QtCore.QObject):
 
     def pronadji_sve_kanale_na_postaji(self, postaja):
         """metoda vraca listu svih kanala na postaji (lista integera)"""
-        #TODO!
         output = []
         #search by string naziv ili id postaje
         if isinstance(postaja, str):
@@ -316,7 +326,6 @@ class Kontroler(QtCore.QObject):
         "tekst" je string
         "spremiSvima" je boolean
         """
-        #TODO!
         #promjeni cursor u wait cursor
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
@@ -334,7 +343,7 @@ class Kontroler(QtCore.QObject):
         else:
             #samo povezani kanali
             popisKanala = self.mapaMjerenjeIdToOpis[kanal]['povezaniKanali']
-        
+
         for kanalId in popisKanala:
             data = {"pocetak":od, "kraj":do, "programMjerenjaId":kanalId, "tekst":tekst}
             jString = json.dumps(data)
@@ -344,7 +353,7 @@ class Kontroler(QtCore.QObject):
             if not check:
                 msg = "Komentar nije uspjesno spremljen \n{0}".format(str(jString))
                 QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom spremanja komentara', msg)
-                
+
         #update komentare
         self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
 
@@ -717,7 +726,7 @@ class Kontroler(QtCore.QObject):
         self.pripremi_membere_prije_ucitavanja_zahtjeva(mapa)
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
-        #TODO! update komentara za kanal i vremensko razdoblje
+        #update komentara za kanal i vremensko razdoblje
         self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()

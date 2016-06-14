@@ -11,6 +11,7 @@ import matplotlib
 import functools
 import pandas as pd
 import numpy as np
+import copy
 from PyQt4 import QtGui, QtCore #import djela Qt frejmworka
 from app.view.dijalog_komentar import DijalogKomentar
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -142,6 +143,7 @@ class Kanvas(FigureCanvas):
         Toggle za zoom. funkcija aktivira zoom na grafu, ali samo jednom.
         Svaki zoom in mora ponovno aktivirati funkciju.
         """
+        #TODO! zooming
         logging.debug('toggle "single shot" zoom')
         #aktiviraj zoomiranje
         self.zoomSelector.set_active(True)
@@ -1308,7 +1310,6 @@ class ZeroSpanKanvas(Kanvas):
     Kanvas klasa sa zajednickim elementima za zero i span graf.
     Inicijalizacija sa konfig objektom
     """
-    #TODO!
     def __init__(self, konfig, parent=None, width=6, height=5, dpi=100):
         Kanvas.__init__(self, konfig)
         self.cid = self.mpl_connect('pick_event', self.on_pick)
@@ -1450,7 +1451,6 @@ class ZeroSpanKanvas(Kanvas):
         #redraw
         self.draw()
 
-
     def rect_zoom(self, eclick, erelease):
         """
         Callback funkcija za rectangle zoom canvasa. Funkcija lovi click i release
@@ -1468,6 +1468,12 @@ class ZeroSpanKanvas(Kanvas):
             msg = 'zoom value emit - data={0}'.format(str(paket))
             logging.debug(msg)
             self.emit(QtCore.SIGNAL('add_zoom_level(PyQt_PyObject)'), paket)
+            #TODO! disable zoom
+            self.zoomSelector.set_active(False)
+            #enable spanSelector
+            if self.spanSelector != None:
+                self.spanSelector.visible = True
+
 
     def highlight_pick(self, tpl, size):
         """
@@ -1591,27 +1597,38 @@ class ZeroSpanKanvas(Kanvas):
                 logging.debug('crtaj glavni kanal --> validan i los')
                 self.crtaj_scatter(tocke['xbad'], tocke['ybad'], self.konfig.VBAD)
 
-            if self.konfig.Warning1.crtaj and len(tocke['warningUp']) > 0:
+            rightshift = int(1440*int(self.daycount)/5) #1/5 raspona u minutama
+            rightX = tocke['x'][-1] + datetime.timedelta(minutes=rightshift)
+            #TODO! update zavrsno vrijeme
+            self.zavrsnoVrijeme = rightX
+            extendedX = copy.deepcopy(tocke['x'])
+            extendedX.append(rightX)
+            extendedWarningUp = copy.deepcopy(tocke['warningUp'])
+            extendedWarningUp.append(tocke['warningUp'][-1])
+            extendedWarningLow = copy.deepcopy(tocke['warningLow'])
+            extendedWarningLow.append(tocke['warningLow'][-1])
+
+            if self.konfig.Warning1.crtaj and len(extendedWarningUp) > 0:
                 logging.debug('crtaj glavni kanal --> gornji i donji warning line')
-                self.crtaj_line(tocke['x'], tocke['warningUp'], self.konfig.Warning1)
-                self.crtaj_line(tocke['x'], tocke['warningLow'], self.konfig.Warning2)
+                self.crtaj_line(extendedX, extendedWarningUp, self.konfig.Warning1)
+                self.crtaj_line(extendedX, extendedWarningLow, self.konfig.Warning2)
             #fill
             ledge, hedge = self.axes.get_ylim() #y granice canvasa za fill
-            if self.konfig.Fill1.crtaj and len(tocke['warningUp']) > 0:
+            if self.konfig.Fill1.crtaj and len(extendedWarningUp) > 0:
                 logging.debug('crtaj glavni kanal --> fill izmedju')
-                self.crtaj_fill(tocke['x'],
-                                tocke['warningLow'],
-                                tocke['warningUp'],
+                self.crtaj_fill(extendedX,
+                                extendedWarningLow,
+                                extendedWarningUp,
                                 self.konfig.Fill1)
                 logging.debug('crtaj glavni kanal --> fill iznad')
-                self.crtaj_fill(tocke['x'],
-                                tocke['warningUp'],
+                self.crtaj_fill(extendedX,
+                                extendedWarningUp,
                                 hedge,
                                 self.konfig.Fill2)
                 logging.debug('crtaj glavni kanal --> fill ispod')
-                self.crtaj_fill(tocke['x'],
+                self.crtaj_fill(extendedX,
                                 ledge,
-                                tocke['warningLow'],
+                                extendedWarningLow,
                                 self.konfig.Fill2)
             self.statusGlavniGraf = True
         else:
@@ -1633,6 +1650,7 @@ class ZeroSpanKanvas(Kanvas):
         -mapaParametara['kanalId'] --> program mjerenja id glavnog kanala [int]
         -mapaParametara['pocetnoVrijeme'] --> pocetno vrijeme [pandas timestamp]
         -mapaParametara['zavrsnoVrijeme'] --> zavrsno vrijeme [pandas timestamp]
+        -mapaParametara['ndana'] --> broj dana za prikaz [integer]
         """
         logging.debug('crtaj, start')
         self.clear_graf_sans_draw()
@@ -1646,6 +1664,7 @@ class ZeroSpanKanvas(Kanvas):
                   'status':''}
         self.updateaj_labele_na_panelu('normal', argMap)
         self.data = frejm
+        self.daycount = mapaParametara['ndana']
         self.pocetnoVrijeme = mapaParametara['pocetnoVrijeme']
         self.zavrsnoVrijeme = mapaParametara['zavrsnoVrijeme']
         self.gKanal = mapaParametara['kanalId']
@@ -1714,13 +1733,9 @@ class ZeroSpanKanvas(Kanvas):
 
     def show_context_menu(self, pos, tmin, tmax):
         """
-        Metoda iscrtava kontekstualni meni sa opcijama za promjenom flaga
-        na minutnom i satnom grafu.
-        Promjena se radi na minutnim podacima pa je nuzno pripaziti kod promjene
-        na satnom grafu jer moramo prilikom poziva ove metode pomaknuti tmin
-        59 minuta unazad da uhvatimo sve relevantne podatke.
+        Metoda iscrtava kontekstualni meni sa opcijom za plot grafa trenda (linearna
+        regresija kroz selektirane tocke)
         """
-        #TODO!
         msg = 'show_context_menu called, pos={0} , tmin={1} , tmax={2}'.format(str(pos), str(tmin), str(tmax))
         logging.debug(msg)
         #zapamti rubna vremena intervala, trebati ce za druge metode
@@ -1730,7 +1745,7 @@ class ZeroSpanKanvas(Kanvas):
         menu = QtGui.QMenu(self)
         menu.setTitle('Linearna projekcija izabranih vrijednosti (LSE)')
         action1 = QtGui.QAction("Nacrtaj pravac", menu)
-        action2 = QtGui.QAction("Obrisi sve pravce", menu)
+        action2 = QtGui.QAction("Makni linear fit pravac", menu)
         menu.addAction(action1)
         menu.addAction(action2)
         #povezi akcije menua sa metodama
@@ -1746,18 +1761,18 @@ class ZeroSpanKanvas(Kanvas):
         #ako nisu zadane granice uzmi zadnje zadane iz kontekstnog menija
         args = {'tmin':self.__lastTimeMin,
                 'tmax':self.__lastTimeMax}
-        #dispatch the order to calculate and plot
-        self.emit(QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'), args)
+        #clear and reset both graphs
+        self.reset_graf()
         #plot self
         self.plot_linear_fit_pravac(args)
+        #dispatch the order to calculate and plot
+        self.emit(QtCore.SIGNAL('plot_linear_fit_line(PyQt_PyObject)'), args)
 
     def plot_linear_fit_pravac(self, mapa):
         """
         naredba za plot grafa..fit linearnog modela i crtanje...
         """
         #TODO!
-        print('------------------------------')
-        print(str(self))
         self.__lastTimeMin = mapa['tmin']
         self.__lastTimeMax = mapa['tmax']
 
@@ -1768,15 +1783,30 @@ class ZeroSpanKanvas(Kanvas):
         if len(plotdata) > 4:
             x = np.array([matplotlib.dates.date2num(i) for i in plotdata.vrijeme])
             y = np.array(plotdata.vrijednost)
-            #TODO!
             a, b = self.get_line_data(x, y)
             lx, hx = self.axes.get_xlim()
             raspon = np.linspace(lx, hx, num=200)
             self.axes.plot(raspon, a*raspon + b, 'b--')
             self.draw()
+            t = self.vrati_ocekivano_vrijeme_odstupanja(a, b)
+            #TODO! intercept update
+            self.emit(QtCore.SIGNAL('update_ocekivani_fail(PyQt_PyObject)'), t)
         else:
-            print('not enough data')
             pass
+
+    def vrati_ocekivano_vrijeme_odstupanja(self, a, b):
+        """
+        pronadji vrijeme odstupanja za podatke
+        """
+        upperlimit = self.data['maxDozvoljeno'][-1]
+        lowerlimit = self.data['minDozvoljeno'][-1]
+        if a > 0:
+            t = (upperlimit - b) / a
+        else:
+            t = (lowerlimit - b) / a
+        t = matplotlib.dates.num2date(t)
+        t = pd.to_datetime(datetime.datetime(t.year, t.month, t.day, t.hour, t.minute, t.second))
+        return t
 
     def get_line_data(self, x, y):
         """

@@ -503,11 +503,11 @@ class WebZahtjev(object):
             msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
             logging.error(msg, exc_info=True)
             return {}
-            
+
     def dohvati_sve_komentare_za_id(self, programMjerenjaId):
         """
         Metoda dohvaca sve komentare za zadani program mjerenja (integer)
-        
+
         output je json string ili "[]" u slucaju nedostatka podataka ili greske
         """
         #TODO!
@@ -533,17 +533,17 @@ class WebZahtjev(object):
             msg = 'General exception - {0}\nrequest url={1}'.format(str(e3), str(url))
             logging.error(msg, exc_info=True)
             return '[]'
-            
+
     def dohvati_komentare_za_id_start_kraj(self, programMjerenjaId, pocetak, kraj):
         """
         Metoda dohvaca kmentare za program mjerenja unutar vremenskog raspona
         [pocetak, kraj]
-        
+
         ulazni parametri:
         programMjerenjaId - int
         pocetak - string tipa YYYY-MM-DDTHH:MM:SS
         kraj - string tipa YYYY-MM-DDTHH:MM:SS
-        
+
         output je json string ili "[]" u slucaju nedostatka podataka ili greske
         """
         #TODO!
@@ -575,7 +575,7 @@ class WebZahtjev(object):
             logging.error(msg, exc_info=True)
             print(msg)
             return '[]'
-                
+
     def put_komentar_na_rest(self, jString):
         """
         Metoda uploada ispravno formatirani json string komentar na REST

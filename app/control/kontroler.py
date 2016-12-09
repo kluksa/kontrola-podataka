@@ -371,7 +371,14 @@ class Kontroler(QtCore.QObject):
                 QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom spremanja komentara', msg)
 
         #update komentare
-        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        #XXX!
+        try:
+            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        except Exception as err:
+            #expected fail.. ako vrijeme i/ili kanal nije izabran
+            msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+            logging.info(msg)
+            logging.info(str(err), exc_info=True)
 
         #promjeni cursor u normalni cursor
         QtGui.QApplication.restoreOverrideCursor()
@@ -745,7 +752,14 @@ class Kontroler(QtCore.QObject):
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
         #update komentara za kanal i vremensko razdoblje
-        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        #XXX! broken line...
+        try:
+            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        except Exception as err:
+            #expected fail.. ako vrijeme i/ili kanal nije izabran
+            msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+            logging.info(msg)
+            logging.info(str(err), exc_info=True)
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
         #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske

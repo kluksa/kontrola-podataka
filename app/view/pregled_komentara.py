@@ -51,10 +51,12 @@ class PregledKomentara(QtGui.QWidget):
         self.filterLineEdit.textChanged.connect(self.filterProxy.setFilterRegExp)
 
     def set_frejm_u_model(self, frejm):
+        self.tableView.clearSelection() #TODO! unselect all
         self.plainTextEdit.clear()
         self.modelKomentara.set_frejm(frejm)
-        self.filterProxy.setSourceModel(self.modelKomentara)
+        #self.filterProxy.setSourceModel(self.modelKomentara) #TODO!
         self.tableView.resizeColumnsToContents()
+        self.tableView.update()
 
     def prikazi_puni_tekst(self, x):
         #map to source index...

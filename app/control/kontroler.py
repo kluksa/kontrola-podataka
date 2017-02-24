@@ -302,15 +302,13 @@ class Kontroler(QtCore.QObject):
         start = pocetak - datetime.timedelta(days=7)
         end = kraj + datetime.timedelta(days=7)
         jString = self.webZahtjev.dohvati_komentare_za_id_start_kraj(programMjerenjaId, start, end)
-
         frejm = pd.read_json(jString, convert_dates=['kraj', 'pocetak'])
-
         if len(frejm):
             #adapt frejm -- stupci [Od, Do, Kanal, Komentar]
             frejm.rename(columns={'kraj': 'Do', 'pocetak': 'Od', 'tekst':'Komentar', 'programMjerenjaId':'Kanal'}, inplace=True)
             frejm.drop('id', axis=1, inplace=True)
             #set new frejm to model komentara
-            self.gui.komentariPanel.set_frejm_u_model(frejm)
+            self.gui.komentariPanel.set_frejm_u_model(frejm) #TODO! bugs possible
             #update visual hint
             self.gui.tabWidget.tabBar().setTabTextColor(3, QtCore.Qt.green)
             self.gui.tabWidget.tabBar().setTabIcon(3, QtGui.QIcon('./app/view/icons/hazard5.png'))
@@ -373,7 +371,14 @@ class Kontroler(QtCore.QObject):
                 QtGui.QMessageBox.information(self.gui, 'Pogreska prilikom spremanja komentara', msg)
 
         #update komentare
-        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        #XXX!
+        try:
+            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        except Exception as err:
+            #expected fail.. ako vrijeme i/ili kanal nije izabran
+            msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+            logging.info(msg)
+            logging.info(str(err), exc_info=True)
 
         #promjeni cursor u normalni cursor
         QtGui.QApplication.restoreOverrideCursor()
@@ -747,7 +752,14 @@ class Kontroler(QtCore.QObject):
         #ucitavanje podataka ako prije nisu ucitani (ako nisu u cacheu zahtjeva)
         self.ucitaj_podatke_ako_nisu_prije_ucitani()
         #update komentara za kanal i vremensko razdoblje
-        self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        #XXX! broken line...
+        try:
+            self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+        except Exception as err:
+            #expected fail.. ako vrijeme i/ili kanal nije izabran
+            msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+            logging.info(msg)
+            logging.info(str(err), exc_info=True)
         #restore cursor u normalni
         QtGui.QApplication.restoreOverrideCursor()
         #pokusaj izabrati prethodno aktivni kanal, ili prvi moguci u slucaju pogreske
@@ -1073,15 +1085,16 @@ class Kontroler(QtCore.QObject):
                 referentni = self.get_tablice_zero_span_referentnih_vrijednosti()
                 self.gui.zsPanel.update_zero_span_referentne_vrijednosti(referentni)
             self.drawStatus[1] = True
-#        elif x is 3:
-#            try:
-#                #TODO! update komentare
-#                self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
-#            except Exception as err:
-#                #expected fail.. ako vrijeme i/ili kanal nije izabran
-#                msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
-#                logging.info(msg)
-#                logging.info(str(err), exc_info=True)
+        #prebacivanje na tab komentara...
+        elif x is 3:
+            try:
+                #TODO! update komentare
+                self.get_bitne_komentare(self.gKanal, self.pocetnoVrijeme, self.zavrsnoVrijeme)
+            except Exception as err:
+                #expected fail.. ako vrijeme i/ili kanal nije izabran
+                msg = 'ocekivani problem sa updateom komentara kanal:{0}, pocetak:{1}, kraj:{2}'.format(str(self.gKanal), str(self.pocetnoVrijeme), str(self.zavrsnoVrijeme))
+                logging.info(msg)
+                logging.info(str(err), exc_info=True)
 
     def crtaj_satni_graf(self):
         """

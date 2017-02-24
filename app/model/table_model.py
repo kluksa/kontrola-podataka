@@ -571,8 +571,15 @@ class KomentarModel(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
 
     def dohvati_tekst_za_red(self, red):
-        ind = self.frejm.index[red]
-        return self.frejm.loc[ind, 'Komentar']
+        #TODO!
+        try:
+            ind = self.frejm.index[red]
+            out = self.frejm.loc[ind, 'Komentar']
+        except Exception as err:
+            logging.error(str(err), exc_info=True)
+            out = ''
+        finally:
+            return out
 
     def clear_frejm(self):
         self.frejm = pd.DataFrame(columns=['Kanal', 'Od', 'Do', 'Komentar'])
@@ -587,6 +594,9 @@ class KomentarModel(QtCore.QAbstractTableModel):
     def flags(self, index):
         if index.isValid():
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        else:
+            #TODO!
+            return QtCore.Qt.ItemIsEnabled
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
@@ -616,7 +626,7 @@ class KomentarModel(QtCore.QAbstractTableModel):
                 if section == 0:
                     return 'Kanal'
                 elif section == 1:
-                    return 'Od'                   
+                    return 'Od'
                 elif section == 2:
                     return 'Do'
                 elif section == 3:

@@ -6,141 +6,159 @@ Created on Wed Dec 17 15:18:10 2014
 @author: User
 """
 import logging
-
 import pandas as pd
 import numpy as np
 
-
-###############################################################################
-###############################################################################
 class RESTReader(object):
     """
     implementacija REST json citaca
-    obavezno instanciraj citac sa modelom
     """
-    def __init__(self, source = None):
-        #instanca Web zahtjeva za rest servise
+    def __init__(self, source=None):
+        """
+        RESTReader se instancira uz pomoc instance WebZahtjev.
+        RestReader je adapter/wrapper oko instance WebZahtjeva koji je zaduzen
+        za citanje minutnih podataka sa REST servisa.
+        """
         self.source = source
-###############################################################################
+
     def valjan_conversion(self, x):
         """
-        Adapter, funkcija uzima boolean vrijednost i pretvara je u
-        1 (True) ili -1 (False)
+        Adapter funkcija. Pretvara ulazni boolean x u integer. Output je 1 ako
+        je x True, -1 ako je x False. Funkcija se koristi prilikom prilagodbe
+        stupca 'flag'.
         """
         if x:
             return 1
         else:
             return -1
-###############################################################################
+
     def nan_conversion(self, x):
         """
-        Adapter, funkcija mjenja besmisleno male vrijednosti u NaN. Sto je
-        besmisleno malo? recimo sve vrijednosti ispod -99
+        Adapter funkcija. Funkcija primarno sluzi da se na ucinkovit nacin
+        zamjene besmisleno male vrijednosti koncentracije u NaN.
         """
         if x > -99:
             return x
         else:
             return np.NaN
-###############################################################################
+
     def adaptiraj_ulazni_json(self, x):
         """
-        Adapter za ulazni jason string.
-        Potrebno je lagano preurediti frame koji se ucitava iz jsona
+        Funkcija je zaduzena da konvertira ulazni json string (x) u pandas
+        DataFrame objekt.
 
         output je pandas dataframe (prazan frame ako nema podataka)
         """
         try:
-            """
-            TODO! moguce je prosljediti keyword argument dtype={column name : type}
-            funkciji pd.read_json() koja ce castati stupce u odredjeni tip prilikom
-            citanja. Svi stupci koji nisu navedeni u dictu ce se automatski castati
-            u 'najprikladniji' tip.
-            """
-            #parse json i provjeri da li su svi relevantni stupci na broju
-            df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
+            #TODO ovo ovdje vraca frame i nema potrebe to assertati (pod pretpostavkom da je API normalan
+            df = pd.read_json(x, orient='records', convert_dates=['vrijeme'], typ='frame')
             assert 'vrijeme' in df.columns, 'ERROR - Nedostaje stupac: "vrijeme"'
             assert 'id' in df.columns, 'ERROR - Nedostaje stupac: "id"'
             assert 'vrijednost' in df.columns, 'ERROR - Nedostaje stupac: "vrijednost'
             assert 'statusString' in df.columns, 'ERROR - Nedostaje stupac: "statusString"'
             assert 'valjan' in df.columns, 'ERROR - Nedostaje stupac: "valjan"'
             assert 'statusInt' in df.columns, 'ERROR - Nedostaje stupac: "statusInt"'
+            assert 'nivoValidacije' in df.columns, 'Error - Nedostaje stupac: "nivoValidacije"'
 
             df = df.set_index(df['vrijeme'])
-            df.rename(columns={'vrijednost' : 'koncentracija', 'valjan' : 'flag', 'statusInt':'status'}, inplace = True)
+            renameMap = {'vrijednost':'koncentracija',
+                         'valjan':'flag',
+                         'statusInt':'status'}
+            df.rename(columns=renameMap, inplace=True)
             df['koncentracija'] = df['koncentracija'].map(self.nan_conversion)
             df['flag'] = df['flag'].map(self.valjan_conversion)
-            df.drop('vrijeme', inplace = True, axis = 1) #drop column vrijeme
-            #TODO!
-            """
-            Postaviti flag na drugu vrijednost ako je tocka prije validirana?
-            Ovisi o statusu...
-            """
-            #vrati adaptirani dataframe
+            df.drop('vrijeme', inplace=True, axis=1) #drop column vrijeme
             return df
         except (ValueError, TypeError, AssertionError):
-            #javi error signalom kontroleru da nesto nije u redu?
-            logging.info('Fail kod parsanja json stringa:\n'+str(x), exc_info = True)
-            df = pd.DataFrame( columns = ['koncentracija','status','flag','id','statusString'] )
+            logging.error('Fail kod parsanja json stringa:\n'+str(x), exc_info=True)
+            expectedColumns = ['koncentracija',
+                               'status',
+                               'flag',
+                               'id',
+                               'statusString',
+                               'nivoValidacije']
+            df = pd.DataFrame(columns=expectedColumns)
             df = df.set_index(df['id'].astype('datetime64[ns]'))
-            #vrati prazan frejm frejm
             return df
-###############################################################################
-    def read(self, key = None, date = None):
-        """
-        ucitavanje json podataka sa rest servisa.
-        key je programMjerenja
-        date je trazeni datum
 
-        P.S. self.source.get_sirovi(key, date) moze raisati exception (usljed loseg
-        requesta, loseg responsea...), ali dopustamo da se pogreska propagira
-        iznad
+    def read(self, key=None, date=None, ndana=1):
         """
-        #pokusaj ucitati json string sa REST servisa
-        jsonString = self.source.get_sirovi(key, date)
-        #pretvori u dataframe
+        Metoda za ucitavanje minutnih podataka sa rest servisa.
+        ulazni parametri:
+        - key : integer, program mjerenja id
+        - date : string, trazeni datum formata 'YYYY-MM-DD'
+        - ndana : integer
+
+        Funkcija delegira dohvacanje json stringa sa REST serivsa i naknadno
+        konvertira json string sa podacima u dobro formatirani pandas data frame.
+
+        Funkcija vraca tuple. Prvi element je program mjerenja id (key), a drugi
+        element je pandas DataFrame (df). Ako dodje do pogreske prilikom citanja
+        sa rest servisa ili prilikom parsanja jsona, vraca se prazan dataframe.
+        """
+        msg = 'read, key={0}, date={1}, ndana={2}'.format(str(key), str(date), str(ndana))
+        logging.info(msg)
+        jsonString = self.source.get_sirovi(key, date, ndana)
         df = self.adaptiraj_ulazni_json(jsonString)
         return key, df
-###############################################################################
-###############################################################################
+
+
 class RESTWriter(object):
     """
-    Klasa zaduzena za updateanje agregiranih podataka na REST web servis
+    implementacija REST writer objekta
     """
-    def __init__(self, source = None):
-        #instanca Web zahtjeva za rest servise
+    def __init__(self, source=None):
+        """
+        RESTWriter se instancira uz pomoc instance WebZahtjev.
+        RestWriter je adapter/wrapper oko instance WebZahtjeva koji je zaduzen
+        za spremanje/upload minutnih podataka na REST servis.
+        """
         self.source = source
 
-    def write_minutni(self, key = None, date = None, frejm = None):
+    def write_minutni(self, key=None, date=None, frejm=None):
         """
-        Write metoda za upis minutnih podataka na REST servis
+        Metoda za upload minutnih podataka na rest servis.
+        ulazni parametri:
+        - key : integer, program mjerenja id
+        - date : string, datum formata 'YYYY-MM-DD'
+        - frejm : slajs pandas dataframea.
 
-        key --> kanal
-        date --> string, datum formata 'YYYY-MM-DD'
-        frejm --> slajs minutnog frejma
+        Funkcija adaptira slajs pandas DataFrame-a i priprema ga za upload na
+        REST (provjera trazenih stupaca, izbacivanje viska podataka...).
+        Upload je delegiran instanci WebZahtjev-a.
+
+        Ovisno o uspjehu operacije spremanja na REST funkcija vraca True ili False.
         """
-        #test da li su 'bitni' stupci u frejmu
-        assert key != None, 'ERROR - Nedostaje program mjerenja'
-        assert 'id' in frejm.columns, 'ERROR - Nedostaje stupac: "id"'
-        assert 'flag' in frejm.columns, 'ERROR - Nedostaje stupac: "flag"'
-        #rename i adapt frejm
-        frejm.rename(columns={'flag':'valjan'}, inplace = True)
+        msg = 'write_minutni, key={0}, date={1}, broj podataka={2}'.format(str(key), str(date), str(len(frejm)))
+        logging.info(msg)
+        if key == None:
+            msg = 'write_minutni problem : program mjerenja nije zadan. key={0}'.format(str(key))
+            logging.error(msg)
+            return False
+        if 'id' not in frejm.columns:
+            msg = 'write_minutni problem : U frejmu nedostaje stupac "id". stupci frejma = {0}'.format(str(frejm.columns))
+            logging.error(msg)
+            return False
+        if 'flag' not in frejm.columns:
+            msg = 'write_minutni problem : U frejmu nedostaje stupac "flag". stupci frejma = {0}'.format(str(frejm.columns))
+            logging.error(msg)
+            return False
+        frejm.rename(columns={'flag':'valjan'}, inplace=True)
         frejm['valjan'] = frejm['valjan'].map(self.int_to_boolean)
-        frejm.drop(['status', 'koncentracija', 'statusString'], inplace = True, axis = 1)
-        #convert to json string uz pomoc pandasa
+        for stupac in frejm.columns:
+            if stupac not in ['id', 'valjan']:
+                frejm.drop(stupac, inplace=True, axis=1)
         frejm['id'] = frejm['id'].astype(np.int64)
-        jstring = frejm.to_json(orient = 'records')
-        #upload uz pomoc self.source objekta (networking_funkcjie.WebZahtjev)
-        self.source.upload_json_minutnih(jstring=jstring, program=key, date=date)
+        jstring = frejm.to_json(orient='records')
+        uspjeh = self.source.upload_json_minutnih(jstring=jstring, program=key, date=date)
+        return uspjeh
 
     def int_to_boolean(self, x):
         """
-        Pomocna funkcija koja adaptira stupac 'valjan' (integeri) u boolean
-        vrijednost. Ako je x vrijednost veca ili jednaka 0 vraca True,
-        ako nije, vraca False
+        Pomocna adapter funkcija. Koristi se za prilagodbu vrijednosti stupca
+        'flag' u boolean vrijednosti.
         """
         if x >= 0:
             return True
         else:
             return False
-###############################################################################
-###############################################################################

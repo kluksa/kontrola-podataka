@@ -1,0 +1,27 @@
+setup:
+
+1. napravi folder "kontrolapodataka"
+2. kopiraj u folder:
+	- cijeli folder "app"
+	- config.ini
+	- kontrola_podataka.py
+
+FINALNA STRUKTURA
+
+OUTER FOLDER
+ - "setup.py"
+ - "manifest.in"
+ - folder "kontrolapodataka" koji sadrzi cijeli folder "app" i fileove "config.ini" i "kontrola_podataka.py"
+
+ 
+3. otvori shell ili navigiraj do OUTER FOLDER
+4. python setup.py sdist
+5. folder dist sadrzi source distribuciju (zip)
+
+
+install:
+
+1. kopiraj i unzip source file
+2. otvori shell ili navigiraj do foldera sa setup.py
+3. python setup.py install
+

@@ -7,10 +7,9 @@ Created on Thu Jan 22 10:55:55 2015
 from PyQt4 import QtGui, QtCore, uic
 import logging
 import datetime  # potreban za provjeru da li je izabrani dan u buducnosti
-
 import app.model.model_drva as model_drva
-###############################################################################
-###############################################################################
+
+
 base1, form1 = uic.loadUiType('./app/view/ui_files/rest_izbornik.ui')
 class RestIzbornik(base1, form1):
     """
@@ -30,6 +29,8 @@ class RestIzbornik(base1, form1):
         self.calendarWidget.clicked.connect(self.get_mjerenje_datum)
         #doubleclick/enter na element u treeViewu (program mjerenja)
         self.treeView.activated.connect(self.get_mjerenje_datum)
+        #singleclick ma element u treeViewu sa programima mjerenja
+        self.treeView.clicked.connect(self.get_mjerenje_datum)
 
     def get_mjerenje_datum(self, x):
         """
@@ -47,56 +48,47 @@ class RestIzbornik(base1, form1):
         qdan = self.calendarWidget.selectedDate()  #dohvaca QDate objekt
         pdan = qdan.toPyDate()  #convert u datetime.datetime python objekt
         dan = pdan.strftime('%Y-%m-%d')  #transformacija u zadani string format
-
         #provjeri datum, ako je u "buducnosti", zanemari naredbu
         danas = datetime.datetime.now()
         sutra = danas + datetime.timedelta(days=1)
         sutra = sutra.date()
         try:
+            # TODO nije dobro, treba koristiti isinstance, a i cemu provjeravati tip???
             if pdan < sutra and type(self.model) == model_drva.ModelDrva:
                 #dohvacanje programa mjerenja
                 ind = self.treeView.currentIndex()  #dohvati trenutni aktivni indeks
                 item = self.model.getItem(ind)  #dohvati specificni objekt pod tim indeksom
                 prog = item._data[2]  #dohvati program mjerenja iz liste podataka
-
                 if prog is not None:
                     output = {'programMjerenjaId': int(prog),
                               'datumString': dan}
                     #print('Izabrana kombinacija: {0}'.format(output))
                     self.emit(QtCore.SIGNAL('priredi_podatke(PyQt_PyObject)'), output)
-                    logging.info('izabrana kombinacija kanala i datuma : {0}'.format(str(output)))
+                    msg = 'izabrana kombinacija kanala i datuma : {0}'.format(str(output))
+                    logging.info(msg)
+                else:
+                    #TODO!
+                    self.emit(QtCore.SIGNAL('prikazi_komentare_za_stanicu(PyQt_PyObject)'), str(item))
         except Exception as err:
             tekst = 'Opcenita pogreska, problem sa dohvacanjem programa mjerenja\n' + str(err)
             logging.error('App exception', exc_info=True)
             self.emit(QtCore.SIGNAL('prikazi_error_msg(PyQt_PyObject)'), tekst)
 
-    def sljedeci_dan(self):
+    def pomakni_dan(self, brojDana):
         """
-        Metoda "pomice dan" u kalendaru naprijed za 1 dan od trenutno selektiranog
+        Metoda "pomice dan" u kalendaru za neki broj dana od trenutno selektiranog.
+        brojDana moze biti negativan (pomicanje unazad) i pozitivan (pomicanje unaprijed)
         """
         # dohvati trenutno selektirani dan
         dan = self.calendarWidget.selectedDate()
-        #uvecaj za 1
-        dan2 = dan.addDays(1)
+        #smanji za 1
+        dan2 = dan.addDays(brojDana)
         #postavi novi dan kao trenutno selektirani
         self.calendarWidget.setSelectedDate(dan2)
         #informiraj kontroler o promjeni
         self.get_mjerenje_datum(True)
 
-    def prethodni_dan(self):
-        """
-        Metoda "pomice dan" u kalendaru nazad za 1 dan od trenutno selektiranog
-        """
-        # dohvati trenutno selektirani dan
-        dan = self.calendarWidget.selectedDate()
-        #smanji za 1
-        dan2 = dan.addDays(-1)
-        #postavi novi dan kao trenutno selektirani
-        self.calendarWidget.setSelectedDate(dan2)
-        #informiraj kontroler o promjeni
-        self.get_mjerenje_datum(True)
-###############################################################################
-###############################################################################
+
 class CustomKalendar(QtGui.QCalendarWidget):
     """
     Subklasa kalendara koja boja odredjene datume u zadane boje.
@@ -107,10 +99,13 @@ class CustomKalendar(QtGui.QCalendarWidget):
     'ok' --> zelena boja
     'bad' --> crvena boja
     """
-    def __init__(self, parent=None, datumi={'ok': [], 'bad': []}):
+    def __init__(self, parent=None, datumi=None):
         QtGui.QCalendarWidget.__init__(self, parent)
         # dict QDate objekata koji se trebaju razlicito obojati
-        self.datumi = datumi
+        if datumi == None:
+            self.datumi = {'ok': [], 'bad': []}
+        else:
+            self.datumi = datumi
         self.setFirstDayOfWeek(QtCore.Qt.Monday)
         #boja za nedovrsene datume
         self.color1 = QtGui.QColor(255, 0, 0)
@@ -142,5 +137,3 @@ class CustomKalendar(QtGui.QCalendarWidget):
         self.datumi = qdatesdict
         # updateCells, forsira ponovno iscrtavanje
         self.updateCells()
-###############################################################################
-###############################################################################

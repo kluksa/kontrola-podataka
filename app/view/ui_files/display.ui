@@ -33,7 +33,7 @@
        <number>0</number>
       </property>
       <property name="movable">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <widget class="QWidget" name="grafoviWidget">
        <property name="sizePolicy">
@@ -79,6 +79,12 @@
        </attribute>
        <layout class="QVBoxLayout" name="visednevniLayout"/>
       </widget>
+      <widget class="QWidget" name="komentari">
+       <attribute name="title">
+        <string>KOMENTARI</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="komentariLayout"/>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -111,53 +117,7 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
-    <widget class="QMenu" name="menu_Satni_graf">
-     <property name="title">
-      <string>&amp;Satni graf</string>
-     </property>
-     <addaction name="action_satni_grid"/>
-     <addaction name="action_satni_cursor"/>
-     <addaction name="action_satni_minor_ticks"/>
-     <addaction name="action_satni_legend"/>
-    </widget>
-    <widget class="QMenu" name="menu_Minutni_graf">
-     <property name="title">
-      <string>&amp;Minutni graf</string>
-     </property>
-     <addaction name="action_minutni_grid"/>
-     <addaction name="action_minutni_cursor"/>
-     <addaction name="action_minutni_minor_ticks"/>
-     <addaction name="action_minutni_legend"/>
-    </widget>
-    <widget class="QMenu" name="menu_SPAN_graf">
-     <property name="title">
-      <string>&amp;SPAN graf</string>
-     </property>
-     <addaction name="action_SPAN_legend"/>
-    </widget>
-    <widget class="QMenu" name="menu_ZERO_graf">
-     <property name="title">
-      <string>&amp;ZERO graf</string>
-     </property>
-     <addaction name="action_ZERO_legend"/>
-    </widget>
-    <widget class="QMenu" name="menu_REST_agreg_graf">
-     <property name="title">
-      <string>&amp;REST agreg. graf</string>
-     </property>
-     <addaction name="action_rest_satni_grid"/>
-     <addaction name="action_rest_satni_cursor"/>
-     <addaction name="action_rest_satni_minor_ticks"/>
-     <addaction name="action_rest_satni_legend"/>
-    </widget>
-    <addaction name="menu_Satni_graf"/>
-    <addaction name="menu_Minutni_graf"/>
-    <addaction name="menu_ZERO_graf"/>
-    <addaction name="menu_SPAN_graf"/>
-    <addaction name="menu_REST_agreg_graf"/>
     <addaction name="separator"/>
-    <addaction name="action_zoom"/>
-    <addaction name="action_zoom_out"/>
     <addaction name="separator"/>
     <addaction name="action_stil_grafova"/>
    </widget>
@@ -197,8 +157,6 @@
    <addaction name="separator"/>
    <addaction name="action_stil_grafova"/>
    <addaction name="separator"/>
-   <addaction name="action_zoom"/>
-   <addaction name="action_zoom_out"/>
   </widget>
   <action name="action_log_in">
    <property name="text">
@@ -223,173 +181,12 @@
     <string>&amp;Exit</string>
    </property>
   </action>
-  <action name="action_satni_grid">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Grid</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle grid na grafu satno agregiranih podataka</string>
-   </property>
-  </action>
-  <action name="action_satni_cursor">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Cursor</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle cursor assist na grafu sa satno agregiranim podacima.</string>
-   </property>
-  </action>
-  <action name="action_satni_minor_ticks">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Minor ticks</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle minor tickove na grafu sa satno agregiranim podacima.</string>
-   </property>
-  </action>
-  <action name="action_satni_legend">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Legend</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle prikaz legende na grafu sa satno agregiranim podacima.</string>
-   </property>
-  </action>
-  <action name="action_minutni_grid">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Grid</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle grid na grafu sa minutnim podacima.</string>
-   </property>
-  </action>
-  <action name="action_minutni_cursor">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Cursor</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle cursor assist na grafu sa minutnim podacima.</string>
-   </property>
-  </action>
-  <action name="action_minutni_minor_ticks">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Minor ticks</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle minor ticks na grafu sa minutnim podacima.</string>
-   </property>
-  </action>
-  <action name="action_minutni_legend">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Legend</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle prikaz legende na grafu sa minutnim podacima.</string>
-   </property>
-  </action>
-  <action name="action_zoom">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Zoom in</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle zoom mod za grafove</string>
-   </property>
-  </action>
-  <action name="action_zoom_out">
-   <property name="text">
-    <string>&amp;Zoom out</string>
-   </property>
-   <property name="toolTip">
-    <string>Zoom out sve grafove</string>
-   </property>
-  </action>
   <action name="action_stil_grafova">
    <property name="text">
     <string>&amp;Stil grafova</string>
    </property>
    <property name="toolTip">
     <string>Promjena stila grafova.</string>
-   </property>
-  </action>
-  <action name="action_ZERO_legend">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Legend</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle legende za ZERO graf</string>
-   </property>
-  </action>
-  <action name="action_SPAN_legend">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Legend</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle legende za SPAN graf</string>
-   </property>
-  </action>
-  <action name="action_rest_satni_grid">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Grid</string>
-   </property>
-  </action>
-  <action name="action_rest_satni_cursor">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Cursor</string>
-   </property>
-  </action>
-  <action name="action_rest_satni_legend">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Legend</string>
-   </property>
-  </action>
-  <action name="action_rest_satni_minor_ticks">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Minor ticks</string>
    </property>
   </action>
  </widget>

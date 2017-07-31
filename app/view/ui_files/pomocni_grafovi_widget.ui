@@ -15,6 +15,9 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
+    <widget class="QTreeView" name="treeView"/>
+   </item>
+   <item>
     <layout class="QVBoxLayout" name="tableViewLayout">
      <property name="spacing">
       <number>0</number>
@@ -29,7 +32,7 @@
      <item>
       <widget class="QPushButton" name="makniGrafGumb">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -44,6 +47,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="dodajGrafGumb">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Dodaj graf</string>
        </property>

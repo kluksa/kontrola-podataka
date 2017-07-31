@@ -50,7 +50,8 @@ class RESTReader(object):
         output je pandas dataframe (prazan frame ako nema podataka)
         """
         try:
-            df = pd.read_json(x, orient='records', convert_dates=['vrijeme'])
+            #TODO ovo ovdje vraca frame i nema potrebe to assertati (pod pretpostavkom da je API normalan
+            df = pd.read_json(x, orient='records', convert_dates=['vrijeme'], typ='frame')
             assert 'vrijeme' in df.columns, 'ERROR - Nedostaje stupac: "vrijeme"'
             assert 'id' in df.columns, 'ERROR - Nedostaje stupac: "id"'
             assert 'vrijednost' in df.columns, 'ERROR - Nedostaje stupac: "vrijednost'

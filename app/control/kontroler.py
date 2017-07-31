@@ -1290,7 +1290,7 @@ class Kontroler(QtCore.QObject):
         #merge tablica u jednu
         result = pd.concat([zeroref, spanref])
         #sortiraj po indeksu
-        result.sort(inplace=True, ascending=False)
+        result.sort_index(inplace=True, ascending=False)
         return result
 
     def dohvati_zero_span(self):

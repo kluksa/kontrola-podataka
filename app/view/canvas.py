@@ -840,6 +840,7 @@ class SatniKanvas(SatniMinutniKanvas):
         """
         #midline
         frejm = self.data[self.gKanal]
+        #TODO nije dobro, treba koristiti isinstance. Drugo, pitanje je koliko ovdje ima smisla provjeravati da je DataFrame.
         if type(frejm) == pd.core.frame.DataFrame:
             x = list(frejm.index)
             y = list(frejm[self.konfig.MIDLINE])
@@ -1113,6 +1114,7 @@ class SatniRestKanvas(SatniKanvas):
         """
         logging.debug('crtaj_glavni_kanal, start')
         frejm = self.data[self.gKanal]
+        # TODO nije dobro, treba koristiti isinstance. Drugo, pitanje je koliko ovdje ima smisla provjeravati da je DataFrame.
         if type(frejm) == pd.core.frame.DataFrame:
             frejm = frejm[frejm[self.konfig.MIDLINE] > -99]
             srednjaci = frejm[self.konfig.MIDLINE]
@@ -1198,6 +1200,7 @@ class MinutniKanvas(SatniMinutniKanvas):
         logging.debug('crtaj_glavni_kanal, start')
         #midline
         frejm = self.data[self.gKanal]
+        # TODO nije dobro, treba koristiti isinstance. Drugo, pitanje je koliko ovdje ima smisla provjeravati da je DataFrame.
         if type(frejm) == pd.core.frame.DataFrame:
             x = list(frejm.index)
             y = list(frejm[self.konfig.MIDLINE])
@@ -1368,6 +1371,7 @@ class ZeroSpanKanvas(Kanvas):
                 minD = self.data.loc[x, self.konfig.WARNING_LOW]
                 maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
                 # ako postoje vise istih indeksa, uzmi zadnji
+                # TODO nije dobro, treba koristiti isinstance.
                 if type(y) is pd.core.series.Series:
                     y = y[-1]
                     minD = minD[-1]
@@ -1525,6 +1529,7 @@ class ZeroSpanKanvas(Kanvas):
             minD = self.data.loc[x, self.konfig.WARNING_LOW]
             maxD = self.data.loc[x, self.konfig.WARNING_HIGH]
             # ako postoje vise istih indeksa, uzmi zadnji
+            # TODO nije dobro, treba koristiti isinstance.
             if type(y) is pd.core.series.Series:
                 y = y[-1]
                 minD = minD[-1]

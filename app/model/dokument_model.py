@@ -153,8 +153,10 @@ class DataModel(QtCore.QObject):
 
     def dataframe_structure_test(self, frame):
         """provjera da li je dataframe dobre strukture"""
-        assert type(frame) == pd.core.frame.DataFrame, 'Assert fail, ulaz nije DataFrame objekt'
-        assert type(frame.index) == pd.tseries.index.DatetimeIndex, 'Assert fail, DataFrame nema vremenski indeks'
+        #TODO ovo nije dobro. Umjesto provjeravanja tipa index-a trebalo bi provjeriti njegovu funkcionalnost. Drugo, provjera se radi sa isinstance a ne as type ==
+        #assert type(frame) == pd.core.frame.DataFrame, 'Assert fail, ulaz nije DataFrame objekt'
+        #TODO ovo nije dobro. Umjesto provjeravanja tipa index-a trebalo bi provjeriti njegovu funkcionalnost. Drugo, provjera se radi sa isinstance a ne as type ==
+        #assert type(frame.index) == pd.tseries.index.DatetimeIndex, 'Assert fail, DataFrame nema vremenski indeks'
         stupci = list(frame.columns)
         assert 'koncentracija' in stupci, 'Assert fail, nedostaje stupac "koncentracija"'
         assert 'status' in stupci, 'Assert fail, nedostaje stupac "status"'
@@ -237,8 +239,8 @@ class DataModel(QtCore.QObject):
             logging.debug(msg)
             assert key is not None, 'Assert fail, key = None'
             assert key in self.data, 'Assert fail, key ne postoji u mapi self.data'
-            assert isinstance(tmin, pd.tslib.Timestamp), 'Assert fail, krivi tip tmin'
-            assert isinstance(tmax, pd.tslib.Timestamp), 'Assert fail, krivi tip tmax'
+            assert isinstance(tmin, pd.Timestamp), 'Assert fail, krivi tip tmin'
+            assert isinstance(tmax, pd.Timestamp), 'Assert fail, krivi tip tmax'
             if tmin > tmax:
                 tmin, tmax = tmax, tmin
             df = self.data[key].copy()

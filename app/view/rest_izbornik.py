@@ -53,6 +53,7 @@ class RestIzbornik(base1, form1):
         sutra = danas + datetime.timedelta(days=1)
         sutra = sutra.date()
         try:
+            # TODO nije dobro, treba koristiti isinstance, a i cemu provjeravati tip???
             if pdan < sutra and type(self.model) == model_drva.ModelDrva:
                 #dohvacanje programa mjerenja
                 ind = self.treeView.currentIndex()  #dohvati trenutni aktivni indeks

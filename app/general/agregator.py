@@ -176,7 +176,7 @@ class Agregator(object):
         #agregacija statusa prije odbacivanja losih / nepostojecih podataka
         tempDf = frejm.copy()
         dfStatus = tempDf[u'status']
-        temp = dfStatus.resample('H', how=self.h_binary_or, closed='right', label='right')
+        temp = dfStatus.resample('H', closed='right', label='right').apply(self.h_binary_or)
         agregirani[u'status'] = temp
         #izbaci sve indekse gdje je koncentracija np.NaN (nema podataka)
         df = frejm[np.isnan(frejm[u'koncentracija']) == False]
@@ -184,12 +184,12 @@ class Agregator(object):
         #uzmi samo pandas series stupac 'koncentracija'
         dfKonc = tempDf[u'koncentracija']
         #resample series --> prebroji koliko ima podataka
-        temp = dfKonc.resample('H', how=self.h_size, closed='right', label='right')
+        temp = dfKonc.resample('H', closed='right', label='right').apply(self.h_size)
         agregirani[u'broj podataka'] = temp
         #test validiranosti
         tempDf = df.copy()
         dfFlag = tempDf[u'flag']
-        temp = dfFlag.resample('H', how=self.test_validacije, closed='right', label='right')
+        temp = dfFlag.resample('H', closed='right', label='right').apply(self.test_validacije)
         agregirani[u'flag'] = temp
         #upis pomocnih funkcija sa kojima cemo agregirati u mapu
         helperFunc = {u'avg':self.my_mean,
@@ -209,7 +209,7 @@ class Agregator(object):
             #copy filtriranu seriju koncentracija (bez nan vrijednosti sa flagom >= 0)
             temp = tempDf.copy()
             #satno agregiraj sa ciljanom funkcijom
-            temp = temp.resample('H', how=helperFunc[col], closed='right', label='right')
+            temp = temp.resample('H', closed='right', label='right').apply(helperFunc[col])
             #rename series to match name
             temp.name = col
             #dodaj seriju u izlazni frejm

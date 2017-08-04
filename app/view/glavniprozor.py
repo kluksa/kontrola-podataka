@@ -23,7 +23,7 @@ class GlavniProzor(base, form):
     """
     def __init__(self, cfg=None, parent=None):
         logging.debug('inicijalizacija GlavniProzor, start.')
-        super(base, self).__init__(parent)
+        super(GlavniProzor, self).__init__(parent)
         self.setupUi(self)
         self.config = cfg
         #set up inicijalizaciju

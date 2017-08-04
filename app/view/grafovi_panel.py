@@ -76,7 +76,7 @@ class KoncPanel(base2, form2):
         """
         za inicijalizaciju panela potreban je konfig objekt aplikacije (konfig)
         """
-        super(base2, self).__init__(parent)
+        super(KoncPanel, self).__init__(parent)
         self.setupUi(self)
         self.konfig = konfig
         self.parent = parent

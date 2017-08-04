@@ -1419,9 +1419,9 @@ class ZeroSpanKanvas(Kanvas):
             tempfrejm = self.data.copy()
             badUnder = tempfrejm[tempfrejm[self.konfig.MIDLINE] < tempfrejm[self.konfig.WARNING_LOW]]
             badTocke = badUnder.append(badOver)
-            badTocke.sort()
+            badTocke.sort_index()
             badTocke.drop_duplicates(subset='vrijeme',
-                                     take_last=True,
+                                     keep='last',
                                      inplace=True) # za svaki slucaj ako dodamo 2 ista indeksa
             xbad = list(badTocke.index)
             ybad = list(badTocke[self.konfig.MIDLINE])

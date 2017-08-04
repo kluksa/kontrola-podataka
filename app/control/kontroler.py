@@ -1212,9 +1212,9 @@ class Kontroler(QtCore.QObject):
                     if 'vrijeme' in self.zeroFrejm.columns:
                         #fix duplicate rows (if any)
                         self.zeroFrejm.drop_duplicates(subset='vrijeme',
-                                                       take_last=True,
+                                                       keep='last',
                                                        inplace=True)
-                        self.zeroFrejm.sort()
+                        self.zeroFrejm.sort_index()
                         logging.debug('naredba za crtanje zero grafa')
                         msg = 'ZERO graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.zeroFrejm))
                         logging.info(msg)
@@ -1224,9 +1224,10 @@ class Kontroler(QtCore.QObject):
                     if 'vrijeme' in self.spanFrejm.columns:
                         #fix duplicate rows (if any)
                         self.spanFrejm.drop_duplicates(subset='vrijeme',
-                                                       take_last=True,
+                                                       keep='last',
                                                        inplace=True)
-                        self.spanFrejm.sort()
+                        self.spanFrejm.drop_duplicates()
+                        self.spanFrejm.sort_index()
                         logging.debug('naredba za crtanje span grafa')
                         msg = 'SPAN graf argumenti za crtanje.\narg={0}\nfrejm=\n{1}'.format(str(arg), str(self.spanFrejm))
                         logging.info(msg)
